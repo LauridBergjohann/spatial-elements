@@ -15,3 +15,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run verify
+      - run: npm run build:demo
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e -- --grep "without JavaScript|GPU unavailable"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: verification-output
+          path: |
+            test-results/
+            .artifacts/packages/*.log

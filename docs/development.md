@@ -26,3 +26,6 @@ private check/build/browser tests in this mode. npm run packages:link restores t
 installation from the committed lockfile. Stop dev servers before switching modes. Packed mode is
 for release checks, not live editing. Tarballs remain in ignored .local-packages; source manifests
 and lockfiles do not change.
+
+Keep @types/three aligned across linked repositories (currently 0.185.1); divergent copies can
+produce incompatible recursive type identities even when runtime Three.js is deduplicated.

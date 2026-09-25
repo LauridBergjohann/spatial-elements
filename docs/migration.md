@@ -8,9 +8,9 @@ This is a separate extraction/publication preparation project, starting from a c
 | 1 | Monorepo, package builds, root exports, license and package verification | Implemented; validation recorded below |
 | 2 | Extract real runtime and SvelteKit components; enforce framework boundary | Implemented; verified below |
 | 3 | Public SvelteKit demo with neutral shared assets | Implemented; verified below |
-| 4 | Private brand-example application and brand-specific regression tests | Planned |
-| 5 | Cross-repository local development and watch workflow | Planned |
-| 6 | Full consumer installation/SSR/build tests and release documentation | Planned |
+| 4 | Private brand-example application and brand-specific regression tests | Complete; verified below |
+| 5 | Cross-repository local development and watch workflow | Complete; verified below |
+| 6 | Full consumer installation/SSR/build tests and release documentation | Complete; verified below |
 
 The private repository is spatial-elements-brand-examples. No brand assets, generated manifests,
 recordings, old Git history or lab working files are copied into this repository. The original
@@ -51,3 +51,36 @@ original procedural low/high models, SVG posters and a generated HDR. Type check
 and warnings. Both package builds and the demo production build pass. Six Chrome tests pass for
 WebGPU navigation/history, section links, no-JS and unavailable-GPU fallback. An isolated consumer
 installed from actual tarballs passes Node core import, Svelte type checks, SSR and production build.
+
+## Steps 4?6: private application, development and release checks
+
+Completed 2026-09-25. The private application consumes package exports and retains its brand routes,
+original/optimized models, posters and asset reports. No runtime/component source is duplicated.
+The public repository has an independent history and only original neutral demo assets.
+
+Verification on this Windows machine (Node.js 24.21.0 / Chrome):
+
+- 220 generic unit tests across 46 files passed in core.
+- 41 private brand/asset tests across 6 files passed.
+- All package, public-demo and private-app type checks passed with zero errors/warnings.
+- Public and private production builds passed.
+- Six public browser cases passed against workspace packages and again against an independently
+  installed tarball consumer: WebGPU list/carousel/mixed navigation, history, section anchors,
+  no-JavaScript and unavailable-GPU fallback.
+- Thirteen private brand/history browser cases passed with linked packages. Six brand acceptance
+  cases passed again with real tarball copies (all three brands).
+- A temporary Svelte component edit reached the running private app through HMR; the core watch
+  build reacted to a temporary TS change. Both edits were restored, and test-owned processes stopped.
+- npm run assets:catalog:check passed for all 17 private products. Stale poster alt metadata was
+  aligned with the existing generator; geometry/poster binary files were not changed.
+- npm run verify passed: boundaries, types, unit tests, builds, package allowlists/licenses, Node
+  import without DOM/GPU, isolated consumer installation, declarations, SSR and production build.
+
+The private app is restored to file-linked development mode after tarball acceptance. Public CI
+runs Node 22/Ubuntu verification, demo build and the two browser fallback cases; hardware WebGPU
+and real-brand validation remain local/private. CI status is available on the repository Actions tab.
+
+Release preparation is documented in release.md. Package private flags remain enabled and no npm
+publication, release tag or public deployment was performed. npm audit --omit=dev reports two low
+entries in the SvelteKit/cookie dependency chain. The deprecated lucide-svelte dependency and optional
+3Dconnexion build warnings are retained compatibility considerations; review before first release.
