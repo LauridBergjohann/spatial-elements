@@ -18,7 +18,7 @@ sequenceDiagram
   Runtime->>Runtime: Freeze readiness and start motion clock
   Runtime->>Runtime: Animate shared pose and independent reveal channels
   Prepare-->>Runtime: Late readiness, if needed
-  Runtime->>Runtime: Refine after motion; hand off and release captures
+  Runtime->>Runtime: Refine after motion, hand off and release captures
 ~~~
 
 The diagram describes responsibilities, not a promise that every hover finishes preparation. Required route load data must settle before destination layout is measured. Required Low bindings must be drawable before the motion clock starts. Navigation must still complete if no valid shared endpoint can be captured.
