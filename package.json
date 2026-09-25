@@ -1,0 +1,31 @@
+{
+  "name": "spatial-elements",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A framework for spatial immersive content experiences.",
+  "license": "MPL-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @spatial-elements/core && npm run build -w @spatial-elements/sveltekit",
+    "check": "npm run check --workspaces",
+    "dev": "npm run build && concurrently -k -n core,sveltekit \"npm run dev -w @spatial-elements/core\" \"npm run dev -w @spatial-elements/sveltekit\"",
+    "verify": "npm run check && npm run build && npm run verify:packages",
+    "verify:packages": "node scripts/verify-packages.mjs"
+  },
+  "devDependencies": {
+    "@sveltejs/package": "2.5.8",
+    "@sveltejs/kit": "2.70.3",
+    "@sveltejs/vite-plugin-svelte": "7.2.0",
+    "concurrently": "10.0.5",
+    "svelte": "5.56.4",
+    "svelte-check": "4.7.2",
+    "typescript": "6.0.3",
+    "vite": "8.1.4"
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+**/dist/
+.svelte-kit/
+.artifacts/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
