@@ -1,4 +1,6 @@
 # Demo applications
 
-The public SvelteKit demo is planned for migration step 3. It will depend on the workspace packages
-and shared neutral demo assets. Brand-specific applications live in the separate private repository.
+sveltekit-demo is the public reference application for list, carousel, mixed content and product
+pages. It consumes the two workspace packages by name and the original assets in fixtures/demo-assets.
+Run npm run demo from the repository root. Restricted brand examples live in the separate private
+repository and are not required to develop or test this demo.
