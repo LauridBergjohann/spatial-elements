@@ -38,7 +38,7 @@ Real Svelte rendering, navigation, SSR and production consumer tests follow the 
 The CI workflow repeats installation and verification on Node.js 22 / Ubuntu. Its remote result
 is separate from the local verification above.
 
-## Steps 2?3: extraction and neutral demo
+## Steps 2-3: extraction and neutral demo
 
 Renderer/controllers and product contracts now live in core; Svelte authoring/context and Kit
 navigation live in sveltekit. App aliases were replaced with real package/relative ESM imports.
@@ -52,7 +52,7 @@ and warnings. Both package builds and the demo production build pass. Six Chrome
 WebGPU navigation/history, section links, no-JS and unavailable-GPU fallback. An isolated consumer
 installed from actual tarballs passes Node core import, Svelte type checks, SSR and production build.
 
-## Steps 4?6: private application, development and release checks
+## Steps 4-6: private application, development and release checks
 
 Completed 2026-09-25. The private application consumes package exports and retains its brand routes,
 original/optimized models, posters and asset reports. No runtime/component source is duplicated.

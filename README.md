@@ -40,3 +40,5 @@ A visible “Built with Spatial Elements” link is appreciated, but not require
 
 Suggested link: [Built with Spatial Elements](https://github.com/LauridBergjohann/spatial-elements).
 Dependencies retain their own licenses. The optional attribution request does not amend the license.
+
+See the [documentation index](docs/README.md) for the current architecture and migration audit.
