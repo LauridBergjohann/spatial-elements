@@ -2,7 +2,7 @@
   "name": "@spatial-elements/core",
   "version": "0.0.0",
   "private": true,
-  "description": "Framework-independent runtime for Spatial Elements (extraction pending).",
+  "description": "Framework-independent rendering and catalog runtime for Spatial Elements.",
   "license": "MPL-2.0",
   "type": "module",
   "repository": {
@@ -23,6 +23,18 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./stage/*": {
+      "types": "./dist/stage/*.d.ts",
+      "default": "./dist/stage/*.js"
+    },
+    "./catalog/*": {
+      "types": "./dist/catalog/*.d.ts",
+      "default": "./dist/catalog/*.js"
+    },
+    "./product-detail/*": {
+      "types": "./dist/product-detail/*.d.ts",
+      "default": "./dist/product-detail/*.js"
     }
   },
   "types": "./dist/index.d.ts",
@@ -35,5 +47,11 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "dev": "tsc -p tsconfig.json --watch",
     "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@3dconnexion/3dconnexionjs": "0.8.1"
+  },
+  "peerDependencies": {
+    "three": "^0.185.1"
   }
 }

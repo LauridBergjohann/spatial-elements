@@ -1,12 +1,9 @@
 # @spatial-elements/sveltekit
 
-Part of [Spatial Elements](https://github.com/LauridBergjohann/spatial-elements).
+SvelteKit components and navigation for Spatial Elements.
 
-A framework for spatial immersive content experiences.
+See the [authoring guide](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/authoring.md) and [development guide](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/development.md).
 
-This is an unpublished package scaffold. Its root export is intentionally empty; runtime and
-components will be extracted in the next step. Version 0.0.0 is not a release commitment.
-
-Licensed under MPL-2.0; see LICENSE.
+Pre-release development package; not yet published. MPL-2.0; see LICENSE.
 
 A visible “Built with Spatial Elements” link is appreciated, but not required. This does not replace your obligations under the MPL-2.0 license.

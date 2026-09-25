@@ -1,3 +1,10 @@
-// SPDX-License-Identifier: MPL-2.0
-// Package entry point reserved for the next, separately verified extraction step.
-export {};
+export { StageExperience } from './stage/StageExperience.js';
+export { ProductAssetManager, GltfProductAssetLoader } from './catalog/assets/ProductAssetManager.js';
+export * from './product-detail/types.js';
+export * from './product-detail/productDetail.js';
+export type { CatalogPage } from './catalog/catalogPage.js';
+export type { CarouselPresentation } from './catalog/catalogPose.js';
+export { catalogViewLink } from './catalog/catalogViewLink.js';
+export * from './catalog/productAssets.js';
+export * from './catalog/productLodPair.js';
+export type { StageExperienceOptions } from './stage/stageTypes.js';

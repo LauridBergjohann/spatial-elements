@@ -4,33 +4,33 @@ A framework for spatial immersive content experiences.
 
 Present products, individual items or entire collections through immersive, interactive interfaces powered by three.js and WebGPU.
 
-## Status
+## Packages
 
-This repository contains the monorepo/package infrastructure. The existing catalog runtime has
-not been migrated yet. Both packages are private until extraction and release verification are
-complete; no npm release is available from this scaffold.
+- **@spatial-elements/core**: framework-independent renderer, asset lifecycle, LOD, camera interaction, panels and catalog transitions.
+- **@spatial-elements/sveltekit**: Svelte components and SvelteKit navigation/history integration.
+- **apps/sveltekit-demo**: public list, carousel, mixed-content and detail examples using original procedural assets.
+
+The implementation is extracted and usable locally. Packages remain private at version 0.0.0
+until the release checklist is approved; nothing has been published to npm.
+Future framework adapters can use core; no placeholder React/Vue packages are shipped.
 
 ## Development
 
-Use Node.js 22.12 or newer and npm (lockfile version 3).
+Use Node.js 22.12 or newer and npm.
 
-```sh
+~~~sh
 npm ci
-npm run verify
-npm run dev
-```
+npm run assets:demo
+npm run build
+npm run demo
+~~~
 
-The root build runs core before sveltekit. The dev command first builds both, then watches both
-packages. There is no demo server yet. Package entry points are their built dist/index.js and
-dist/index.d.ts files; consumers must use the package names, not source-directory aliases.
+The demo opens at /demo/categories/mixed. Run npm run dev in another terminal to watch package
+changes. npm run verify checks boundaries, types, unit tests, builds and an independently installed
+packed SvelteKit consumer. npm run build:demo followed by npm run test:e2e checks the demo in Chrome.
 
-- packages/core: framework-independent ESM/TypeScript package.
-- packages/sveltekit: Svelte packaging pipeline and framework integration boundary.
-- apps: future framework demos (not part of npm package contents).
-- fixtures/demo-assets: future shared, redistributable demo assets.
-- tooling/asset-pipeline: future generic asset-production tools.
-
-See [the migration plan](docs/migration.md) for the next steps and [package boundaries](docs/package-boundaries.md).
+See [authoring](docs/authoring.md), [cross-repository development](docs/development.md),
+[package boundaries](docs/package-boundaries.md), [migration](docs/migration.md) and [release](docs/release.md).
 
 ## License and attribution
 
@@ -38,4 +38,5 @@ See [the migration plan](docs/migration.md) for the next steps and [package boun
 
 A visible “Built with Spatial Elements” link is appreciated, but not required. This does not replace your obligations under the MPL-2.0 license.
 
-Suggested link: [Built with Spatial Elements](https://github.com/LauridBergjohann/spatial-elements). This request does not amend the license.
+Suggested link: [Built with Spatial Elements](https://github.com/LauridBergjohann/spatial-elements).
+Dependencies retain their own licenses. The optional attribution request does not amend the license.

@@ -1,0 +1,59 @@
+/* Loaded by the persistent stage before any destination page can mount. */
+.stage [data-catalog-transition-group='enter'] {
+	--stage-transition-opacity: var(--catalog-enter-opacity, 1);
+}
+
+.stage [data-catalog-transition-group='shared'] {
+	--stage-transition-opacity: var(--catalog-shared-opacity, 1);
+}
+
+.stage [data-catalog-transition-dom='enter'] {
+	--catalog-content-opacity: var(--catalog-enter-opacity, 1);
+	opacity: var(--catalog-content-opacity);
+}
+
+.stage [data-catalog-transition-dom='exit'] {
+	--catalog-content-opacity: var(--catalog-exit-opacity, 1);
+	opacity: var(--catalog-content-opacity);
+}
+
+/* On return, list content is the destination. Source copies own their independent exit opacity. */
+.stage[data-catalog-direction='return'] [data-catalog-list] [data-catalog-transition-dom='exit'] {
+	--catalog-content-opacity: var(--catalog-enter-opacity, 0);
+}
+
+.stage[data-catalog-direction='return'][data-catalog-enter-hidden] [data-catalog-list] {
+	visibility: hidden;
+}
+
+.stage:is([data-catalog-recipe='dock-to-list'], [data-catalog-recipe='dock-to-carousel'])
+	[data-catalog-shell] {
+	opacity: var(--catalog-enter-opacity, 0);
+}
+
+/* The moving shared-surface actor owns the incoming dock background until handoff. */
+.stage:is(
+		[data-catalog-recipe='list-to-dock'],
+		[data-catalog-recipe='carousel-to-dock']
+	)[data-catalog-transition]
+	[data-product-sticky-header]::before {
+	opacity: 0 !important;
+}
+
+.stage[data-catalog-transition] [data-catalog-transition-dom][data-stage-dom-content] {
+	opacity: calc(var(--stage-dom-opacity, 1) * var(--catalog-content-opacity, 1));
+}
+
+/* Gate the initial paint before panel registration and renderer binding. */
+.stage[data-catalog-enter-hidden] [data-catalog-transition-dom='enter'],
+.stage[data-catalog-enter-hidden] [data-catalog-transition-group='enter'],
+.stage[data-catalog-shared-hidden] [data-catalog-transition-group='shared'] {
+	visibility: hidden !important;
+}
+
+.stage[data-catalog-transition] [data-catalog-transition-dom],
+.stage[data-catalog-transition] [data-catalog-transition-dom] *,
+.stage[data-catalog-transition] [data-catalog-transition-group],
+.stage[data-catalog-transition] [data-catalog-transition-group] * {
+	pointer-events: none !important;
+}

@@ -6,3 +6,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+**/.svelte-kit/
+apps/*/static/assets/demo/
+test-results/
+playwright-report/

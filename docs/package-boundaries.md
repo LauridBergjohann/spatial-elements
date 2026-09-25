@@ -1,33 +1,32 @@
 # Package boundaries
 
-## core
+core contains the framework-independent imperative renderer, DOM geometry/panel registrations,
+asset lifecycle, LOD/refinement, camera controls, catalog identity/poses/transitions and product/theme
+contracts. Browser/GPU work starts explicitly through StageExperience, never during module import.
+There are no Svelte, SvelteKit, application route, brand manifest or demo asset imports in core.
 
-Owns the future framework-independent rendering, asset lifecycle, LOD, product identity, pose and
-transition mechanisms. It must not depend on Svelte, SvelteKit, application routes or demo content.
-Browser/GPU work must start through explicit runtime initialization, never at package import.
-Three.js dependency ownership will be established during runtime extraction; it is not yet needed
-by this empty scaffold.
+sveltekit contains authoring components, Svelte contexts/lifecycle, actions requiring context and
+SvelteKit preload/navigation/history integration. It imports core through package exports, never
+source aliases. Three.js is a shared peer dependency of both packages; Svelte/Kit are adapter peers.
+The optional SpaceMouse integration is loaded lazily from its dependency.
 
-## sveltekit
+## Public entry points
 
-Owns Svelte components, snippets/content composition, DOM registration, lifecycle and SvelteKit
-navigation/preloading/history integration. Imports core by its package name. Framework-independent
-algorithms must not migrate here merely because they currently live in a SvelteKit app.
-Svelte and SvelteKit are peer dependencies; development tooling is pinned in the root workspace.
+Prefer root imports from @spatial-elements/sveltekit for BrandStageShell, ContentPage, Section,
+ListSection, CarouselSection, ProductDetailPage, Panel, Stage and StageViewport. ProductOverviewPage
+is retained for compatibility. Root exports include product types, lookup/projection helpers and
+catalogViewLink. ScrollNavigationBridge is available for custom integration/test shells.
 
-## Public API
+@spatial-elements/core exposes StageExperience, ProductAssetManager, GltfProductAssetLoader,
+product/theme/asset contracts, lookup/projection helpers and catalogViewLink. Explicit stage/*,
+catalog/* and product-detail/* subpath families allow the adapter and advanced integration tests
+to share the same module instances. Treat these lower-level APIs as version-coupled during 0.x;
+core and sveltekit must be released together. No Svelte files are exported by core.
 
-Both packages currently expose only the root entry point, with types and ESM exports. The SvelteKit
-package also provides the svelte condition and preserves CSS side effects. Their entry points are
-intentionally empty. Do not invent substitute components or freeze internal renderer/controller APIs
-before extraction. Internal subpaths are not exported.
-
-Package builds use tsc (core) and @sveltejs/package (sveltekit). npm workspace linking resolves the
-matching 0.0.0 core dependency locally. No registry version or workspace-specific dependency protocol
-is required. Consumer verification installs actual tarballs outside the workspace source graph.
-
-The root and both packages remain private. Removing package-level private flags and selecting release
-versions is a separate release step. There is no publish workflow or npm token in this repository.
+Builds use tsc and @sveltejs/package. Source maps/declarations are included. Test fixtures, apps,
+GLBs, HDRs and posters are excluded from npm tarballs. A boundary check prevents application aliases
+and framework imports from entering core. Packed consumer verification uses a fresh OS temporary
+directory, installs real tarballs and peers, and checks types, SSR compilation and production build.
 
 References: [Svelte packaging](https://svelte.dev/docs/kit/packaging),
 [npm workspaces](https://docs.npmjs.com/cli/v11/using-npm/workspaces/).
