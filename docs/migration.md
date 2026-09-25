@@ -84,3 +84,7 @@ Release preparation is documented in release.md. Package private flags remain en
 publication, release tag or public deployment was performed. npm audit --omit=dev reports two low
 entries in the SvelteKit/cookie dependency chain. The deprecated lucide-svelte dependency and optional
 3Dconnexion build warnings are retained compatibility considerations; review before first release.
+
+The first clean CI run exposed build ordering: the demo typecheck needs both package declaration
+outputs. The check command now builds both libraries before checking any workspace, so a fresh
+clone does not depend on existing dist files.
