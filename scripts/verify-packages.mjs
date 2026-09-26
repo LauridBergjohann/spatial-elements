@@ -11,7 +11,7 @@ const npm = (args, cwd=root) => execFileSync(process.execPath,[npmCli,...args],{
 const tarballs = {};
 for(const name of ['core','sveltekit']) {
  const pkgDir=join(root,'packages',name),pkg=JSON.parse(readFileSync(join(pkgDir,'package.json'),'utf8'));
- assert.equal(pkg.private,true,'Release requires a separate decision');assert.equal(pkg.license,'MPL-2.0');
+ assert.notEqual(pkg.private,true);assert.equal(pkg.publishConfig.access,'public');assert.equal(pkg.license,'MPL-2.0');
  const [packed]=JSON.parse(npm(['pack','--ignore-scripts','--json','--pack-destination',directory],pkgDir));
  const files=packed.files.map(file=>file.path);
  for(const file of files) {
