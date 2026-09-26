@@ -41,7 +41,7 @@ The private docs/archive directory is an immutable historical record, including 
 
 ## Validation
 
-Package boundary checks reject old API identifiers; tarball checks reject stale output filenames. Both element and host product URL spellings have intent regression coverage in both directions. 
+Package boundary checks reject old API identifiers; tarball checks reject stale output filenames. Both element and host product URL spellings have intent regression coverage in both directions.
 
 Verified on 2026-09-26 (Windows, Node.js 24, Chrome):
 
