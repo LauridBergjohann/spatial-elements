@@ -5,5 +5,7 @@
     "@spatial-elements/core": "0.1.0-beta.1",
     "@spatial-elements/sveltekit": "0.1.0-beta.1"
   },
-  "changesets": []
+  "changesets": [
+    "automatic-releases"
+  ]
 }
