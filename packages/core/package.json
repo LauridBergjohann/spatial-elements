@@ -1,6 +1,6 @@
 {
   "name": "@spatial-elements/core",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "Framework-independent rendering and catalog runtime for Spatial Elements.",
   "license": "MPL-2.0",
   "type": "module",
