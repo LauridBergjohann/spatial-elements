@@ -1,110 +1,122 @@
 ﻿# Releases and GitHub Flow
 
-## Current candidate
+## Daily development
 
-Both libraries are prepared as **0.1.0-beta.1**, with public access and the npm **beta** tag.
-The npm scope and account 2FA are confirmed by the maintainer. Nothing has been published or tagged.
-Root and demo manifests remain private; only the two libraries are publishable.
-
-## Branching
-
-Use GitHub Flow: branch from main, make focused commits, open a pull request, run verification,
-review, squash/merge into main, and delete the short-lived branch. No develop or permanent release
-branch is needed. Release preparation follows the same flow. Tag the exact published main commit
-as v0.1.0-beta.1 and create a GitHub prerelease after both packages are verified on npm.
-
-Recommended main ruleset: require a pull request and the "verify" status check, block force pushes
-and deletion. A solo maintainer need not require an approval they cannot give themselves.
-These settings must be configured on GitHub; this document does not claim they are enabled.
-See [GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow).
-
-## Candidate verification
+Use short-lived branches and pull requests into main. Add a release note for changes to shipped
+packages with:
 
 ~~~sh
-npm ci
-npm run assets:demo
+npm run changeset
+~~~
+
+Select the affected package(s), patch/minor/major, and a short user-facing explanation. Commit the
+generated .changeset/*.md file with the implementation. Documentation/tooling-only changes do not
+need a changeset unless the documentation ships in the package, e.g. its README.
+
+After merging, release.yml runs automatically. Changesets opens or updates a **release pull request**
+with coordinated versions and per-package changelogs. Review and merge that PR into main: the
+workflow then verifies, builds and publishes the missing npm versions automatically. No local
+npm publish or additional workflow dispatch is needed. Several feature PRs can share one release PR.
+
+core and sveltekit form a fixed version group. The version script keeps the adapter's core dependency
+and demo dependencies exact, refreshes the lockfile, and selects beta/latest from the version.
+The private root and demo applications are never published. This remains GitHub Flow, with no develop
+or permanent release branch. Package-level CHANGELOG.md files are generated release history; the root
+changelog records the initial release.
+
+## Beta and stable versions
+
+The repository is in Changesets prerelease mode (beta), continuing the published 0.1.0-beta.1.
+The next included release note produces 0.1.0-beta.2. Further betas increment the prerelease counter.
+Changesets accumulates patch/minor/major intent for the eventual stable release. Humans classify the
+API impact; version numbers, dependency updates and changelogs are automated.
+
+To prepare stable publication, run npm exec changeset pre exit on a reviewed branch and merge that
+change. Review the resulting release PR carefully. Stable versions use latest, beta versions use beta.
+Do not hand-edit pre.json or package versions during normal releases.
+
+Both initial packages currently have beta AND latest pointing to 0.1.0-beta.1 (registry observation
+2026-09-26). This automation does not remove existing tags; subsequent beta uploads only update beta.
+
+## One-time GitHub and npm configuration
+
+1. GitHub Settings > Actions > General: allow GitHub Actions to create and approve pull requests.
+   The version job requests contents:write and pull-requests:write.
+2. Configure a trusted publisher for **each** npm package:
+   user LauridBergjohann, repository spatial-elements, workflow release.yml, environment npm.
+   Enable direct npm publish in the publisher's allowed actions.
+3. Configure GitHub environment npm for main deployments. To publish immediately after the merge,
+   do not require an additional environment approval or wait timer; the reviewed release PR is the gate.
+4. Set repository Actions variable NPM_TRUSTED_PUBLISHING_ENABLED=true.
+   Missing setup is reported as a failed release plan when an unpublished version exists.
+
+Only the publishing job receives id-token:write, on a GitHub-hosted runner with Node 24 / npm 11.
+No npm token is needed. This checkout cannot configure npm account settings; verify these settings
+in the respective UIs. See [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/).
+
+By default, Changesets uses GITHUB_TOKEN for the release PR. GitHub does not run ordinary push/PR
+workflows in response to that bot token. If required PR checks remain pending, close and reopen the
+release PR yourself to trigger them. For a fully automatic PR-check experience, optionally supply
+RELEASE_PR_TOKEN from a suitably scoped fine-grained token (contents and pull requests write), or
+adapt the workflow to generate a GitHub App token. Never weaken required checks to bypass this.
+The final publication always runs its own full verification regardless of PR checks.
+
+## Publication and recovery
+
+The workflow runs on pushes to main and also supports workflow_dispatch for retries.
+The plan checks the public npm registry: existing versions are skipped; network/auth/server errors
+fail rather than being mistaken for absent versions. If all versions exist, there is no upload.
+Pending Changesets go through the release PR first.
+
+Before uploading, the exact triggering commit passes metadata validation, unit tests, independent
+tarball consumer checks, demo build and fallback browser tests. The verified tarballs are archived
+as a workflow artifact. Upload order is core, then sveltekit. No workspace-wide publish is used.
+If only core succeeds, rerun the workflow: the existing core version is skipped and the adapter
+is retried. Published versions cannot be overwritten.
+
+Useful read-only/local checks:
+
+~~~sh
+npm run check:release
+npm run test:release
+npm run release:plan
 npm run verify
 npm run build:demo
 npm run test:e2e
-npm audit
 ~~~
 
-verify checks release metadata, boundaries, types, unit tests and actual tarball installation in an
-independent consumer, including SSR and production build. Artifacts are in .artifacts/packages/.
-Inspect npm pack contents and licenses. Private brand assets must never enter this repository or
-the tarballs. Test the private brand application with packages:packed, then restore packages:link.
+release:plan queries npm but never uploads. release:publish is restricted to Actions on main.
+The npm environment, publisher identity and repository variable are still required.
+Git tags and GitHub Release pages are optional follow-up metadata; this workflow does not create them.
 
-## First publication: interactive 2FA
+## Three.js and compatibility
 
-After merging the reviewed PR, use a clean checkout of that main commit and repeat verification.
-These commands actually publish and require a deliberate maintainer decision:
+Three.js is a required peer dependency of both runtime packages. This expresses one compatible
+application-level Three.js version, important when sharing objects/materials with other libraries.
+A normal dependency could resolve to a second incompatible installation. Modern npm automatically
+installs a missing peer; explicit installation is only needed when the app imports Three.js itself,
+or for package managers/configurations that do not install peers automatically.
 
-~~~sh
-npm login --registry=https://registry.npmjs.org/
-npm whoami --registry=https://registry.npmjs.org/
-npm publish .artifacts/packages/spatial-elements-core-0.1.0-beta.1.tgz --access public --tag beta --ignore-scripts
-npm publish .artifacts/packages/spatial-elements-sveltekit-0.1.0-beta.1.tgz --access public --tag beta --ignore-scripts
-~~~
+Svelte 5 / SvelteKit 2, Three.js ^0.185.1, Node 22.12+ tooling.
+Semantic HTML and poster fallbacks remain available without GPU rendering.
+Packages include MPL-2.0; attribution is appreciated, not a license condition.
+Private brand assets remain outside the public repository and tarballs.
+The existing optional 3Dconnexion and renderer chunk build warnings remain unchanged.
 
-Publish the tested tarballs, not all workspaces. Complete npm's interactive 2FA prompts.
-The beta tag is essential: a prerelease version alone does not prevent publication to latest.
-Do not commit credentials. If the second upload fails, inspect npm first and publish only the missing
-adapter tarball; a published version cannot be overwritten. Do not rerun the entire workflow blindly.
+## References
 
-## Subsequent releases: Trusted Publishing
+- [Changesets v2 / Action v1](https://github.com/changesets/action/tree/maintenance/v1)
+- [GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow)
+- [npm peer dependencies](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#peerdependencies)
 
-The manually dispatched release.yml workflow publishes from main only, runs verification and
-fallback browser tests, then uploads core before the adapter. It publishes the exact verified tarballs.
-It is disabled until the repository variable NPM_TRUSTED_PUBLISHING_ENABLED is set to true.
+## Automation validation (2026-09-26)
 
-Configure both npm packages with a GitHub Actions trusted publisher:
-
-- Organization/user: LauridBergjohann
-- Repository: spatial-elements
-- Workflow filename: release.yml
-- Environment: npm
-- Allowed actions: enable direct npm publish for this workflow.
-
-Create the GitHub environment npm, restrict deployment branches to main, and configure a reviewer
-if available for your account/repository setup. Then enable the repository variable above.
-The workflow uses Node 24 / npm 11 and OIDC; no NPM_TOKEN secret is required.
-It does not run on merge, tag creation or GitHub Release publication.
-
-For the next beta, update both library versions, the adapter's exact core dependency, demo
-dependencies, lockfile and CHANGELOG through a PR. Dispatch "Publish npm beta" on main with the
-exact version. Stable releases require a separate deliberate update to check-release.mjs and
-publishConfig/tag; the current process intentionally accepts only the 0.1.0-beta series.
-
-See [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/) and
-[scoped public packages](https://docs.npmjs.com/creating-and-publishing-scoped-public-packages/).
-
-## After publication
-
-Check both exact versions and beta dist-tags on npm. Install the published adapter and Three.js in
-a clean SvelteKit application outside this workspace; run type checks, SSR/build and browser checks.
-Only after this succeeds, tag the published commit and create a GitHub prerelease with changelog notes.
-Mark the changelog candidate as published with its actual date. Do not promote beta to latest
-until the stable-release decision.
-
-## Deployment and compatibility
-
-Demo hosting is independent of npm publication. Select a deployment adapter before hosting the public
-demo; never deploy the private brand app publicly. Packages include MPL-2.0 license files.
-Visible attribution is appreciated, not an additional license condition. Retain third-party notices.
-
-Svelte 5 / SvelteKit 2 and Three.js 0.185 within declared peer ranges; Node 22.12+ tooling.
-WebGPU is optional, with semantic HTML/poster fallback. Other framework adapters are future work.
-The optional 3Dconnexion dependency emits a Vite crypto externalization warning; validate SpaceMouse
-hardware separately. Large renderer chunk warnings are expected; Stage defers runtime loading.
-
-## Candidate validation (2026-09-26)
-
-- Release metadata, source boundaries and all workspace type checks passed.
-- 222 unit tests and all 6 public Chrome browser tests passed.
-- Demo production build and independent tarball consumer type check / SSR build passed.
-- Both tarballs passed npm publish --dry-run with public access and the beta tag.
-- npm audit reports 3 low-severity entries along the cookie -> SvelteKit -> adapter-auto chain.
-  No moderate/high/critical findings. The suggested automatic fixes downgrade SvelteKit to old
-  releases, so no forced dependency change was applied.
-- Registry installation, actual OIDC publication and GitHub environment/ruleset configuration
-  remain post-merge maintainer steps. This preparation did not publish packages or create a tag.
+- Five release tests cover beta/latest routing, no-op runs, partial retries and registry failures.
+- Isolated Changesets simulations passed for 0.1.0-beta.1 -> 0.1.0-beta.2 and beta exit -> 0.1.0.
+- 222 runtime unit tests, all workspace type checks, demo build and six Chrome browser tests passed.
+- The independent tarball consumer installs Three.js automatically without a direct three dependency;
+  its type check and production/SSR build passed.
+- Workflow YAML and separation of version-job and publishing-job permissions were checked.
+- Live npm lookup confirms both initial versions exist; release:plan correctly performs no upload.
+- Actual GitHub PR creation and OIDC publication require the one-time account settings above and
+  have not been exercised by this local validation. No package was published during this change.

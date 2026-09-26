@@ -1,28 +1,72 @@
-name: Publish npm beta
+﻿name: Release packages
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Exact reviewed version, e.g. 0.1.0-beta.1'
-        required: true
-        type: string
 permissions:
   contents: read
 concurrency:
   group: npm-release
   cancel-in-progress: false
 jobs:
+  version:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      has_changesets: ${{ steps.changesets.outputs.hasChangesets }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1
+        id: changesets
+        with:
+          version: npm run release:version
+          title: 'chore: release Spatial Elements'
+          commit: 'chore: version Spatial Elements'
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PR_TOKEN || github.token }}
+  plan:
+    needs: version
+    if: needs.version.outputs.has_changesets == 'false'
+    runs-on: ubuntu-latest
+    outputs:
+      pending: ${{ steps.plan.outputs.pending }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm run release:plan
+        id: plan
+      - name: Explain missing publishing setup
+        if: steps.plan.outputs.pending == 'true' && vars.NPM_TRUSTED_PUBLISHING_ENABLED != 'true'
+        run: |
+          echo "::error::Configure npm Trusted Publishing and set NPM_TRUSTED_PUBLISHING_ENABLED=true."
+          exit 1
   publish:
-    if: github.ref == 'refs/heads/main' && vars.NPM_TRUSTED_PUBLISHING_ENABLED == 'true'
+    needs: plan
+    if: needs.plan.outputs.pending == 'true' && vars.NPM_TRUSTED_PUBLISHING_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment: npm
     permissions:
       contents: read
       id-token: write
-    env:
-      RELEASE_VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -35,11 +79,7 @@ jobs:
       - run: npm run test:e2e -- --grep "without JavaScript|GPU unavailable"
       - uses: actions/upload-artifact@v4
         with:
-          name: npm-beta-${{ inputs.version }}
+          name: npm-packages-${{ github.sha }}
           path: .artifacts/packages/*.tgz
           if-no-files-found: error
-      # Publish the exact tarballs exercised by verify:packages. Never publish all workspaces.
-      - name: Publish core
-        run: npm publish ".artifacts/packages/spatial-elements-core-${RELEASE_VERSION}.tgz" --access public --tag beta --ignore-scripts
-      - name: Publish SvelteKit adapter
-        run: npm publish ".artifacts/packages/spatial-elements-sveltekit-${RELEASE_VERSION}.tgz" --access public --tag beta --ignore-scripts
+      - run: npm run release:publish

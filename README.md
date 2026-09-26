@@ -10,15 +10,15 @@ Present elements, individual items or entire collections through immersive, inte
 - **@spatial-elements/sveltekit**: Svelte components and SvelteKit navigation/history integration.
 - **apps/sveltekit-demo**: public list, carousel, mixed-content and detail examples using original procedural assets.
 
-The first npm beta candidate is 0.1.0-beta.1. Publication is pending; see the [release checklist](docs/release.md).
+The first npm beta is published. See the [release workflow](docs/release.md).
 Future framework adapters can use core; no placeholder React/Vue packages are shipped.
 
-## Installation after beta publication
+## Installation
 
 In an existing Svelte 5 / SvelteKit 2 application:
 
 ~~~sh
-npm install @spatial-elements/sveltekit@beta three@^0.185.1
+npm install @spatial-elements/sveltekit@beta
 ~~~
 
 Core is installed transitively. See the [authoring guide](docs/authoring.md) for integration.
@@ -51,3 +51,8 @@ Suggested link: [Built with Spatial Elements](https://github.com/LauridBergjohan
 Dependencies retain their own licenses. The optional attribution request does not amend the license.
 
 See the [documentation index](docs/README.md) for the current architecture and migration audit.
+
+Three.js is a required peer dependency (^0.185.1), shared with the application and other adapters.
+Modern npm installs it automatically. If the application imports Three.js directly, declare it
+explicitly with `npm install three@^0.185.1`. Do not bypass incompatible peer ranges with
+`--legacy-peer-deps`. Other package managers may require explicit peer installation.
