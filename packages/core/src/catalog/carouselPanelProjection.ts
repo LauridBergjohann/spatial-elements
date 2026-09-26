@@ -16,7 +16,7 @@ export function recordCarouselPanel(
 }
 
 export function captureCarouselElement(element: HTMLElement) {
-	const panel = element.closest<HTMLElement>('[data-carousel-product] .summary');
+	const panel = element.closest<HTMLElement>('[data-carousel-spatial-element] .summary');
 	const frame = panel && frames.get(panel);
 	if (!panel || !frame) return undefined;
 	if (element === panel) return frame;

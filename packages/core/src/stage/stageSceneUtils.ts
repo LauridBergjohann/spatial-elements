@@ -18,7 +18,7 @@ export function isMesh(object: Object3D): object is Mesh {
  * Returns world-space bounds for the selected meshes below an object.
  *
  * Excluded meshes remain untouched and visible. Computing their bounds separately
- * lets decorative geometry follow the product transform without affecting its fit.
+ * lets decorative geometry follow the element transform without affecting its fit.
  */
 export function getMeshBounds(model: Object3D, includeMesh: StageMeshFilter = () => true) {
 	const bounds = new THREE.Box3();
@@ -38,7 +38,7 @@ export function getMeshBounds(model: Object3D, includeMesh: StageMeshFilter = ()
 /**
  * Returns the world-space corners of each selected mesh's own bounding box.
  * Keeping the boxes separate avoids the empty corner volume introduced by one
- * global box around sparse or rotated product geometry.
+ * global box around sparse or rotated element geometry.
  */
 export function getMeshBoundsPoints(model: Object3D, includeMesh: StageMeshFilter = () => true) {
 	const points: THREE.Vector3[] = [];

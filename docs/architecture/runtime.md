@@ -8,7 +8,7 @@ sequenceDiagram
   participant Adapter as SvelteKit adapter
   participant Prepare as CatalogPreparation
   participant Runtime as Stage runtime
-  User->>Adapter: Hover/focus or activate product link
+  User->>Adapter: Hover/focus or activate element link
   Adapter->>Prepare: Request optional assets and preparation
   Prepare->>Runtime: Decode, instantiate and warm when gate allows
   User->>Adapter: Navigate
@@ -38,11 +38,11 @@ A prepared background stays revealed when High arrives later. Readiness is not r
 
 ## Identity, history and interruption
 
-Endpoints match semantic brand/product/role and then a concrete slot/occurrence. Multiple lists and carousels can contain the same product. Carousel neighbours and partially visible products can participate; absence of a valid drawable source/destination falls back to ordinary navigation. During intermediate PDP docking the hero remains the source until the dock presentation is ready.
+Endpoints match semantic brand/element/role and then a concrete slot/occurrence. Multiple lists and carousels can contain the same element. Carousel neighbours and partially visible elements can participate; absence of a valid drawable source/destination falls back to ordinary navigation. During intermediate detail page docking the hero remains the source until the dock presentation is ready.
 
 The navigation bridge restores history scroll and section selection before endpoint measurement. Explicit fragment navigation is resolved as a destination state; it must not overwrite an existing history restoration. The browser/router owns URL history; the adapter owns the coordinated restoration handshake.
 
-A transition uses retained spatial captures rather than preserving outgoing page DOM. Incoming and outgoing panel decoration/content share the moving bounds; live endpoints are masked until handoff to avoid duplicate stationary panels. Product rotation interpolates a spatial pose rather than linearly blending a projective matrix. Cancellation must restore masks and release leases. Compatible superseding navigation may adopt an existing presentation; stale completion must not modify the successor.
+A transition uses retained spatial captures rather than preserving outgoing page DOM. Incoming and outgoing panel decoration/content share the moving bounds; live endpoints are masked until handoff to avoid duplicate stationary panels. Spatial element rotation interpolates a spatial pose rather than linearly blending a projective matrix. Cancellation must restore masks and release leases. Compatible superseding navigation may adopt an existing presentation; stale completion must not modify the successor.
 
 ## Rendering and interaction
 
@@ -50,7 +50,7 @@ One stage uses a shared WebGPU renderer/device across output bands. The pipeline
 
 Neighbour fades and Low/High blending operate on resolved rendered images: reducing every mesh material's opacity would expose internal surfaces. Carousel panel transforms follow the spatial composition while rear geometry remains available to the backdrop effect.
 
-PDP input updates the live page pose; transition pose ownership is separate. Zoom coordinates hero framing, content visibility and minimap presentation. Cached targets and bounded preparation reduce work but do not eliminate device-dependent GPU cost.
+detail page input updates the live page pose; transition pose ownership is separate. Zoom coordinates hero framing, content visibility and minimap presentation. Cached targets and bounded preparation reduce work but do not eliminate device-dependent GPU cost.
 
 ## Teardown
 

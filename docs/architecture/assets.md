@@ -1,8 +1,8 @@
 # Asset and presentation contract
 
-Sources of truth: [product assets](../../packages/core/src/catalog/productAssets.ts), [LOD pairs](../../packages/core/src/catalog/productLodPair.ts), [asset manager](../../packages/core/src/catalog/assets/ProductAssetManager.ts).
+Sources of truth: [element assets](../../packages/core/src/catalog/spatialElementAssets.ts), [LOD pairs](../../packages/core/src/catalog/spatialElementLodPair.ts), [asset manager](../../packages/core/src/catalog/assets/SpatialElementAssetManager.ts).
 
-Logical product identity is independent of its URL, LOD or number of visible occurrences. An immutable resource request identifies format, URL, revision and decoder/extension requirements. Updating content at a stable URL therefore requires an appropriate revision change.
+Logical element identity is independent of its URL, LOD or number of visible occurrences. An immutable resource request identifies format, URL, revision and decoder/extension requirements. Updating content at a stable URL therefore requires an appropriate revision change.
 
 Low and High must occupy a common authored reference frame, pivot and orientation. Do not independently center/normalize them: that would produce jumps during refinement. Verified manifests use a right-handed frame with +Y up, +Z front and metres. A provisional shared frame is supported, but it does not prove physical dimensions. Physical metadata needs documented provenance.
 

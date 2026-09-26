@@ -1,11 +1,11 @@
 <script lang="ts">
  import { page } from '$app/state';
- import { BrandStageShell, Panel, type ProductDetailData } from '@spatial-elements/sveltekit';
- import { theme, products } from '$lib/catalog';
+ import { BrandStageShell, Panel, type SpatialElementData } from '@spatial-elements/sveltekit';
+ import { theme, spatialElements } from '$lib/catalog';
  let { children } = $props();
- const active = $derived((page.data as { product?: ProductDetailData }).product);
+ const active = $derived((page.data as { spatialElement?: SpatialElementData }).spatialElement);
 </script>
-<BrandStageShell {theme} stage={active?.stage ?? products[0].stage} catalog={{ brandId:'demo', view:active ? 'detail':'content', productId:active?.id, productStage:active?.stage, products:[] }}>
+<BrandStageShell {theme} stage={active?.stage ?? spatialElements[0].stage} catalog={{ brandId:'demo', view:active ? 'detail':'content', spatialElementId:active?.id, spatialElementStage:active?.stage, spatialElements:[] }}>
  <div class="demo-shell" class:detail={Boolean(active)}>
  <Panel class="demo-header" pointerReactive={false} shape={theme.panelShape} theme={theme.panelTheme}>
  <nav aria-label="Main navigation"><a href="/demo/categories/mixed">Spatial Elements</a><a href="/demo/categories/list">List</a><a href="/demo/categories/carousel">Carousel</a><a href="/demo/categories/mixed">Mixed</a></nav>

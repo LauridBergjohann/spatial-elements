@@ -28,12 +28,12 @@ export function carouselDistance(index: number, phase: number, count: number) {
 	return count > 1 ? index - phase : 0;
 }
 
-/** Five visible seats, plus one preparation seat on either side. No duplicated products. */
+/** Five visible seats, plus one preparation seat on either side. No duplicated elements. */
 export function carouselResident(index: number, phase: number, count: number) {
 	return Math.abs(carouselDistance(index, phase, count)) <= 3;
 }
 
-/** An ordered shallow arc of product/panel groups, independent of the asset's physical dimensions. */
+/** An ordered shallow arc of element/panel groups, independent of the asset's physical dimensions. */
 export function carouselPose(
 	index: number,
 	phase: number,
@@ -41,7 +41,7 @@ export function carouselPose(
 	presentation: CarouselPresentation = {}
 ): CatalogPose {
 	const distance = carouselDistance(index, phase, count);
-	// Fixed angular spacing: adding products extends the arc, never closes a turntable.
+	// Fixed angular spacing: adding spatialElements extends the arc, never closes a turntable.
 	const angle = (distance * Math.PI) / 12;
 	const back = Math.min(1, (1 - Math.cos(angle)) / (1 - Math.cos(Math.PI / 6)));
 	const edge = Math.max(0, Math.min(1, (2.5 - Math.abs(distance)) * 2));

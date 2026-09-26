@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import * as THREE from 'three/webgpu';
-import { SpatialGeometryCapture, captureProductProjection } from './SpatialGeometryCapture.js';
+import { SpatialGeometryCapture, captureSpatialElementProjection } from './SpatialGeometryCapture.js';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -12,7 +12,7 @@ it('retains the exact submitted projection across a rebase and releases its reso
 	const camera = new THREE.PerspectiveCamera(45, 1.5, 0.1, 100);
 	camera.position.set(1, 2, 8);
 	camera.lookAt(0, 0, 0);
-	const source = captureProductProjection(model, camera);
+	const source = captureSpatialElementProjection(model, camera);
 	source.viewportClip = { left: 10, top: 50, width: 500, height: 600 };
 	source.fog = new THREE.Fog(0xffffff, 1200, 2500);
 	const release = vi.fn();
@@ -40,7 +40,7 @@ it('retains the exact submitted projection across a rebase and releases its reso
 	const targetModel = new THREE.Group();
 	targetModel.position.set(2, -1, 0);
 	targetModel.scale.setScalar(0.2);
-	const target = captureProductProjection(targetModel, camera);
+	const target = captureSpatialElementProjection(targetModel, camera);
 	capture.setTarget(target, 0.43, 0.2);
 	capture.render(renderer);
 	const presented = capture.getSnapshot().projection;

@@ -63,7 +63,7 @@ export interface StageVisualTestController {
 	getCatalogPresentation(): ReturnType<StageExperience['getCatalogPresentation']> | null;
 	/** Resource ownership diagnostics for catalog navigation acceptance. */
 	getCarouselStats(): ReturnType<
-		import('../catalog/CatalogProductLayer.js').CatalogProductLayer['getStats']
+		import('../catalog/CatalogSpatialElementLayer.js').CatalogSpatialElementLayer['getStats']
 	> | null;
 	getCatalogStats(): ReturnType<StageExperience['assets']['getStats']> | null;
 	/** Applies a deterministic camera pose and waits until dependent render state settles. */
@@ -76,9 +76,9 @@ export interface StageVisualTestController {
 	stopSpaceMouse(): Promise<void>;
 	/** Returns the current rendered minimap bounds in viewport pixels. */
 	getMinimapRect(): StageVisualTestRect | null;
-	/** Returns the projected main product bounds in viewport pixels. */
+	/** Returns the projected main element bounds in viewport pixels. */
 	getModelRect(): StageVisualTestRect | null;
-	/** Returns the projected 3D product bounds in viewport pixels. */
+	/** Returns the projected 3D element bounds in viewport pixels. */
 	getMinimapModelRect(): StageVisualTestRect | null;
 	/** Returns canonical, displayed, and fully synchronized minimap orientations. */
 	getMinimapOrientation(): StageVisualTestMinimapOrientation | null;

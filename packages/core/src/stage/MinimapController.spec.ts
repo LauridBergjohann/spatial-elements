@@ -36,7 +36,7 @@ test('minimap uses the independent Low representation and disposes local targets
 		panelScene: new THREE.Scene(),
 		panel: () => panel,
 		target: () => undefined,
-		product: () => ({
+		spatialElement: () => ({
 			model: high,
 			low,
 			camera: {},
@@ -84,16 +84,16 @@ test('minimap uses the independent Low representation and disposes local targets
 	expect(view.overlayRing.material).toBe(view.ringRestMaterial);
 	expect(view.ringRestMaterial.version).toBe(restVersion);
 	expect(view.ringForegroundMaterial.version).toBe(foregroundVersion);
-	expect(view.productRoot.getObjectByName('low-housing')).toBeDefined();
-	expect(view.productRoot.getObjectByName('high-detail')).toBeUndefined();
+	expect(view.spatialElementRoot.getObjectByName('low-housing')).toBeDefined();
+	expect(view.spatialElementRoot.getObjectByName('high-detail')).toBeUndefined();
 	high.clear();
-	expect(view.productRoot.getObjectByName('low-housing')).toBeDefined();
+	expect(view.spatialElementRoot.getObjectByName('low-housing')).toBeDefined();
 	const disposed = vi.fn();
 	view.contextTarget.addEventListener('dispose', disposed);
 	const sourceDisposed = vi.spyOn(lowMesh.geometry, 'dispose');
 	const retainedScene = new THREE.Scene();
-	retainedScene.add(view.productRoot);
-	const retainedMesh = view.productRoot.getObjectByName('low-housing') as THREE.Mesh<
+	retainedScene.add(view.spatialElementRoot);
+	const retainedMesh = view.spatialElementRoot.getObjectByName('low-housing') as THREE.Mesh<
 		THREE.BufferGeometry,
 		THREE.Material
 	>;

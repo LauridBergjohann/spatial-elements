@@ -1,9 +1,9 @@
-import type { ProductOverviewItem } from '../product-detail/types.js';
+import type { SpatialListItem } from '../spatial-element/types.js';
 export const CATALOG_ITEMS = Symbol('catalog-items');
 export class CatalogItems {
-	private entries = new Map<symbol, ProductOverviewItem>();
-	constructor(private changed: (items: ProductOverviewItem[]) => void) {}
-	register(item: ProductOverviewItem) {
+	private entries = new Map<symbol, SpatialListItem>();
+	constructor(private changed: (items: SpatialListItem[]) => void) {}
+	register(item: SpatialListItem) {
 		if ([...this.entries.values()].some((entry) => entry.occurrence === item.occurrence))
 			throw new Error('Duplicate catalog occurrence: ' + item.occurrence);
 		const token = Symbol();

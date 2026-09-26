@@ -78,7 +78,7 @@ export interface PanelPresentationPorts {
 	transitionOpacity(panel?: StagePanelRuntime): number;
 	requestRender(): void;
 }
-/** Owns panel surfaces, hover and focus-safe DOM presentation independently of product loading. */
+/** Owns panel surfaces, hover and focus-safe DOM presentation independently of element loading. */
 export class PanelPresentationController {
 	private readonly fixedMinimapSize =
 		parseRenderMeasurement(typeof window === 'undefined' ? '' : (window.location?.search ?? '')) ===

@@ -6,9 +6,9 @@ These concise records preserve the accepted decisions from the lab while describ
 
 Accepted 2026-09-09; route/view consequence amended by ADR 0002.
 
-- Canonical product/category URLs belong to the host router; persistent catalog stage ownership crosses route changes.
-- Shared means semantic identity and visual continuity, not identical DOM nodes. Brand/product/role identify the shared meaning; Low/High do not change it.
-- Normal product links, explicit section links and history restoration have distinct scroll intent. Scroll alone does not create history entries.
+- Canonical element/category URLs belong to the host router; persistent catalog stage ownership crosses route changes.
+- Shared means semantic identity and visual continuity, not identical DOM nodes. Brand/element/role identify the shared meaning; Low/High do not change it.
+- Normal element links, explicit section links and history restoration have distinct scroll intent. Scroll alone does not create history entries.
 - Reuse the virtual-scroll runtime through one navigation restoration adapter. Distinguish native and visual scroll.
 - Low/High share one reference frame and physical metadata is verified rather than inferred from normalization.
 
@@ -18,7 +18,7 @@ Consequence: transition eligibility depends on measured, prepared presentations 
 
 Accepted 2026-09-14.
 
-ContentPage composes text, lists and carousels; a CarouselSection does not own a separate page or renderer. A route identifies a resource, while endpoint registrations, navigation intent and restored section selection identify a concrete presentation. Occurrence identity separates repeated product presentations from shared asset identity. This supersedes the earlier assumption that a route uniquely determines list versus carousel presentation.
+ContentPage composes text, lists and carousels; a CarouselSection does not own a separate page or renderer. A route identifies a resource, while endpoint registrations, navigation intent and restored section selection identify a concrete presentation. Occurrence identity separates repeated element presentations from shared asset identity. This supersedes the earlier assumption that a route uniquely determines list versus carousel presentation.
 
 Consequence: mixed pages require occurrence-aware matching and per-history-entry section state.
 

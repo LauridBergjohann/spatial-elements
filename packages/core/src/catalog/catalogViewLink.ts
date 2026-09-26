@@ -25,7 +25,7 @@ export function readCatalogViewContext(destination: URL): CatalogViewContext {
 		if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
 		return Object.fromEntries(
 			[
-				'productId',
+				'spatialElementId',
 				'sourceSection',
 				'targetSection',
 				'sourceOccurrence',

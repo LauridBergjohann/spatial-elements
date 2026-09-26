@@ -35,7 +35,7 @@ import {
 export type CatalogTransitionIdentity = CatalogIdentity;
 
 function isReturnRecipe(recipe: CatalogRecipe) {
-	return recipe.source.startsWith('pdp.');
+	return recipe.source.startsWith('detail.');
 }
 function isRichRole(role: CatalogSharedRole) {
 	return role === 'features' || role === 'primary-action';
@@ -291,7 +291,7 @@ function preserveStyle(element: HTMLElement, property: string, restore: (() => v
 	return reset;
 }
 
-/** Owns decorative DOM only. Semantic pages and product geometry keep their respective owners. */
+/** Owns decorative DOM only. Semantic pages and element geometry keep their respective owners. */
 export class CatalogTransition {
 	private readonly sequence = new CatalogTransitionSequence();
 	private captureState?: TransitionCapture;
@@ -320,7 +320,7 @@ export class CatalogTransition {
 			(Boolean(
 				resolveCatalogIntent(
 					new URL(
-						`/${encodeURIComponent(capture.identity.brandId)}/products/${encodeURIComponent(capture.identity.productId)}`,
+						`/${encodeURIComponent(capture.identity.brandId)}/elements/${encodeURIComponent(capture.identity.spatialElementId)}`,
 						location.href
 					),
 					destination,
@@ -328,7 +328,7 @@ export class CatalogTransition {
 				)
 			) ||
 				path ===
-					`/${encodeURIComponent(capture.identity.brandId)}/products/${encodeURIComponent(capture.identity.productId)}`);
+					`/${encodeURIComponent(capture.identity.brandId)}/elements/${encodeURIComponent(capture.identity.spatialElementId)}`);
 		if (!capture || !compatible) {
 			this.cancel();
 			return;
@@ -354,7 +354,7 @@ export class CatalogTransition {
 		) {
 			if (
 				!this.hooks.adoptGeometry?.({
-					productId: capture.identity.productId,
+					spatialElementId: capture.identity.spatialElementId,
 					kind: reverse ? 'content' : destination.hash ? 'dock' : 'hero'
 				})
 			) {
@@ -441,7 +441,7 @@ export class CatalogTransition {
 			const previousRecipe = capture.recipe;
 			capture.recipe = {
 				...previousRecipe,
-				source: this.root.querySelector('[data-catalog-list]') ? 'catalog.card' : 'pdp.summary'
+				source: this.root.querySelector('[data-catalog-list]') ? 'catalog.card' : 'detail.summary'
 			};
 			this.captureExitingContent(capture);
 			capture.recipe = previousRecipe;
@@ -483,7 +483,7 @@ export class CatalogTransition {
 			destination.origin === location.origin &&
 			!destination.hash &&
 			destination.pathname.replace(/\/$/, '') ===
-				`/${encodeURIComponent(capture.identity.brandId)}/products/${encodeURIComponent(capture.identity.productId)}`
+				`/${encodeURIComponent(capture.identity.brandId)}/elements/${encodeURIComponent(capture.identity.spatialElementId)}`
 		);
 	}
 
@@ -503,7 +503,7 @@ export class CatalogTransition {
 		const from = bounds.getBoundingClientRect();
 		const style = getComputedStyle(
 			role === 'summary-surface' && reverse ? bounds : source,
-			role === 'summary-surface' && source.closest('[data-carousel-product]') ? '::before' : null
+			role === 'summary-surface' && source.closest('[data-carousel-spatial-element]') ? '::before' : null
 		);
 		const element = document.createElement('div');
 		element.dataset.catalogSharedKey = catalogSharedKey(identity, role);
@@ -606,16 +606,16 @@ export class CatalogTransition {
 					: this.contentEndpoints(journey.brandId, false);
 				const source = candidates.find(
 					(p) =>
-						p.productId === retained.identity.productId && p.slot === retained.recipe.targetShared
+						p.spatialElementId === retained.identity.spatialElementId && p.slot === retained.recipe.targetShared
 				);
-				if (source && (!context.productId || context.productId === retained.identity.productId)) {
+				if (source && (!context.spatialElementId || context.spatialElementId === retained.identity.spatialElementId)) {
 					this.hooks.adoptContentParticipants?.(previousPairs);
 					retained.view = {
 						source,
 						sources: candidates.filter((p) => p.sectionId === source.sectionId),
 						context: {
 							...context,
-							productId: retained.identity.productId,
+							spatialElementId: retained.identity.spatialElementId,
 							targetSection: journey.section ?? context.targetSection
 						}
 					};
@@ -648,7 +648,7 @@ export class CatalogTransition {
 					: 'list';
 			const recipe = selectCatalogRecipe(
 				intent,
-				reverse ? (retained.recipe.targetShared === 'pdp.dock' ? 'dock' : 'hero') : content,
+				reverse ? (retained.recipe.targetShared === 'detail.dock' ? 'dock' : 'hero') : content,
 				reverse ? content : 'hero'
 			);
 			if (recipe) {
@@ -690,7 +690,7 @@ export class CatalogTransition {
 			inventory,
 			inventory,
 			{
-				productId: context.productId,
+				spatialElementId: context.spatialElementId,
 				sourceSection: context.sourceSection,
 				sourceOccurrence: context.sourceOccurrence
 			},
@@ -709,7 +709,7 @@ export class CatalogTransition {
 		if (view)
 			this.endpoints.prefer(
 				view.source.brandId,
-				view.source.productId,
+				view.source.spatialElementId,
 				view.source.occurrence!,
 				view.source.slot as 'catalog.card' | 'carousel.front' | 'carousel.neighbour'
 			);
@@ -755,7 +755,7 @@ export class CatalogTransition {
 		}
 		if (!recipe || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 		const identity = recipe.identity;
-		const dock = recipe.source === 'pdp.dock';
+		const dock = recipe.source === 'detail.dock';
 		const source = { ...identity, slot: recipe.source };
 		const card = this.endpoints.resolve({
 			...source,
@@ -765,7 +765,7 @@ export class CatalogTransition {
 			!card ||
 			!this.endpoints.resolve({
 				...source,
-				slot: reverse && !dock ? 'pdp.hero' : source.slot,
+				slot: reverse && !dock ? 'detail.hero' : source.slot,
 				role: 'geometry'
 			})
 		)
@@ -793,7 +793,7 @@ export class CatalogTransition {
 		try {
 			const endpoint = geometryEndpoint({
 				...source,
-				slot: reverse && !dock ? 'pdp.hero' : source.slot
+				slot: reverse && !dock ? 'detail.hero' : source.slot
 			});
 			if (
 				view
@@ -833,7 +833,7 @@ export class CatalogTransition {
 				capture.actors.push(actor);
 				host.appendChild(actor.element);
 			}
-			if (capture.view && !capture.view.context.productId) {
+			if (capture.view && !capture.view.context.spatialElementId) {
 				capture.view.alternates = new Map();
 				for (const endpoint of capture.view.sources.slice(1)) {
 					const actors: TransitionActor[] = [];
@@ -846,7 +846,7 @@ export class CatalogTransition {
 				}
 				this.endpoints.prefer(
 					identity.brandId,
-					identity.productId,
+					identity.spatialElementId,
 					capture.view.source.occurrence!,
 					capture.view.source.slot as 'catalog.card' | 'carousel.front' | 'carousel.neighbour'
 				);
@@ -927,7 +927,7 @@ export class CatalogTransition {
 			}
 			for (let index = 0; index < originals.length; index++) {
 				const original = originals[index];
-				if (original.matches('[data-catalog-card], [data-carousel-product]'))
+				if (original.matches('[data-catalog-card], [data-carousel-spatial-element]'))
 					(copies[index] as HTMLElement).dataset.catalogExitOccurrence = (
 						original as HTMLElement
 					).dataset.catalogOccurrence;
@@ -968,7 +968,7 @@ export class CatalogTransition {
 			this.root.appendChild(copy);
 			capture.exiting.push(copy);
 			const panel = capture.actors.find((actor) => actor.role === 'summary-surface');
-			if (panel && source.closest('[data-product-hero-panel-content]')) {
+			if (panel && source.closest('[data-spatial-element-hero-panel-content]')) {
 				(capture.panelContent ??= []).push({
 					element: copy,
 					rect,
@@ -1006,7 +1006,7 @@ export class CatalogTransition {
 		for (const copy of this.captureState?.exiting ?? []) {
 			copy.style.opacity = String(
 				copy.hasAttribute('data-catalog-shell-copy') &&
-					this.captureState?.recipe.targetGeometry !== 'pdp.dock'
+					this.captureState?.recipe.targetGeometry !== 'detail.dock'
 					? 1
 					: presentation.exitOpacity * Number(copy.dataset.catalogBaseOpacity ?? 1)
 			);
@@ -1037,7 +1037,7 @@ export class CatalogTransition {
 					this.cancel();
 					return;
 				}
-				if (pair.identity.productId !== capture.identity.productId) {
+				if (pair.identity.spatialElementId !== capture.identity.spatialElementId) {
 					const actors = capture.view.alternates?.get(pair.source.occurrence!);
 					if (!actors || !this.hooks.promoteContentParticipant?.(pair.source)) {
 						this.cancel();
@@ -1059,7 +1059,7 @@ export class CatalogTransition {
 				}
 				this.endpoints.prefer(
 					pair.target.brandId,
-					pair.target.productId,
+					pair.target.spatialElementId,
 					pair.target.occurrence!,
 					pair.target.slot as 'catalog.card' | 'carousel.front' | 'carousel.neighbour'
 				);
@@ -1078,10 +1078,10 @@ export class CatalogTransition {
 				capture.recipe = {
 					...capture.recipe,
 					id: slot.startsWith('carousel.')
-						? capture.recipe.source === 'pdp.dock'
+						? capture.recipe.source === 'detail.dock'
 							? 'dock-to-carousel'
 							: 'hero-to-carousel'
-						: capture.recipe.source === 'pdp.dock'
+						: capture.recipe.source === 'detail.dock'
 							? 'dock-to-list'
 							: 'hero-to-list',
 					targetGeometry: slot,
@@ -1112,14 +1112,14 @@ export class CatalogTransition {
 							: capture.recipe.source.startsWith('carousel.')
 								? 'carousel-to-hero'
 								: 'list-to-hero',
-					targetGeometry: composition === 'dock' ? 'pdp.dock' : 'pdp.hero',
-					targetShared: composition === 'dock' ? 'pdp.dock' : 'pdp.summary'
+					targetGeometry: composition === 'dock' ? 'detail.dock' : 'detail.hero',
+					targetShared: composition === 'dock' ? 'detail.dock' : 'detail.summary'
 				};
 				this.root.dataset.catalogRecipe = capture.recipe.id;
 			}
-			const page = this.root.querySelector<HTMLElement>('[data-product-detail-root]');
+			const page = this.root.querySelector<HTMLElement>('[data-spatial-element-root]');
 			if (
-				(!reverse && page?.dataset.productId !== capture.identity.productId) ||
+				(!reverse && page?.dataset.spatialElementId !== capture.identity.spatialElementId) ||
 				!this.endpoints.resolve({
 					...capture.identity,
 					slot: capture.recipe.targetGeometry,
@@ -1131,8 +1131,8 @@ export class CatalogTransition {
 			}
 			if (
 				this.hooks.prepareDestination?.({
-					productId: capture.identity.productId,
-					kind: reverse ? 'content' : capture.recipe.targetGeometry === 'pdp.dock' ? 'dock' : 'hero'
+					spatialElementId: capture.identity.spatialElementId,
+					kind: reverse ? 'content' : capture.recipe.targetGeometry === 'detail.dock' ? 'dock' : 'hero'
 				}) === false
 			) {
 				this.cancel();
@@ -1245,7 +1245,7 @@ export class CatalogTransition {
 						const paint = this.hooks.captureSurface?.(target);
 						const style = getComputedStyle(
 							target,
-							target.closest('[data-carousel-product]') ? '::before' : null
+							target.closest('[data-carousel-spatial-element]') ? '::before' : null
 						);
 						Object.assign(copy.style, {
 							background: paint?.background ?? style.backgroundColor,
@@ -1520,7 +1520,7 @@ export class CatalogTransition {
 		for (const [element, inert] of capture.inert) {
 			// Docking can change during route scroll restoration after this lock was acquired.
 			// Preserve the controller's current semantic state instead of reviving a stale lock snapshot.
-			const dock = element.matches('[data-product-sticky-header], [data-product-sticky-tabs]');
+			const dock = element.matches('[data-spatial-element-sticky-header], [data-spatial-element-sticky-tabs]');
 			element.inert = dock ? element.getAttribute('aria-hidden') === 'true' : inert;
 		}
 		if (

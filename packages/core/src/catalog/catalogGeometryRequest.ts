@@ -2,13 +2,13 @@ import type { CatalogEndpointAddress } from './CatalogEndpointRegistry.js';
 
 /** Concrete source, resolved by the existing recipe/registry before capture. */
 export type CatalogGeometryEndpoint = Omit<CatalogEndpointAddress, 'slot' | 'role'> & {
-	slot: Exclude<CatalogEndpointAddress['slot'], 'pdp.summary'>;
+	slot: Exclude<CatalogEndpointAddress['slot'], 'detail.summary'>;
 	role: 'geometry';
 };
 
 /** A retained capture can be retargeted before a concrete destination occurrence binds. */
 export interface CatalogGeometryDestination {
-	productId: string;
+	spatialElementId: string;
 	kind: 'content' | 'hero' | 'dock';
 }
 
@@ -18,6 +18,6 @@ export function geometryEndpoint(
 	return {
 		...endpoint,
 		role: 'geometry',
-		slot: endpoint.slot === 'pdp.summary' ? 'pdp.hero' : endpoint.slot
+		slot: endpoint.slot === 'detail.summary' ? 'detail.hero' : endpoint.slot
 	};
 }

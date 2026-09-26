@@ -174,7 +174,7 @@
 			// Removing tabindex while focused makes Chrome move focus back to body.
 			target.addEventListener('blur', restoreTabIndex, { once: true });
 		}
-		// Restoring focus is not a fresh request to speculate on the product just left.
+		// Restoring focus is not a fresh request to speculate on the spatialElement just left.
 		target.setAttribute('data-catalog-restoring-focus', '');
 		try {
 			target.focus({ preventScroll: true });
@@ -286,8 +286,8 @@
 						requestedSection = undefined;
 					}
 				}
-				if (navigation.type !== 'popstate' && requestedSection && viewContext.productId)
-					sections?.selectForView(requestedSection, viewContext.productId);
+				if (navigation.type !== 'popstate' && requestedSection && viewContext.spatialElementId)
+					sections?.selectForView(requestedSection, viewContext.spatialElementId);
 				await tick();
 				if (epoch !== generation || !owner.active) return;
 				owner.measureExtentNow();

@@ -15,7 +15,7 @@ export interface MinimapDepthBound {
  * Fits a compact clipping range around the panel and live minimap model.
  *
  * The regular panel camera spans thousands of world units. Reusing that range
- * for thumbnail geometry collapses closely layered product surfaces into the
+ * for thumbnail geometry collapses closely layered element surfaces into the
  * same depth values, so a small pointer tilt can make their fragments alternate.
  */
 export function getMinimapDepthRange(

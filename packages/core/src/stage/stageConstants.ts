@@ -49,7 +49,7 @@ export const PANEL_FOCUS_MAX_BLUR = 7;
 export const WHEEL_ZOOM_DAMPING = 8.5;
 /** Exponential damping used while scrolling a close-up back toward the overview. */
 export const ZOOM_RESET_DAMPING = 8.5;
-/** Duration range for an explicit return to the fitted product view. */
+/** Duration range for an explicit return to the fitted element view. */
 export const VIEW_RESET_MIN_DURATION = 0.3;
 export const VIEW_RESET_MAX_DURATION = 0.8;
 export const MINIMAP_DEFAULT_EXPANDED_HEIGHT = 230;
@@ -68,12 +68,12 @@ export const MINIMAP_DEFAULT_CONTEXT_OPACITY = 0;
 export const MINIMAP_DEFAULT_CONTEXT_COLOR = '#000000';
 export const MINIMAP_MODEL_RENDER_ORDER = 14;
 export const MINIMAP_DEFAULT_MODEL_SCALE = 1;
-/** Fraction of the minimap's short side reserved for the product bounding sphere. */
+/** Fraction of the minimap's short side reserved for the element bounding sphere. */
 export const MINIMAP_MODEL_FILL = 0.96;
 /** Suppresses only floating-point noise while keeping DOM focus on the camera timeline. */
 export const ZOOM_FOCUS_NOTIFY_EPSILON = 0.000001;
-/** Responsive product-fit margin that lets authored silhouettes fill the viewport. */
-export const PRODUCT_CAMERA_FIT_MARGIN = 1;
+/** Responsive spatial-element-fit margin that lets authored silhouettes fill the viewport. */
+export const SPATIAL_ELEMENT_CAMERA_FIT_MARGIN = 1;
 /** Existing default view expressed as orbit angles for backwards-compatible framing. */
 export const DEFAULT_CAMERA_AZIMUTH = THREE.MathUtils.radToDeg(Math.atan2(0.45, 1));
 export const DEFAULT_CAMERA_ELEVATION = THREE.MathUtils.radToDeg(
@@ -82,7 +82,7 @@ export const DEFAULT_CAMERA_ELEVATION = THREE.MathUtils.radToDeg(
 export const DEFAULT_HDR = '';
 export const DEFAULT_GLB = '';
 
-/** Default product hover outline, tuned to remain visible on light and dark scenes. */
+/** Default element hover outline, tuned to remain visible on light and dark scenes. */
 export const DEFAULT_INTERACTION_THEME = {
 	outlineColor: '#7db7ff',
 	outlineOpacity: 0.3,

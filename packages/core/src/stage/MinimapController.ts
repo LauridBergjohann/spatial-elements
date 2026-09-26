@@ -82,7 +82,7 @@ export interface MinimapPorts {
 	panelScene: THREE.Scene;
 	panel(index: number): StagePanelRuntime | undefined;
 	target(index: number): StagePanelTarget | undefined;
-	product(): {
+	spatialElement(): {
 		model?: THREE.Object3D;
 		low?: THREE.Object3D;
 		camera: StageCameraSettings;
@@ -127,19 +127,19 @@ export class MinimapController {
 		return this.scene;
 	}
 	private get model() {
-		return this.ports.product().model;
+		return this.ports.spatialElement().model;
 	}
 	private get lowModel() {
-		return this.ports.product().low;
+		return this.ports.spatialElement().low;
 	}
 	private get cameraSettings() {
-		return this.ports.product().camera;
+		return this.ports.spatialElement().camera;
 	}
 	private get initialCameraWorldQuaternion() {
-		return this.ports.product().restCamera;
+		return this.ports.spatialElement().restCamera;
 	}
 	private get initialModelWorldQuaternion() {
-		return this.ports.product().restModel;
+		return this.ports.spatialElement().restModel;
 	}
 	private get modelHover() {
 		return this.ports.frame().hovering;
@@ -150,16 +150,16 @@ export class MinimapController {
 	private get scrollActive() {
 		return this.ports.frame().scrolling;
 	}
-	private isProductMesh(mesh: Mesh) {
+	private isSpatialElementMesh(mesh: Mesh) {
 		return this.ports.includeMesh(mesh);
 	}
 	private hideExcludedMeshes(model: Object3D) {
 		model.traverse((child) => {
-			if (isMesh(child) && !this.isProductMesh(child)) child.visible = false;
+			if (isMesh(child) && !this.isSpatialElementMesh(child)) child.visible = false;
 		});
 	}
 	private getZoomReferenceTarget() {
-		return this.ports.product().referenceTarget;
+		return this.ports.spatialElement().referenceTarget;
 	}
 	private getPanelTransitionOpacity(panel?: StagePanelRuntime) {
 		return this.ports.transitionOpacity(panel);
@@ -192,7 +192,7 @@ export class MinimapController {
 		const resolved = this.resolveMinimapOptions(options, panel);
 		const modelRoot = (this.lowModel ?? this.model).clone(true);
 		this.hideExcludedMeshes(modelRoot);
-		const bounds = getMeshBounds(modelRoot, (mesh) => this.isProductMesh(mesh));
+		const bounds = getMeshBounds(modelRoot, (mesh) => this.isSpatialElementMesh(mesh));
 		const sphere = bounds.getBoundingSphere(new THREE.Sphere());
 		const modelCenter = new THREE.Group();
 		modelCenter.add(modelRoot);
@@ -320,9 +320,9 @@ export class MinimapController {
 
 		const displayRoot = (this.lowModel ?? this.model).clone(true);
 		this.hideExcludedMeshes(displayRoot);
-		const displayBounds = getMeshBounds(displayRoot, (mesh) => this.isProductMesh(mesh));
+		const displayBounds = getMeshBounds(displayRoot, (mesh) => this.isSpatialElementMesh(mesh));
 		const displaySphere = displayBounds.getBoundingSphere(new THREE.Sphere());
-		const modelBoundsPoints = getMeshBoundsPoints(displayRoot, (mesh) => this.isProductMesh(mesh));
+		const modelBoundsPoints = getMeshBoundsPoints(displayRoot, (mesh) => this.isSpatialElementMesh(mesh));
 		modelBoundsPoints.forEach((point) => point.sub(displaySphere.center));
 		const displayCenter = new THREE.Group();
 		displayCenter.add(displayRoot);
@@ -484,7 +484,7 @@ export class MinimapController {
 			model,
 			sourceRoot: modelRoot,
 			displayModel,
-			productRoot: displayRoot,
+			spatialElementRoot: displayRoot,
 			modelBoundsPoints,
 			restQuaternion,
 			dockedQuaternion,
@@ -604,7 +604,7 @@ export class MinimapController {
 		this.syncMinimapProjection(minimap, panelWidth, panelHeight);
 
 		const viewportRect =
-			focus > 0.001 && this.ports.product().hasControls
+			focus > 0.001 && this.ports.spatialElement().hasControls
 				? getMinimapViewportRect(
 						this.camera,
 						minimap.camera,
@@ -635,7 +635,7 @@ export class MinimapController {
 		this.updateMinimapOverlayCaptureState(minimap);
 	}
 	updateMinimapOverlayCaptureState(minimap: StageMinimapState) {
-		// Product pixels depend on the capture's own camera and model, not the
+		// SpatialElement pixels depend on the capture's own camera and model, not the
 		// main camera's moving viewport hole or the backdrop behind the panel.
 		this.recordMinimapCaptureState(minimap, false);
 		this.recordMinimapCaptureState(minimap, true);

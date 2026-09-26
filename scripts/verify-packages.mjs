@@ -15,6 +15,7 @@ for(const name of ['core','sveltekit']) {
  const [packed]=JSON.parse(npm(['pack','--ignore-scripts','--json','--pack-destination',directory],pkgDir));
  const files=packed.files.map(file=>file.path);
  for(const file of files) {
+  assert(!/Product[A-Z]|product[A-Z]|product-detail/.test(file),'Outdated artifact name: '+file);
   assert(/^(dist\/|package\.json$|README\.md$|LICENSE$)/.test(file),'Unexpected packed file: '+file);
   assert(!/\.(spec|test|e2e)\.|generated\/|\.(glb|hdr|png)$/.test(file),'Fixture in runtime package: '+file);
  }
@@ -35,7 +36,7 @@ writeFileSync(join(consumer,'package.json'),JSON.stringify({name:'spatial-elemen
 console.log('Installing independent consumer: '+consumer);
 console.log(npm(['install','--no-audit','--no-fund'],consumer));
 for(const name of ['core','sveltekit'])assert(realpathSync(join(consumer,'node_modules/@spatial-elements',name)).startsWith(resolve(consumer)),'Workspace link escaped isolation');
-writeFileSync(join(consumer,'check.mjs'),"import { StageExperience, ProductAssetManager } from '@spatial-elements/core';\nif(typeof StageExperience !== 'function' || typeof ProductAssetManager !== 'function') throw Error('Missing runtime exports');\nconsole.log('Core imports without a DOM/GPU');\n");
+writeFileSync(join(consumer,'check.mjs'),"import { StageExperience, SpatialElementAssetManager } from '@spatial-elements/core';\nif(typeof StageExperience !== 'function' || typeof SpatialElementAssetManager !== 'function') throw Error('Missing runtime exports');\nconsole.log('Core imports without a DOM/GPU');\n");
 console.log(execFileSync(process.execPath,['check.mjs'],{cwd:consumer,encoding:'utf8'}));
 for(const script of ['check','build']) {
  try {const output=npm(['run',script],consumer);writeFileSync(join(directory,'consumer-'+script+'.log'),output);console.log('Packed consumer '+script+' passed');}

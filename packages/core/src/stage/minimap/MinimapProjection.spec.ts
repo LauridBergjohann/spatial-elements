@@ -85,7 +85,7 @@ function projectTravelingTarget(projectionTarget: THREE.Vector3) {
 }
 
 describe('minimap projection', () => {
-	it('fits a tight depth range around the panel and live product bounds', () => {
+	it('fits a tight depth range around the panel and live spatialElement bounds', () => {
 		const range = getMinimapDepthRange(
 			[
 				{ distance: 1385, radius: 85 },
@@ -192,14 +192,14 @@ describe('minimap projection', () => {
 		expect(near?.height ?? 0).toBeLessThan(far?.height ?? 0);
 	});
 
-	it('uses the product plane when camera and view target dolly together', () => {
-		const productPlane = projectTravelingTarget(new THREE.Vector3());
+	it('uses the spatialElement plane when camera and view target dolly together', () => {
+		const spatialElementPlane = projectTravelingTarget(new THREE.Vector3());
 		const travelingViewTargetPlane = projectTravelingTarget(new THREE.Vector3(0, 0, -5));
 
-		expect(productPlane).not.toBeNull();
+		expect(spatialElementPlane).not.toBeNull();
 		expect(travelingViewTargetPlane).not.toBeNull();
-		expect(productPlane?.width ?? 0).toBeLessThan(travelingViewTargetPlane?.width ?? 0);
-		expect(productPlane?.height ?? 0).toBeLessThan(travelingViewTargetPlane?.height ?? 0);
+		expect(spatialElementPlane?.width ?? 0).toBeLessThan(travelingViewTargetPlane?.width ?? 0);
+		expect(spatialElementPlane?.height ?? 0).toBeLessThan(travelingViewTargetPlane?.height ?? 0);
 	});
 
 	it('preserves the stage viewport aspect ratio', () => {

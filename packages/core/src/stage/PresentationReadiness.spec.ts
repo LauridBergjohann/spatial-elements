@@ -1,11 +1,11 @@
 import { expect, test } from 'vitest';
-import type { ProductPreparation } from '../catalog/CatalogPreparation.js';
+import type { SpatialElementPreparation } from '../catalog/CatalogPreparation.js';
 import { PresentationReadiness } from './PresentationReadiness.js';
 import { ASYNC_REVEAL_DURATION } from '../catalog/transitionTiming.js';
 
 test('prepared HDR remains on the motion clock when High is late', () => {
 	const readiness = new PresentationReadiness();
-	const entry = { backgroundState: 'ready', highState: 'loading' } as ProductPreparation;
+	const entry = { backgroundState: 'ready', highState: 'loading' } as SpatialElementPreparation;
 	readiness.attach(entry);
 	expect(readiness.freeze(false, false)).toBe('asynchronous');
 	expect(readiness.backgroundPrepared).toBe(true);
@@ -18,7 +18,7 @@ test('prepared HDR remains on the motion clock when High is late', () => {
 
 test('late HDR starts its own reveal only when ready and completes without restarting', () => {
 	const readiness = new PresentationReadiness();
-	const entry = { backgroundState: 'loading', highState: 'ready' } as ProductPreparation;
+	const entry = { backgroundState: 'loading', highState: 'ready' } as SpatialElementPreparation;
 	readiness.attach(entry);
 	readiness.freeze(false, false);
 	expect(readiness.advance(500, false)).toBeUndefined();
@@ -33,7 +33,7 @@ test('late HDR starts its own reveal only when ready and completes without resta
 
 test('replacement resets readiness and a dock can defer optional resources', () => {
 	const readiness = new PresentationReadiness();
-	readiness.attach({ backgroundState: 'ready', highState: 'ready' } as ProductPreparation);
+	readiness.attach({ backgroundState: 'ready', highState: 'ready' } as SpatialElementPreparation);
 	expect(readiness.freeze(false, false)).toBe('synchronous');
 	readiness.markApplied();
 	readiness.reset(true);

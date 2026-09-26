@@ -4,6 +4,6 @@
  </script>
  <ContentPage page={{ title:'A study of form', eyebrow:'SPATIAL ELEMENTS', breadcrumbs:[{label:'Collection',href:'/demo/categories/list'}] }}>
 
- <ListSection section={{id:"products",title:"Collection"}} list={data.products} />
+ <ListSection section={{id:"elements",title:"Collection"}} list={data.spatialElements} />
 
  </ContentPage>

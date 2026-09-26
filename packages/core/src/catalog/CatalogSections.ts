@@ -1,9 +1,9 @@
-/** Section state belongs to one history entry, never to the product asset or URL globally. */
+/** Section state belongs to one history entry, never to the element asset or URL globally. */
 export interface CatalogSectionSnapshot {
 	selections: Record<string, string>;
 	origin?: {
 		brandId: string;
-		productId: string;
+		spatialElementId: string;
 		occurrence: string;
 		slot: 'catalog.card' | 'carousel.front';
 	};

@@ -8,7 +8,7 @@ export interface CachedStageRect {
 	width: number;
 }
 
-/** Page-local registrations only. Never owns product leases or a renderer. */
+/** Page-local registrations only. Never owns element leases or a renderer. */
 export class PageBindingController {
 	private epoch = 0;
 	private targets: StagePanelTarget[] = [];

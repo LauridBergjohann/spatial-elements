@@ -2,7 +2,7 @@
 
 A framework for spatial immersive content experiences.
 
-Present products, individual items or entire collections through immersive, interactive interfaces powered by three.js and WebGPU.
+Present elements, individual items or entire collections through immersive, interactive interfaces powered by three.js and WebGPU.
 
 ## Packages
 

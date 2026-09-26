@@ -1,9 +1,9 @@
 import { expect, test } from 'vitest';
 import { resolveStageProfile } from './resolveStageProfile.js';
-import type { ProductLodPair } from '../catalog/productLodPair.js';
+import type { SpatialElementLodPair } from '../catalog/spatialElementLodPair.js';
 
 test('a legacy GLB override cannot adopt the old canonical frame or LOD descriptors', () => {
-	const pair = { sourceUrl: '/original.glb' } as ProductLodPair;
+	const pair = { sourceUrl: '/original.glb' } as SpatialElementLodPair;
 	expect(resolveStageProfile({ glb: '/original.glb', lodPair: pair }).lodPair).toBe(pair);
 	const override = resolveStageProfile({ glb: '/override.glb', lodPair: pair });
 	expect(override.lodPair).toBeUndefined();

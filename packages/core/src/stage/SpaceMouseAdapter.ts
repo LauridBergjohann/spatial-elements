@@ -120,7 +120,7 @@ export class SpaceMouseAdapter {
 			adapter.connection = new module.default(adapter.client);
 			if (!adapter.connection.connect()) adapter.connection = undefined;
 		} catch {
-			// The product viewer remains fully mouse-operable without 3DxWare.
+			// The spatialElement viewer remains fully mouse-operable without 3DxWare.
 		}
 
 		return adapter;
@@ -225,7 +225,7 @@ export class SpaceMouseAdapter {
 		try {
 			void this.connection?.update3dcontroller(update).catch(() => undefined);
 		} catch {
-			// Connection loss is isolated from the product viewer.
+			// Connection loss is isolated from the spatialElement viewer.
 		}
 	}
 }

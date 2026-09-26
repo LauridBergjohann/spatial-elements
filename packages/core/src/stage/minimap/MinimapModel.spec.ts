@@ -8,7 +8,7 @@ import {
 } from './MinimapModel.js';
 
 describe('minimap model preparation', () => {
-	it('isolates material state from the main product model', () => {
+	it('isolates material state from the main spatialElement model', () => {
 		const first = new THREE.MeshBasicMaterial({
 			opacity: 0.65,
 			transparent: true,

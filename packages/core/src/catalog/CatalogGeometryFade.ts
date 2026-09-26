@@ -1,7 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { texture, uniform } from 'three/tsl';
 
-/** Fade the resolved image, never the individual opaque surfaces of a product. */
+/** Fade the resolved image, never the individual opaque surfaces of a element. */
 export class CatalogGeometryFade {
 	getRenderTargets() {
 		return this.capture ? [this.capture] : [];

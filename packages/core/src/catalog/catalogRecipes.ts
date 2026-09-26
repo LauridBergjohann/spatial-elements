@@ -13,7 +13,7 @@ export interface CatalogNavigationIntent {
 	target: 'hero' | 'list' | 'section' | 'restored';
 }
 
-/** Route intent does not decide whether a restored PDP is actually showing its hero or dock. */
+/** Route intent does not decide whether a restored DETAIL is actually showing its hero or dock. */
 export function resolveCatalogIntent(
 	from: URL,
 	to: URL,
@@ -21,14 +21,14 @@ export function resolveCatalogIntent(
 ): CatalogNavigationIntent | undefined {
 	if (from.origin !== to.origin) return;
 	const parse = (url: URL) => {
-		const match = /^\/([^/]+)\/(categories\/(?:list|carousel|mixed)|products\/([^/]+))\/?$/.exec(
+		const match = /^\/([^/]+)\/(categories\/(?:list|carousel|mixed)|(?:elements|products)\/([^/]+))\/?$/.exec(
 			url.pathname
 		);
 		if (!match) return;
 		try {
 			return {
 				brandId: decodeURIComponent(match[1]),
-				productId: match[3] ? decodeURIComponent(match[3]) : undefined
+				spatialElementId: match[3] ? decodeURIComponent(match[3]) : undefined
 			};
 		} catch {
 			return;
@@ -40,15 +40,15 @@ export function resolveCatalogIntent(
 		!source ||
 		!target ||
 		source.brandId !== target.brandId ||
-		Boolean(source.productId) === Boolean(target.productId)
+		Boolean(source.spatialElementId) === Boolean(target.spatialElementId)
 	)
 		return;
 	const history = type === 'popstate';
 	return {
-		identity: { brandId: target.brandId, productId: (source.productId ?? target.productId)! },
-		direction: target.productId ? 'list-to-detail' : 'detail-to-list',
+		identity: { brandId: target.brandId, spatialElementId: (source.spatialElementId ?? target.spatialElementId)! },
+		direction: target.spatialElementId ? 'list-to-detail' : 'detail-to-list',
 		history,
-		target: history ? 'restored' : to.hash ? 'section' : target.productId ? 'hero' : 'list'
+		target: history ? 'restored' : to.hash ? 'section' : target.spatialElementId ? 'hero' : 'list'
 	};
 }
 
@@ -86,8 +86,8 @@ export function selectCatalogRecipe(
 			id: target === 'dock' ? 'carousel-to-dock' : 'carousel-to-hero',
 			identity: intent.identity,
 			source: 'carousel.front',
-			targetGeometry: target === 'dock' ? 'pdp.dock' : 'pdp.hero',
-			targetShared: target === 'dock' ? 'pdp.dock' : 'pdp.summary',
+			targetGeometry: target === 'dock' ? 'detail.dock' : 'detail.hero',
+			targetShared: target === 'dock' ? 'detail.dock' : 'detail.summary',
 			roles: ['summary-surface', 'eyebrow', 'title', 'features', 'primary-action']
 		};
 	if (
@@ -98,7 +98,7 @@ export function selectCatalogRecipe(
 		return {
 			id: source === 'dock' ? 'dock-to-carousel' : 'hero-to-carousel',
 			identity: intent.identity,
-			source: source === 'dock' ? 'pdp.dock' : 'pdp.summary',
+			source: source === 'dock' ? 'detail.dock' : 'detail.summary',
 			targetGeometry: 'carousel.front',
 			targetShared: 'carousel.front',
 			roles: ['summary-surface', 'eyebrow', 'title', 'features', 'primary-action']
@@ -112,7 +112,7 @@ export function selectCatalogRecipe(
 		return {
 			id: source === 'dock' ? 'dock-to-list' : 'hero-to-list',
 			identity: intent.identity,
-			source: source === 'dock' ? 'pdp.dock' : 'pdp.summary',
+			source: source === 'dock' ? 'detail.dock' : 'detail.summary',
 			targetGeometry: 'catalog.card',
 			targetShared: 'catalog.card',
 			roles: ['summary-surface', 'eyebrow', 'title']
@@ -128,8 +128,8 @@ export function selectCatalogRecipe(
 		id: target === 'dock' ? 'list-to-dock' : 'list-to-hero',
 		identity: intent.identity,
 		source: 'catalog.card',
-		targetGeometry: target === 'dock' ? 'pdp.dock' : 'pdp.hero',
-		targetShared: target === 'dock' ? 'pdp.dock' : 'pdp.summary',
+		targetGeometry: target === 'dock' ? 'detail.dock' : 'detail.hero',
+		targetShared: target === 'dock' ? 'detail.dock' : 'detail.summary',
 		roles: ['summary-surface', 'eyebrow', 'title']
 	};
 }

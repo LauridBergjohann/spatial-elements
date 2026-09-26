@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ProductLodPair } from '@spatial-elements/core/catalog/productLodPair';
+	import type { SpatialElementLodPair } from '@spatial-elements/core/catalog/spatialElementLodPair';
 	import { onMount, setContext, tick } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import type {
@@ -19,10 +19,10 @@
 	import { CatalogTransition } from '@spatial-elements/core/catalog/CatalogTransition';
 	import { CATALOG_ENDPOINTS, CatalogEndpointRegistry } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
 	import '../catalog/catalogTransition.css';
-	import { createStageProductAssetManifest } from '@spatial-elements/core/catalog/productAssets';
+	import { createStageSpatialElementAssetManifest } from '@spatial-elements/core/catalog/spatialElementAssets';
 	import { CATALOG_ITEMS, CatalogItems } from '@spatial-elements/core/catalog/catalogItems';
 	import { CATALOG_SECTIONS, CatalogSections } from '@spatial-elements/core/catalog/CatalogSections';
-	import type { ProductOverviewItem } from '@spatial-elements/core/product-detail/types';
+	import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
 	import type { CatalogPage } from '@spatial-elements/core/catalog/catalogPage';
 	import type { OnNavigate } from '@sveltejs/kit';
 	import {
@@ -39,7 +39,7 @@
 		pageBackground?: string;
 		hdr?: string;
 		glb?: string;
-		lodPair?: ProductLodPair;
+		lodPair?: SpatialElementLodPair;
 		model?: StageModelSettings;
 		camera?: StageCameraSettings;
 		interactionTheme?: Partial<StageInteractionTheme>;
@@ -62,11 +62,11 @@
 		children
 	}: Props = $props();
 
-	let displayedProducts = $state<ProductOverviewItem[]>([]);
-	setContext(CATALOG_ITEMS, new CatalogItems((items) => (displayedProducts = items)));
+	let displayedSpatialElements = $state<SpatialListItem[]>([]);
+	setContext(CATALOG_ITEMS, new CatalogItems((items) => (displayedSpatialElements = items)));
 	setContext(CATALOG_SECTIONS, new CatalogSections());
-	const catalogProducts = $derived(
-		displayedProducts.length ? displayedProducts : (catalog?.products ?? [])
+	const catalogSpatialElements = $derived(
+		displayedSpatialElements.length ? displayedSpatialElements : (catalog?.spatialElements ?? [])
 	);
 	const registeredPanels: StagePanelRegistration[] = [];
 	const catalogEndpoints = new CatalogEndpointRegistry();
@@ -119,7 +119,7 @@
 	};
 
 	setContext<StageContext>(STAGE_CONTEXT_KEY, {
-		prefetchProduct: (config) => experience?.prefetchProduct(config),
+		prefetchSpatialElement: (config) => experience?.prefetchSpatialElement(config),
 		registerPanel(panel) {
 			registeredPanels.push(panel);
 
@@ -147,7 +147,7 @@
 		virtualScroll.start();
 		transition = new CatalogTransition(stage, catalogEndpoints, {
 			captureContentGeometry: (endpoint, secondary) =>
-				experience?.captureContentGeometry(endpoint.productId, secondary) ?? false,
+				experience?.captureContentGeometry(endpoint.spatialElementId, secondary) ?? false,
 			prepareContentParticipants: (pairs) => experience?.prepareContentParticipants(pairs),
 			adoptContentParticipants: (pairs) => experience?.adoptContentParticipants(pairs),
 			promoteContentParticipant: (source) => experience?.promoteContentParticipant(source) ?? false,
@@ -193,10 +193,10 @@
 				dracoDecoderPath,
 				catalog: Boolean(catalog),
 				heroIsPresented: () =>
-					!catalog?.productId ||
+					!catalog?.spatialElementId ||
 					catalogEndpoints.getComposition({
 						brandId: catalog.brandId,
-						productId: catalog.productId
+						spatialElementId: catalog.spatialElementId
 					}) !== 'dock',
 				background,
 				pageBackground,
@@ -241,8 +241,8 @@
 			isFallback = false;
 			showStatus = false;
 			stageState = 'enhanced';
-			registerProducts();
-			if (catalog) void instance.setCatalogProducts(catalog.brandId, catalogProducts);
+			registerSpatialElements();
+			if (catalog) void instance.setCatalogSpatialElements(catalog.brandId, catalogSpatialElements);
 
 			if (isStageVisualTestMode()) {
 				visualTestController = createVisualTestController();
@@ -283,23 +283,23 @@
 	});
 
 	$effect(() => {
-		const products = catalogProducts;
+		const spatialElements = catalogSpatialElements;
 		if (experience && catalog && isEnhanced) {
-			registerProducts();
-			void experience.setCatalogProducts(catalog.brandId, products);
+			registerSpatialElements();
+			void experience.setCatalogSpatialElements(catalog.brandId, spatialElements);
 		}
 	});
-	function registerProducts() {
+	function registerSpatialElements() {
 		if (!catalog || !experience) return;
-		for (const product of catalogProducts) {
-			if (product.stage)
-				experience.products.setManifest(
-					createStageProductAssetManifest(catalog.brandId, product.id, product.stage)
+		for (const spatialElement of catalogSpatialElements) {
+			if (spatialElement.stage)
+				experience.spatialElements.setManifest(
+					createStageSpatialElementAssetManifest(catalog.brandId, spatialElement.id, spatialElement.stage)
 				);
 		}
-		if (catalog.productId && catalog.productStage) {
-			experience.products.setManifest(
-				createStageProductAssetManifest(catalog.brandId, catalog.productId, catalog.productStage)
+		if (catalog.spatialElementId && catalog.spatialElementStage) {
+			experience.spatialElements.setManifest(
+				createStageSpatialElementAssetManifest(catalog.brandId, catalog.spatialElementId, catalog.spatialElementStage)
 			);
 		}
 	}
@@ -357,23 +357,23 @@
 				await pending;
 				if (destroyed || generation !== navigationGeneration) return;
 			}
-			registerProducts();
+			registerSpatialElements();
 			const catalogReady = catalog
-				? experience.setCatalogProducts(catalog.brandId, catalogProducts)
+				? experience.setCatalogSpatialElements(catalog.brandId, catalogSpatialElements)
 				: undefined;
 			await experience.updatePage({
 				catalog: Boolean(catalog),
 				heroIsPresented: () =>
-					!catalog?.productId ||
+					!catalog?.spatialElementId ||
 					catalogEndpoints.getComposition({
 						brandId: catalog.brandId,
-						productId: catalog.productId
+						spatialElementId: catalog.spatialElementId
 					}) !== 'dock',
 				deferDetailPreparation: Boolean(
-					catalog?.productId &&
+					catalog?.spatialElementId &&
 					catalogEndpoints.getComposition({
 						brandId: catalog.brandId,
-						productId: catalog.productId
+						spatialElementId: catalog.spatialElementId
 					}) === 'dock'
 				),
 				background,
@@ -668,7 +668,7 @@
 	}
 
 	.stage :global(.stage-webgpu-foreground) {
-		/* Keep rendered minimaps above the fixed product header (z-index 20). */
+		/* Keep rendered minimaps above the fixed element header (z-index 20). */
 		z-index: 21;
 		pointer-events: none;
 	}

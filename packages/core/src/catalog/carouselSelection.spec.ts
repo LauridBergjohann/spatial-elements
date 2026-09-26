@@ -10,7 +10,7 @@ it('handles empty, removed and single-item selections without synthetic duplicat
 	expect(() => resolveCarouselSelection(['a', 'a'])).toThrow('unique');
 });
 
-it('keeps two real products apart on an ordered arc', () => {
+it('keeps two real spatialElements apart on an ordered arc', () => {
 	const front = carouselPose(0, 0, 2);
 	const back = carouselPose(1, 0, 2);
 	expect(front.x).not.toBeCloseTo(back.x);

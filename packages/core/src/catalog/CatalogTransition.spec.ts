@@ -8,49 +8,49 @@ import {
 const url = (path: string) => new URL(path, 'https://catalog.example');
 
 describe('catalog transition eligibility and identity', () => {
-	it('selects a product across filtered lists without encoding layer or LOD in its identity', () => {
+	it('selects a spatialElement across filtered lists without encoding layer or LOD in its identity', () => {
 		const identity = resolveCatalogTransition(
 			url('/demo/categories/list?sort=title'),
-			url('/demo/products/column'),
+			url('/demo/elements/column'),
 			'link'
 		);
-		expect(identity).toEqual({ brandId: 'demo', productId: 'column' });
+		expect(identity).toEqual({ brandId: 'demo', spatialElementId: 'column' });
 		expect(catalogSharedKey(identity!, 'title')).toBe('["demo","column","title"]');
-		expect(catalogSharedKey({ brandId: 'a:b', productId: 'c' }, 'title')).not.toBe(
-			catalogSharedKey({ brandId: 'a', productId: 'b:c' }, 'title')
+		expect(catalogSharedKey({ brandId: 'a:b', spatialElementId: 'c' }, 'title')).not.toBe(
+			catalogSharedKey({ brandId: 'a', spatialElementId: 'b:c' }, 'title')
 		);
 	});
 
 	it('leaves other edges, history, direct section targets and cross-brand visits to normal navigation', () => {
 		const source = url('/demo/categories/list');
 		expect(
-			resolveCatalogTransition(source, url('/demo/products/column#features'), 'link')
+			resolveCatalogTransition(source, url('/demo/elements/column#features'), 'link')
 		).toBeUndefined();
 		expect(
-			resolveCatalogTransition(source, url('/demo/products/column'), 'popstate')
+			resolveCatalogTransition(source, url('/demo/elements/column'), 'popstate')
 		).toBeUndefined();
-		expect(resolveCatalogTransition(source, url('/tools/products/column'), 'link')).toBeUndefined();
+		expect(resolveCatalogTransition(source, url('/tools/elements/column'), 'link')).toBeUndefined();
 		expect(
 			resolveCatalogTransition(
 				source,
-				new URL('https://other.example/demo/products/column'),
+				new URL('https://other.example/demo/elements/column'),
 				'link'
 			)
 		).toBeUndefined();
 		expect(
 			resolveCatalogTransition(
 				url('/demo/categories/carousel'),
-				url('/demo/products/column'),
+				url('/demo/elements/column'),
 				'link'
 			)
 		).toBeUndefined();
-		expect(resolveCatalogTransition(url('/demo/products/column'), source, 'link')).toBeUndefined();
-		expect(resolveCatalogTransition(source, url('/demo/products/%zz'), 'link')).toBeUndefined();
+		expect(resolveCatalogTransition(url('/demo/elements/column'), source, 'link')).toBeUndefined();
+		expect(resolveCatalogTransition(source, url('/demo/elements/%zz'), 'link')).toBeUndefined();
 	});
 });
 
 describe('catalog transition ownership', () => {
-	it('does not let an old completion settle or start a newer captured product transition', () => {
+	it('does not let an old completion settle or start a newer captured spatialElement transition', () => {
 		const sequence = new CatalogTransitionSequence();
 		const old = sequence.begin();
 		expect(sequence.start(old)).toBe(true);

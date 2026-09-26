@@ -11,7 +11,7 @@ export interface MinimapMaterialOpacityState {
 	depthWrite: boolean;
 }
 
-/** Clones minimap materials so opacity changes cannot mutate the main product. */
+/** Clones minimap materials so opacity changes cannot mutate the main element. */
 export function prepareMinimapModel(model: Object3D) {
 	const materials: MinimapMaterialOpacityState[] = [];
 	model.traverse((child) => {

@@ -4,5 +4,6 @@ for(const pkg of ['core','sveltekit'])for(const file of readdirSync(new URL('../
  assert(!/\$lib\/|\/routes\//.test(text),'Application dependency: '+file);
  if(pkg==='core')assert(!/(?:from\s*|import\s*\()['"](?:svelte|@sveltejs|\$app|\$env)/.test(text),'Framework dependency: '+file);
  assert(!/wurm|wera|rolex|asv101|hks-g4/i.test(text),'Private brand data: '+file);
+ assert(!/Product[A-Z]|product[A-Z]|PRODUCT_|product-detail/.test(text),'Outdated element API name: '+file);
 }
 console.log('Framework and application boundaries passed');

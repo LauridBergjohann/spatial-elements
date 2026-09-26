@@ -14,7 +14,7 @@ interface Entry {
 	promise: Promise<PreparedEnvironment>;
 }
 
-/** Renderer-owned HDR cache. References pin environments used by live or speculative products. */
+/** Renderer-owned HDR cache. References pin environments used by live or speculative elements. */
 export class EnvironmentCache {
 	getRenderTargets() {
 		return [...this.entries.values()].flatMap((entry) => (entry.value ? [entry.value.target] : []));

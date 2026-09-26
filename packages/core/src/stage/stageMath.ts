@@ -18,7 +18,7 @@ import {
 	VIEW_RESET_MIN_DURATION
 } from './stageConstants.js';
 
-/** Resolves declarative orbit angles to a normalized direction from product to camera. */
+/** Resolves declarative orbit angles to a normalized direction from element to camera. */
 export function getCameraOrbitDirection(azimuth?: number, elevation?: number) {
 	const safeAzimuth = Number.isFinite(azimuth) ? (azimuth as number) : DEFAULT_CAMERA_AZIMUTH;
 	const safeElevation = THREE.MathUtils.clamp(
@@ -37,7 +37,7 @@ export function getCameraOrbitDirection(azimuth?: number, elevation?: number) {
 	).normalize();
 }
 
-/** Resolves orbit angles to the world-space orientation of a camera looking at the product. */
+/** Resolves orbit angles to the world-space orientation of a camera looking at the element. */
 export function getCameraOrbitQuaternion(azimuth?: number, elevation?: number) {
 	const direction = getCameraOrbitDirection(azimuth, elevation);
 	const lookAtMatrix = new THREE.Matrix4().lookAt(
@@ -183,7 +183,7 @@ export function getStageDomFocusOpacity(uiFocus: number) {
 /**
  * Defines the camera-distance interval used by the shared close-up focus effect.
  * Starting near the fitted view gives panels and page content enough travel to
- * clear progressively before the product fills the viewport.
+ * clear progressively before the element fills the viewport.
  */
 export function getZoomFocusDistanceRange(maxDistance: number, modelRadius: number) {
 	const restDistance = maxDistance * 0.84;
@@ -212,7 +212,7 @@ export function getEffectiveCameraDistance(
 	);
 }
 
-/** Maps dolly and perspective-FOV zoom to the same normalized product focus. */
+/** Maps dolly and perspective-FOV zoom to the same normalized element focus. */
 export function getCameraZoomFocus(
 	distance: number,
 	currentFov: number,
@@ -231,15 +231,15 @@ export function getCameraZoomFocus(
 }
 
 /**
- * Chooses the distance that best represents the product's visible magnification.
+ * Chooses the distance that best represents the element's visible magnification.
  * OrbitControls reduces its target distance, while 3DxWare may dolly camera and
- * target together and only reduce the distance to the product itself.
+ * target together and only reduce the distance to the element itself.
  */
 export function getCameraZoomReferenceDistance(
 	viewTargetDistance: number,
-	productCenterDistance: number
+	spatialElementCenterDistance: number
 ) {
-	return Math.min(viewTargetDistance, productCenterDistance);
+	return Math.min(viewTargetDistance, spatialElementCenterDistance);
 }
 
 /** Returns the perspective camera distance that maps viewport pixels to world units. */
@@ -364,7 +364,7 @@ export function setPanelLocalPerspectiveMatrix(
  * @param viewDirection - Direction from the target toward the camera.
  * @param camera - Camera whose FOV and aspect define the frame.
  * @param margin - Multiplicative padding around the fitted object.
- * @param viewportScale - Fraction of the browser viewport available to the product.
+ * @param viewportScale - Fraction of the browser viewport available to the element.
  */
 export function getCameraFitDistance(
 	bounds: THREE.Box3,

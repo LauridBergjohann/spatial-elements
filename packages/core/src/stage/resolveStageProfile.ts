@@ -1,4 +1,4 @@
-import { resolveProductLodPair } from '../catalog/productLodPair.js';
+import { resolveSpatialElementLodPair } from '../catalog/spatialElementLodPair.js';
 import { DEFAULT_BACKGROUND, DEFAULT_GLB, DEFAULT_HDR } from './stageConstants.js';
 import type { StageExperienceOptions } from './stageTypes.js';
 
@@ -8,7 +8,7 @@ export function resolveStageProfile(
 	previous: { glb: string; hdr: string } = { glb: DEFAULT_GLB, hdr: DEFAULT_HDR }
 ) {
 	const glb = options.glb ?? previous.glb;
-	const lodPair = resolveProductLodPair(glb, options.lodPair);
+	const lodPair = resolveSpatialElementLodPair(glb, options.lodPair);
 	const model = Object.freeze({
 		...options.model,
 		...(options.model?.rotation && { rotation: Object.freeze({ ...options.model.rotation }) }),

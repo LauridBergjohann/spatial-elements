@@ -1,4 +1,4 @@
-import type { ProductLodPair } from '../catalog/productLodPair.js';
+import type { SpatialElementLodPair } from '../catalog/spatialElementLodPair.js';
 import type { ColorRepresentation, Mesh } from 'three';
 import type { LiquidGlassPanelOptions } from './LiquidGlassPanel.js';
 
@@ -22,15 +22,15 @@ export interface StageModelRotation {
 	z?: number;
 }
 
-/** Controls the fitted camera's initial orbit around the product. */
+/** Controls the fitted camera's initial orbit around the element. */
 export interface StageCameraSettings {
 	/** Horizontal viewing angle in degrees. Positive values view from the right. */
 	azimuth?: number;
 	/** Vertical viewing angle in degrees. Positive values view from above. */
 	elevation?: number;
-	/** Empty space in CSS pixels reserved on every side of the automatic product fit. */
+	/** Empty space in CSS pixels reserved on every side of the automatic element fit. */
 	fitPadding?: number;
-	/** Presentation multiplier applied after fitting. Values above one make the product larger. */
+	/** Presentation multiplier applied after fitting. Values above one make the element larger. */
 	fitScale?: number;
 }
 
@@ -52,13 +52,13 @@ export interface StagePhysicalMaterialSettings {
 
 export type StageMaterialSettings = StagePhysicalMaterialSettings;
 
-/** Controls the authored model pose and which meshes represent the actual product. */
+/** Controls the authored model pose and which meshes represent the actual element. */
 export interface StageModelSettings {
 	/** Optional rotation applied on top of the GLB scene's authored root rotation. */
 	rotation?: StageModelRotation;
 	/**
 	 * Exact, case-sensitive mesh names that remain visible on the main stage but do
-	 * not participate in product bounds, picking, outlining, or product minimaps.
+	 * not participate in element bounds, picking, outlining, or element minimaps.
 	 */
 	excludeMeshes?: readonly string[];
 	/** Physical material replacements keyed by exact, case-sensitive mesh name. */
@@ -75,7 +75,7 @@ export interface StageMinimapDockedView {
 	elevation?: number;
 }
 
-/** Configures the optional product minimap rendered on top of a panel. */
+/** Configures the optional element minimap rendered on top of a panel. */
 export interface StageMinimapOptions {
 	/** Panel height, in CSS pixels, at maximum stage zoom. */
 	expandedHeight?: number;
@@ -87,7 +87,7 @@ export interface StageMinimapOptions {
 	hoverModelScale?: number;
 	/** Hover multiplier used once the minimap is expanded by camera zoom. */
 	expandedHoverModelScale?: number;
-	/** Optional product-specific presentation used while the minimap is docked. */
+	/** Optional spatial-element-specific presentation used while the minimap is docked. */
 	dockedView?: StageMinimapDockedView;
 	/** Color drawn over the blurred area outside the viewport cutout. */
 	overlayColor?: ColorRepresentation;
@@ -131,7 +131,7 @@ export interface StagePanelTarget {
 	getMinimapModelTop?: () => number | undefined;
 }
 
-/** Identifies the DOM region used to frame the main product camera. */
+/** Identifies the DOM region used to frame the main element camera. */
 export interface StageViewportTarget {
 	element: HTMLElement;
 }
@@ -168,7 +168,7 @@ export interface StageExperienceOptions {
 	pageBackground?: string;
 	/** Reveals semantic content when the device can no longer render. */
 	onDeviceLost?: () => void;
-	lodPair?: ProductLodPair;
+	lodPair?: SpatialElementLodPair;
 	/** Catalog pages register their own presentations, including an intentionally empty list. */
 	catalog?: boolean;
 	/** A restored dock uses Low only; optional detail preparation resumes when the hero returns. */
@@ -188,7 +188,7 @@ export interface StageExperienceOptions {
 	onZoomFocusChange?: (state: StageZoomFocusState) => void;
 }
 
-/** Visual and filtering options for product hover interaction. */
+/** Visual and filtering options for element hover interaction. */
 export interface StageInteractionTheme {
 	outlineColor: ColorRepresentation;
 	outlineOpacity: number;

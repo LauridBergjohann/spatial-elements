@@ -1,4 +1,4 @@
-import { getRefinementSize } from './ProductRefinement.js';
+import { getRefinementSize } from './SpatialElementRefinement.js';
 import { getMinimapMeasurementMode } from './minimapMeasurement.js';
 import { parseRenderMeasurement } from './renderMeasurement.js';
 import type { PreparedHigh } from '../catalog/CatalogPreparation.js';
@@ -9,7 +9,7 @@ import type { StagePanelRuntime } from './StagePanelRuntime.js';
 
 import * as THREE from 'three/webgpu';
 
-import { CatalogProductLayer } from '../catalog/CatalogProductLayer.js';
+import { CatalogSpatialElementLayer } from '../catalog/CatalogSpatialElementLayer.js';
 import { SpatialGeometryCapture } from '../catalog/SpatialGeometryCapture.js';
 
 import { gaussianBlur } from 'three/addons/tsl/display/GaussianBlurNode.js';
@@ -69,7 +69,7 @@ export interface StageRenderPorts {
 	panelRuntimes(): readonly StagePanelRuntime[];
 	minimaps(): ReadonlyMap<number, StageMinimapState>;
 	minimapScene(): THREE.Scene;
-	catalogLayer(): Pick<CatalogProductLayer, 'hasCarousel' | 'renderRear' | 'draw'> | undefined;
+	catalogLayer(): Pick<CatalogSpatialElementLayer, 'hasCarousel' | 'renderRear' | 'draw'> | undefined;
 	spatialCapture(): SpatialGeometryCapture | undefined;
 	exitingMinimaps(): readonly { capture: SpatialGeometryCapture; minimap: StageMinimapState }[];
 	contentSecondaries(): readonly { capture: SpatialGeometryCapture }[];
@@ -109,7 +109,7 @@ export class StageRenderPipeline {
 	private readonly measuredBackdropSeeds = new WeakMap<THREE.RenderTarget, string>();
 	private readonly preparedZoomViews = new WeakSet<StageMinimapState>();
 	private disposed = false;
-	/** Retain the last PDP background while its geometry is owned by a transition. */
+	/** Retain the last DETAIL background while its geometry is owned by a transition. */
 	freezeBackground() {
 		const targets = this._activeRenderTargets;
 		if (!targets) return false;
@@ -396,7 +396,7 @@ export class StageRenderPipeline {
 			const edgeGradient = edgeNeighbor.max.sub(center).max(0);
 			const core = edgeGradient.mul(this.ports.interactionTheme().outlineOpacity);
 			// Average neighbouring coverage, rather than dilating a solid band. Keep the
-			// halo outside the product so it cannot be mistaken for painted geometry.
+			// halo outside the spatialElement so it cannot be mistaken for painted geometry.
 			const glowNear = glowNearNeighbor.average
 				.mul(outside)
 				.mul(this.ports.interactionTheme().outlineGlow * 0.6);
@@ -666,7 +666,7 @@ export class StageRenderPipeline {
 		return capture.target.texture;
 	}
 	/** Prepare hidden close-up effects during page binding, never during camera motion.
-	 * Captures stay invalid: the first visible frame must still sample the live product.
+	 * Captures stay invalid: the first visible frame must still sample the live element.
 	 * Only compile the foreground scene, so preparation cannot paint an overlay on screen.
 	 */
 	async prepareZoomEffects() {
@@ -794,7 +794,7 @@ export class StageRenderPipeline {
 		return withVisibility(
 			[
 				...this.ports.panelRuntimes().map((panel) => panel.group),
-				...[...this.ports.minimaps().values()].flatMap((view) => [view.layer, view.productRoot])
+				...[...this.ports.minimaps().values()].flatMap((view) => [view.layer, view.spatialElementRoot])
 			],
 			() => {
 				if (!this.ports.minimaps().size) return;
@@ -838,15 +838,15 @@ export class StageRenderPipeline {
 						active.panelCaptureValid = true;
 					}
 					this.ports.renderer.clearDepth();
-					const productVisible = active.productRoot.visible;
+					const spatialElementVisible = active.spatialElementRoot.visible;
 					if (
 						this.ports.frame().catalogDockTarget &&
 						this.ports.frame().catalogHandoff &&
 						!this.ports.frame().catalogMotionComplete
 					)
-						active.productRoot.visible = false;
+						active.spatialElementRoot.visible = false;
 					this.ports.renderer.render(this.ports.minimapScene(), active.screenCamera);
-					active.productRoot.visible = productVisible;
+					active.spatialElementRoot.visible = spatialElementVisible;
 					this._minimapSceneRenderPasses += 1;
 				});
 

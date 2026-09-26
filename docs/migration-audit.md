@@ -9,7 +9,7 @@ Reviewed 2026-09-25 against the tracked lab tree and both extracted repositories
 | Original plans, six-phase closeout, device reports and profiling evidence | Byte-preserved archive with SHA-256 inventory in private examples |
 | Brand comparison images and raw measurements | Preserved in that private archive; not suitable for the public demo |
 | Brand routes, assets and production/diagnostic scripts | Already private; all tracked legacy scripts accounted for |
-| Browser regression suites | All tracked lab browser-test files are already present privately, including brand authoring, PDP hover feedback and runtime ownership |
+| Browser regression suites | All tracked lab browser-test files are already present privately, including brand authoring, detail page hover feedback and runtime ownership |
 | Untracked local files and temporary traces | Left untouched; not verified migration inputs |
 | Git history | Not imported into the clean repositories; old repository remains a historical reference |
 

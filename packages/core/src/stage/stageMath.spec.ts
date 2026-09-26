@@ -80,7 +80,7 @@ describe('stage math', () => {
 		expect(getMinimapHoverScale(1.3, 1)).toBe(1.3);
 	});
 
-	it('preserves the existing product camera direction as the default orbit', () => {
+	it('preserves the existing spatialElement camera direction as the default orbit', () => {
 		const direction = getCameraOrbitDirection();
 		const previousDefault = new THREE.Vector3(0.45, 0.28, 1).normalize();
 

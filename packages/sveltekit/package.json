@@ -34,7 +34,7 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "build": "svelte-package -i src -o dist",
+    "build": "node ../../scripts/clean-package.mjs sveltekit && svelte-package -i src -o dist",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "dev": "svelte-package -i src -o dist --watch",
     "prepack": "npm run build"

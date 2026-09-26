@@ -40,7 +40,7 @@ export interface StagePanelMinimapOptions {
 	hoverModelScale?: number;
 	/** Hover multiplier used once the minimap is expanded by camera zoom. */
 	expandedHoverModelScale?: number;
-	/** Optional product-specific presentation used while the minimap is docked. */
+	/** Optional spatial-element-specific presentation used while the minimap is docked. */
 	dockedView?: StageMinimapDockedView;
 	overlayColor?: string | number;
 	overlayOpacity?: number;
@@ -75,9 +75,9 @@ export interface StageViewportRegistration {
 }
 
 export interface StageContext {
-	prefetchProduct?(stage: import('../product-detail/types.js').ProductStageConfig): void;
+	prefetchSpatialElement?(stage: import('../spatial-element/types.js').SpatialStageConfig): void;
 	registerPanel(panel: StagePanelRegistration): () => void;
 	registerViewport(viewport: StageViewportRegistration): () => void;
-	/** Restores the product camera to its initial fitted pose. */
+	/** Restores the element camera to its initial fitted pose. */
 	resetView(): void;
 }

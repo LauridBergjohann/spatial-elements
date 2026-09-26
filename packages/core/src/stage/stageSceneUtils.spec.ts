@@ -56,25 +56,25 @@ describe('stage scene utilities', () => {
 		expect(detached).toEqual(new Set([sourceMaterial]));
 	});
 
-	it('fits selected product meshes without hiding or detaching excluded decoration', () => {
+	it('fits selected spatialElement meshes without hiding or detaching excluded decoration', () => {
 		const model = new THREE.Group();
-		const product = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 6), new THREE.MeshBasicMaterial());
+		const spatialElement = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 6), new THREE.MeshBasicMaterial());
 		const floor = new THREE.Mesh(new THREE.BoxGeometry(30, 0.1, 30), new THREE.MeshBasicMaterial());
-		product.name = 'product';
+		spatialElement.name = 'spatialElement';
 		floor.name = 'floor';
 		floor.position.y = -4;
-		model.add(product, floor);
+		model.add(spatialElement, floor);
 
-		const isProduct = (mesh: THREE.Mesh) => mesh.name !== 'floor';
-		centerAndScale(model, isProduct);
+		const isSpatialElement = (mesh: THREE.Mesh) => mesh.name !== 'floor';
+		centerAndScale(model, isSpatialElement);
 
-		const productBounds = getMeshBounds(model, isProduct);
-		const productSize = productBounds.getSize(new THREE.Vector3());
-		const productCenter = productBounds.getCenter(new THREE.Vector3());
+		const spatialElementBounds = getMeshBounds(model, isSpatialElement);
+		const spatialElementSize = spatialElementBounds.getSize(new THREE.Vector3());
+		const spatialElementCenter = spatialElementBounds.getCenter(new THREE.Vector3());
 		const completeSize = getMeshBounds(model).getSize(new THREE.Vector3());
 
-		expect(productCenter.length()).toBeCloseTo(0);
-		expect(Math.max(productSize.x, productSize.y, productSize.z)).toBeCloseTo(3);
+		expect(spatialElementCenter.length()).toBeCloseTo(0);
+		expect(Math.max(spatialElementSize.x, spatialElementSize.y, spatialElementSize.z)).toBeCloseTo(3);
 		expect(Math.max(completeSize.x, completeSize.y, completeSize.z)).toBeGreaterThan(3);
 		expect(floor.visible).toBe(true);
 		expect(floor.parent).toBe(model);

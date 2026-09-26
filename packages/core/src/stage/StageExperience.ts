@@ -7,9 +7,9 @@ import { StageRenderPipeline } from './StageRenderPipeline.js';
 import { PanelPresentationController } from './PanelPresentationController.js';
 import { MinimapController } from './MinimapController.js';
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
-import { ProductInteractionController } from './ProductInteractionController.js';
+import { SpatialElementInteractionController } from './SpatialElementInteractionController.js';
 
-import { ProductPresentationController } from './ProductPresentationController.js';
+import { SpatialElementPresentationController } from './SpatialElementPresentationController.js';
 import { PageBindingController, type CachedStageRect } from './PageBindingController.js';
 import { resolveStageProfile } from './resolveStageProfile.js';
 import type {
@@ -21,15 +21,15 @@ import { PreparationGate } from '../catalog/PreparationGate.js';
 import { EnvironmentCache, type PreparedEnvironment } from '../catalog/EnvironmentCache.js';
 import { CatalogPreparation, type PreparedHigh } from '../catalog/CatalogPreparation.js';
 import { type TransitionMode } from '../catalog/transitionTiming.js';
-import type { ProductLodPair } from '../catalog/productLodPair.js';
+import type { SpatialElementLodPair } from '../catalog/spatialElementLodPair.js';
 import * as THREE from 'three/webgpu';
-import { ProductAssetManager } from '../catalog/assets/ProductAssetManager.js';
-import { ProductEntityStore } from '../catalog/productAssets.js';
-import { CatalogProductLayer } from '../catalog/CatalogProductLayer.js';
+import { SpatialElementAssetManager } from '../catalog/assets/SpatialElementAssetManager.js';
+import { SpatialElementEntityStore } from '../catalog/spatialElementAssets.js';
+import { CatalogSpatialElementLayer } from '../catalog/CatalogSpatialElementLayer.js';
 import {
 	SpatialGeometryCapture,
-	type ProductProjection,
-	captureProductProjection
+	type SpatialElementProjection,
+	captureSpatialElementProjection
 } from '../catalog/SpatialGeometryCapture.js';
 import { captureCssSurface } from '../catalog/catalogSurfaceCapture.js';
 import {
@@ -38,7 +38,7 @@ import {
 	RESTING_CATALOG_PRESENTATION,
 	type CatalogTransitionPresentation
 } from '../catalog/catalogPresentation.js';
-import type { ProductOverviewItem, ProductStageConfig } from '../product-detail/types.js';
+import type { SpatialListItem, SpatialStageConfig } from '../spatial-element/types.js';
 import { CSS3DRenderer } from 'three/addons/renderers/CSS3DRenderer.js';
 
 import { uniform } from 'three/tsl';
@@ -55,7 +55,7 @@ import {
 	DEFAULT_PANELS,
 	PANEL_CAMERA_FOV,
 	PANEL_CONTENT_Z,
-	PRODUCT_CAMERA_FIT_MARGIN,
+	SPATIAL_ELEMENT_CAMERA_FIT_MARGIN,
 	ZOOM_FOCUS_NOTIFY_EPSILON
 } from './stageConstants.js';
 import { getStagePositionFromRect, isViewportRectVisible } from './stageDom.js';
@@ -115,8 +115,8 @@ const VIEWPORT_CULL_MARGIN = 96;
 /** Shared spatial state for both WebGPU glass and DOM-backed panel surfaces. */
 
 /**
- * Coordinates the WebGPU product scene, glass panels, accessible CSS3D content,
- * pointer interaction, camera controls, and optional product minimaps.
+ * Coordinates the WebGPU element scene, glass panels, accessible CSS3D content,
+ * pointer interaction, camera controls, and optional element minimaps.
  *
  * Rendering helpers and deterministic calculations live in focused modules; this
  * class remains the public lifecycle facade consumed by the Svelte component.
@@ -124,12 +124,12 @@ const VIEWPORT_CULL_MARGIN = 96;
 export class StageExperience {
 	captureGeometry(source: CatalogGeometryEndpoint) {
 		switch (source.slot) {
-			case 'pdp.dock':
-				return this.captureDockPresentation(source.productId);
-			case 'pdp.hero':
-				return this.captureReturnGeometry(source.productId);
+			case 'detail.dock':
+				return this.captureDockPresentation(source.spatialElementId);
+			case 'detail.hero':
+				return this.captureReturnGeometry(source.spatialElementId);
 			default:
-				return this.captureCatalogGeometry(source.productId);
+				return this.captureCatalogGeometry(source.spatialElementId);
 		}
 	}
 	prepareGeometryDestination(destination: CatalogGeometryDestination) {
@@ -143,7 +143,7 @@ export class StageExperience {
 	private pageBackground = '#ffffff';
 	private hdr: string;
 	private glb: string;
-	private lodPair?: ProductLodPair;
+	private lodPair?: SpatialElementLodPair;
 	private get lowModel() {
 		return this.presentation.lowModel;
 	}
@@ -178,11 +178,11 @@ export class StageExperience {
 	}
 	private readonly panels: PanelPresentationController;
 	private readonly minimapController: MinimapController;
-	private readonly interaction: ProductInteractionController;
+	private readonly interaction: SpatialElementInteractionController;
 	private readonly spaceMouseEnabled: boolean;
 	private fallbackPanelOptions: LiquidGlassPanelOptions[];
 	private readonly catalog: boolean;
-	private catalogLayer?: CatalogProductLayer;
+	private catalogLayer?: CatalogSpatialElementLayer;
 	private catalogHandoff = false;
 	private catalogMotionComplete = false;
 	private catalogLayerAnimating = false;
@@ -191,8 +191,8 @@ export class StageExperience {
 	private readonly preparationGate = new PreparationGate();
 	/** Optional High build/warm must not compete with required Low destination binding. */
 	private readonly detailPreparationGate = new PreparationGate();
-	readonly assets = new ProductAssetManager({ preparationGate: this.preparationGate });
-	private readonly presentation = new ProductPresentationController(this.assets, () =>
+	readonly assets = new SpatialElementAssetManager({ preparationGate: this.preparationGate });
+	private readonly presentation = new SpatialElementPresentationController(this.assets, () =>
 		this.requestRender()
 	);
 	private environments!: EnvironmentCache;
@@ -218,13 +218,13 @@ export class StageExperience {
 		ringOpacity: number;
 	}[] = [];
 	private adoptedForward = false;
-	private returnProduct?: string;
+	private returnSpatialElement?: string;
 	private contentSecondaries: {
 		source: CatalogParticipantEndpoint;
 		capture: SpatialGeometryCapture;
-		target?: ProductProjection;
+		target?: SpatialElementProjection;
 	}[] = [];
-	private returnProjection?: ReturnType<CatalogProductLayer['getDestinationProjection']>;
+	private returnProjection?: ReturnType<CatalogSpatialElementLayer['getDestinationProjection']>;
 	private returnProgress = 0;
 	private outgoingBackground = false;
 	private catalogDockTarget = false;
@@ -242,7 +242,7 @@ export class StageExperience {
 		return this.presentation.readiness.backgroundApplied;
 	}
 
-	readonly products = new ProductEntityStore();
+	readonly spatialElements = new SpatialElementEntityStore();
 	private get assetInstance() {
 		return this.presentation.assetInstance;
 	}
@@ -414,7 +414,7 @@ export class StageExperience {
 		options: StageExperienceOptions = {}
 	) {
 		if (options.dracoDecoderPath) this.assets.setDracoDecoderPath(options.dracoDecoderPath);
-		this.interaction = new ProductInteractionController({
+		this.interaction = new SpatialElementInteractionController({
 			camera: this.camera,
 			canvas: this.backgroundCanvas,
 			container,
@@ -443,7 +443,7 @@ export class StageExperience {
 			panelScene: this.panelScene,
 			panel: (index) => this.panelRuntimes[index],
 			target: (index) => this.panelTargets[index],
-			product: () => ({
+			spatialElement: () => ({
 				model: this.model,
 				low: this.lowModel,
 				camera: this.cameraSettings,
@@ -462,7 +462,7 @@ export class StageExperience {
 			blurTexture: (options) => this.pipeline.getPanelBlurTexture(options),
 			transitionOpacity: (panel) => this.getPanelTransitionOpacity(panel),
 			pixelRatio: () => this.pipeline.getFullPixelRatio(),
-			includeMesh: (mesh) => this.isProductMesh(mesh)
+			includeMesh: (mesh) => this.isSpatialElementMesh(mesh)
 		});
 		this.panels = new PanelPresentationController({
 			camera: this.panelCamera,
@@ -678,7 +678,7 @@ export class StageExperience {
 		this.releaseModel();
 		this.catalogLayer?.dispose();
 		this.assets.dispose();
-		this.products.clear();
+		this.spatialElements.clear();
 		this.preparationGate.setPaused(false);
 		this.preparation?.dispose();
 		this.detailPreparationGate.setPaused(false);
@@ -693,7 +693,7 @@ export class StageExperience {
 		this.nativePanelLayer.remove();
 	}
 
-	/** Page DOM is a replaceable binding, not the owner of the device or product cache. */
+	/** Page DOM is a replaceable binding, not the owner of the device or element cache. */
 	releasePage() {
 		this.pageBinding.invalidate();
 		this.pageModelReady = false;
@@ -733,7 +733,7 @@ export class StageExperience {
 
 	capturePanelSurface(element: HTMLElement) {
 		if (element.hasAttribute('data-catalog-dock-surface')) {
-			const header = element.closest<HTMLElement>('[data-product-sticky-header]');
+			const header = element.closest<HTMLElement>('[data-spatial-element-sticky-header]');
 			if (header) return captureCssSurface(element, header, '::before');
 		}
 		const panel = this.panelTargets.find(
@@ -872,23 +872,23 @@ export class StageExperience {
 		await this.pipeline.prepareZoomEffects();
 		if (this.disposed || !this.pageBinding.isCurrent(generation)) return;
 		// A submitted Low/panel frame is not yet GPU-ready. Drain the required binding work
-		// before the navigation bridge starts motion, especially on the first cold PDP.
+		// before the navigation bridge starts motion, especially on the first cold DETAIL.
 		const device = (this.renderer.backend as unknown as { device?: GPUDevice }).device;
 		await device?.queue.onSubmittedWorkDone();
 		if (this.disposed || generation !== this.pageBinding.token) return;
 		if (this.spaceMouseEnabled && this.viewportTarget) void this.initializeSpaceMouse();
 	}
 
-	setCatalogProducts(brandId: string, items: ProductOverviewItem[]) {
-		this.catalogLayer ??= new CatalogProductLayer(this.assets, () => this.requestRender());
+	setCatalogSpatialElements(brandId: string, items: SpatialListItem[]) {
+		this.catalogLayer ??= new CatalogSpatialElementLayer(this.assets, () => this.requestRender());
 		this.catalogLayer.setPageBackground(this.pageBackground);
 		this.catalogLayer.setExitOpacity(
-			this.returnProduct
+			this.returnSpatialElement
 				? this.catalogPresentation.enterOpacity
 				: this.catalogPresentation.exitOpacity,
 			this.catalogPresentation.active
 		);
-		return this.catalogLayer.setProducts(brandId, items);
+		return this.catalogLayer.setSpatialElements(brandId, items);
 	}
 
 	setCatalogTransitionPresentation(state: CatalogTransitionPresentation) {
@@ -913,7 +913,7 @@ export class StageExperience {
 			}
 		}
 		this.catalogLayer?.setExitOpacity(
-			this.returnProduct
+			this.returnSpatialElement
 				? this.catalogPresentation.enterOpacity
 				: this.catalogPresentation.exitOpacity,
 			this.catalogPresentation.active
@@ -1016,20 +1016,20 @@ export class StageExperience {
 		return getCatalogTransitionOpacity(this.catalogPresentation, panel?.transitionGroup);
 	}
 
-	private captureCatalogGeometry(productId: string) {
+	private captureCatalogGeometry(spatialElementId: string) {
 		this.catalogMotionComplete = false;
-		this.catalogHandoff = this.catalogLayer?.capture(productId) ?? false;
+		this.catalogHandoff = this.catalogLayer?.capture(spatialElementId) ?? false;
 		if (this.catalogHandoff) this.detailPreparationGate.setPaused(true);
 		return this.catalogHandoff;
 	}
 
 	/** Content-to-content motion owns only the prepared Low representation. */
-	captureContentGeometry(productId: string, secondary: CatalogParticipantEndpoint[] = []) {
-		if (!this.captureCatalogGeometry(productId)) return false;
-		if (!this.adoptCatalogPresentation({ productId, kind: 'content' })) return false;
+	captureContentGeometry(spatialElementId: string, secondary: CatalogParticipantEndpoint[] = []) {
+		if (!this.captureCatalogGeometry(spatialElementId)) return false;
+		if (!this.adoptCatalogPresentation({ spatialElementId, kind: 'content' })) return false;
 		this.outgoingBackground = false;
 		for (const source of secondary.slice(0, 4)) {
-			if (!this.catalogLayer?.capture(source.productId, source.occurrence)) continue;
+			if (!this.catalogLayer?.capture(source.spatialElementId, source.occurrence)) continue;
 			const moving = this.catalogLayer.detachHandoff();
 			if (!moving) continue;
 			const environment = this.environments.pinTexture(moving.environment);
@@ -1055,12 +1055,12 @@ export class StageExperience {
 		for (const entry of this.contentSecondaries) {
 			const pair = pairs.find(
 				(p) =>
-					p.source.productId === entry.source.productId &&
+					p.source.spatialElementId === entry.source.spatialElementId &&
 					p.source.occurrence === entry.source.occurrence
 			);
 			const target =
 				pair &&
-				this.catalogLayer?.getDestinationProjection(pair.target.productId, pair.target.occurrence);
+				this.catalogLayer?.getDestinationProjection(pair.target.spatialElementId, pair.target.occurrence);
 			if (!target || !pair) {
 				entry.capture.dispose();
 				continue;
@@ -1083,7 +1083,7 @@ export class StageExperience {
 		this.contentSecondaries = this.contentSecondaries.filter((entry) => {
 			const pair = pairs.find(
 				(pair) =>
-					pair.source.productId === entry.source.productId &&
+					pair.source.spatialElementId === entry.source.spatialElementId &&
 					pair.source.occurrence === entry.source.occurrence
 			);
 			if (!pair) {
@@ -1101,14 +1101,14 @@ export class StageExperience {
 	promoteContentParticipant(source: CatalogParticipantEndpoint) {
 		const entry = this.contentSecondaries.find(
 			(entry) =>
-				entry.source.productId === source.productId && entry.source.occurrence === source.occurrence
+				entry.source.spatialElementId === source.spatialElementId && entry.source.occurrence === source.occurrence
 		);
 		if (!entry) return false;
 		this.spatialCapture?.dispose();
 		this.spatialCapture = entry.capture;
 		this.contentSecondaries = this.contentSecondaries.filter((candidate) => candidate !== entry);
-		this.returnProduct = source.productId;
-		this.catalogLayer?.setDestinationProduct(source.productId);
+		this.returnSpatialElement = source.spatialElementId;
+		this.catalogLayer?.setDestinationSpatialElement(source.spatialElementId);
 		return true;
 	}
 
@@ -1116,9 +1116,9 @@ export class StageExperience {
 		return this.spatialCapture?.getPoint() ?? this.catalogLayer?.getHandoffPoint() ?? null;
 	}
 
-	/** Lease the last submitted product frame before another page binding can release it. */
+	/** Lease the last submitted element frame before another page binding can release it. */
 	adoptCatalogPresentation(destination: CatalogGeometryDestination) {
-		const { productId } = destination;
+		const { spatialElementId } = destination;
 		const reverse = destination.kind === 'content';
 		if (!this.spatialCapture) {
 			const moving = this.catalogLayer?.detachHandoff();
@@ -1159,16 +1159,16 @@ export class StageExperience {
 				});
 			} else if (
 				!(this.catalogDockTarget
-					? this.captureDockPresentation(productId)
+					? this.captureDockPresentation(spatialElementId)
 					: this.captureHeroPresentation())
 			)
 				return false;
 		}
 		this.spatialCapture!.freeze();
 		this.returnProjection = undefined;
-		this.returnProduct = reverse ? productId : undefined;
+		this.returnSpatialElement = reverse ? spatialElementId : undefined;
 		this.adoptedForward = !reverse;
-		this.catalogLayer?.setDestinationProduct(reverse ? productId : undefined);
+		this.catalogLayer?.setDestinationSpatialElement(reverse ? spatialElementId : undefined);
 		this.catalogMotionComplete = false;
 		this.catalogHandoff = true;
 		this.detailPreparationGate.setPaused(true);
@@ -1190,7 +1190,7 @@ export class StageExperience {
 		const blend = this.returnBlend ?? this.catalogBlend ?? this.refinement;
 		if (highWeight > 0 && !blend) return false;
 		const model = this.model;
-		const projection = captureProductProjection(model, this.camera);
+		const projection = captureSpatialElementProjection(model, this.camera);
 		const transfer = this.presentation.takeHero()!;
 		const highPose = transfer.high?.pose;
 		const environment = this.environments.pinTexture(this.scene.environment);
@@ -1208,7 +1208,7 @@ export class StageExperience {
 			release: () => {
 				environment?.release();
 				if (!this.disposed && this.pageBinding.token === generation && !this.model) {
-					// Cancellation before page release restores ownership to the still-live PDP.
+					// Cancellation before page release restores ownership to the still-live DETAIL.
 					model.matrixAutoUpdate = true;
 					this.presentation.restoreHero(transfer);
 					this.scene.add(model);
@@ -1228,7 +1228,7 @@ export class StageExperience {
 			? {
 					...this.spatialCapture.getSnapshot(),
 					secondary: this.contentSecondaries.map((entry) => ({
-						productId: entry.source.productId,
+						spatialElementId: entry.source.spatialElementId,
 						occurrence: entry.source.occurrence,
 						...entry.capture.getSnapshot()
 					}))
@@ -1236,12 +1236,12 @@ export class StageExperience {
 			: null;
 	}
 
-	private captureReturnGeometry(productId: string) {
+	private captureReturnGeometry(spatialElementId: string) {
 		if (!this.captureHeroPresentation()) return false;
 		this.captureExitingMinimaps();
-		this.returnProduct = productId;
+		this.returnSpatialElement = spatialElementId;
 		this.returnProgress = 0;
-		this.catalogLayer?.setDestinationProduct(productId);
+		this.catalogLayer?.setDestinationSpatialElement(spatialElementId);
 		// Freeze the existing background canvas without the independently retained hero.
 		if (this.pipeline.freezeBackground()) this.outgoingBackground = true;
 		return true;
@@ -1261,12 +1261,12 @@ export class StageExperience {
 		)
 			return;
 		return {
-			...captureProductProjection(minimap.productRoot, minimap.screenCamera),
+			...captureSpatialElementProjection(minimap.spatialElementRoot, minimap.screenCamera),
 			environmentIntensity: this.minimapScene.environmentIntensity
 		};
 	}
 
-	private captureDockPresentation(productId: string) {
+	private captureDockPresentation(spatialElementId: string) {
 		if (this.spatialCapture || !this.assetInstance) return false;
 		const candidates = [...this.minimaps.values()].filter((minimap) => minimap.viewportVisible);
 		if (candidates.length !== 1) return false;
@@ -1274,7 +1274,7 @@ export class StageExperience {
 		const projection = this.getDockProjection();
 		if (!projection || minimap.displayOpacity < 0.999 || minimap.overlayProgress > 0.001)
 			return false;
-		const model = minimap.productRoot;
+		const model = minimap.spatialElementRoot;
 		const parent = model.parent!;
 		const low = this.assetInstance;
 		const generation = this.pageBinding.token;
@@ -1299,9 +1299,9 @@ export class StageExperience {
 				}
 			}
 		});
-		this.returnProduct = productId;
+		this.returnSpatialElement = spatialElementId;
 		this.returnProgress = 0;
-		this.catalogLayer?.setDestinationProduct(productId);
+		this.catalogLayer?.setDestinationSpatialElement(spatialElementId);
 		this.requestRender();
 		return true;
 	}
@@ -1313,7 +1313,7 @@ export class StageExperience {
 				? this.getDockProjection()
 				: this.model
 					? {
-							...captureProductProjection(this.model, this.camera),
+							...captureSpatialElementProjection(this.model, this.camera),
 							environmentIntensity: this.scene.environmentIntensity
 						}
 					: undefined;
@@ -1323,11 +1323,11 @@ export class StageExperience {
 	}
 
 	private prepareReturnDestination() {
-		if (!this.returnProduct || !this.spatialCapture) return false;
+		if (!this.returnSpatialElement || !this.spatialCapture) return false;
 		// Lay out the suppressed matching actor before freezing its destination projection.
 		this.catalogLayer?.setExitOpacity(1, true);
 		this.flushCatalogFrame();
-		this.returnProjection = this.catalogLayer?.getDestinationProjection(this.returnProduct);
+		this.returnProjection = this.catalogLayer?.getDestinationProjection(this.returnSpatialElement);
 		this.catalogLayer?.setExitOpacity(this.catalogPresentation.enterOpacity, true);
 		return Boolean(this.returnProjection);
 	}
@@ -1342,7 +1342,7 @@ export class StageExperience {
 			return;
 		}
 		for (const minimap of this.minimaps.values()) {
-			const model = minimap.productRoot;
+			const model = minimap.spatialElementRoot;
 			if (
 				!minimap.viewportVisible ||
 				minimap.displayOpacity <= 0 ||
@@ -1351,7 +1351,7 @@ export class StageExperience {
 				continue;
 			const parent = model.parent;
 			if (!parent) continue;
-			const projection = captureProductProjection(model, minimap.screenCamera);
+			const projection = captureSpatialElementProjection(model, minimap.screenCamera);
 			const ring = minimap.overlayRing.clone();
 			ring.geometry = minimap.overlayRing.geometry.clone();
 			ring.material = minimap.overlayRing.material.clone();
@@ -1431,7 +1431,7 @@ export class StageExperience {
 			: undefined;
 		this.catalogLayer?.setHandoffTarget({
 			camera: dock?.screenCamera ?? this.camera,
-			model: dock?.productRoot ?? this.model,
+			model: dock?.spatialElementRoot ?? this.model,
 			environmentIntensity: dock
 				? this.minimapScene.environmentIntensity
 				: this.scene.environmentIntensity,
@@ -1469,10 +1469,10 @@ export class StageExperience {
 	finishCatalogGeometry() {
 		this.releaseSpatialCapture();
 		this.adoptedForward = false;
-		this.returnProduct = undefined;
+		this.returnSpatialElement = undefined;
 		this.catalogDockTarget = false;
 		this.returnProjection = undefined;
-		this.catalogLayer?.setDestinationProduct();
+		this.catalogLayer?.setDestinationSpatialElement();
 		this.outgoingBackground = false;
 		this.backgroundCanvas.style.removeProperty('opacity');
 		this.preparationGate.setPaused(false);
@@ -1578,7 +1578,7 @@ export class StageExperience {
 		}
 
 		const normalizedZoom = THREE.MathUtils.clamp(zoom, 0, 1);
-		const productDistance = THREE.MathUtils.lerp(
+		const spatialElementDistance = THREE.MathUtils.lerp(
 			this.controls.maxDistance,
 			this.controls.minDistance,
 			normalizedZoom
@@ -1586,7 +1586,7 @@ export class StageExperience {
 		const nextPosition = this.camera.position
 			.clone()
 			.sub(this.initialControlsTarget)
-			.setLength(productDistance)
+			.setLength(spatialElementDistance)
 			.add(this.initialControlsTarget);
 		const translation = nextPosition.clone().sub(this.camera.position);
 		const nextTarget = this.controls.target.clone().add(translation);
@@ -1652,7 +1652,7 @@ export class StageExperience {
 		};
 	}
 
-	/** Returns the main product's projected bounds for query-gated layout regressions. */
+	/** Returns the main element's projected bounds for query-gated layout regressions. */
 	getVisualTestModelRect() {
 		if (!this.model || this.modelBounds.isEmpty()) return null;
 
@@ -1671,7 +1671,7 @@ export class StageExperience {
 		};
 	}
 
-	/** Returns the projected product bounds used by the dock's header-top anchor. */
+	/** Returns the projected element bounds used by the dock's header-top anchor. */
 	getVisualTestMinimapModelRect() {
 		const minimap = this.minimaps.values().next().value as StageMinimapState | undefined;
 		return minimap ? this.getProjectedMinimapModelRect(minimap) : null;
@@ -1723,7 +1723,7 @@ export class StageExperience {
 
 	/** Returns render-target lifecycle counters for query-gated performance tests. */
 	getVisualTestRenderTargetStats() {
-		// Captured minimaps retain only their product/ring, not disposed page-local blur targets.
+		// Captured minimaps retain only their spatialElement/ring, not disposed page-local blur targets.
 		const views = [...this.minimaps.values()];
 		const inventory = describeRenderTargets({
 			pipeline: this.pipeline.getRenderTargets(),
@@ -1896,7 +1896,7 @@ export class StageExperience {
 		this.presentation.readiness.markApplied();
 	}
 
-	prefetchProduct(stage: ProductStageConfig) {
+	prefetchSpatialElement(stage: SpatialStageConfig) {
 		if (!this.disposed && this.preparation && !this.catalogHandoff) this.preparation.prepare(stage);
 	}
 
@@ -2060,9 +2060,9 @@ export class StageExperience {
 
 	private fitModelCamera() {
 		if (!this.model) return;
-		const bounds = getMeshBounds(this.model, (mesh) => this.isProductMesh(mesh));
+		const bounds = getMeshBounds(this.model, (mesh) => this.isSpatialElementMesh(mesh));
 		if (bounds.isEmpty()) {
-			throw new Error('The stage model does not contain any product meshes after exclusions');
+			throw new Error('The stage model does not contain any spatialElement meshes after exclusions');
 		}
 		if (this.referenceBounds) bounds.copy(this.referenceBounds);
 		this.modelBounds.copy(bounds);
@@ -2076,7 +2076,7 @@ export class StageExperience {
 		this.updateViewportFrame();
 		this.camera.aspect = window.innerWidth / window.innerHeight;
 		this.camera.updateProjectionMatrix();
-		const fitDistance = this.getProductCameraFitDistance(bounds, orbitDirection);
+		const fitDistance = this.getSpatialElementCameraFitDistance(bounds, orbitDirection);
 		const maxDistance = Math.max(fitDistance, radius * 0.6);
 		this.rememberFittedViewportMetrics();
 
@@ -2113,13 +2113,13 @@ export class StageExperience {
 		return this.interaction.setSpaceMouseMoving(moving);
 	}
 
-	private isProductMesh(mesh: Mesh) {
+	private isSpatialElementMesh(mesh: Mesh) {
 		return !this.excludedMeshNames.has(mesh.name);
 	}
 
 	private hideExcludedMeshes(model: Object3D) {
 		model.traverse((child) => {
-			if (isMesh(child) && !this.isProductMesh(child)) child.visible = false;
+			if (isMesh(child) && !this.isSpatialElementMesh(child)) child.visible = false;
 		});
 	}
 
@@ -2128,7 +2128,7 @@ export class StageExperience {
 	}
 
 	private isInteractionMesh(mesh: Mesh) {
-		if (!this.isProductMesh(mesh)) return false;
+		if (!this.isSpatialElementMesh(mesh)) return false;
 		if (this.interactionTheme.excludeMesh?.(mesh)) return false;
 		if (mesh.userData.stagePick === false || mesh.userData.stageOutline === false) return false;
 
@@ -2475,14 +2475,14 @@ export class StageExperience {
 		};
 	}
 
-	private getProductCameraFitDistance(bounds: THREE.Box3, viewDirection: THREE.Vector3) {
+	private getSpatialElementCameraFitDistance(bounds: THREE.Box3, viewDirection: THREE.Vector3) {
 		const fitScale = THREE.MathUtils.clamp(this.cameraSettings.fitScale ?? 1, 0.2, 4);
 		return (
 			getCameraFitDistance(
 				bounds,
 				viewDirection,
 				this.camera,
-				PRODUCT_CAMERA_FIT_MARGIN,
+				SPATIAL_ELEMENT_CAMERA_FIT_MARGIN,
 				this.getViewportScale()
 			) / fitScale
 		);
@@ -2525,7 +2525,7 @@ export class StageExperience {
 			.normalize();
 		const currentDirection = this.camera.position.clone().sub(this.controls.target).normalize();
 		const maxDistance = Math.max(
-			this.getProductCameraFitDistance(this.modelBounds, initialDirection),
+			this.getSpatialElementCameraFitDistance(this.modelBounds, initialDirection),
 			this.modelRadius * 0.6
 		);
 		const focusRange = getZoomFocusDistanceRange(maxDistance, this.modelRadius);
@@ -2713,7 +2713,7 @@ export class StageExperience {
 			this.catalogLayer?.update(this.renderer, this.scene.environment, now) ?? false;
 		this.updateControlsAvailability();
 		if (listOnly) {
-			// The list has no hero camera. Never inherit close-up hiding/offsets from the PDP.
+			// The list has no hero camera. Never inherit close-up hiding/offsets from the DETAIL.
 			this.panelFocus = 0;
 			this.panelUiFocus = 0;
 			this.minimapFocus = 0;

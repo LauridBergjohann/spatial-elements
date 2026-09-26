@@ -7,13 +7,13 @@ import {
 
 const address: CatalogEndpointAddress = {
 	brandId: 'demo',
-	productId: 'column',
-	slot: 'pdp.summary',
+	spatialElementId: 'column',
+	slot: 'detail.summary',
 	role: 'title'
 };
 const element = () => ({ isConnected: true }) as HTMLElement;
 
-it('follows the recorded carousel occurrence from front to neighbour without choosing another product', () => {
+it('follows the recorded carousel occurrence from front to neighbour without choosing another spatialElement', () => {
 	const registry = new CatalogEndpointRegistry();
 	registry.restoreOrigin({ ...address, occurrence: 'ring/asv', slot: 'carousel.front' });
 	registry.register(
@@ -86,20 +86,20 @@ it('reads current controller composition and rejects ambiguous or released owner
 });
 
 describe('explicit catalog endpoint registrations', () => {
-	it('keeps brand, product, role and slot independent instead of selecting a DOM order', () => {
+	it('keeps brand, spatialElement, role and slot independent instead of selecting a DOM order', () => {
 		const registry = new CatalogEndpointRegistry();
 		const variants: CatalogEndpointAddress[] = [
 			address,
 			{ ...address, brandId: 'tools' },
-			{ ...address, productId: 'orb' },
+			{ ...address, spatialElementId: 'orb' },
 			{ ...address, role: 'eyebrow' },
-			{ ...address, slot: 'pdp.dock' }
+			{ ...address, slot: 'detail.dock' }
 		];
 		const nodes = variants.map(() => element());
 		variants.forEach((key, i) => registry.register(key, nodes[i]));
 		variants.forEach((key, i) => expect(registry.resolve(key)).toBe(nodes[i]));
-		expect(catalogEndpointKey({ ...address, brandId: 'a:b', productId: 'c' })).not.toBe(
-			catalogEndpointKey({ ...address, brandId: 'a', productId: 'b:c' })
+		expect(catalogEndpointKey({ ...address, brandId: 'a:b', spatialElementId: 'c' })).not.toBe(
+			catalogEndpointKey({ ...address, brandId: 'a', spatialElementId: 'b:c' })
 		);
 	});
 
@@ -141,10 +141,10 @@ describe('explicit catalog endpoint registrations', () => {
 		const supplied = { ...address };
 		const node = element();
 		registry.register(supplied, node);
-		supplied.productId = 'changed';
+		supplied.spatialElementId = 'changed';
 		expect(registry.resolve(address)).toBe(node);
 		expect(other.resolve(address)).toBeUndefined();
-		expect(registry.getSnapshot().entries[0].productId).toBe('column');
+		expect(registry.getSnapshot().entries[0].spatialElementId).toBe('column');
 	});
 });
 
@@ -153,7 +153,7 @@ it('resolves occurrence identity across roles and restores collision-safe histor
 	const base: CatalogEndpointAddress = {
 		...address,
 		brandId: 'a:b',
-		productId: 'c:d',
+		spatialElementId: 'c:d',
 		slot: 'catalog.card'
 	};
 	const first = element(),
@@ -177,7 +177,7 @@ it('does not substitute a different occurrence for an explicitly missing target'
 	expect(catalogEndpointKey(card)).not.toBe(catalogEndpointKey({ ...card, occurrence: 'two' }));
 });
 
-it('restores carousel activation independently from a same-product list occurrence', () => {
+it('restores carousel activation independently from a same-spatial-element list occurrence', () => {
 	const registry = new CatalogEndpointRegistry();
 	const card = { ...element(), toggleAttribute() {} } as unknown as HTMLElement;
 	const carousel = { ...element(), toggleAttribute() {} } as unknown as HTMLElement;

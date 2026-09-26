@@ -1,25 +1,25 @@
 import * as THREE from 'three/webgpu';
-import type { ProductStageConfig } from '../product-detail/types.js';
-import { prepareProductFrame } from '../stage/productFrame.js';
+import type { SpatialStageConfig } from '../spatial-element/types.js';
+import { prepareSpatialElementFrame } from '../stage/spatialElementFrame.js';
 import {
 	applyModelMaterialOverrides,
 	getMeshBounds,
 	getMeshMaterials,
 	isMesh
 } from '../stage/stageSceneUtils.js';
-import { ProductRefinement } from '../stage/ProductRefinement.js';
-import type { ProductAssetInstance, ProductAssetManager } from './assets/ProductAssetManager.js';
+import { SpatialElementRefinement } from '../stage/SpatialElementRefinement.js';
+import type { SpatialElementAssetInstance, SpatialElementAssetManager } from './assets/SpatialElementAssetManager.js';
 import type { EnvironmentCache, PreparedEnvironment } from './EnvironmentCache.js';
 import type { PreparationGate } from './PreparationGate.js';
-import { resolveProductLodPair } from './productLodPair.js';
+import { resolveSpatialElementLodPair } from './spatialElementLodPair.js';
 
 export interface PreparedHigh {
-	instance: ProductAssetInstance;
+	instance: SpatialElementAssetInstance;
 	pose: THREE.Object3D;
 	overrides: Set<THREE.Material>;
-	blend: ProductRefinement;
+	blend: SpatialElementRefinement;
 }
-export interface ProductPreparation {
+export interface SpatialElementPreparation {
 	key: string;
 	controller: AbortController;
 	environment: ReturnType<EnvironmentCache['acquire']>;
@@ -29,14 +29,14 @@ export interface ProductPreparation {
 	timings?: { buildMs: number; gpuWarmMs: number };
 }
 export const preparationKey = (
-	stage: Pick<ProductStageConfig, 'hdr' | 'glb' | 'lodPair' | 'model' | 'background'>
+	stage: Pick<SpatialStageConfig, 'hdr' | 'glb' | 'lodPair' | 'model' | 'background'>
 ) => JSON.stringify([stage.hdr, stage.glb, stage.lodPair, stage.model ?? {}, stage.background]);
 
 /** At most one speculative presentation is retained; active instances are adopted by the stage. */
 export class CatalogPreparation {
-	current?: ProductPreparation;
+	current?: SpatialElementPreparation;
 	constructor(
-		private assets: ProductAssetManager,
+		private assets: SpatialElementAssetManager,
 		private environments: EnvironmentCache,
 		private gate: PreparationGate,
 		private warm: (
@@ -46,12 +46,12 @@ export class CatalogPreparation {
 		) => Promise<void>,
 		private changed: () => void
 	) {}
-	prepare(stage: ProductStageConfig) {
+	prepare(stage: SpatialStageConfig) {
 		const key = preparationKey(stage);
 		if (this.current?.key === key && this.current.highState !== 'adopted') return this.current;
 		this.dispose();
-		const pair = resolveProductLodPair(stage.glb, stage.lodPair);
-		const entry: ProductPreparation = {
+		const pair = resolveSpatialElementLodPair(stage.glb, stage.lodPair);
+		const entry: SpatialElementPreparation = {
 			key,
 			controller: new AbortController(),
 			environment: this.environments.acquire(stage.hdr),
@@ -78,7 +78,7 @@ export class CatalogPreparation {
 			const lease = this.assets.acquire(pair.high, { signal });
 			void (async () => {
 				let high: PreparedHigh | undefined;
-				let instance: ProductAssetInstance | undefined;
+				let instance: SpatialElementAssetInstance | undefined;
 				try {
 					const [, environment] = await Promise.all([lease.ready, entry.environment.ready]);
 					await this.gate.wait(signal);
@@ -98,16 +98,16 @@ export class CatalogPreparation {
 								getMeshMaterials(object).forEach((material) => overrides.add(material));
 						});
 						const container = new THREE.Group();
-						prepareProductFrame(container, instance!.scene, pair, settings);
+						prepareSpatialElementFrame(container, instance!.scene, pair, settings);
 						high = {
 							instance: instance!,
 							overrides,
 							pose: container.children[0],
-							blend: new ProductRefinement(true)
+							blend: new SpatialElementRefinement(true)
 						};
 						instance = undefined;
 						if (getMeshBounds(container, (mesh) => !excluded.has(mesh.name)).isEmpty())
-							throw new Error('High contains no product meshes');
+							throw new Error('High contains no spatialElement meshes');
 					}, signal);
 					const warmStarted = performance.now();
 					await this.warm(high!, environment, signal);
@@ -124,7 +124,7 @@ export class CatalogPreparation {
 				} catch (error) {
 					if (!signal.aborted) {
 						entry.highState = 'failed';
-						console.warn('Optional product preparation failed; retaining Low', error);
+						console.warn('Optional spatialElement preparation failed; retaining Low', error);
 						this.changed();
 					}
 				} finally {
@@ -136,7 +136,7 @@ export class CatalogPreparation {
 		}
 		return entry;
 	}
-	takeHigh(entry: ProductPreparation) {
+	takeHigh(entry: SpatialElementPreparation) {
 		const high = entry.high;
 		if (high) {
 			entry.high = undefined;

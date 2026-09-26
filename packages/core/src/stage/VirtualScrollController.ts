@@ -245,8 +245,8 @@ export class VirtualScrollController {
 
 		event.preventDefault();
 		const animated =
-			target.hasAttribute('data-product-tab-id') ||
-			target.hasAttribute('data-product-section-navigation');
+			target.hasAttribute('data-spatial-element-tab-id') ||
+			target.hasAttribute('data-spatial-element-section-navigation');
 		const navigationHash =
 			animated && element.hasAttribute('data-stage-scroll-top') ? '' : url.hash;
 		if (window.location.hash !== navigationHash) {
@@ -269,7 +269,7 @@ export class VirtualScrollController {
 			this.hashFrame = 0;
 			const element = this.getHashTarget(window.location.hash);
 			if (element) {
-				this.scrollElementIntoView(element, false, element.hasAttribute('data-product-tab-target'));
+				this.scrollElementIntoView(element, false, element.hasAttribute('data-spatial-element-tab-target'));
 			}
 		});
 	}

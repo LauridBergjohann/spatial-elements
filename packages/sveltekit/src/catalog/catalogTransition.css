@@ -36,7 +36,7 @@
 		[data-catalog-recipe='list-to-dock'],
 		[data-catalog-recipe='carousel-to-dock']
 	)[data-catalog-transition]
-	[data-product-sticky-header]::before {
+	[data-spatial-element-sticky-header]::before {
 	opacity: 0 !important;
 }
 

@@ -1,32 +1,32 @@
 import * as THREE from 'three/webgpu';
 import {
-	getProductHandoffProjection,
+	getSpatialElementHandoffProjection,
 	interpolatePose,
-	normalizeProductClipMatrix
-} from './CatalogProductLayer.js';
-import type { ProductRefinement } from '../stage/ProductRefinement.js';
+	normalizeSpatialElementClipMatrix
+} from './CatalogSpatialElementLayer.js';
+import type { SpatialElementRefinement } from '../stage/SpatialElementRefinement.js';
 
-export interface ProductProjection {
+export interface SpatialElementProjection {
 	/** Visible section rectangle in CSS pixels, copied before its DOM owner unmounts. */
 	viewportClip?: { left: number; top: number; width: number; height: number };
 	environmentIntensity?: number;
-	/** Preserve the catalog depth cue while a rear product travels between render owners. */
+	/** Preserve the catalog depth cue while a rear element travels between render owners. */
 	fog?: THREE.Fog | THREE.FogExp2 | null;
 	model: THREE.Matrix4;
 	camera: THREE.Matrix4;
 	clip: THREE.Matrix4;
 }
 
-export function captureProductProjection(
+export function captureSpatialElementProjection(
 	model: THREE.Object3D,
 	camera: THREE.PerspectiveCamera
-): ProductProjection {
+): SpatialElementProjection {
 	model.updateWorldMatrix(true, true);
 	camera.updateMatrixWorld();
 	return {
 		model: model.matrixWorld.clone(),
 		camera: camera.matrixWorld.clone(),
-		clip: normalizeProductClipMatrix(
+		clip: normalizeSpatialElementClipMatrix(
 			new THREE.Matrix4()
 				.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
 				.multiply(model.matrixWorld),
@@ -35,15 +35,15 @@ export function captureProductProjection(
 	};
 }
 
-/** A renderer-owned product with copied projection and independently retained asset resources. */
+/** A renderer-owned element with copied projection and independently retained asset resources. */
 export class SpatialGeometryCapture {
 	getRenderTargets() {
 		return this.disposed ? [] : (this.options.blend?.getRenderTargets() ?? []);
 	}
 	private readonly scene = new THREE.Scene();
 	private readonly camera = new THREE.PerspectiveCamera();
-	private target?: ProductProjection;
-	private submitted?: ProductProjection;
+	private target?: SpatialElementProjection;
+	private submitted?: SpatialElementProjection;
 	private disposed = false;
 	private progress = 0;
 	private highWeight: number;
@@ -53,7 +53,7 @@ export class SpatialGeometryCapture {
 
 	constructor(
 		readonly model: THREE.Object3D,
-		private source: ProductProjection,
+		private source: SpatialElementProjection,
 		options: {
 			environment: THREE.Texture | null;
 			environmentIntensity?: number;
@@ -62,7 +62,7 @@ export class SpatialGeometryCapture {
 			lights: THREE.Light[];
 			high?: THREE.Object3D;
 			highWeight?: number;
-			blend?: ProductRefinement;
+			blend?: SpatialElementRefinement;
 			release(): boolean | void;
 		}
 	) {
@@ -84,11 +84,11 @@ export class SpatialGeometryCapture {
 		lights: THREE.Light[];
 		high?: THREE.Object3D;
 		highWeight?: number;
-		blend?: ProductRefinement;
+		blend?: SpatialElementRefinement;
 		release(): boolean | void;
 	};
 
-	setTarget(target: ProductProjection, progress: number, refinement: number) {
+	setTarget(target: SpatialElementProjection, progress: number, refinement: number) {
 		this.target = target;
 		this.progress = progress;
 		this.highWeight = this.initialHighWeight * (1 - refinement);
@@ -119,7 +119,7 @@ export class SpatialGeometryCapture {
 		this.camera.coordinateSystem = renderer.coordinateSystem;
 		camera.decompose(this.camera.position, this.camera.quaternion, this.camera.scale);
 		this.camera.updateMatrixWorld();
-		getProductHandoffProjection(
+		getSpatialElementHandoffProjection(
 			this.source.clip,
 			target.clip,
 			this.progress,
@@ -175,7 +175,7 @@ export class SpatialGeometryCapture {
 						this.highWeight >= 1 ? child === this.options.high : child !== this.options.high;
 				renderer.render(this.scene, this.camera);
 			}
-			this.submitted = captureProductProjection(this.model, this.camera);
+			this.submitted = captureSpatialElementProjection(this.model, this.camera);
 			this.submitted.fog = this.scene.fog;
 			this.submitted.viewportClip = clip;
 			this.frames++;

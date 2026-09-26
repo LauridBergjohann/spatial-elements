@@ -1,6 +1,6 @@
 export interface CatalogIdentity {
 	brandId: string;
-	productId: string;
+	spatialElementId: string;
 }
 
 export type CatalogSharedRole =
@@ -10,9 +10,9 @@ export type CatalogEndpointSlot =
 	| 'catalog.card'
 	| 'carousel.front'
 	| 'carousel.neighbour'
-	| 'pdp.hero'
-	| 'pdp.summary'
-	| 'pdp.dock';
+	| 'detail.hero'
+	| 'detail.summary'
+	| 'detail.dock';
 export type CatalogContentSlot = 'catalog.card' | 'carousel.front' | 'carousel.neighbour';
 
 export interface CatalogEndpointAddress extends CatalogIdentity {
@@ -25,13 +25,13 @@ export const CATALOG_ENDPOINTS = Symbol('catalog-endpoints');
 
 /** Semantic identity excludes representation and location; registrations additionally need a slot. */
 export function catalogSharedKey(identity: CatalogIdentity, role: CatalogSharedRole) {
-	return JSON.stringify([identity.brandId, identity.productId, role]);
+	return JSON.stringify([identity.brandId, identity.spatialElementId, role]);
 }
 
 export function catalogEndpointKey(address: CatalogEndpointAddress) {
 	return JSON.stringify([
 		address.brandId,
-		address.productId,
+		address.spatialElementId,
 		address.slot,
 		address.occurrence ?? null,
 		address.role
@@ -40,7 +40,7 @@ export function catalogEndpointKey(address: CatalogEndpointAddress) {
 
 /** Index semantic slots first; resolution explicitly chooses a concrete occurrence. */
 function catalogSlotKey(address: CatalogEndpointAddress) {
-	return JSON.stringify([address.brandId, address.productId, address.slot, address.role]);
+	return JSON.stringify([address.brandId, address.spatialElementId, address.slot, address.role]);
 }
 
 interface Registration {
@@ -61,16 +61,16 @@ export class CatalogEndpointRegistry {
 	private restoredOrigin?: CatalogIdentity & { occurrence: string; slot: CatalogContentSlot };
 	restoreOrigin(origin?: CatalogIdentity & { occurrence: string; slot: CatalogContentSlot }) {
 		this.restoredOrigin = origin ? { ...origin } : undefined;
-		if (origin) this.prefer(origin.brandId, origin.productId, origin.occurrence, origin.slot);
+		if (origin) this.prefer(origin.brandId, origin.spatialElementId, origin.occurrence, origin.slot);
 	}
 	prefer(
 		brandId: string,
-		productId: string,
+		spatialElementId: string,
 		occurrence: string,
 		slot: CatalogContentSlot = 'catalog.card'
 	) {
-		this.preferred.set(JSON.stringify([brandId, productId]), occurrence);
-		this.preferredSlots.set(JSON.stringify([brandId, productId]), slot);
+		this.preferred.set(JSON.stringify([brandId, spatialElementId]), occurrence);
+		this.preferredSlots.set(JSON.stringify([brandId, spatialElementId]), slot);
 		if (this.preferredSlots.size > 100)
 			this.preferredSlots.delete(this.preferredSlots.keys().next().value!);
 		if (this.preferred.size > 100) this.preferred.delete(this.preferred.keys().next().value!);
@@ -97,7 +97,7 @@ export class CatalogEndpointRegistry {
 
 	/** Activated/restored occurrence wins; otherwise require a unique visible composition. */
 	getContentSlot(identity: CatalogIdentity): CatalogContentSlot | undefined {
-		const key = JSON.stringify([identity.brandId, identity.productId]);
+		const key = JSON.stringify([identity.brandId, identity.spatialElementId]);
 		const preferred = this.preferred.get(key);
 		const preferredSlot = this.preferredSlots.get(key);
 		const slots: CatalogContentSlot[] = ['catalog.card', 'carousel.front', 'carousel.neighbour'];
@@ -122,7 +122,7 @@ export class CatalogEndpointRegistry {
 		}
 		if (
 			this.restoredOrigin?.brandId === identity.brandId &&
-			this.restoredOrigin.productId === identity.productId
+			this.restoredOrigin.spatialElementId === identity.spatialElementId
 		)
 			return undefined;
 		const visible = slots
@@ -152,7 +152,7 @@ export class CatalogEndpointRegistry {
 	}
 
 	getPreferredContentSlot(identity: CatalogIdentity) {
-		return this.preferredSlots.get(JSON.stringify([identity.brandId, identity.productId]));
+		return this.preferredSlots.get(JSON.stringify([identity.brandId, identity.spatialElementId]));
 	}
 
 	/** Read-only occurrence inventory; unlike resolve(), this does not change activation. */
@@ -161,7 +161,7 @@ export class CatalogEndpointRegistry {
 			.flatMap((entries) => [...entries])
 			.filter(
 				({ address, element }) =>
-					address.role === 'container' && !address.slot.startsWith('pdp.') && element.isConnected
+					address.role === 'container' && !address.slot.startsWith('detail.') && element.isConnected
 			);
 	}
 
@@ -169,7 +169,7 @@ export class CatalogEndpointRegistry {
 		identity: CatalogIdentity,
 		read: () => 'hero' | 'dock' | 'intermediate' | 'unavailable'
 	) {
-		const key = JSON.stringify([identity.brandId, identity.productId]);
+		const key = JSON.stringify([identity.brandId, identity.spatialElementId]);
 		const readers = this.presentations.get(key) ?? new Set();
 		readers.add(read);
 		this.presentations.set(key, readers);
@@ -180,7 +180,7 @@ export class CatalogEndpointRegistry {
 	}
 
 	getComposition(identity: CatalogIdentity) {
-		const readers = this.presentations.get(JSON.stringify([identity.brandId, identity.productId]));
+		const readers = this.presentations.get(JSON.stringify([identity.brandId, identity.spatialElementId]));
 		return readers?.size === 1 ? [...readers][0]() : 'unavailable';
 	}
 
@@ -206,7 +206,7 @@ export class CatalogEndpointRegistry {
 		if (address.slot === 'catalog.card' || address.slot.startsWith('carousel.')) {
 			const preferred =
 				address.occurrence ??
-				this.preferred.get(JSON.stringify([address.brandId, address.productId]));
+				this.preferred.get(JSON.stringify([address.brandId, address.spatialElementId]));
 			const matching = candidates.filter((entry) => entry.address.occurrence === preferred);
 			const containers = this.entries.get(catalogSlotKey({ ...address, role: 'container' }));
 			const registeredPreference =
@@ -240,7 +240,7 @@ export class CatalogEndpointRegistry {
 				if (occurrence)
 					this.prefer(
 						address.brandId,
-						address.productId,
+						address.spatialElementId,
 						occurrence,
 						address.slot as CatalogContentSlot
 					);

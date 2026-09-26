@@ -40,7 +40,7 @@ is separate from the local verification above.
 
 ## Steps 2-3: extraction and neutral demo
 
-Renderer/controllers and product contracts now live in core; Svelte authoring/context and Kit
+Renderer/controllers and element contracts now live in core; Svelte authoring/context and Kit
 navigation live in sveltekit. App aliases were replaced with real package/relative ESM imports.
 HTML attribute types stay in the adapter. HDR/model URLs are supplied by applications; Draco
 decoder paths are configurable. Generic regressions use neutral fixture names. No private assets
@@ -71,7 +71,7 @@ Verification on this Windows machine (Node.js 24.21.0 / Chrome):
   cases passed again with real tarball copies (all three brands).
 - A temporary Svelte component edit reached the running private app through HMR; the core watch
   build reacted to a temporary TS change. Both edits were restored, and test-owned processes stopped.
-- npm run assets:catalog:check passed for all 17 private products. Stale poster alt metadata was
+- npm run assets:catalog:check passed for all 17 private elements. Stale poster alt metadata was
   aligned with the existing generator; geometry/poster binary files were not changed.
 - npm run verify passed: boundaries, types, unit tests, builds, package allowlists/licenses, Node
   import without DOM/GPU, isolated consumer installation, declarations, SSR and production build.

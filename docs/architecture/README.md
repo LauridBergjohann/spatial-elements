@@ -1,31 +1,31 @@
 # Spatial Elements architecture
 
-Current implementation baseline: 2026-09-25, extracted packages at e22aa02. This is implementation documentation, not a proposal for an additional rewrite.
+Current implementation baseline: 2026-09-26, including the SpatialElement API migration. This is implementation documentation, not a proposal for an additional rewrite.
 The twelve sections follow [arc42](https://arc42.org/overview/); the diagrams use the context, container and component levels of [C4](https://c4model.com/diagrams). Diagram arrows describe dependencies or data flow, not deployment of npm packages as services.
 
 ## 1. Introduction and goals
 
-Spatial Elements combines accessible HTML content with interactive product geometry, panels and continuity between catalog presentations. Content authors compose Section, ListSection and CarouselSection inside ContentPage; ProductDetailPage supplies detail interaction. Goals are immediate usable content, smooth prepared transitions, stable navigation/history, bounded resource use and reusable framework-independent rendering.
+Spatial Elements combines accessible HTML content with interactive element geometry, panels and continuity between catalog presentations. Content authors compose Section, ListSection and CarouselSection inside ContentPage; SpatialElementPage supplies detail interaction. Goals are immediate usable content, smooth prepared transitions, stable navigation/history, bounded resource use and reusable framework-independent rendering.
 
 ## 2. Constraints
 
-The current adapter targets Svelte 5 and SvelteKit. Three.js supplies WebGPU rendering; browser GPU initialization is client-only. SSR delivers HTML and posters. Core does not import Svelte or SvelteKit. Navigation currently recognizes same-brand catalog/product route conventions described in [authoring](../authoring.md). Packages are pre-release and not published. MPL-2.0 covers project code; asset redistribution rights are separate.
+The current adapter targets Svelte 5 and SvelteKit. Three.js supplies WebGPU rendering; browser GPU initialization is client-only. SSR delivers HTML and posters. Core does not import Svelte or SvelteKit. Navigation currently recognizes same-brand catalog/element route conventions described in [authoring](../authoring.md). Packages are pre-release and not published. MPL-2.0 covers project code; asset redistribution rights are separate.
 
 ## 3. Context and scope - C4 level 1
 
 ~~~mermaid
 flowchart LR
   Visitor[Visitor] -->|Browse, scroll, drag, navigate| Catalog[Host catalog application using Spatial Elements]
-  Author[Developer or content author] -->|Product contracts, themes and sections| Catalog
-  Catalog -->|Optional route data requests| Data[Host-owned product API or CMS]
+  Author[Developer or content author] -->|Spatial element contracts, themes and sections| Catalog
+  Catalog -->|Optional route data requests| Data[Host-owned element API or CMS]
   Catalog -->|Read models, posters and environments| Assets[Host-owned asset storage]
 ~~~
 
-Spatial Elements is a library inside the host application. It does not provide a CMS, product database, commerce backend or hosting service.
+Spatial Elements is a library inside the host application. It does not provide a CMS, element database, commerce backend or hosting service.
 
 ## 4. Solution strategy
 
-Keep semantic content in HTML, render spatial geometry through a persistent stage, and let SvelteKit own URLs/history. Identify shared elements by product and role instead of retaining page DOM. Prepare optional resources ahead of motion; pin captured presentations across route replacement. Use a common Low/High coordinate frame and resolved-image fades. Separate public neutral examples from private integration assets.
+Keep semantic content in HTML, render spatial geometry through a persistent stage, and let SvelteKit own URLs/history. Identify shared elements by element and role instead of retaining page DOM. Prepare optional resources ahead of motion; pin captured presentations across route replacement. Use a common Low/High coordinate frame and resolved-image fades. Separate public neutral examples from private integration assets.
 
 ## 5. Building blocks - C4 levels 2 and 3
 
@@ -50,22 +50,22 @@ The host chooses its SvelteKit deployment adapter. No separate Spatial Elements 
 
 ~~~mermaid
 flowchart TB
-  Components[ContentPage, sections and ProductDetailPage] --> Adapter[Stage and ScrollNavigationBridge]
+  Components[ContentPage, sections and SpatialElementPage] --> Adapter[Stage and ScrollNavigationBridge]
   Adapter --> Registry[Endpoint registry and transition coordinator]
   Adapter --> Experience[StageExperience]
   Experience --> Binding[PageBindingController]
-  Experience --> Presentation[ProductPresentationController]
-  Experience --> Interaction[ProductInteractionController]
+  Experience --> Presentation[SpatialElementPresentationController]
+  Experience --> Interaction[SpatialElementInteractionController]
   Experience --> Minimap[MinimapController]
   Experience --> Panels[PanelPresentationController]
   Experience --> Pipeline[StageRenderPipeline]
-  Experience --> Catalog[CatalogProductLayer and retained captures]
-  Presentation --> Assets[ProductAssetManager and environment cache]
+  Experience --> Catalog[CatalogSpatialElementLayer and retained captures]
+  Presentation --> Assets[SpatialElementAssetManager and environment cache]
   Registry --> Preparation[CatalogPreparation and PreparationGate]
   Preparation --> Assets
 ~~~
 
-StageExperience owns runtime orchestration. Controllers separate DOM measurement, product representations, input, minimap and panels. StageRenderPipeline owns render passes/targets and renderer-state restoration, not navigation. Endpoint registrations describe live presentations; asset leases and retained captures have separate lifetimes.
+StageExperience owns runtime orchestration. Controllers separate DOM measurement, element representations, input, minimap and panels. StageRenderPipeline owns render passes/targets and renderer-state restoration, not navigation. Endpoint registrations describe live presentations; asset leases and retained captures have separate lifetimes.
 
 Code entry points: [StageExperience](../../packages/core/src/stage/StageExperience.ts), [pipeline](../../packages/core/src/stage/StageRenderPipeline.ts), [endpoint registry](../../packages/core/src/catalog/CatalogEndpointRegistry.ts), [navigation bridge](../../packages/sveltekit/src/catalog/ScrollNavigationBridge.svelte). See [package boundaries](../package-boundaries.md) for supported entry points.
 
@@ -79,12 +79,12 @@ The public monorepo builds core and sveltekit packages and a neutral demonstrati
 
 ## 8. Cross-cutting concepts
 
-- Semantic identity is brand + product + role; occurrence and slot select a concrete presentation on a mixed page. Low/High are representations, not different products.
+- Semantic identity is brand + element + role; occurrence and slot select a concrete presentation on a mixed page. Low/High are representations, not different elements.
 - One navigation restoration owner reconciles native/virtual scroll before endpoint measurement; selection belongs to the corresponding history entry.
 - Persistent stage ownership outlives page DOM. Generation/revision checks reject stale asynchronous completion and cleanup.
 - Retained captures pin resources until handoff/cancel; caches own reusable decoded data. [Asset contract](assets.md).
 - Reduced motion, unavailable GPU and missing endpoints preserve navigation and usable HTML/posters.
-- Themes belong to brand configuration; product content and physical geometry metadata belong to products.
+- Themes belong to brand configuration; element content and physical geometry metadata belong to elements.
 
 ## 9. Architecture decisions
 
@@ -99,7 +99,7 @@ See [accepted decisions](decisions.md), including the change from exclusive page
 | Navigation interrupts a transition | Release or explicitly transfer ownership; reject stale completion | Core lifecycle tests and private interruption suites |
 | Repeated catalog/detail journeys | Bounded residency; no orphan DOM bindings or idle render loop | Asset/pipeline unit tests and private runtime suite |
 | Consumer installed from tarballs | SSR imports, declarations and production build work outside the monorepo | Public verification script and CI |
-| Unsupported GPU or JavaScript disabled | Product content and navigation remain usable | Public fallback browser cases |
+| Unsupported GPU or JavaScript disabled | Spatial element content and navigation remain usable | Public fallback browser cases |
 
 Historical device acceptance and zoom measurements remain private. They are not a guarantee of 60 fps on every device.
 
@@ -112,9 +112,9 @@ Cold GPU/decoder initialization can still cause latency; the preparation gate ca
 | Term | Meaning |
 | --- | --- |
 | Stage | Persistent rendering/integration owner for spatial content |
-| Endpoint | Registered measurable presentation of a semantic product role |
-| Slot / occurrence | Where and which instance of a product is presented |
+| Endpoint | Registered measurable presentation of a semantic element role |
+| Slot / occurrence | Where and which instance of an element is presented |
 | Prepared | Ready to draw, including required GPU work, not just downloaded |
 | Low / High | Lightweight and detailed representations in one coordinate frame |
 | Capture / lease | Retained presentation / explicit claim keeping its resources alive |
-| PLP / PDP | Product listing presentation / product detail page |
+| list page / detail page | Spatial element listing presentation / element detail page |

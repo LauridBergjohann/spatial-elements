@@ -1,4 +1,4 @@
-export * from './product-detail/index.js';
+export * from './spatial-element/index.js';
 export { default as Panel } from './stage/Panel.svelte';
 export { default as Stage } from './stage/Stage.svelte';
 export { default as StageViewport } from './stage/StageViewport.svelte';

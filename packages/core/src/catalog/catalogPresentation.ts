@@ -7,7 +7,7 @@ export interface CatalogTransitionPresentation {
 	sharedOpacity: number;
 	/** Independent environment reveal; older callers default to the content channel. */
 	backgroundOpacity?: number;
-	/** Product-only LOD blend; independent of the environment channel. */
+	/** SpatialElement-only LOD blend; independent of the environment channel. */
 	geometryOpacity?: number;
 }
 

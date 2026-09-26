@@ -14,7 +14,7 @@ export interface MinimapMaterialOpacityState {
 }
 
 /**
- * Owns all resources and animated values for one panel-backed product minimap.
+ * Owns all resources and animated values for one panel-backed element minimap.
  *
  * The live display model stays separate from the isolated blur capture so pointer
  * interaction cannot change the pixels used by the overlay.
@@ -27,13 +27,13 @@ export interface StageMinimapState {
 	model: Object3D;
 	sourceRoot: Object3D;
 	displayModel: Object3D;
-	/** Canonical product root within the minimap's centering/orientation hierarchy. */
-	productRoot: Object3D;
+	/** Canonical element root within the minimap's centering/orientation hierarchy. */
+	spatialElementRoot: Object3D;
 	/** Per-mesh bound points expressed in the centered display model's local coordinates. */
 	modelBoundsPoints: THREE.Vector3[];
-	/** Camera-relative product pose captured from the fitted initial stage view. */
+	/** Camera-relative element pose captured from the fitted initial stage view. */
 	restQuaternion: THREE.Quaternion;
-	/** Optional camera-relative product pose authored for the docked presentation. */
+	/** Optional camera-relative element pose authored for the docked presentation. */
 	dockedQuaternion?: THREE.Quaternion;
 	displayMaterials: MinimapMaterialOpacityState[];
 	displayOpacity: number;

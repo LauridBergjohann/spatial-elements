@@ -15,7 +15,7 @@ describe('bounded carousel groups', () => {
 			}
 		});
 	}
-	it('moves both products monotonically along the same shallow arc without a wrap', () => {
+	it('moves both spatialElements monotonically along the same shallow arc without a wrap', () => {
 		for (const count of [2, 20]) {
 			for (const index of [0, 1]) {
 				let previous = carouselPose(index, 0, count).x;

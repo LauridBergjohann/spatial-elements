@@ -1,4 +1,4 @@
-import type { ProductPreparation } from '../catalog/CatalogPreparation.js';
+import type { SpatialElementPreparation } from '../catalog/CatalogPreparation.js';
 import {
 	ASYNC_REVEAL_DURATION,
 	clampProgress,
@@ -8,7 +8,7 @@ import {
 
 /** Independent background and High readiness, frozen once the transition clock starts. */
 export class PresentationReadiness {
-	private preparation?: ProductPreparation;
+	private preparation?: SpatialElementPreparation;
 	private motionMode?: TransitionMode;
 	private deferredDetail = false;
 	private pending = false;
@@ -45,10 +45,10 @@ export class PresentationReadiness {
 		this.pending = this.prepared = this.applied = false;
 		this.started = undefined;
 	}
-	attach(entry: ProductPreparation | undefined) {
+	attach(entry: SpatialElementPreparation | undefined) {
 		this.preparation = entry;
 	}
-	resume(entry: ProductPreparation) {
+	resume(entry: SpatialElementPreparation) {
 		this.deferredDetail = false;
 		this.motionMode = undefined;
 		this.preparation = entry;

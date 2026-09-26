@@ -3,7 +3,7 @@ import { resolveCatalogIntent, type CatalogNavigationIntent } from './catalogRec
 
 /** Optional enhancement on an ordinary anchor; URLs remain authoritative. */
 export interface CatalogViewContext {
-	productId?: string;
+	spatialElementId?: string;
 	sourceSection?: string;
 	targetSection?: string;
 	sourceOccurrence?: string;
@@ -11,7 +11,7 @@ export interface CatalogViewContext {
 }
 
 export type CatalogJourney =
-	| { kind: 'product'; intent: CatalogNavigationIntent }
+	| { kind: 'spatialElement'; intent: CatalogNavigationIntent }
 	| { kind: 'content-view'; brandId: string; history: boolean; section?: string };
 
 export function resolveCatalogJourney(
@@ -20,7 +20,7 @@ export function resolveCatalogJourney(
 	type: string
 ): CatalogJourney | undefined {
 	const intent = resolveCatalogIntent(from, to, type);
-	if (intent) return { kind: 'product', intent };
+	if (intent) return { kind: 'spatialElement', intent };
 	if (from.origin !== to.origin || (from.pathname === to.pathname && from.search === to.search))
 		return;
 	const pattern = /^\/([^/]+)\/categories\/(?:list|carousel|mixed)\/?$/;
@@ -58,7 +58,7 @@ export interface CatalogParticipantPair {
 	target: CatalogParticipantEndpoint;
 }
 
-/** Pure, frozen pairing. Ambiguous occurrences never borrow another product's panel. */
+/** Pure, frozen pairing. Ambiguous occurrences never borrow another element's panel. */
 export function planCatalogParticipants(
 	sources: readonly CatalogParticipantEndpoint[],
 	targets: readonly CatalogParticipantEndpoint[],
@@ -79,21 +79,21 @@ export function planCatalogParticipants(
 			(!context.targetSection || p.sectionId === context.targetSection) &&
 			(!context.targetOccurrence || p.occurrence === context.targetOccurrence)
 	);
-	const key = (p: CatalogIdentity) => JSON.stringify([p.brandId, p.productId]);
+	const key = (p: CatalogIdentity) => JSON.stringify([p.brandId, p.spatialElementId]);
 	const pairs: CatalogParticipantPair[] = [];
 	for (const p of source) {
 		if (source.filter((other) => key(other) === key(p)).length !== 1) continue;
 		const matches = target.filter((other) => key(other) === key(p));
 		if (matches.length !== 1) continue;
 		pairs.push({
-			identity: { brandId: p.brandId, productId: p.productId },
+			identity: { brandId: p.brandId, spatialElementId: p.spatialElementId },
 			source: { ...p },
 			target: { ...matches[0] }
 		});
 	}
 	const activated = pairs.filter((p) => p.source.selected || p.source.focused);
-	const primary = context.productId
-		? pairs.find((p) => p.identity.productId === context.productId)
+	const primary = context.spatialElementId
+		? pairs.find((p) => p.identity.spatialElementId === context.spatialElementId)
 		: activated.length === 1
 			? activated[0]
 			: [...pairs].sort((a, b) => a.source.order - b.source.order)[0];
