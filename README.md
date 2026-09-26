@@ -10,9 +10,18 @@ Present elements, individual items or entire collections through immersive, inte
 - **@spatial-elements/sveltekit**: Svelte components and SvelteKit navigation/history integration.
 - **apps/sveltekit-demo**: public list, carousel, mixed-content and detail examples using original procedural assets.
 
-The implementation is extracted and usable locally. Packages remain private at version 0.0.0
-until the release checklist is approved; nothing has been published to npm.
+The first npm beta candidate is 0.1.0-beta.1. Publication is pending; see the [release checklist](docs/release.md).
 Future framework adapters can use core; no placeholder React/Vue packages are shipped.
+
+## Installation after beta publication
+
+In an existing Svelte 5 / SvelteKit 2 application:
+
+~~~sh
+npm install @spatial-elements/sveltekit@beta three@^0.185.1
+~~~
+
+Core is installed transitively. See the [authoring guide](docs/authoring.md) for integration.
 
 ## Development
 

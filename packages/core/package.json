@@ -1,7 +1,6 @@
 {
   "name": "@spatial-elements/core",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0-beta.1",
   "description": "Framework-independent rendering and catalog runtime for Spatial Elements.",
   "license": "MPL-2.0",
   "type": "module",
@@ -53,5 +52,10 @@
   },
   "peerDependencies": {
     "three": "^0.185.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "beta",
+    "registry": "https://registry.npmjs.org/"
   }
 }

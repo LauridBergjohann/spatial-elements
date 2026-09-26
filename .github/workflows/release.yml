@@ -1,0 +1,45 @@
+name: Publish npm beta
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Exact reviewed version, e.g. 0.1.0-beta.1'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main' && vars.NPM_TRUSTED_PUBLISHING_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --global npm@11
+      - run: npm ci
+      - run: npm run verify
+      - run: npm run build:demo
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e -- --grep "without JavaScript|GPU unavailable"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-beta-${{ inputs.version }}
+          path: .artifacts/packages/*.tgz
+          if-no-files-found: error
+      # Publish the exact tarballs exercised by verify:packages. Never publish all workspaces.
+      - name: Publish core
+        run: npm publish ".artifacts/packages/spatial-elements-core-${RELEASE_VERSION}.tgz" --access public --tag beta --ignore-scripts
+      - name: Publish SvelteKit adapter
+        run: npm publish ".artifacts/packages/spatial-elements-sveltekit-${RELEASE_VERSION}.tgz" --access public --tag beta --ignore-scripts
