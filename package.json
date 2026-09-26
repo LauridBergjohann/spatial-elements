@@ -16,7 +16,7 @@
     "build": "npm run build -w @spatial-elements/core && npm run build -w @spatial-elements/sveltekit",
     "check": "npm run build && npm run check --workspaces",
     "dev": "npm run build && concurrently -k -n core,sveltekit \"npm run dev -w @spatial-elements/core\" \"npm run dev -w @spatial-elements/sveltekit\"",
-    "verify": "npm run check:release && npm run check:boundaries && npm run check && npm test && npm run verify:packages",
+    "verify": "npm run check:release && npm run test:release && npm run check:boundaries && npm run check && npm test && npm run verify:packages",
     "verify:packages": "node scripts/verify-packages.mjs",
     "test": "vitest run",
     "assets:demo": "node tooling/asset-pipeline/generate-demo.mjs && node scripts/sync-demo-assets.mjs",
@@ -24,22 +24,28 @@
     "build:demo": "node scripts/sync-demo-assets.mjs && npm run build -w @spatial-elements/demo-sveltekit",
     "test:e2e": "playwright test",
     "check:boundaries": "node scripts/check-boundaries.mjs",
-    "check:release": "node scripts/check-release.mjs"
+    "check:release": "node scripts/check-release.mjs",
+    "changeset": "changeset",
+    "release:version": "changeset version && node scripts/sync-release.mjs && npm install --package-lock-only --ignore-scripts --no-audit --no-fund",
+    "release:plan": "node scripts/publish-release.mjs",
+    "release:publish": "node scripts/publish-release.mjs --publish",
+    "test:release": "node --test scripts/release.test.mjs"
   },
   "devDependencies": {
-    "@sveltejs/package": "2.5.8",
+    "@changesets/cli": "2.31.1",
+    "@playwright/test": "^1.60.0",
+    "@sveltejs/adapter-auto": "^7.0.1",
     "@sveltejs/kit": "2.70.3",
+    "@sveltejs/package": "2.5.8",
     "@sveltejs/vite-plugin-svelte": "7.2.0",
+    "@types/node": "^24",
+    "@types/three": "0.185.1",
     "concurrently": "10.0.5",
     "svelte": "5.56.4",
     "svelte-check": "4.7.2",
+    "three": "0.185.1",
     "typescript": "6.0.3",
     "vite": "8.1.4",
-    "three": "0.185.1",
-    "@types/three": "0.185.1",
-    "@types/node": "^24",
-    "vitest": "^4.1.8",
-    "@playwright/test": "^1.60.0",
-    "@sveltejs/adapter-auto": "^7.0.1"
+    "vitest": "^4.1.8"
   }
 }
