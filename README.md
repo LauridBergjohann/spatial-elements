@@ -15,7 +15,7 @@ Future framework adapters can use core; no placeholder React/Vue packages are sh
 
 ## Start here
 
-Read [Getting started: category and detail pages](docs/getting-started.md), the [API reference](docs/api.md), and the [configuration migration](docs/configuration-migration.md). The guide describes the current source API; published betas may predate it.
+Read [Getting started: category and detail pages](docs/getting-started.md), the [API reference](docs/api.md), and the [configuration migration](docs/configuration-migration.md). These guides target version `1.0.0-beta.3` and newer.
 
 - `SpatialElementData`: element content, required geometry.low/geometry.high, detail HDR and optional presentation settings.
 - `SpatialTheme`: shared appearance, created with `createSpatialTheme({ id, name })`.
@@ -26,7 +26,7 @@ Read [Getting started: category and detail pages](docs/getting-started.md), the 
 In an existing Svelte 5 / SvelteKit 2 application:
 
 ~~~sh
-npm install @spatial-elements/sveltekit@beta
+npm install @spatial-elements/sveltekit@latest
 ~~~
 
 Core is installed transitively. See the [authoring guide](docs/authoring.md) for integration.

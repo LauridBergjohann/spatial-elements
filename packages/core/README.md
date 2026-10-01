@@ -8,12 +8,12 @@ Beta API; MPL-2.0; see LICENSE.
 
 Read the [getting-started tutorial](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/getting-started.md), [API reference](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/api.md) and [configuration migration](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/configuration-migration.md).
 
-Element content and required `geometry: { low, high }` belong in `SpatialElementData`; shared appearance belongs in `SpatialTheme`. Use `createSpatialTheme({ id, name })` for defaults. The SvelteKit shell needs only the theme; pages register their own data. These docs describe the current source API, which may be newer than the published beta.
+Element content and required `geometry: { low, high }` belong in `SpatialElementData`; shared appearance belongs in `SpatialTheme`. Use `createSpatialTheme({ id, name })` for defaults. The SvelteKit shell needs only the theme; pages register their own data. These docs target version `1.0.0-beta.3` and newer.
 
 Installation:
 
 ~~~sh
-npm install @spatial-elements/core@beta
+npm install @spatial-elements/core@latest
 ~~~
 
 Requires Node.js 22.12+ tooling.

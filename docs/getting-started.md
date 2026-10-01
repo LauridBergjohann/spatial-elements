@@ -1,11 +1,11 @@
 # Getting started: a category and a detail page
 
-This guide describes the current source API. Existing beta consumers must upgrade to a release containing this change (or use the [local package workflow](development.md)) before copying it. See [configuration migration](configuration-migration.md) for the previous API.
+This guide targets `1.0.0-beta.3` and newer. Upgrade older beta installations before copying it; before publication, use the [local package workflow](development.md). See [configuration migration](configuration-migration.md) for the previous API.
 
 Use an existing Svelte 5 / SvelteKit 2 application with Node.js 22.12+ tooling:
 
 ~~~sh
-npm install @spatial-elements/sveltekit@beta
+npm install @spatial-elements/sveltekit@latest
 ~~~
 
 Three.js is a peer dependency; modern npm installs it automatically. If you import it yourself, also declare `three@^0.186.1` (and `@types/three@^0.186.0` for TypeScript).

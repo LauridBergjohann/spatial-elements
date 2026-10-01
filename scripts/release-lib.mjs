@@ -1,8 +1,16 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+// Explicit, reviewed exceptions apply only to the named release, never future betas.
+const channels = JSON.parse(readFileSync(new URL('../release-channels.json', import.meta.url), 'utf8'));
+for (const [version, tag] of Object.entries(channels)) {
+  assert.match(version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)-beta\.(0|[1-9]\d*)$/);
+  assert.equal(tag, 'latest', 'Only explicit beta promotion to latest is supported');
+}
 
 export function releaseTag(version) {
   assert.match(version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-beta\.(0|[1-9]\d*))?$/, 'Expected stable or beta semver');
-  return version.includes('-beta.') ? 'beta' : 'latest';
+  return channels[version] ?? (version.includes('-beta.') ? 'beta' : 'latest');
 }
 
 export async function missingPackages(packages, fetchMetadata) {

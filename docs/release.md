@@ -26,17 +26,39 @@ changelog records the initial release.
 
 ## Beta and stable versions
 
-The repository is in Changesets prerelease mode (beta), continuing the published 0.1.0-beta.1.
-The next included release note produces 0.1.0-beta.2. Further betas increment the prerelease counter.
+The repository is in Changesets prerelease mode (beta). The prepared release is `1.0.0-beta.3`;
+the major version reflects breaking authoring API changes. Further betas increment the prerelease counter.
 Changesets accumulates patch/minor/major intent for the eventual stable release. Humans classify the
 API impact; version numbers, dependency updates and changelogs are automated.
 
 To prepare stable publication, run npm exec changeset pre exit on a reviewed branch and merge that
-change. Review the resulting release PR carefully. Stable versions use latest, beta versions use beta.
+change. Review the resulting release PR carefully. Stable versions use latest; beta versions default to beta.
+Explicit per-version exceptions in `release-channels.json` select latest for a reviewed beta release.
+The version synchronization, metadata checks and publishing command all use this same policy.
 Do not hand-edit pre.json or package versions during normal releases.
 
-Both initial packages currently have beta AND latest pointing to 0.1.0-beta.1 (registry observation
-2026-09-26). This automation does not remove existing tags; subsequent beta uploads only update beta.
+For `1.0.0-beta.3`, both packages publish directly with `--tag latest`. This intentionally makes the
+new beta the default installation. The existing beta tag is not moved by this release. Subsequent
+betas return to the beta tag unless another explicit version exception is reviewed.
+
+## Publish the prepared 1.0.0-beta.3 release
+
+The versions, changelogs, exact dependencies and lockfile are already updated. Commit these changes
+with the implementation and merge the branch into main through the normal reviewed PR workflow.
+**Merging triggers publication automatically** when trusted publishing is configured. No second
+version bump or release PR is needed for the already-consumed Changesets. Alternatively, use
+Actions > Release packages > Run workflow on main to retry the prepared release.
+
+Confirm that both npm package pages show version `1.0.0-beta.3` under `latest` after the workflow:
+
+~~~sh
+npm view @spatial-elements/core dist-tags --json
+npm view @spatial-elements/sveltekit dist-tags --json
+~~~
+
+This release includes rendering/transition performance improvements, Three.js ^0.186.1 and the
+simplified page-owned configuration API. Read [configuration migration](configuration-migration.md)
+before upgrading an existing application. It remains a prerelease even though it uses latest.
 
 ## One-time GitHub and npm configuration
 

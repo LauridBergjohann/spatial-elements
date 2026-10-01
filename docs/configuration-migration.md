@@ -1,6 +1,6 @@
 # Configuration API migration
 
-This is a breaking authoring API change in the current source, awaiting publication. Upgrade core and the SvelteKit adapter together. The older [SpatialElement migration](spatial-element-migration.md) describes the preceding naming change.
+Version `1.0.0-beta.3` introduces this breaking authoring API change. Upgrade core and the SvelteKit adapter together. The older [SpatialElement migration](spatial-element-migration.md) describes the preceding naming change.
 
 | Previous API | Current API |
 | --- | --- |

@@ -6,6 +6,9 @@
     "@spatial-elements/sveltekit": "0.1.0-beta.1"
   },
   "changesets": [
-    "automatic-releases"
+    "automatic-releases",
+    "explicit-geometry-lighting",
+    "page-owned-elements",
+    "three-r186"
   ]
 }
