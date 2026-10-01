@@ -13,6 +13,14 @@ Present elements, individual items or entire collections through immersive, inte
 The first npm beta is published. See the [release workflow](docs/release.md).
 Future framework adapters can use core; no placeholder React/Vue packages are shipped.
 
+## Start here
+
+Read [Getting started: category and detail pages](docs/getting-started.md), the [API reference](docs/api.md), and the [configuration migration](docs/configuration-migration.md). The guide describes the current source API; published betas may predate it.
+
+- `SpatialElementData`: element content, required geometry.low/geometry.high, detail HDR and optional presentation settings.
+- `SpatialTheme`: shared appearance, created with `createSpatialTheme({ id, name })`.
+- `BrandStageShell`: persistent renderer; only theme is required. Pages supply their own data.
+
 ## Installation
 
 In an existing Svelte 5 / SvelteKit 2 application:
@@ -52,7 +60,9 @@ Dependencies retain their own licenses. The optional attribution request does no
 
 See the [documentation index](docs/README.md) for the current architecture and migration audit.
 
-Three.js is a required peer dependency (^0.185.1), shared with the application and other adapters.
+Three.js is a required peer dependency (^0.186.1), shared with the application and other adapters.
 Modern npm installs it automatically. If the application imports Three.js directly, declare it
-explicitly with `npm install three@^0.185.1`. Do not bypass incompatible peer ranges with
+explicitly with `npm install three@^0.186.1`. Do not bypass incompatible peer ranges with
 `--legacy-peer-deps`. Other package managers may require explicit peer installation.
+
+Category lighting is explicit: pass `hdr="/assets/category.hdr"` to `ContentPage` (also `SpatialListPage`). It is never inferred from an element. Identical geometry URLs share one cached fetch/decode.

@@ -1,5 +1,6 @@
 import * as THREE from 'three/webgpu';
-import type { SpatialStageConfig } from '../spatial-element/types.js';
+import { DEFAULT_BACKGROUND } from '../stage/stageConstants.js';
+import type { SpatialElementScene } from '../spatial-element/spatialElementScene.js';
 import { prepareSpatialElementFrame } from '../stage/spatialElementFrame.js';
 import {
 	applyModelMaterialOverrides,
@@ -29,8 +30,8 @@ export interface SpatialElementPreparation {
 	timings?: { buildMs: number; gpuWarmMs: number };
 }
 export const preparationKey = (
-	stage: Pick<SpatialStageConfig, 'hdr' | 'glb' | 'lodPair' | 'model' | 'background'>
-) => JSON.stringify([stage.hdr, stage.glb, stage.lodPair, stage.model ?? {}, stage.background]);
+	stage: Pick<SpatialElementScene, 'hdr' | 'glb' | 'lodPair' | 'model' | 'background'>
+) => JSON.stringify([stage.hdr, stage.glb, stage.lodPair, stage.model ?? {}, { ...DEFAULT_BACKGROUND, ...stage.background }]);
 
 /** At most one speculative presentation is retained; active instances are adopted by the stage. */
 export class CatalogPreparation {
@@ -46,7 +47,7 @@ export class CatalogPreparation {
 		) => Promise<void>,
 		private changed: () => void
 	) {}
-	prepare(stage: SpatialStageConfig) {
+	prepare(stage: SpatialElementScene) {
 		const key = preparationKey(stage);
 		if (this.current?.key === key && this.current.highState !== 'adopted') return this.current;
 		this.dispose();

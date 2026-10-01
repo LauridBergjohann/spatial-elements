@@ -1,5 +1,7 @@
 # SpatialElement terminology migration
 
+This records the earlier naming migration. The current flat element API and removal of SpatialStageConfig are covered by [configuration migration](configuration-migration.md).
+
 Completed against the pre-release API on 2026-09-26. Spatial Elements describes individual objects and collections, not only commerce products. This is a breaking source API rename before the first npm release; no legacy aliases are retained.
 
 ## Consumer changes

@@ -1,21 +1,23 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Stage from '../stage/Stage.svelte';
-	import type { CatalogPage } from '@spatial-elements/core/catalog/catalogPage';
 	import type { StageRenderSettings } from '@spatial-elements/core';
 	import { getCssPanelBoxShadow, resolvePanelShadowStrength } from '@spatial-elements/core/stage/panelShadow';
 	import { provideSpatialTheme } from './brandContext.js';
-	import type { SpatialTheme, SpatialStageConfig } from '@spatial-elements/core/spatial-element/types';
+	import type { SpatialTheme } from '@spatial-elements/core/spatial-element/types';
 
 	interface Props {
+		/** Shared appearance and namespace. Use createSpatialTheme for defaults. */
 		theme: SpatialTheme;
-		stage: SpatialStageConfig;
+		/** Optional GPU resolution budget; defaults to DPR 1 and 2,073,600 pixels. */
 		renderSettings?: StageRenderSettings;
-		catalog?: CatalogPage;
+		/** Draco decoder directory, including trailing slash. Default: /assets/draco/gltf/; the host must serve the files. */
+		dracoDecoderPath?: string;
+		/** Layout contents. ContentPage and SpatialElementPage register their own data. */
 		children?: Snippet;
 	}
 
-	let { theme, stage, renderSettings, catalog, children }: Props = $props();
+	let { theme, renderSettings, dracoDecoderPath, children }: Props = $props();
 
 	provideSpatialTheme(() => theme);
 
@@ -79,15 +81,10 @@
 
 <div class="brand-stage-shell" style={brandStyle}>
 	<Stage
-		{catalog}
+		brandId={theme.id}
 		{renderSettings}
-		background={stage.background}
+		{dracoDecoderPath}
 		pageBackground={theme.background}
-		hdr={stage.hdr}
-		glb={stage.glb}
-		lodPair={stage.lodPair}
-		model={stage.model}
-		camera={stage.camera}
 		interactionTheme={theme.interactionTheme}
 		ariaLabel={`${theme.name} spatialElement stage`}
 	>

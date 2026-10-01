@@ -38,7 +38,8 @@ import {
 	RESTING_CATALOG_PRESENTATION,
 	type CatalogTransitionPresentation
 } from '../catalog/catalogPresentation.js';
-import type { SpatialListItem, SpatialStageConfig } from '../spatial-element/types.js';
+import type { SpatialListItem } from '../spatial-element/types.js';
+import type { SpatialElementScene } from '../spatial-element/spatialElementScene.js';
 import { CSS3DRenderer } from 'three/addons/renderers/CSS3DRenderer.js';
 
 import { uniform } from 'three/tsl';
@@ -1872,6 +1873,8 @@ export class StageExperience {
 	}
 
 	private async loadEnvironment() {
+		// A content page without any spatial elements has no environment to load.
+		if (!this.hdr) return;
 		const token = this.pageBinding.token;
 		const lease = this.environments.acquire(this.hdr);
 		try {
@@ -1903,7 +1906,7 @@ export class StageExperience {
 		this.presentation.readiness.markApplied();
 	}
 
-	prefetchSpatialElement(stage: SpatialStageConfig) {
+	prefetchSpatialElement(stage: SpatialElementScene) {
 		if (!this.disposed && this.preparation && !this.catalogHandoff) this.preparation.prepare(stage);
 	}
 

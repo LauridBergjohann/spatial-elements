@@ -97,7 +97,7 @@ A normal dependency could resolve to a second incompatible installation. Modern 
 installs a missing peer; explicit installation is only needed when the app imports Three.js itself,
 or for package managers/configurations that do not install peers automatically.
 
-Svelte 5 / SvelteKit 2, Three.js ^0.185.1, Node 22.12+ tooling.
+Svelte 5 / SvelteKit 2, Three.js ^0.186.1, Node 22.12+ tooling.
 Semantic HTML and poster fallbacks remain available without GPU rendering.
 Packages include MPL-2.0; attribution is appreciated, not a license condition.
 Private brand assets remain outside the public repository and tarballs.

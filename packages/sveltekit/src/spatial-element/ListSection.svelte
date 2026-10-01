@@ -1,9 +1,17 @@
 <script lang="ts">
 	import Section from './Section.svelte';
 	import SpatialElementCard from './SpatialElementCard.svelte';
-	import type { SpatialListItem, SpatialElementSectionDefinition } from '@spatial-elements/core/spatial-element/types';
-	let { section, list }: { section: SpatialElementSectionDefinition; list: SpatialListItem[] } =
-		$props();
+	import type {
+		SpatialListItem,
+		SpatialElementSectionDefinition
+	} from '@spatial-elements/core/spatial-element/types';
+	interface Props {
+		/** Unique page-local anchor, heading and optional CSS appearance overrides. */
+		section: SpatialElementSectionDefinition;
+		/** Project element documents with getSpatialListItems; assets register automatically. */
+		list: SpatialListItem[];
+	}
+	let { section, list }: Props = $props();
 </script>
 
 <Section {section} presentation="list">

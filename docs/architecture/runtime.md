@@ -1,5 +1,17 @@
 # Runtime scenarios and ownership
 
+## Page-owned configuration
+
+Each persistent Stage owns a SpatialPageRegistry; no module-global page state is used.
+ContentPage registers a content-page getter with its explicit HDR and SpatialElementPage a getter for its current
+element. The adapter derives its internal CatalogPage and renderer scene from that registration;
+the layout supplies only the theme, renderer budget and decoder infrastructure. List and carousel
+sections register their own occurrences independently. During route overlap, unregistering an
+outgoing page cannot clear the newer page's registration. Svelte context scopes ownership to
+the shell; registration happens on mount, while SSR renders ordinary page content.
+
+Public geometry always supplies Low and High. The adapter normalizes URL shorthand into versioned resource requests; identical URLs use the same resource identity across roles. Generated frame metadata remains optional; Low determines the shared fit otherwise.
+
 ## Prepared navigation
 
 ~~~mermaid

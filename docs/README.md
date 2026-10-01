@@ -1,5 +1,7 @@
 # Documentation
 
+Start with [Getting started](getting-started.md), then the [API reference](api.md). Updating a consumer? Read [configuration migration](configuration-migration.md).
+
 1. [Authoring](authoring.md): compose content, element lists, carousels and detail pages.
 2. [Architecture](architecture/README.md): current arc42 overview with C4 context, container and component views.
 3. [Runtime scenarios](architecture/runtime.md): preparation, navigation, rendering and cleanup.

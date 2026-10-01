@@ -5,7 +5,8 @@ import { prepareSpatialElementFrame } from '../stage/spatialElementFrame.js';
 import type { SpatialElementRefinement } from '../stage/SpatialElementRefinement.js';
 import { resolveSpatialElementLodPair } from './spatialElementLodPair.js';
 import * as THREE from 'three/webgpu';
-import type { SpatialListItem, SpatialStageConfig } from '../spatial-element/types.js';
+import type { SpatialListItem } from '../spatial-element/types.js';
+import { getSpatialElementScene, hasSpatialElementScene, type SpatialElementScene } from '../spatial-element/spatialElementScene.js';
 import { getStageVisualScrollPosition } from '../stage/scrollFrame.js';
 import {
 	getCameraOrbitQuaternion,
@@ -42,7 +43,7 @@ interface CatalogActor {
 	pose?: CatalogPoseProvider;
 	clip?: Rect;
 	band?: 'front' | 'rear';
-	stage: SpatialStageConfig;
+	stage: SpatialElementScene;
 	instance: SpatialElementAssetInstance;
 	model: THREE.Group;
 	root: THREE.Group;
@@ -262,7 +263,7 @@ export class CatalogSpatialElementLayer {
 		this.desired.clear();
 		this.spatialElements.clear();
 		for (const spatialElement of spatialElements) {
-			if (!spatialElement.stage) continue;
+			if (!hasSpatialElementScene(spatialElement)) continue;
 			const key = JSON.stringify([
 				getSpatialElementEntityKey(brandId, spatialElement.id),
 				spatialElement.occurrence ?? null
@@ -271,13 +272,14 @@ export class CatalogSpatialElementLayer {
 			this.spatialElements.set(key, { brandId, spatialElement });
 		}
 		for (const actor of this.actors.values()) {
-			actor.pose = this.spatialElements.get(actor.key)?.spatialElement.pose ?? actor.pose;
+			const nextElement = this.spatialElements.get(actor.key)?.spatialElement;
+			actor.pose = nextElement?.pose ?? actor.pose;
 			if (this.handoff && actor.rendered) continue;
 			if (
 				this.handoff?.actor !== actor &&
 				(!this.desired.has(actor.key) ||
 					JSON.stringify(actor.stage) !==
-						JSON.stringify(this.spatialElements.get(actor.key)?.spatialElement.stage))
+						JSON.stringify(nextElement && hasSpatialElementScene(nextElement) ? getSpatialElementScene(nextElement) : undefined))
 			)
 				this.disposeActor(actor);
 		}
@@ -317,17 +319,12 @@ export class CatalogSpatialElementLayer {
 		if (!candidates.length) return;
 		await Promise.all(
 			candidates.map(async ([key, { brandId, spatialElement }]) => {
-				if (!spatialElement.stage) return;
+				if (!hasSpatialElementScene(spatialElement)) return;
 				const request = new AbortController();
 				this.requests.add(request);
 				this.loadingKeys.add(key);
 				const lease = this.assets.acquire(
-					resolveSpatialElementLodPair(spatialElement.stage.glb, spatialElement.stage.lodPair)?.low ?? {
-						url: spatialElement.stage.glb,
-						format: 'glb',
-						revision: 'legacy-unversioned',
-						requirements: { decoders: ['draco'], extensions: [] }
-					},
+					getSpatialElementScene(spatialElement).lodPair!.low,
 					{ signal: request.signal }
 				);
 				let instance: SpatialElementAssetInstance | undefined;
@@ -337,7 +334,7 @@ export class CatalogSpatialElementLayer {
 						instance.dispose();
 						return;
 					}
-					const actor = this.createActor(key, brandId, spatialElement.id, spatialElement.stage, instance);
+					const actor = this.createActor(key, brandId, spatialElement.id, getSpatialElementScene(spatialElement), instance);
 					actor.occurrence = spatialElement.occurrence;
 					actor.pose = spatialElement.pose;
 					this.actors.set(key, actor);
@@ -897,7 +894,7 @@ export class CatalogSpatialElementLayer {
 		key: string,
 		brandId: string,
 		spatialElementId: string,
-		stage: SpatialStageConfig,
+		stage: SpatialElementScene,
 		instance: SpatialElementAssetInstance
 	): CatalogActor {
 		const pair = resolveSpatialElementLodPair(stage.glb, stage.lodPair);

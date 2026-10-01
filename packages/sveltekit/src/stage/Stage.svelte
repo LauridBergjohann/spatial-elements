@@ -14,18 +14,36 @@
 		StageViewportTarget,
 		StageZoomFocusState
 	} from '@spatial-elements/core/stage/StageExperience';
-	import { isStageVisualTestMode, type StageVisualTestController } from '@spatial-elements/core/stage/stageVisualTest';
+	import {
+		isStageVisualTestMode,
+		type StageVisualTestController
+	} from '@spatial-elements/core/stage/stageVisualTest';
 	import { resolveStageRenderSettings } from '@spatial-elements/core/stage/renderSettings';
 	import { VirtualScrollController } from '@spatial-elements/core/stage/VirtualScrollController';
 	import ScrollNavigationBridge from '../catalog/ScrollNavigationBridge.svelte';
 	import { CatalogTransition } from '@spatial-elements/core/catalog/CatalogTransition';
-	import { CATALOG_ENDPOINTS, CatalogEndpointRegistry } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
+	import {
+		CATALOG_ENDPOINTS,
+		CatalogEndpointRegistry
+	} from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
 	import '../catalog/catalogTransition.css';
 	import { createStageSpatialElementAssetManifest } from '@spatial-elements/core/catalog/spatialElementAssets';
 	import { CATALOG_ITEMS, CatalogItems } from '@spatial-elements/core/catalog/catalogItems';
-	import { CATALOG_SECTIONS, CatalogSections } from '@spatial-elements/core/catalog/CatalogSections';
+	import {
+		CATALOG_SECTIONS,
+		CatalogSections
+	} from '@spatial-elements/core/catalog/CatalogSections';
 	import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
 	import type { CatalogPage } from '@spatial-elements/core/catalog/catalogPage';
+	import {
+		SpatialPageRegistry,
+		type SpatialPage
+	} from '@spatial-elements/core/catalog/SpatialPageRegistry';
+	import {
+		getSpatialElementScene,
+		hasSpatialElementScene
+	} from '@spatial-elements/core/spatial-element/spatialElementScene';
+	import { SPATIAL_PAGE } from '../spatial-element/spatialPageContext.js';
 	import type { OnNavigate } from '@sveltejs/kit';
 	import {
 		STAGE_CONTEXT_KEY,
@@ -35,6 +53,8 @@
 	} from '@spatial-elements/core/stage/panelContext';
 
 	interface Props {
+		/** Namespace for automatic ContentPage/SpatialElementPage registration. Supplied by BrandStageShell. */
+		brandId?: string;
 		renderSettings?: StageRenderSettings;
 		dracoDecoderPath?: string;
 		ariaLabel?: string;
@@ -46,32 +66,64 @@
 		model?: StageModelSettings;
 		camera?: StageCameraSettings;
 		interactionTheme?: Partial<StageInteractionTheme>;
+		/** @deprecated Low-level manual adapter. BrandStageShell manages catalog state from its pages. */
 		catalog?: CatalogPage;
 		children?: Snippet;
 	}
 
 	let {
+		brandId,
 		ariaLabel = 'WebGPU 3D stage',
 		renderSettings,
 		dracoDecoderPath,
 		pageBackground = '#ffffff',
-		background,
-		hdr,
-		glb,
-		lodPair,
-		model,
-		camera,
+		background: standaloneBackground,
+		hdr: standaloneHdr,
+		glb: standaloneGlb,
+		lodPair: standaloneLodPair,
+		model: standaloneModel,
+		camera: standaloneCamera,
 		interactionTheme,
-		catalog,
+		catalog: explicitCatalog,
 		children
 	}: Props = $props();
 
+	let readPage = $state.raw<(() => SpatialPage) | undefined>();
+	setContext(
+		SPATIAL_PAGE,
+		new SpatialPageRegistry((read) => {
+			readPage = read;
+		})
+	);
+	const activePage = $derived(readPage?.());
+	const activeElement = $derived(activePage?.kind === 'detail' ? activePage.element : undefined);
+	const activeScene = $derived(activeElement ? getSpatialElementScene(activeElement) : undefined);
+	const catalog = $derived<CatalogPage | undefined>(
+		brandId
+			? {
+					brandId,
+					view: activeElement ? 'detail' : 'content',
+					spatialElementId: activeElement?.id,
+					spatialElementStage: activeScene,
+					spatialElements: []
+				}
+			: explicitCatalog
+	);
 	let displayedSpatialElements = $state<SpatialListItem[]>([]);
 	setContext(CATALOG_ITEMS, new CatalogItems((items) => (displayedSpatialElements = items)));
 	setContext(CATALOG_SECTIONS, new CatalogSections());
 	const catalogSpatialElements = $derived(
 		displayedSpatialElements.length ? displayedSpatialElements : (catalog?.spatialElements ?? [])
 	);
+	const background = $derived(brandId ? activeElement?.background : standaloneBackground);
+	const hdr = $derived(brandId
+		? (activePage?.kind === 'content' ? activePage.hdr : activeScene?.hdr ?? '')
+		: standaloneHdr);
+	const glb = $derived(brandId ? (activeScene?.glb ?? '') : standaloneGlb);
+	const lodPair = $derived(brandId ? activeScene?.lodPair : standaloneLodPair);
+	const model = $derived(brandId ? activeElement?.model : standaloneModel);
+	const camera = $derived(brandId ? activeElement?.camera : standaloneCamera);
+
 	const registeredPanels: StagePanelRegistration[] = [];
 	const catalogEndpoints = new CatalogEndpointRegistry();
 	setContext(CATALOG_ENDPOINTS, catalogEndpoints);
@@ -298,14 +350,22 @@
 	function registerSpatialElements() {
 		if (!catalog || !experience) return;
 		for (const spatialElement of catalogSpatialElements) {
-			if (spatialElement.stage)
+			if (hasSpatialElementScene(spatialElement))
 				experience.spatialElements.setManifest(
-					createStageSpatialElementAssetManifest(catalog.brandId, spatialElement.id, spatialElement.stage)
+					createStageSpatialElementAssetManifest(
+						catalog.brandId,
+						spatialElement.id,
+						getSpatialElementScene(spatialElement)
+					)
 				);
 		}
 		if (catalog.spatialElementId && catalog.spatialElementStage) {
 			experience.spatialElements.setManifest(
-				createStageSpatialElementAssetManifest(catalog.brandId, catalog.spatialElementId, catalog.spatialElementStage)
+				createStageSpatialElementAssetManifest(
+					catalog.brandId,
+					catalog.spatialElementId,
+					catalog.spatialElementStage
+				)
 			);
 		}
 	}

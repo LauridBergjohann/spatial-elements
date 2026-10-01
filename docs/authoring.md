@@ -1,16 +1,19 @@
 # Author a catalog
 
-Use a persistent brand layout with BrandStageShell. Supply a SpatialTheme and a
-SpatialStageConfig (including explicit glb and hdr URLs). Pass catalog with brandId, view
-(content or detail), active spatialElementId/spatialElementStage and `spatialElements: []`. Sections register their
-own occurrences; asset identity remains element identity. The demo layout shows reactive route data.
+Start with the executable [getting-started guide](getting-started.md) and the [API reference](api.md).
+
+Use a persistent brand layout with BrandStageShell and a SpatialTheme. Create a theme with
+createSpatialTheme({ id, name }) and optional appearance overrides. Define geometry: { low, high }, detail hdr and other
+model settings directly on SpatialElementData. ContentPage and SpatialElementPage register
+their own data; ListSection and CarouselSection register their own occurrences. Layouts do
+not need stage or catalog props. Asset identity remains element identity.
 
 ~~~svelte
 <script lang="ts">
   import { ContentPage, Section, ListSection, CarouselSection } from '@spatial-elements/sveltekit';
   let { data } = $props();
 </script>
-<ContentPage page={{ title: 'Collection', breadcrumbs: [{ label: 'Elements' }] }}>
+<ContentPage hdr="/assets/category.hdr" page={{ title: 'Collection', breadcrumbs: [{ label: 'Elements' }] }}>
   <Section section={{ id: 'introduction', title: 'Discover the collection' }}>
     <p>Your own text, images and links.</p>
   </Section>
@@ -26,10 +29,12 @@ behavior. Current navigation recipes use `/brand/categories/{list,carousel,mixed
 `/brand/elements/id` routes. The host-specific `/brand/products/id` spelling also remains supported;
 arbitrary route structures are not yet configurable. The demo uses /demo/... .
 
+Set category lighting explicitly through ContentPage.hdr (also required by SpatialListPage). No HDR is inferred from list contents.
+
 Declare low/high LODs in one common coordinate frame; a verified physical frame needs independently
 validated dimensions. The generated demo uses provisional shared frames. Provide accessible posters
 for fallback rendering. No default element model or third-party environment is bundled. Supply a
-Draco decoder directory with stage.dracoDecoderPath (trailing slash, base-path aware) when using Draco;
+Draco decoder directory with the BrandStageShell dracoDecoderPath prop (trailing slash, base-path aware) when using Draco;
 the compatibility default is /assets/draco/gltf/. Meshopt uses the Three.js decoder dependency.
 
 Asset URLs, base-path resolution, content fetching and deployment are application responsibilities.

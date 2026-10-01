@@ -75,7 +75,7 @@ export interface StageViewportRegistration {
 }
 
 export interface StageContext {
-	prefetchSpatialElement?(stage: import('../spatial-element/types.js').SpatialStageConfig): void;
+	prefetchSpatialElement?(stage: import('../spatial-element/spatialElementScene.js').SpatialElementScene): void;
 	registerPanel(panel: StagePanelRegistration): () => void;
 	registerViewport(viewport: StageViewportRegistration): () => void;
 	/** Restores the element camera to its initial fitted pose. */

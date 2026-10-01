@@ -36,7 +36,7 @@ writeFileSync(join(consumer,'package.json'),JSON.stringify({name:'spatial-elemen
 console.log('Installing independent consumer: '+consumer);
 console.log(npm(['install','--no-audit','--no-fund'],consumer));
 assert(!dependencies.three, 'Consumer must exercise automatic peer installation');
-assert(JSON.parse(readFileSync(join(consumer,'node_modules/three/package.json'),'utf8')).version.startsWith('0.185.'), 'Compatible Three.js peer was not installed');
+assert(JSON.parse(readFileSync(join(consumer,'node_modules/three/package.json'),'utf8')).version.startsWith('0.186.'), 'Compatible Three.js peer was not installed');
 for(const name of ['core','sveltekit'])assert(realpathSync(join(consumer,'node_modules/@spatial-elements',name)).startsWith(resolve(consumer)),'Workspace link escaped isolation');
 writeFileSync(join(consumer,'check.mjs'),"import { StageExperience, SpatialElementAssetManager } from '@spatial-elements/core';\nif(typeof StageExperience !== 'function' || typeof SpatialElementAssetManager !== 'function') throw Error('Missing runtime exports');\nconsole.log('Core imports without a DOM/GPU');\n");
 console.log(execFileSync(process.execPath,['check.mjs'],{cwd:consumer,encoding:'utf8'}));

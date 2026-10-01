@@ -218,8 +218,8 @@ describe('catalog preview lifetime', () => {
 			eyebrow: 'SpatialElement',
 			title: 'SpatialElement',
 			features: [],
-			stage: {
-				glb: `/assets/${index}.glb`,
+			...{
+				geometry: { low: `/assets/${index}.glb`, high: `/assets/${index}.glb` },
 				hdr: '/assets/environment.hdr',
 				background: { blurriness: 0, tint: '#fff', tintIntensity: 0 }
 			}
@@ -338,7 +338,7 @@ describe('catalog preview lifetime', () => {
 		try {
 			await layer.setSpatialElements('demo', [{
 				id: 'cube', href: '/cube', eyebrow: 'Form', title: 'Cube',
-				stage: { glb: '/cube.glb', hdr: '/studio.hdr', background: { blurriness: 0, tint: '#fff', tintIntensity: 0 } },
+				geometry: { low: '/cube.glb', high: '/cube.glb' }, hdr: '/studio.hdr', background: { blurriness: 0, tint: '#fff', tintIntensity: 0 },
 				pose: { kind: 'carousel', read: () => ({ x: 0.5, y: 0.5, size: 0.82, depth: 0, yaw: 0, visible: true, front: true, panelOpacity: 1, opacity: 1 }) }
 			}]);
 			const renderer = {

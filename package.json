@@ -40,11 +40,11 @@
     "@sveltejs/package": "2.5.8",
     "@sveltejs/vite-plugin-svelte": "7.2.0",
     "@types/node": "^24",
-    "@types/three": "0.185.1",
+    "@types/three": "0.186.0",
     "concurrently": "10.0.5",
     "svelte": "5.56.4",
     "svelte-check": "4.7.2",
-    "three": "0.185.1",
+    "three": "0.186.1",
     "typescript": "6.0.3",
     "vite": "8.1.4",
     "vitest": "^4.1.8"

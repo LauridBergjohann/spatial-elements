@@ -3,7 +3,7 @@
 	import { ShoppingCart } from 'lucide-svelte';
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
-	import type { SpatialElementData } from '@spatial-elements/core/spatial-element/types';
+	import type { ResolvedSpatialElementData as SpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 	import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
 
 	let { spatialElement }: { spatialElement: SpatialElementData } = $props();
@@ -82,55 +82,57 @@
 				{/each}
 			</ul>
 
-			{#if spatialElement.action.href}
-				<a
-					use:catalogEndpoint={{
-						brandId: theme.id,
-						spatialElementId: spatialElement.id,
-						slot: 'detail.summary',
-						role: 'primary-action'
-					}}
-					data-catalog-rich-shared="primary-action"
-					data-catalog-semantic={catalogActionSemantic(spatialElement.action)}
-					class="spatial-element-action spatial-element-action-expanded"
-					href={spatialElement.action.href}
-					rel="external"
-					aria-label={spatialElement.action.ariaLabel}
-				>
-					<span class="spatial-element-action-surface" data-catalog-secondary>
-						<ShoppingCart
-							class="spatial-element-action-icon"
-							size={27}
-							strokeWidth={2}
-							aria-hidden="true"
-						/>
-						<span class="spatial-element-action-label">{spatialElement.action.label}</span>
-					</span>
-				</a>
-			{:else}
-				<button
-					use:catalogEndpoint={{
-						brandId: theme.id,
-						spatialElementId: spatialElement.id,
-						slot: 'detail.summary',
-						role: 'primary-action'
-					}}
-					data-catalog-rich-shared="primary-action"
-					data-catalog-semantic={catalogActionSemantic(spatialElement.action)}
-					class="spatial-element-action spatial-element-action-expanded"
-					type="button"
-					aria-label={spatialElement.action.ariaLabel}
-				>
-					<span class="spatial-element-action-surface" data-catalog-secondary>
-						<ShoppingCart
-							class="spatial-element-action-icon"
-							size={27}
-							strokeWidth={2}
-							aria-hidden="true"
-						/>
-						<span class="spatial-element-action-label">{spatialElement.action.label}</span>
-					</span>
-				</button>
+			{#if spatialElement.action}
+				{#if spatialElement.action.href}
+					<a
+						use:catalogEndpoint={{
+							brandId: theme.id,
+							spatialElementId: spatialElement.id,
+							slot: 'detail.summary',
+							role: 'primary-action'
+						}}
+						data-catalog-rich-shared="primary-action"
+						data-catalog-semantic={catalogActionSemantic(spatialElement.action)}
+						class="spatial-element-action spatial-element-action-expanded"
+						href={spatialElement.action.href}
+						rel="external"
+						aria-label={spatialElement.action.ariaLabel}
+					>
+						<span class="spatial-element-action-surface" data-catalog-secondary>
+							<ShoppingCart
+								class="spatial-element-action-icon"
+								size={27}
+								strokeWidth={2}
+								aria-hidden="true"
+							/>
+							<span class="spatial-element-action-label">{spatialElement.action.label}</span>
+						</span>
+					</a>
+				{:else}
+					<button
+						use:catalogEndpoint={{
+							brandId: theme.id,
+							spatialElementId: spatialElement.id,
+							slot: 'detail.summary',
+							role: 'primary-action'
+						}}
+						data-catalog-rich-shared="primary-action"
+						data-catalog-semantic={catalogActionSemantic(spatialElement.action)}
+						class="spatial-element-action spatial-element-action-expanded"
+						type="button"
+						aria-label={spatialElement.action.ariaLabel}
+					>
+						<span class="spatial-element-action-surface" data-catalog-secondary>
+							<ShoppingCart
+								class="spatial-element-action-icon"
+								size={27}
+								strokeWidth={2}
+								aria-hidden="true"
+							/>
+							<span class="spatial-element-action-label">{spatialElement.action.label}</span>
+						</span>
+					</button>
+				{/if}
 			{/if}
 		</div>
 	</Panel>

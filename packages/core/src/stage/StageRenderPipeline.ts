@@ -251,7 +251,7 @@ export class StageRenderPipeline {
 	private _activeRenderTargets?: StageRenderTargetSet;
 	private stageDisplayMaterial?: THREE.NodeMaterial;
 	private _stageDisplayQuad?: THREE.QuadMesh;
-	private stageDisplayTextureNode?: ReturnType<typeof texture>;
+	private stageDisplayTextureNode?: THREE.TextureNode;
 	private foregroundCanvasTarget?: THREE.CanvasTarget;
 	private carouselRearTarget?: THREE.CanvasTarget;
 	private carouselRearCanvas?: HTMLCanvasElement;
@@ -354,7 +354,7 @@ export class StageRenderPipeline {
 
 		return source;
 	}
-	private createOutlineOpacity(mask: ReturnType<typeof texture>) {
+	private createOutlineOpacity(mask: THREE.TextureNode) {
 		const calculate = () => {
 			const texel = this.outlineTexel;
 			const glowTexel = this.outlineGlowTexel;

@@ -8,7 +8,8 @@ export interface SpatialElementLodPair {
 	low: SpatialElementAssetResource;
 	high: SpatialElementAssetResource;
 	assetToFrame: SpatialElementMatrix4;
-	bounds: { min: SpatialElementVector3; max: SpatialElementVector3 };
+	/** Optional generated bounds; otherwise fit the loaded Low geometry. */
+	bounds?: { min: SpatialElementVector3; max: SpatialElementVector3 };
 }
 
 /** Explicit legacy source overrides invalidate the associated pair as well. */

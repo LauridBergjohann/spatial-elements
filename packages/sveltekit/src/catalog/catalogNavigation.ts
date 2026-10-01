@@ -1,3 +1,4 @@
+import { getSpatialElementScene, hasSpatialElementScene } from '@spatial-elements/core/spatial-element/spatialElementScene';
 import { getContext } from 'svelte';
 import { resolve } from '$app/paths';
 import { navigating } from '$app/state';
@@ -13,7 +14,7 @@ export function useCatalogNavigation() {
 		pending: () => navigating.to?.url,
 		prepare(spatialElement: SpatialListItem) {
 			void preloadData(href(spatialElement.href)).catch(() => {});
-			if (spatialElement.stage) stage?.prefetchSpatialElement?.(spatialElement.stage);
+			if (hasSpatialElementScene(spatialElement)) stage?.prefetchSpatialElement?.(getSpatialElementScene(spatialElement));
 		}
 	};
 }

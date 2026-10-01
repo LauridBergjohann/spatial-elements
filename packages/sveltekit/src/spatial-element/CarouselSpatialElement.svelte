@@ -127,9 +127,9 @@
 				? `left:${(pose.x - 0.19 * Math.cos(pose.yaw)) * 100}%;top:${pose.y * 100}%;width:${pose.size * 100}%;max-width:${pose.size * 480}px;z-index:${Math.round(1300 + pose.depth)}`
 				: undefined}
 		>
-			{#if spatialElement.stage?.fallbackImage}<img
+			{#if spatialElement.fallbackImage}<img
 					draggable="false"
-					src={spatialElement.stage.fallbackImage}
+					src={spatialElement.fallbackImage}
 					alt={`${brand.name} ${spatialElement.title}`}
 					width="320"
 					height="320"
