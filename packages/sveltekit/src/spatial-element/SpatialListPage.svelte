@@ -6,16 +6,19 @@
 	import type { SpatialListItem, ContentPageData } from '@spatial-elements/core/spatial-element/types';
 	let {
 		spatialElements,
+		hdr,
 		sectionLink,
 		...page
 	}: ContentPageData & {
+		/** Explicit environment for the collection. */
+		hdr: string;
 		spatialElements: SpatialListItem[];
 		sectionLink?: { href: string; label: string };
 	} = $props();
 	const { href } = useCatalogNavigation();
 </script>
 
-<ContentPage {page}>
+<ContentPage {page} {hdr}>
 	<ListSection section={{ id: 'elements', title: 'Elements' }} list={spatialElements} />
 	{#if sectionLink}<Section section={{ id: 'more', title: 'More information' }}
 			><a href={href(sectionLink.href)}>{sectionLink.label}</a></Section

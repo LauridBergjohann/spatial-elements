@@ -160,8 +160,18 @@ export interface StageVisualTestView {
 	targetOffset?: Partial<{ x: number; y: number; z: number }>;
 }
 
+/** Bounds WebGPU rasterization cost independently of native DOM text resolution. */
+export interface StageRenderSettings {
+	/** Maximum physical pixels per CSS pixel. Defaults to 1. */
+	maxPixelRatio?: number;
+	/** Maximum pixels per full-size canvas/capture. Defaults to 2,073,600; null disables this limit. */
+	maxPixels?: number | null;
+}
+
 /** Construction options for a {@link StageExperience}. */
 export interface StageExperienceOptions {
+	/** Stage-wide output quality; native DOM content remains at the device pixel ratio. */
+	renderSettings?: StageRenderSettings;
 	/** Directory containing Draco decoder files, including trailing slash. */
 	dracoDecoderPath?: string;
 	/** Opaque page surface, independent of the HDR environment. */

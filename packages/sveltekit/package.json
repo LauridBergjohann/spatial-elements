@@ -1,6 +1,6 @@
 {
   "name": "@spatial-elements/sveltekit",
-  "version": "0.1.0-beta.2",
+  "version": "1.0.0-beta.3",
   "description": "SvelteKit components and navigation for Spatial Elements.",
   "license": "MPL-2.0",
   "type": "module",
@@ -39,17 +39,17 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@spatial-elements/core": "0.1.0-beta.2",
+    "@spatial-elements/core": "1.0.0-beta.3",
     "lucide-svelte": "^1.0.1"
   },
   "peerDependencies": {
     "svelte": "^5.56.4",
     "@sveltejs/kit": "^2.70.3",
-    "three": "^0.185.1"
+    "three": "^0.186.1"
   },
   "publishConfig": {
     "access": "public",
-    "tag": "beta",
+    "tag": "latest",
     "registry": "https://registry.npmjs.org/"
   }
 }

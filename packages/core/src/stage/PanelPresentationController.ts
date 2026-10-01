@@ -283,6 +283,9 @@ export class PanelPresentationController {
 		element.style.position = 'absolute';
 		element.style.left = projected ? '0' : '50%';
 		element.style.top = projected ? '0' : '50%';
+		// The homography maps from the viewport origin. Own that origin explicitly
+		// so rendering never needs a layout-flushing offsetLeft/offsetTop read.
+		if (projected) element.style.margin = '0';
 		element.style.transformOrigin = projected ? '0 0' : '';
 		element.style.pointerEvents = 'auto';
 		element.style.userSelect = 'auto';
@@ -807,13 +810,11 @@ export class PanelPresentationController {
 		localCorners[2].set(halfWidth, -halfHeight, 0);
 		localCorners[3].set(-halfWidth, -halfHeight, 0);
 
-		const offsetLeft = element.offsetLeft;
-		const offsetTop = element.offsetTop;
 		localCorners.forEach((corner, index) => {
 			corner.applyMatrix4(minimap.layer.matrixWorld).project(minimap.screenCamera);
 			projectedCorners[index].set(
-				(corner.x + 1) * viewportWidth * 0.5 - offsetLeft,
-				(1 - corner.y) * viewportHeight * 0.5 - offsetTop
+				(corner.x + 1) * viewportWidth * 0.5,
+				(1 - corner.y) * viewportHeight * 0.5
 			);
 		});
 

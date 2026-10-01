@@ -108,13 +108,13 @@
 		data-spatial-element-id={spatialElement.id}
 		data-catalog-slot="catalog.card"
 	>
-		{#if spatialElement.stage?.fallbackImage}
+		{#if spatialElement.fallbackImage}
 			<img
 				class="catalog-poster"
 				data-catalog-poster
 				loading="lazy"
 				decoding="async"
-				src={spatialElement.stage.fallbackImage}
+				src={spatialElement.fallbackImage}
 				alt={`${brand.name} ${spatialElement.title}`}
 			/>
 		{/if}

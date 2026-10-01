@@ -1,6 +1,6 @@
 import type { RenderTarget } from 'three/webgpu';
 
-/** Three r185 diagnostic adapter only; never used for rendering or ownership. */
+/** Three r186 diagnostic adapter only; never used for rendering or ownership. */
 export function gaussianTargets(effect: unknown): RenderTarget[] {
 	const node = effect as { _horizontalRT?: RenderTarget; _verticalRT?: RenderTarget } | undefined;
 	return [node?._horizontalRT, node?._verticalRT].filter((target): target is RenderTarget =>

@@ -218,8 +218,8 @@ describe('catalog preview lifetime', () => {
 			eyebrow: 'SpatialElement',
 			title: 'SpatialElement',
 			features: [],
-			stage: {
-				glb: `/assets/${index}.glb`,
+			...{
+				geometry: { low: `/assets/${index}.glb`, high: `/assets/${index}.glb` },
 				hdr: '/assets/environment.hdr',
 				background: { blurriness: 0, tint: '#fff', tintIntensity: 0 }
 			}
@@ -249,6 +249,9 @@ describe('catalog preview lifetime', () => {
 			return animating;
 		};
 		expect(renderFrame(100)).toBe(false);
+		const listDraws = vi.mocked(renderer.render).mock.calls.length;
+		layer.draw(renderer, 'rear');
+		expect(renderer.render).toHaveBeenCalledTimes(listDraws);
 		const opacities = (scene: THREE.Scene) => {
 			const values: number[] = [];
 			scene.traverse((object) => {
@@ -278,7 +281,91 @@ describe('catalog preview lifetime', () => {
 		]);
 		layer.finishHandoff();
 		expect(manager.getStats().activeInstances).toBe(0);
+		const completedDraws = vi.mocked(renderer.render).mock.calls.length;
+		layer.draw(renderer, 'front');
+		layer.draw(renderer, 'rear');
+		expect(renderer.render).toHaveBeenCalledTimes(completedDraws);
 		layer.dispose();
 		manager.dispose();
+	});
+
+	it('measures carousel summary sizes before animation writes and refreshes them on resize', async () => {
+		const activity: string[] = [];
+		let summaryWidth = 360;
+		const summary = {
+			style: { transform: '', visibility: '' },
+			get offsetWidth() { activity.push('measure'); return summaryWidth; },
+			get offsetHeight() { activity.push('measure'); return 200; }
+		};
+		const hitTarget = { style: new Proxy({}, {
+			set(target, property, value) {
+				activity.push('write');
+				return Reflect.set(target, property, value);
+			}
+		}) };
+		const rect = { left: 0, top: 100, width: 1200, height: 600, right: 1200, bottom: 700 };
+		const card = {
+			isConnected: true,
+			dataset: {},
+			style: { transform: '', visibility: '', removeProperty: vi.fn() },
+			getBoundingClientRect: () => rect,
+			querySelector: (selector: string) => selector === '.summary' ? summary : hitTarget,
+			setAttribute: vi.fn(),
+			removeAttribute: vi.fn()
+		};
+		const slot = { isConnected: true, getBoundingClientRect: () => rect, closest: () => card };
+		let resized!: () => void;
+		const observe = vi.fn(), unobserve = vi.fn();
+		vi.stubGlobal('ResizeObserver', class {
+			constructor(callback: () => void) { resized = callback; }
+			observe = observe;
+			unobserve = unobserve;
+			disconnect() {}
+		});
+		vi.stubGlobal('window', {
+			innerWidth: 1440, innerHeight: 900, scrollX: 0, scrollY: 0,
+			matchMedia: () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
+			addEventListener: vi.fn(), removeEventListener: vi.fn()
+		});
+		vi.stubGlobal('CSS', { escape: (value: string) => value });
+		vi.stubGlobal('document', {
+			querySelector: () => ({ querySelectorAll: () => [], querySelector: () => slot })
+		});
+		const scene = new THREE.Group();
+		scene.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+		const manager = new SpatialElementAssetManager({ loader: { load: async () => ({ scene }) } });
+		const layer = new CatalogSpatialElementLayer(manager, vi.fn());
+		try {
+			await layer.setSpatialElements('demo', [{
+				id: 'cube', href: '/cube', eyebrow: 'Form', title: 'Cube',
+				geometry: { low: '/cube.glb', high: '/cube.glb' }, hdr: '/studio.hdr', background: { blurriness: 0, tint: '#fff', tintIntensity: 0 },
+				pose: { kind: 'carousel', read: () => ({ x: 0.5, y: 0.5, size: 0.82, depth: 0, yaw: 0, visible: true, front: true, panelOpacity: 1, opacity: 1 }) }
+			}]);
+			const renderer = {
+				coordinateSystem: THREE.WebGPUCoordinateSystem,
+				getScissor: (out: THREE.Vector4) => out.set(0, 0, 1440, 900),
+				getScissorTest: () => false,
+				setScissor: vi.fn(), setScissorTest: vi.fn(), clearDepth: vi.fn(), render: vi.fn()
+			} as unknown as THREE.WebGPURenderer;
+			layer.update(renderer, null, 100);
+			expect(activity.slice(0, 2)).toEqual(['measure', 'measure']);
+			expect(activity.filter((item) => item === 'measure')).toHaveLength(2);
+			expect(observe).toHaveBeenCalledWith(summary);
+			layer.draw(renderer, 'front');
+			// A clipped carousel group needs one scene submission, without an empty list pass.
+			expect(renderer.render).toHaveBeenCalledTimes(1);
+			activity.length = 0;
+			layer.update(renderer, null, 116);
+			expect(activity).not.toContain('measure');
+			summaryWidth = 420;
+			resized();
+			activity.length = 0;
+			layer.update(renderer, null, 132);
+			expect(activity.slice(0, 2)).toEqual(['measure', 'measure']);
+		} finally {
+			layer.dispose();
+			manager.dispose();
+		}
+		expect(unobserve).toHaveBeenCalledWith(summary);
 	});
 });

@@ -5,7 +5,8 @@ import { prepareSpatialElementFrame } from '../stage/spatialElementFrame.js';
 import type { SpatialElementRefinement } from '../stage/SpatialElementRefinement.js';
 import { resolveSpatialElementLodPair } from './spatialElementLodPair.js';
 import * as THREE from 'three/webgpu';
-import type { SpatialListItem, SpatialStageConfig } from '../spatial-element/types.js';
+import type { SpatialListItem } from '../spatial-element/types.js';
+import { getSpatialElementScene, hasSpatialElementScene, type SpatialElementScene } from '../spatial-element/spatialElementScene.js';
 import { getStageVisualScrollPosition } from '../stage/scrollFrame.js';
 import {
 	getCameraOrbitQuaternion,
@@ -42,7 +43,7 @@ interface CatalogActor {
 	pose?: CatalogPoseProvider;
 	clip?: Rect;
 	band?: 'front' | 'rear';
-	stage: SpatialStageConfig;
+	stage: SpatialElementScene;
 	instance: SpatialElementAssetInstance;
 	model: THREE.Group;
 	root: THREE.Group;
@@ -57,6 +58,9 @@ interface CatalogActor {
 	slot?: HTMLElement;
 	cardRect?: Rect;
 	slotRect?: Rect;
+	hitTarget?: HTMLElement;
+	summaryPanel?: HTMLElement;
+	summarySize?: { width: number; height: number };
 	scrollX: number;
 	scrollY: number;
 	rotationX: number;
@@ -259,7 +263,7 @@ export class CatalogSpatialElementLayer {
 		this.desired.clear();
 		this.spatialElements.clear();
 		for (const spatialElement of spatialElements) {
-			if (!spatialElement.stage) continue;
+			if (!hasSpatialElementScene(spatialElement)) continue;
 			const key = JSON.stringify([
 				getSpatialElementEntityKey(brandId, spatialElement.id),
 				spatialElement.occurrence ?? null
@@ -268,13 +272,14 @@ export class CatalogSpatialElementLayer {
 			this.spatialElements.set(key, { brandId, spatialElement });
 		}
 		for (const actor of this.actors.values()) {
-			actor.pose = this.spatialElements.get(actor.key)?.spatialElement.pose ?? actor.pose;
+			const nextElement = this.spatialElements.get(actor.key)?.spatialElement;
+			actor.pose = nextElement?.pose ?? actor.pose;
 			if (this.handoff && actor.rendered) continue;
 			if (
 				this.handoff?.actor !== actor &&
 				(!this.desired.has(actor.key) ||
 					JSON.stringify(actor.stage) !==
-						JSON.stringify(this.spatialElements.get(actor.key)?.spatialElement.stage))
+						JSON.stringify(nextElement && hasSpatialElementScene(nextElement) ? getSpatialElementScene(nextElement) : undefined))
 			)
 				this.disposeActor(actor);
 		}
@@ -314,17 +319,12 @@ export class CatalogSpatialElementLayer {
 		if (!candidates.length) return;
 		await Promise.all(
 			candidates.map(async ([key, { brandId, spatialElement }]) => {
-				if (!spatialElement.stage) return;
+				if (!hasSpatialElementScene(spatialElement)) return;
 				const request = new AbortController();
 				this.requests.add(request);
 				this.loadingKeys.add(key);
 				const lease = this.assets.acquire(
-					resolveSpatialElementLodPair(spatialElement.stage.glb, spatialElement.stage.lodPair)?.low ?? {
-						url: spatialElement.stage.glb,
-						format: 'glb',
-						revision: 'legacy-unversioned',
-						requirements: { decoders: ['draco'], extensions: [] }
-					},
+					getSpatialElementScene(spatialElement).lodPair!.low,
 					{ signal: request.signal }
 				);
 				let instance: SpatialElementAssetInstance | undefined;
@@ -334,7 +334,7 @@ export class CatalogSpatialElementLayer {
 						instance.dispose();
 						return;
 					}
-					const actor = this.createActor(key, brandId, spatialElement.id, spatialElement.stage, instance);
+					const actor = this.createActor(key, brandId, spatialElement.id, getSpatialElementScene(spatialElement), instance);
 					actor.occurrence = spatialElement.occurrence;
 					actor.pose = spatialElement.pose;
 					this.actors.set(key, actor);
@@ -439,7 +439,7 @@ export class CatalogSpatialElementLayer {
 					(Math.min(slot.width, compact ? 360 : slot.height) * 0.82) / (actor.radius * 2)
 				);
 				actor.root.updateMatrixWorld(true);
-				const hitTarget = actor.card.querySelector<HTMLElement>('.spatial-element-target');
+				const hitTarget = actor.hitTarget;
 				if (hitTarget) {
 					// Project cached model bounds, not the framing sphere: empty foreground
 					// margins must not intercept clicks on visible neighbouring spatialElements.
@@ -463,10 +463,9 @@ export class CatalogSpatialElementLayer {
 					hitTarget.style.height = `${bottom - top}px`;
 					hitTarget.style.maxWidth = 'none';
 				}
-				const panel = actor.card.querySelector<HTMLElement>('.summary');
-				if (panel) {
-					const pw = panel.offsetWidth,
-						ph = panel.offsetHeight;
+				const panel = actor.summaryPanel;
+				if (panel && actor.summarySize) {
+					const { width: pw, height: ph } = actor.summarySize;
 					const matrix = actor.tilt.matrixWorld
 						.clone()
 						.multiply(
@@ -588,12 +587,16 @@ export class CatalogSpatialElementLayer {
 	}
 
 	draw(renderer: THREE.WebGPURenderer, band: 'rear' | 'front') {
-		this.passes++;
 		const width = window.innerWidth,
 			height = window.innerHeight;
 		const all = [...this.actors.values()].filter(
 			(actor) => actor.root.visible && this.handoff?.actor !== actor
 		);
+		if (!all.some((actor) => (actor.band ?? 'front') === band)) {
+			if (band === 'front' && this.handoff) this.renderHandoff(renderer);
+			return;
+		}
+		this.passes++;
 		for (const actor of all) actor.root.visible = (actor.band ?? 'front') === band;
 		this.geometryFade.render(renderer, this.exitOpacity, () => {
 			renderer.clearDepth();
@@ -602,7 +605,7 @@ export class CatalogSpatialElementLayer {
 			);
 			const clipped = shown.filter((actor) => actor.clip);
 			for (const actor of clipped) actor.root.visible = false;
-			renderer.render(this.scene, this.camera);
+			if (shown.length > clipped.length) renderer.render(this.scene, this.camera);
 			if (clipped.length) {
 				const oldScissor = renderer.getScissor(new THREE.Vector4());
 				const oldTest = renderer.getScissorTest();
@@ -891,7 +894,7 @@ export class CatalogSpatialElementLayer {
 		key: string,
 		brandId: string,
 		spatialElementId: string,
-		stage: SpatialStageConfig,
+		stage: SpatialElementScene,
 		instance: SpatialElementAssetInstance
 	): CatalogActor {
 		const pair = resolveSpatialElementLodPair(stage.glb, stage.lodPair);
@@ -994,6 +997,16 @@ export class CatalogSpatialElementLayer {
 		for (const { actor } of measured) {
 			actor.cardRect = actor.card!.getBoundingClientRect();
 			actor.slotRect = actor.slot!.getBoundingClientRect();
+			if (actor.pose) {
+				actor.hitTarget = actor.card!.querySelector<HTMLElement>('.spatial-element-target') ?? undefined;
+				const panel = actor.card!.querySelector<HTMLElement>('.summary') ?? undefined;
+				if (actor.summaryPanel && actor.summaryPanel !== panel)
+					this.layoutObserver.unobserve(actor.summaryPanel);
+				actor.summaryPanel = panel;
+				actor.summarySize = panel ? { width: panel.offsetWidth, height: panel.offsetHeight } : undefined;
+				// Summary content can resize without changing its section's fixed height.
+				if (panel) this.layoutObserver.observe(panel);
+			}
 			actor.scrollX = scrollX;
 			actor.scrollY = scrollY;
 		}
@@ -1097,6 +1110,7 @@ export class CatalogSpatialElementLayer {
 	}
 
 	private disposeActor(actor: CatalogActor) {
+		if (actor.summaryPanel) this.layoutObserver.unobserve(actor.summaryPanel);
 		actor.root.removeFromParent();
 		actor.model.removeFromParent();
 		actor.card?.removeAttribute('data-catalog-model-ready');

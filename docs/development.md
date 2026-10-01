@@ -27,5 +27,5 @@ installation from the committed lockfile. Stop dev servers before switching mode
 for release checks, not live editing. Tarballs remain in ignored .local-packages; source manifests
 and lockfiles do not change.
 
-Keep @types/three aligned across linked repositories (currently 0.185.1); divergent copies can
+Keep @types/three aligned across linked repositories (currently 0.186.0); divergent copies can
 produce incompatible recursive type identities even when runtime Three.js is deduplicated.

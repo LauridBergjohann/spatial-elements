@@ -195,11 +195,17 @@ test('frozen backdrop probe seeds each target and reseeds after resize or a fail
 test('backdrop blur retains its CSS sampling density across DPR and scroll targets', () => {
 	vi.stubGlobal('window', { devicePixelRatio: 1, innerWidth: 800, innerHeight: 600 });
 	const f = rendererFixture();
+	const blurred = resolveLiquidGlassPanelOptions({ backdropBlur: 5 });
+	const sharp = resolveLiquidGlassPanelOptions({ backdropBlur: 0 });
 	const pipeline = new StageRenderPipeline({
+		renderSettings: { maxPixelRatio: 2 },
 		renderer: { ...f.renderer, setPixelRatio: vi.fn(), setSize: vi.fn() },
 		backgroundCanvasTarget: f.originalCanvas,
+		container: { toggleAttribute: vi.fn() },
 		interactionTheme: () => DEFAULT_INTERACTION_THEME,
-		fallbackPanelOptions: () => [resolveLiquidGlassPanelOptions({ backdropBlur: 5 })],
+		fallbackPanelOptions: () => [blurred, sharp],
+		panelRuntimes: () => [],
+		minimaps: () => new Map(),
 		frame: () => ({ outgoingBackground: false })
 	} as unknown as StageRenderPorts);
 	pipeline.createSceneCapture();
@@ -213,6 +219,17 @@ test('backdrop blur retains its CSS sampling density across DPR and scroll targe
 		expect(intermediates.map((target) => [target.width, target.height])).toEqual(
 			Array.from({ length: 4 }, () => [400, 300])
 		);
+		for (const scrolling of [false, true]) {
+			pipeline.setScrollRenderQuality(scrolling);
+			const blurredImage = pipeline.getPanelBlurTexture(blurred).image;
+			const sharpImage = pipeline.getPanelBlurTexture(sharp).image;
+			expect([blurredImage.width, blurredImage.height]).toEqual([400, 300]);
+			const scale = scrolling ? 0.82 : 1;
+			expect([sharpImage.width, sharpImage.height]).toEqual([
+				Math.round(800 * dpr * scale),
+				Math.round(600 * dpr * scale)
+			]);
+		}
 	}
 	pipeline.dispose();
 	f.originalTarget.dispose();
@@ -379,15 +396,15 @@ test('resizing retains target identity and applies the capped DPR to both qualit
 	pipeline.createSceneCapture();
 	const targets = pipeline.getRenderTargets();
 	pipeline.resizeRenderTargets();
-	expect(renderer.setPixelRatio).toHaveBeenCalledWith(2);
+	expect(renderer.setPixelRatio).toHaveBeenCalledWith(1);
 	expect(targets.map((target) => [target.width, target.height])).toEqual([
-		[1600, 1200],
-		[1312, 984]
+		[800, 600],
+		[656, 492]
 	]);
 	window.innerWidth = 1000;
 	pipeline.resizeRenderTargets();
 	expect(pipeline.getRenderTargets()).toEqual(targets);
-	expect(targets.map((target) => target.width)).toEqual([2000, 1640]);
+	expect(targets.map((target) => target.width)).toEqual([1000, 820]);
 	expect(pipeline.renderTargetSetCreations).toBe(2);
 	pipeline.dispose();
 	f.originalTarget.dispose();

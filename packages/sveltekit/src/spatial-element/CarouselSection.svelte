@@ -19,10 +19,15 @@
 		initialItemKey,
 		onselectionchange
 	}: {
+		/** Unique page-local anchor, heading and optional CSS appearance overrides. */
 		section: SpatialElementSectionDefinition;
+		/** Project element documents with getSpatialListItems; assets register automatically. */
 		list: SpatialListItem[];
+		/** Arc radius (default 0.48 of width) and depth (default 700 CSS-world pixels). */
 		presentation?: CarouselPresentation;
+		/** Initially selected itemKey (or element ID); defaults to the first item. */
 		initialItemKey?: string;
+		/** Reports selection changes; URL and application state remain host-owned. */
 		onselectionchange?: (selection: { itemKey: string; spatialElementId: string }) => void;
 	} = $props();
 	const sections = getContext<CatalogSections | undefined>(CATALOG_SECTIONS);

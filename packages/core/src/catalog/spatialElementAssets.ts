@@ -1,5 +1,5 @@
 import { resolveSpatialElementLodPair, type SpatialElementLodPair } from './spatialElementLodPair.js';
-import type { SpatialStageConfig } from '../spatial-element/types.js';
+import type { SpatialElementScene } from '../spatial-element/spatialElementScene.js';
 
 export type SpatialElementLod = 'low' | 'high';
 export type SpatialElementVector3 = readonly [number, number, number];
@@ -126,7 +126,7 @@ export interface LegacySpatialElementAssetManifest {
 	canonicalBounds: null;
 	poster: SpatialElementPoster | null;
 	metadataGaps: readonly string[];
-	stage: SpatialStageConfig;
+	stage: SpatialElementScene;
 	representations: {
 		low: LegacySpatialElementAssetRepresentation;
 		high: null;
@@ -140,7 +140,7 @@ export interface ProvisionalSpatialElementAssetManifest {
 	spatialElementId: string;
 	canonicalRevision: null;
 	pair: SpatialElementLodPair;
-	stage: SpatialStageConfig;
+	stage: SpatialElementScene;
 }
 
 export type SpatialElementAssetManifest =
@@ -149,7 +149,7 @@ export type SpatialElementAssetManifest =
 export function createStageSpatialElementAssetManifest(
 	brandId: string,
 	spatialElementId: string,
-	stage: SpatialStageConfig
+	stage: SpatialElementScene
 ): SpatialElementAssetManifest {
 	getSpatialElementEntityKey(brandId, spatialElementId);
 	if (stage.assetManifest?.brandId === brandId && stage.assetManifest.spatialElementId === spatialElementId)
@@ -186,7 +186,7 @@ export function getRepresentationResource(
 export function createLegacySpatialElementAssetManifest(
 	brandId: string,
 	spatialElementId: string,
-	stage: SpatialStageConfig,
+	stage: SpatialElementScene,
 	poster: SpatialElementPoster | null = stage.fallbackImage && stage.fallbackImageSize
 		? {
 				src: stage.fallbackImage,

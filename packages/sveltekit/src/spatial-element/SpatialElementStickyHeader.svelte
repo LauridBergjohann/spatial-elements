@@ -1,10 +1,11 @@
 <script lang="ts">
+	import type { ResolvedSpatialElementData as SpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 	import { catalogActionSemantic } from '@spatial-elements/core/catalog/catalogAction';
 	import { ShoppingCart } from 'lucide-svelte';
 	import SpatialElementTabList from './SpatialElementTabList.svelte';
 	import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
 	const catalogEndpoint = createCatalogEndpointAction();
-	import type { SpatialElementData, SpatialElementSectionNavigationItem } from '@spatial-elements/core/spatial-element/types';
+	import type { SpatialElementSectionNavigationItem } from '@spatial-elements/core/spatial-element/types';
 
 	let {
 		activeSectionId,
@@ -77,39 +78,41 @@
 			</p>
 		</div>
 
-		{#if spatialElement.action.href}
-			<a
-				class="sticky-header-action"
-				use:catalogEndpoint={{
-					brandId: spatialElement.brandId,
-					spatialElementId: spatialElement.id,
-					slot: 'detail.dock',
-					role: 'primary-action'
-				}}
-				data-catalog-rich-shared="primary-action"
-				data-catalog-semantic={catalogActionSemantic(spatialElement.action)}
-				href={spatialElement.action.href}
-				rel="external"
-				aria-label={spatialElement.action.ariaLabel}
-			>
-				<ShoppingCart size={29} strokeWidth={2} aria-hidden="true" />
-			</a>
-		{:else}
-			<button
-				use:catalogEndpoint={{
-					brandId: spatialElement.brandId,
-					spatialElementId: spatialElement.id,
-					slot: 'detail.dock',
-					role: 'primary-action'
-				}}
-				data-catalog-rich-shared="primary-action"
-				data-catalog-semantic={catalogActionSemantic(spatialElement.action)}
-				class="sticky-header-action"
-				type="button"
-				aria-label={spatialElement.action.ariaLabel}
-			>
-				<ShoppingCart size={29} strokeWidth={2} aria-hidden="true" />
-			</button>
+		{#if spatialElement.action}
+			{#if spatialElement.action.href}
+				<a
+					class="sticky-header-action"
+					use:catalogEndpoint={{
+						brandId: spatialElement.brandId,
+						spatialElementId: spatialElement.id,
+						slot: 'detail.dock',
+						role: 'primary-action'
+					}}
+					data-catalog-rich-shared="primary-action"
+					data-catalog-semantic={catalogActionSemantic(spatialElement.action)}
+					href={spatialElement.action.href}
+					rel="external"
+					aria-label={spatialElement.action.ariaLabel}
+				>
+					<ShoppingCart size={29} strokeWidth={2} aria-hidden="true" />
+				</a>
+			{:else}
+				<button
+					use:catalogEndpoint={{
+						brandId: spatialElement.brandId,
+						spatialElementId: spatialElement.id,
+						slot: 'detail.dock',
+						role: 'primary-action'
+					}}
+					data-catalog-rich-shared="primary-action"
+					data-catalog-semantic={catalogActionSemantic(spatialElement.action)}
+					class="sticky-header-action"
+					type="button"
+					aria-label={spatialElement.action.ariaLabel}
+				>
+					<ShoppingCart size={29} strokeWidth={2} aria-hidden="true" />
+				</button>
+			{/if}
 		{/if}
 	</div>
 
@@ -185,8 +188,9 @@
 		height: 52px;
 		padding: 0;
 		border: 0;
-		border-radius: var(--spatial-element-tabs-dock-top-radius) var(--spatial-element-tabs-dock-top-radius)
-			var(--spatial-element-tabs-dock-bottom-radius) var(--spatial-element-tabs-dock-bottom-radius);
+		border-radius: var(--spatial-element-tabs-dock-top-radius)
+			var(--spatial-element-tabs-dock-top-radius) var(--spatial-element-tabs-dock-bottom-radius)
+			var(--spatial-element-tabs-dock-bottom-radius);
 		overflow: clip;
 		opacity: 0;
 		visibility: hidden;
@@ -209,7 +213,8 @@
 	.spatial-element-sticky-header::before,
 	.spatial-element-sticky-tabs::before {
 		background: rgb(
-			var(--spatial-element-docked-panel-tint-rgb) / var(--spatial-element-docked-panel-tint-opacity)
+			var(--spatial-element-docked-panel-tint-rgb) /
+				var(--spatial-element-docked-panel-tint-opacity)
 		);
 		box-shadow: inset 0 0 0 1px
 			rgb(0 0 0 / calc(var(--spatial-element-docked-panel-shadow-strength) * 0.18));

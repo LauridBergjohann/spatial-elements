@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
-	import type { SpatialElementData } from '@spatial-elements/core/spatial-element/types';
+	import type { ResolvedSpatialElementData as SpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 
 	let { spatialElement }: { spatialElement: SpatialElementData } = $props();
 	const theme = useSpatialTheme();

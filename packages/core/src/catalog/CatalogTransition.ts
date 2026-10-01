@@ -883,6 +883,8 @@ export class CatalogTransition {
 
 	/** Keep only decorative outgoing DOM; Kit can mount and measure the real destination now. */
 	private captureExitingContent(capture: TransitionCapture) {
+		const copiesToAttach = document.createDocumentFragment();
+		const sourcesToHide: HTMLElement[] = [];
 		const selector = isReturnRecipe(capture.recipe)
 			? '[data-catalog-transition-dom="enter"], [data-catalog-transition-group="enter"], [data-catalog-secondary]'
 			: `[data-catalog-transition-dom="exit"]${capture.captureShell ? ', [data-catalog-shell]' : ''}`;
@@ -965,7 +967,7 @@ export class CatalogTransition {
 						getProjectiveCssMatrix3d(corners, projection.width, projection.height) ?? 'none'
 				});
 			}
-			this.root.appendChild(copy);
+			copiesToAttach.appendChild(copy);
 			capture.exiting.push(copy);
 			const panel = capture.actors.find((actor) => actor.role === 'summary-surface');
 			if (panel && source.closest('[data-spatial-element-hero-panel-content]')) {
@@ -976,6 +978,12 @@ export class CatalogTransition {
 					incoming: false
 				});
 			}
+			sourcesToHide.push(source);
+		}
+		// Measure and copy every source before touching connected DOM. Appending or
+		// hiding one subtree before measuring the next forces repeated style/layout work.
+		this.root.appendChild(copiesToAttach);
+		for (const source of sourcesToHide) {
 			preserveStyle(source, 'visibility', capture.restore);
 			source.style.setProperty('visibility', 'hidden', 'important');
 		}
@@ -995,13 +1003,15 @@ export class CatalogTransition {
 	private setPresentation(presentation: CatalogTransitionPresentation) {
 		for (const channel of ['enter', 'exit', 'shared'] as const) {
 			const value = presentation[`${channel}Opacity`];
+			const property = `--catalog-${channel}-opacity`;
+			const previous = this.root.style.getPropertyValue(property);
 			if (presentation.active) {
-				this.root.style.setProperty(`--catalog-${channel}-opacity`, String(value));
-			} else this.root.style.removeProperty(`--catalog-${channel}-opacity`);
-			this.root.toggleAttribute(
-				`data-catalog-${channel}-hidden`,
-				presentation.active && value === 0
-			);
+				const next = String(value);
+				if (next !== previous) this.root.style.setProperty(property, next);
+			} else if (previous) this.root.style.removeProperty(property);
+			const attribute = `data-catalog-${channel}-hidden`;
+			const hidden = presentation.active && value === 0;
+			if (this.root.hasAttribute(attribute) !== hidden) this.root.toggleAttribute(attribute, hidden);
 		}
 		for (const copy of this.captureState?.exiting ?? []) {
 			copy.style.opacity = String(
@@ -1171,6 +1181,7 @@ export class CatalogTransition {
 			}
 			const measuredTargets = new Map<HTMLElement, DOMRect>();
 			const sharedTargets = new Set<HTMLElement>();
+			const destinationCopies = document.createDocumentFragment();
 			for (const actor of capture.actors) {
 				let target = this.endpoints.resolve({
 					...capture.identity,
@@ -1260,7 +1271,7 @@ export class CatalogTransition {
 					copy.style.overflow = 'hidden';
 					copy.dataset.catalogActorRole = actor.role;
 					copy.dataset.catalogActorVariant = 'destination';
-					capture.host.appendChild(copy);
+					destinationCopies.appendChild(copy);
 					actor.destinationCopy = copy;
 				}
 				if (actor.role === 'summary-surface') {
@@ -1310,7 +1321,7 @@ export class CatalogTransition {
 								transition: 'none',
 								animation: 'none'
 							});
-							capture.host.appendChild(copy);
+							destinationCopies.appendChild(copy);
 							(capture.panelContent ??= []).push({
 								element: copy,
 								rect,
@@ -1321,6 +1332,8 @@ export class CatalogTransition {
 					}
 				}
 			}
+			// Keep clones detached while measuring the next destination's layout/type.
+			capture.host.appendChild(destinationCopies);
 			for (const target of sharedTargets) {
 				preserveStyle(target, 'visibility', capture.restore);
 				target.style.setProperty('visibility', 'hidden', 'important');

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	resolveSpatialElementData,
 	findSpatialElement,
 	getSpatialListItems,
 	getSpatialElementSectionStyle,
@@ -47,7 +48,8 @@ describe('spatialElement detail helpers', () => {
 				eyebrow: 'Series A',
 				title: 'Alpha',
 				features: [{ label: 'Compact' }, { label: 'Connected' }],
-				stage: { glb: '/detail-only-stage-data.glb' }
+				geometry: { low: '/model.glb', high: '/model.glb' },
+				hdr: '/studio.hdr'
 			}
 		] as const;
 
@@ -57,8 +59,46 @@ describe('spatialElement detail helpers', () => {
 				href: '/elements/alpha',
 				eyebrow: 'Series A',
 				title: 'Alpha',
-				features: ['Compact', 'Connected']
+				features: ['Compact', 'Connected'],
+				summary: { features: [{ label: 'Compact' }, { label: 'Connected' }], action: undefined },
+				geometry: { low: '/model.glb', high: '/model.glb' },
+				hdr: '/studio.hdr'
 			}
 		]);
+	});
+});
+
+describe('minimal element documents', () => {
+	const element = {
+		id: 'cube',
+		title: 'Cube',
+		geometry: { low: '/cube.glb', high: '/cube.glb' },
+		hdr: '/studio.hdr'
+	};
+	it('inherits the shell identity and supplies content defaults without mutating input', () => {
+		const resolved = resolveSpatialElementData(element, 'shop');
+		expect(resolved).toMatchObject({
+			brandId: 'shop',
+			pageTitle: 'Cube',
+			features: [],
+			breadcrumbs: [],
+			media: [{ id: 'model', kind: 'minimap', label: '3D view' }]
+		});
+		expect(resolved.action).toBeUndefined();
+		expect(element).not.toHaveProperty('brandId');
+		expect(getSpatialListItems([element], '/shop/elements')[0]).toMatchObject({
+			geometry: { low: '/cube.glb', high: '/cube.glb' },
+			hdr: '/studio.hdr',
+			href: '/shop/elements/cube',
+			summary: { features: [] }
+		});
+	});
+	it('rejects accidental cross-brand detail documents', () => {
+		expect(() => resolveSpatialElementData({ ...element, brandId: 'other' }, 'shop')).toThrow(
+			'shell uses "shop"'
+		);
+	});
+	it('preserves an explicitly empty media rail', () => {
+		expect(resolveSpatialElementData({ ...element, media: [] }, 'shop').media).toEqual([]);
 	});
 });

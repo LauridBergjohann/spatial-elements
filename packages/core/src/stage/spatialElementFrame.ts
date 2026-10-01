@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import { getMeshBounds } from './stageSceneUtils.js';
 import type { SpatialElementLodPair } from '../catalog/spatialElementLodPair.js';
 import type { StageModelSettings } from './stageTypes.js';
 
@@ -22,10 +23,13 @@ export function prepareSpatialElementFrame(
 	pose.add(frame);
 	model.add(pose);
 	pose.updateMatrix();
-	const bounds = new THREE.Box3(
-		new THREE.Vector3(...pair.bounds.min),
-		new THREE.Vector3(...pair.bounds.max)
-	).applyMatrix4(pose.matrix);
+	const excluded = new Set(settings.excludeMeshes ?? []);
+	const bounds = pair.bounds
+		? new THREE.Box3(
+				new THREE.Vector3(...pair.bounds.min),
+				new THREE.Vector3(...pair.bounds.max)
+			).applyMatrix4(pose.matrix)
+		: getMeshBounds(pose, (mesh) => !excluded.has(mesh.name));
 	const center = bounds.getCenter(new THREE.Vector3());
 	const size = bounds.getSize(new THREE.Vector3());
 	const scale = 3 / Math.max(size.x, size.y, size.z, 1);

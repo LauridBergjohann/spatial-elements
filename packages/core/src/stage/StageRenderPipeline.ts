@@ -37,7 +37,8 @@ import {
 
 import type { StageMinimapState } from './minimap/MinimapState.js';
 import { isMesh } from './stageSceneUtils.js';
-import type { StageInteractionTheme } from './stageTypes.js';
+import type { StageInteractionTheme, StageRenderSettings } from './stageTypes.js';
+import { getStageRenderPixelRatio, resolveStageRenderSettings } from './renderSettings.js';
 interface PanelBlurCapture {
 	/** Intermediate pixels per CSS pixel; independent of output DPR/scroll quality. */
 	resolutionScale: number;
@@ -55,6 +56,7 @@ const SCROLL_RENDER_SCALE = 0.82;
 
 export interface StageRenderPorts {
 	pageBackground?: string;
+	renderSettings?: StageRenderSettings;
 	renderer: THREE.WebGPURenderer;
 	container: HTMLElement;
 	backgroundCanvas: HTMLCanvasElement;
@@ -109,6 +111,7 @@ export class StageRenderPipeline {
 	private readonly measuredBackdropSeeds = new WeakMap<THREE.RenderTarget, string>();
 	private readonly preparedZoomViews = new WeakSet<StageMinimapState>();
 	private disposed = false;
+	private renderSettings = resolveStageRenderSettings();
 	/** Retain the last DETAIL background while its geometry is owned by a transition. */
 	freezeBackground() {
 		const targets = this._activeRenderTargets;
@@ -202,6 +205,7 @@ export class StageRenderPipeline {
 		});
 	}
 	constructor(private readonly ports: StageRenderPorts) {
+		this.setRenderSettings(ports.renderSettings);
 		this.setPageBackground(ports.pageBackground ?? '#ffffff');
 		this.backgroundCoverMaterial.fragmentNode = premultiplyAlpha(
 			vec4(inverseAcesToneMapping(this.backgroundCoverColor), this.backgroundCoverOpacity)
@@ -247,7 +251,7 @@ export class StageRenderPipeline {
 	private _activeRenderTargets?: StageRenderTargetSet;
 	private stageDisplayMaterial?: THREE.NodeMaterial;
 	private _stageDisplayQuad?: THREE.QuadMesh;
-	private stageDisplayTextureNode?: ReturnType<typeof texture>;
+	private stageDisplayTextureNode?: THREE.TextureNode;
 	private foregroundCanvasTarget?: THREE.CanvasTarget;
 	private carouselRearTarget?: THREE.CanvasTarget;
 	private carouselRearCanvas?: HTMLCanvasElement;
@@ -350,7 +354,7 @@ export class StageRenderPipeline {
 
 		return source;
 	}
-	private createOutlineOpacity(mask: ReturnType<typeof texture>) {
+	private createOutlineOpacity(mask: THREE.TextureNode) {
 		const calculate = () => {
 			const texel = this.outlineTexel;
 			const glowTexel = this.outlineGlowTexel;
@@ -540,13 +544,35 @@ export class StageRenderPipeline {
 		const captureHeight = Math.max(1, Math.round(height * pixelRatio * targets.scale));
 		targets.sceneCapture.setSize(captureWidth, captureHeight);
 		targets.panelBlurCaptures.forEach(({ target, effect, resolutionScale }) => {
-			target.setSize(captureWidth, captureHeight);
-			if (effect) effect.resolutionScale = resolutionScale / (pixelRatio * targets.scale);
-			effect?.setSize(captureWidth, captureHeight);
+			if (effect) {
+				const effectScale = resolutionScale / (pixelRatio * targets.scale);
+				effect.resolutionScale = effectScale;
+				effect.setSize(captureWidth, captureHeight);
+				// Consumers sample normalized screen UVs. Preserve the blur's actual
+				// density instead of copying it back to a full-DPR viewport texture.
+				target.setSize(
+					Math.max(1, Math.round(captureWidth * effectScale)),
+					Math.max(1, Math.round(captureHeight * effectScale))
+				);
+			} else {
+				// A zero-blur backdrop still contains sharp scene detail.
+				target.setSize(captureWidth, captureHeight);
+			}
 		});
 	}
 	getFullPixelRatio() {
-		return Math.min(window.devicePixelRatio || 1, 2);
+		return getStageRenderPixelRatio(
+			window.innerWidth,
+			window.innerHeight,
+			window.devicePixelRatio,
+			this.renderSettings
+		);
+	}
+	setRenderSettings(settings?: StageRenderSettings) {
+		this.renderSettings = resolveStageRenderSettings(settings);
+	}
+	getRenderSettings() {
+		return { ...this.renderSettings };
 	}
 	setScrollRenderQuality(active: boolean) {
 		this.ports.container.toggleAttribute('data-stage-scroll-rendering', active);
@@ -630,7 +656,7 @@ export class StageRenderPipeline {
 
 		const sourceTexture = texture(sceneTexture);
 		// Scale resolution and sample offsets together to retain the CSS blur radius.
-		// The final full-size texture still uses the existing screen-space mapping.
+		// The final texture uses the same density and normalized screen-space mapping.
 		const query = new URLSearchParams(typeof window === 'undefined' ? '' : window.location?.search);
 		const fullResolutionProbe =
 			query.get('stage-test') === '1' && query.get('stage-backdrop') === 'full';

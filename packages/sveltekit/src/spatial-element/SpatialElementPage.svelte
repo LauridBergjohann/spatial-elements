@@ -21,6 +21,8 @@
 	import { SpatialElementDockController } from '@spatial-elements/core/spatial-element/SpatialElementDockController';
 	import { SPATIAL_ELEMENT_SECTION_REGISTRY_KEY, SpatialElementSectionRegistry } from '@spatial-elements/core/spatial-element/spatialElementSectionRegistry';
 	import type { SpatialElementData, SpatialElementSectionNavigationItem } from '@spatial-elements/core/spatial-element/types';
+	import { resolveSpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
+	import { registerSpatialPage } from './spatialPageContext.js';
 
 	const SPATIAL_ELEMENT_OVERVIEW_SECTION = {
 		id: 'overview',
@@ -29,8 +31,18 @@
 	// Switch while the next panel enters the upper reading area, before it reaches the sticky tabs.
 	const SPATIAL_ELEMENT_SECTION_ACTIVATION_VIEWPORT_RATIO = 0.25;
 
-	let { spatialElement, children }: { spatialElement: SpatialElementData; children?: Snippet } = $props();
+	interface Props {
+		/** Complete element document from this page's load function. Registers assets with the enclosing shell. */
+		spatialElement: SpatialElementData;
+		/** Detail sections; Section components automatically populate the tab navigation. */
+		children?: Snippet;
+	}
+	let { spatialElement: element, children }: Props = $props();
 	const brand = useSpatialTheme();
+	const spatialElement = $derived(resolveSpatialElementData(element, brand.id));
+	// During route teardown Kit can clear the outgoing page's data before unmount.
+	// Read raw assets here, so the parent stage never evaluates outgoing DOM-derived content.
+	registerSpatialPage(() => element ? { kind: 'detail', element } : { kind: 'content', hdr: '' });
 	const endpoints = getContext<CatalogEndpointRegistry | undefined>(CATALOG_ENDPOINTS);
 	let sections = $state<SpatialElementSectionNavigationItem[]>([]);
 	let activeSectionId = $state<string | undefined>(SPATIAL_ELEMENT_OVERVIEW_SECTION.id);
@@ -137,10 +149,7 @@
 	data-brand-id={spatialElement.brandId}
 >
 	<SpatialElementBreadcrumbs
-		items={spatialElement.breadcrumbs.map((item) => ({
-			...item,
-			href: item.href ?? `/${brand.id}/categories/list`
-		}))}
+		items={spatialElement.breadcrumbs}
 	/>
 	<SpatialElementStickyHeader {activeSectionId} {spatialElement} sections={navigationSections} />
 
@@ -164,9 +173,9 @@
 			data-catalog-geometry
 			data-spatial-element-id={spatialElement.id}
 			data-catalog-slot="detail.hero"
-			fallbackSrc={spatialElement.stage.fallbackImage}
+			fallbackSrc={spatialElement.fallbackImage}
 			fallbackAlt={`${brand.name} ${spatialElement.title}`}
-			aria-hidden={spatialElement.stage.fallbackImage ? undefined : 'true'}
+			aria-hidden={spatialElement.fallbackImage ? undefined : 'true'}
 		/>
 
 		<SpatialElementSummaryPanel {spatialElement} />

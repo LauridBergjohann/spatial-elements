@@ -4,13 +4,23 @@
 	import type { ContentPageData } from '@spatial-elements/core/spatial-element/types';
 	import { useSpatialTheme } from './brandContext.js';
 	import SpatialElementBreadcrumbs from './SpatialElementBreadcrumbs.svelte';
+	import { registerSpatialPage } from './spatialPageContext.js';
 	import {
 		SPATIAL_ELEMENT_SECTION_REGISTRY_KEY,
 		SpatialElementSectionRegistry,
 		SECTION_PAGE_KIND
 	} from '@spatial-elements/core/spatial-element/spatialElementSectionRegistry';
-	let { page, children }: { page: ContentPageData; children?: Snippet } = $props();
+	interface Props {
+		/** Explicit HDR used to light this page's shared 3D scene; never inferred from an element. */
+		hdr: string;
+		/** Category metadata. Only title is required; pageTitle defaults to title. */
+		page: ContentPageData;
+		/** ListSection, CarouselSection and ordinary Section children. */
+		children?: Snippet;
+	}
+	let { page, hdr, children }: Props = $props();
 	const brand = useSpatialTheme();
+	registerSpatialPage(() => ({ kind: 'content', hdr }));
 	setContext(SPATIAL_ELEMENT_SECTION_REGISTRY_KEY, new SpatialElementSectionRegistry());
 	setContext(SECTION_PAGE_KIND, 'content');
 </script>

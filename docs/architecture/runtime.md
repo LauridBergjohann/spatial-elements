@@ -1,5 +1,17 @@
 # Runtime scenarios and ownership
 
+## Page-owned configuration
+
+Each persistent Stage owns a SpatialPageRegistry; no module-global page state is used.
+ContentPage registers a content-page getter with its explicit HDR and SpatialElementPage a getter for its current
+element. The adapter derives its internal CatalogPage and renderer scene from that registration;
+the layout supplies only the theme, renderer budget and decoder infrastructure. List and carousel
+sections register their own occurrences independently. During route overlap, unregistering an
+outgoing page cannot clear the newer page's registration. Svelte context scopes ownership to
+the shell; registration happens on mount, while SSR renders ordinary page content.
+
+Public geometry always supplies Low and High. The adapter normalizes URL shorthand into versioned resource requests; identical URLs use the same resource identity across roles. Generated frame metadata remains optional; Low determines the shared fit otherwise.
+
 ## Prepared navigation
 
 ~~~mermaid
@@ -49,6 +61,13 @@ A transition uses retained spatial captures rather than preserving outgoing page
 One stage uses a shared WebGPU renderer/device across output bands. The pipeline draws background/hero capture, panel blur and hover feedback, rear carousel geometry below HTML panels, and foreground/minimap/shared transition content. DOM/CSS panel presentation complements GPU output. The pipeline restores borrowed renderer and object state after temporary passes.
 
 Neighbour fades and Low/High blending operate on resolved rendered images: reducing every mesh material's opacity would expose internal surfaces. Carousel panel transforms follow the spatial composition while rear geometry remains available to the backdrop effect.
+
+Stage-wide `renderSettings` bound the WebGPU output ratio and physical pixel area independently
+of native-resolution HTML. Temporary catalog fades use the same bounded area as refinement;
+blur resolves retain their internal density. Both quality target sets are warmed on initial
+creation and detail-page rebinding, before motion begins. Carousel summary dimensions are
+measured before per-frame writes and invalidated by resize observation. See the
+[performance analysis](../performance.md) for the measurement scope and remaining costs.
 
 detail page input updates the live page pose; transition pose ownership is separate. Zoom coordinates hero framing, content visibility and minimap presentation. Cached targets and bounded preparation reduce work but do not eliminate device-dependent GPU cost.
 

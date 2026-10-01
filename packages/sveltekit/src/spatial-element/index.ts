@@ -16,8 +16,7 @@ export type {
 	SpatialElementSectionDefinition,
 	SpatialElementSectionNavigationItem,
 	SpatialElementSectionStyle,
-	SpatialSectionTheme,
-	SpatialStageConfig
+	SpatialSectionTheme
 } from '@spatial-elements/core/spatial-element/types';
 
 export { default as ContentPage } from './ContentPage.svelte';
@@ -26,3 +25,7 @@ export { default as ListSection } from './ListSection.svelte';
 export type { ContentPageData } from '@spatial-elements/core/spatial-element/types';
 
 export type { CarouselPresentation } from '@spatial-elements/core/catalog/catalogPose';
+export { createSpatialTheme, type SpatialThemeOptions } from '@spatial-elements/core/spatial-element/spatialTheme';
+export type { StageRenderSettings, BackgroundSettings, StageModelSettings, StageCameraSettings } from '@spatial-elements/core/stage/stageTypes';
+
+export { geometryFromLodPair, type SpatialElementGeometry } from '@spatial-elements/core/spatial-element/spatialElementGeometry';

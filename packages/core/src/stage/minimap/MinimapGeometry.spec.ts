@@ -133,6 +133,33 @@ describe('minimap geometry', () => {
 		}
 	});
 
+	it('keeps stationary viewport rings out of geometry rebuilds and GPU uploads', () => {
+		const radii = { topLeft: 18, topRight: 18, bottomRight: 18, bottomLeft: 18 };
+		const geometry = createMinimapViewportRingGeometry(240, 180, 35, 45, 140, 80, radii, 2);
+		const position = geometry.getAttribute('position') as THREE.BufferAttribute;
+		const initialVersion = position.version;
+		const bounds = vi.spyOn(geometry, 'computeBoundingBox');
+		const sphere = vi.spyOn(geometry, 'computeBoundingSphere');
+		const originalPositions = Array.from(position.array);
+
+		for (let frame = 0; frame < 120; frame++) {
+			updateMinimapViewportRingGeometry(geometry, 240, 180, 35, 45, 140, 80, { ...radii }, 2);
+		}
+		expect(position.version).toBe(initialVersion);
+		expect(bounds).not.toHaveBeenCalled();
+		expect(sphere).not.toHaveBeenCalled();
+
+		// Snapshot values, not the radii object: callers may mutate it in place.
+		radii.topLeft = 4;
+		updateMinimapViewportRingGeometry(geometry, 240, 180, 35, 45, 140, 80, radii, 2);
+		expect(position.version).toBe(initialVersion + 1);
+		expect(Array.from(position.array)).not.toEqual(originalPositions);
+		expect(bounds).toHaveBeenCalledOnce();
+		expect(sphere).toHaveBeenCalledOnce();
+		expectTriangleCentresOutsideRingHole(geometry);
+		geometry.dispose();
+	});
+
 	it('disposes replaced geometry exactly once', () => {
 		const previous = new THREE.PlaneGeometry();
 		const next = new THREE.PlaneGeometry(2, 2);

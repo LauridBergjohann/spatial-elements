@@ -2,10 +2,15 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { missingPackages, releaseTag } from './release-lib.mjs';
 const packages = [{ name: '@spatial-elements/core', version: '0.1.0-beta.2' }, { name: '@spatial-elements/sveltekit', version: '0.1.0-beta.2' }];
-test('beta never targets latest; stable versions do', () => {
+test('beta defaults to beta; stable versions target latest', () => {
   assert.equal(releaseTag('0.1.0-beta.0'), 'beta');
   assert.equal(releaseTag('1.2.3'), 'latest');
   for (const v of ['1.0.0-rc.1', '01.0.0', '1.0.0;exit', 'beta']) assert.throws(() => releaseTag(v));
+});
+
+test('reviewed beta promotion targets latest without affecting subsequent betas', () => {
+  assert.equal(releaseTag('1.0.0-beta.3'), 'latest');
+  assert.equal(releaseTag('1.0.0-beta.4'), 'beta');
 });
 test('new packages preserve dependency-first upload order', async () => {
   assert.deepEqual(await missingPackages(packages, async () => ({status:404})), packages);
