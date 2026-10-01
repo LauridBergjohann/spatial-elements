@@ -208,7 +208,7 @@ export class MinimapController {
 		const maximumPanelScale = Math.max(resolved.expandedHeight / baseHeight, 1);
 		const captureExtentWidth = baseWidth * maximumPanelScale + blurGuard * 2;
 		const captureExtentHeight = baseHeight * maximumPanelScale + blurGuard * 2;
-		const maximumSourcePixelsPerCssPixel = Math.min(window.devicePixelRatio || 1, 2);
+		const maximumSourcePixelsPerCssPixel = this.getFullPixelRatio();
 		const aspect = baseWidth / Math.max(baseHeight, 1);
 		const modelRadius = Math.max(sphere.radius, 0.001);
 		const panelDistance = Math.max(

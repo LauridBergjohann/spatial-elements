@@ -23,6 +23,7 @@
     "demo": "npm run build && node scripts/sync-demo-assets.mjs && npm run dev -w @spatial-elements/demo-sveltekit",
     "build:demo": "node scripts/sync-demo-assets.mjs && npm run build -w @spatial-elements/demo-sveltekit",
     "test:e2e": "playwright test",
+    "profile:demo": "npm run build && npm run build:demo && node scripts/profile-demo.mjs",
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "check:release": "node scripts/check-release.mjs",
     "changeset": "changeset",

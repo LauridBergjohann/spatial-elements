@@ -7,6 +7,7 @@
 5. [Decisions](architecture/decisions.md): accepted foundations and repository boundaries.
 6. [Package boundaries](package-boundaries.md) and [development](development.md): APIs and linked/packed workflows.
 7. [Migration audit](migration-audit.md), [migration record](migration.md) and [release checklist](release.md).
+8. [Performance analysis](performance.md): measured bottlenecks, render budgets, profiling and remaining work.
 
 Update architecture alongside changes to ownership, navigation order, cache lifetime or public contracts. Keep brand-specific evidence in the private examples repository.
 

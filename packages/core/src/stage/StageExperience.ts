@@ -103,6 +103,7 @@ export type {
 	StageModelSettings,
 	StagePanelSurface,
 	StagePanelTarget,
+	StageRenderSettings,
 	StageVisualTestView,
 	StageViewportTarget,
 	StageZoomFocusState
@@ -350,7 +351,9 @@ export class StageExperience {
 	private animationActive = false;
 	private scrollActive = false;
 	private scrollEndTimer = 0;
-	private lastInteractionTime = performance.now();
+	// Input events must not reset the frame clock: high-rate wheel/SpaceMouse
+	// events can arrive just before RAF and otherwise starve the damping delta.
+	private lastFrameTime = performance.now();
 	private layoutDirty = true;
 	private panelMeasurementsDirty = true;
 	private viewportMeasurementDirty = true;
@@ -420,9 +423,6 @@ export class StageExperience {
 			container,
 			cssRoot: this.cssRenderer.domElement,
 			requestRender: () => this.requestRender(),
-			markActivity: () => {
-				this.lastInteractionTime = performance.now();
-			},
 			updateProjection: () => this.updateStageCameraProjection(),
 			readGeometry: () => ({
 				poseOwner:
@@ -516,6 +516,7 @@ export class StageExperience {
 
 		this.pipeline = new StageRenderPipeline({
 			pageBackground: (this.pageBackground = options.pageBackground ?? '#ffffff'),
+			renderSettings: options.renderSettings,
 			renderer: this.renderer,
 			container: this.container,
 			backgroundCanvas: this.backgroundCanvas,
@@ -819,6 +820,7 @@ export class StageExperience {
 
 	async updatePage(options: StageExperienceOptions) {
 		if (this.disposed) return;
+		if ('renderSettings' in options) this.pipeline.setRenderSettings(options.renderSettings);
 		this.pageBackground = options.pageBackground ?? '#ffffff';
 		this.pipeline.setPageBackground(this.pageBackground);
 		this.catalogLayer?.setPageBackground(this.pageBackground);
@@ -868,6 +870,9 @@ export class StageExperience {
 		this.createPanels();
 		this.observePanelTargets();
 		this.resizeRenderer();
+		// New page targets must be GPU-ready before navigation or the first zoom.
+		// Resting frosted panels do not otherwise submit their hidden backdrop blur.
+		this.pipeline.warmRenderTargetSets();
 		this.renderFrame(true);
 		await this.pipeline.prepareZoomEffects();
 		if (this.disposed || !this.pageBinding.isCurrent(generation)) return;
@@ -1567,7 +1572,7 @@ export class StageExperience {
 		this.panelUiFocus = getStageUiFocus(this.panelFocus);
 		this.minimapFocus = getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus);
 		this.layoutDirty = true;
-		this.lastInteractionTime = performance.now();
+		this.lastFrameTime = performance.now();
 		this.requestRender();
 	}
 
@@ -1745,6 +1750,8 @@ export class StageExperience {
 		});
 		return {
 			...inventory,
+			pixelRatio: this.pipeline.getFullPixelRatio(),
+			renderSettings: this.pipeline.getRenderSettings(),
 			canvases: this.pipeline.getCanvasOutputs(),
 			creations: this.pipeline.renderTargetSetCreations,
 			resizes: this.pipeline.renderTargetSetResizes,
@@ -1780,7 +1787,7 @@ export class StageExperience {
 	advanceVisualTestFrames(frames = 12) {
 		const frameCount = THREE.MathUtils.clamp(Math.floor(frames), 1, 120);
 		for (let index = 0; index < frameCount; index += 1) {
-			this.lastInteractionTime = performance.now() - 1000 / 60;
+			this.lastFrameTime = performance.now() - 1000 / 60;
 			this.renderFrame(true);
 		}
 	}
@@ -2705,9 +2712,9 @@ export class StageExperience {
 		this.renderer.setClearColor(0xffffff, 1);
 
 		const now = performance.now();
-		const delta = Math.min((now - this.lastInteractionTime) / 1000, 0.05);
+		const delta = Math.min((now - this.lastFrameTime) / 1000, 0.05);
 		this.advancePreparedPage(now);
-		this.lastInteractionTime = now;
+		this.lastFrameTime = now;
 		this.backgroundCanvas.style.visibility = '';
 		this.catalogLayerAnimating =
 			this.catalogLayer?.update(this.renderer, this.scene.environment, now) ?? false;

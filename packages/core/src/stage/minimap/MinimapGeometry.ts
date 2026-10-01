@@ -9,6 +9,20 @@ export interface MinimapCornerRadii {
 	bottomLeft: number;
 }
 
+interface ViewportRingState extends MinimapCornerRadii {
+	panelWidth: number;
+	panelHeight: number;
+	left: number;
+	top: number;
+	width: number;
+	height: number;
+	lineWidth: number;
+	position: THREE.BufferAttribute;
+	index: THREE.BufferAttribute | null;
+}
+
+const viewportRingStates = new WeakMap<THREE.BufferGeometry, ViewportRingState>();
+
 /**
  * Blends viewport corners into the panel corners as the cutout reaches an edge.
  * Sharing this result keeps the cutout and its border visually synchronized.
@@ -144,6 +158,25 @@ export function updateMinimapViewportRingGeometry(
 	radii: MinimapCornerRadii,
 	lineWidth: number
 ) {
+	const previous = viewportRingStates.get(geometry);
+	if (
+		previous &&
+		previous.panelWidth === panelWidth &&
+		previous.panelHeight === panelHeight &&
+		previous.left === left &&
+		previous.top === top &&
+		previous.width === width &&
+		previous.height === height &&
+		previous.lineWidth === lineWidth &&
+		previous.topLeft === radii.topLeft &&
+		previous.topRight === radii.topRight &&
+		previous.bottomRight === radii.bottomRight &&
+		previous.bottomLeft === radii.bottomLeft &&
+		previous.position === geometry.getAttribute('position') &&
+		previous.index === geometry.getIndex()
+	)
+		return;
+
 	const panelW = Math.max(panelWidth, 0.001);
 	const panelH = Math.max(panelHeight, 0.001);
 	const thickness = THREE.MathUtils.clamp(lineWidth, 0.5, Math.min(width, height) * 0.45);
@@ -201,6 +234,18 @@ export function updateMinimapViewportRingGeometry(
 	position.needsUpdate = true;
 	geometry.computeBoundingBox();
 	geometry.computeBoundingSphere();
+	viewportRingStates.set(geometry, {
+		panelWidth,
+		panelHeight,
+		left,
+		top,
+		width,
+		height,
+		lineWidth,
+		...radii,
+		position: position as THREE.BufferAttribute,
+		index: geometry.getIndex()
+	});
 }
 
 /** Replaces a mesh geometry while releasing the previous GPU resource. */

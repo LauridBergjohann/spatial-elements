@@ -21,7 +21,6 @@ export interface SpatialElementInteractionPorts {
 	container: HTMLElement;
 	cssRoot: HTMLElement;
 	requestRender(): void;
-	markActivity(): void;
 	updateProjection(): void;
 	readGeometry(): {
 		poseOwner: 'page' | 'transition' | 'none';
@@ -260,7 +259,6 @@ export class SpatialElementInteractionController {
 		this.constrainEffectiveZoom();
 		this.camera.lookAt(this._controls.target);
 		this.camera.updateMatrixWorld(true);
-		this.ports.markActivity();
 		this.requestRender();
 	}
 	setSpaceMouseMoving(moving: boolean) {
@@ -363,7 +361,6 @@ export class SpatialElementInteractionController {
 			.unproject(this.camera)
 			.sub(this.camera.position)
 			.normalize();
-		this.ports.markActivity();
 		this.requestRender();
 	}
 	requestScrollZoomReset(scrollDelta: number) {

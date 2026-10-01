@@ -335,6 +335,10 @@ export class SpatialElementDockController {
 				applyFixedRect(this.minimapFrame, this.minimapDock);
 				this.minimapDockApplied = true;
 			}
+			// The virtual document is a transformed containing block. Counter only
+			// this dock's scroll offset instead of invalidating inherited styles
+			// across the complete page with a per-frame CSS custom property.
+			this.minimapFrame.style.top = `${this.scrollY + this.minimapDock.top}px`;
 		} else if (changed || this.minimapDockApplied) {
 			const decorationOpacity = this.decorationOpacity;
 			this.restoreMinimap();
@@ -693,9 +697,6 @@ function formatPresentationProgress(progress: number) {
 function applyFixedRect(frame: HTMLElement, rect: SpatialElementDockRect) {
 	frame.style.position = 'fixed';
 	frame.style.left = `${rect.left}px`;
-	// A transformed virtual document is the containing block for fixed descendants.
-	// Counter the document transform so the dock remains viewport-aligned.
-	frame.style.top = `calc(var(--virtual-scroll-y, 0px) + ${rect.top}px)`;
 	frame.style.width = `${rect.width}px`;
 	frame.style.height = `${rect.height}px`;
 	frame.style.minHeight = `${rect.height}px`;

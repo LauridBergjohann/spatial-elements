@@ -34,3 +34,14 @@ the compatibility default is /assets/draco/gltf/. Meshopt uses the Three.js deco
 
 Asset URLs, base-path resolution, content fetching and deployment are application responsibilities.
 Inspect apps/sveltekit-demo/src/lib/catalog.ts and its routes for a complete working example.
+
+`BrandStageShell`, `Stage`, and the core `StageExperience` accept `renderSettings`.
+WebGPU output defaults to a maximum pixel ratio of 1 and a per-canvas pixel budget
+of 2,073,600. Large viewports can render below one physical pixel per CSS pixel to
+stay within that budget. DOM text and layout retain their native resolution.
+Opt into denser 3D output with `renderSettings={{ maxPixelRatio: 1.5 }}`.
+Use `renderSettings={{ maxPixelRatio: 1, maxPixels: 1_500_000 }}` for a lower GPU
+budget. To restore the previous output resolution, use
+`renderSettings={{ maxPixelRatio: 2, maxPixels: null }}`. These settings belong on the
+persistent stage; pass them at creation or when binding a new page. Invalid or
+nonpositive values use the defaults.

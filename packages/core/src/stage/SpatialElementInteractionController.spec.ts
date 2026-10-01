@@ -55,7 +55,6 @@ function fixture() {
 		container: {} as HTMLElement,
 		cssRoot: {} as HTMLElement,
 		requestRender: vi.fn(),
-		markActivity: vi.fn(),
 		updateProjection: vi.fn(),
 		readGeometry: () => ({
 			poseOwner,
@@ -87,13 +86,13 @@ test('transition ownership prevents SpaceMouse and ordinary frame damping from w
 	expect(camera.matrixWorld.equals(before)).toBe(true);
 	expect(owner.advance(100, 0.016)).toEqual({ controls: false, wheel: false });
 	expect(owner.controls!.update).not.toHaveBeenCalled();
-	expect(ports.markActivity).not.toHaveBeenCalled();
+	expect(ports.requestRender).not.toHaveBeenCalled();
 	setOwner('page');
 	owner.applySpaceMouseNavigationUpdate({
 		viewMatrix: new THREE.Matrix4().makeTranslation(3, 0, 8).toArray()
 	});
 	expect(camera.position.x).toBe(3);
-	expect(ports.markActivity).toHaveBeenCalledTimes(1);
+	expect(ports.requestRender).toHaveBeenCalledTimes(1);
 	owner.dispose();
 });
 

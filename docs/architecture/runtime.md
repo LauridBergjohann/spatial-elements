@@ -50,6 +50,13 @@ One stage uses a shared WebGPU renderer/device across output bands. The pipeline
 
 Neighbour fades and Low/High blending operate on resolved rendered images: reducing every mesh material's opacity would expose internal surfaces. Carousel panel transforms follow the spatial composition while rear geometry remains available to the backdrop effect.
 
+Stage-wide `renderSettings` bound the WebGPU output ratio and physical pixel area independently
+of native-resolution HTML. Temporary catalog fades use the same bounded area as refinement;
+blur resolves retain their internal density. Both quality target sets are warmed on initial
+creation and detail-page rebinding, before motion begins. Carousel summary dimensions are
+measured before per-frame writes and invalidated by resize observation. See the
+[performance analysis](../performance.md) for the measurement scope and remaining costs.
+
 detail page input updates the live page pose; transition pose ownership is separate. Zoom coordinates hero framing, content visibility and minimap presentation. Cached targets and bounded preparation reduce work but do not eliminate device-dependent GPU cost.
 
 ## Teardown

@@ -21,9 +21,9 @@ test('content anchor navigates into the detail section',async({page})=>{
  await page.goto('/demo/categories/mixed');await page.getByRole('link',{name:'Explore the orb features'}).click();
  await expect(page).toHaveURL(/elements\/orb#features/);await expect(page.locator('#features')).toBeInViewport();
 });
-test('HTML remains useful without JavaScript',async({browser})=>{
- const context=await browser.newContext({javaScriptEnabled:false});const page=await context.newPage();
- await page.goto('http://127.0.0.1:4174/demo/categories/list');await expect(page.getByRole('heading',{name:'A study of form'})).toBeVisible();
+test('HTML remains useful without JavaScript',async({browser,baseURL})=>{
+ const context=await browser.newContext({javaScriptEnabled:false,baseURL});const page=await context.newPage();
+ await page.goto('/demo/categories/list');await expect(page.getByRole('heading',{name:'A study of form'})).toBeVisible();
  await page.locator('[data-catalog-card][data-spatial-element-id="orb"]').click();await expect(page).toHaveURL(/elements\/orb/);await expect(page.getByRole('heading',{name:'Orb',exact:true}).first()).toBeVisible();await context.close();
 });
 test('GPU unavailable retains posters and native navigation',async({page})=>{

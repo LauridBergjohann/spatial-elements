@@ -1,5 +1,6 @@
 import * as THREE from 'three/webgpu';
 import { texture, uniform } from 'three/tsl';
+import { getRefinementSize } from '../stage/SpatialElementRefinement.js';
 
 /** Fade the resolved image, never the individual opaque surfaces of a element. */
 export class CatalogGeometryFade {
@@ -19,8 +20,11 @@ export class CatalogGeometryFade {
 		if (opacity <= 0) return;
 		const destination = renderer.getRenderTarget();
 		const size = destination ?? renderer.getDrawingBufferSize(new THREE.Vector2());
+		// Use the same budget as the preparation target. Otherwise the first moving
+		// frame reallocates a full-resolution MSAA capture after the bounded warm-up.
+		const { width, height } = getRefinementSize(size.width, size.height);
 		if (!this.capture) {
-			this.capture = new THREE.RenderTarget(size.width, size.height, {
+			this.capture = new THREE.RenderTarget(width, height, {
 				type: THREE.HalfFloatType,
 				samples: 4
 			});
@@ -33,7 +37,7 @@ export class CatalogGeometryFade {
 			this.material.toneMapped = false;
 			this.quad = new THREE.QuadMesh(this.material);
 		}
-		this.capture.setSize(size.width, size.height);
+		this.capture.setSize(width, height);
 		const color = renderer.getClearColor(new THREE.Color());
 		const clearAlpha = renderer.getClearAlpha();
 		const scissor = renderer.getScissor(new THREE.Vector4());

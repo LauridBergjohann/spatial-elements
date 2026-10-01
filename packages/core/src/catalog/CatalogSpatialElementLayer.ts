@@ -57,6 +57,9 @@ interface CatalogActor {
 	slot?: HTMLElement;
 	cardRect?: Rect;
 	slotRect?: Rect;
+	hitTarget?: HTMLElement;
+	summaryPanel?: HTMLElement;
+	summarySize?: { width: number; height: number };
 	scrollX: number;
 	scrollY: number;
 	rotationX: number;
@@ -439,7 +442,7 @@ export class CatalogSpatialElementLayer {
 					(Math.min(slot.width, compact ? 360 : slot.height) * 0.82) / (actor.radius * 2)
 				);
 				actor.root.updateMatrixWorld(true);
-				const hitTarget = actor.card.querySelector<HTMLElement>('.spatial-element-target');
+				const hitTarget = actor.hitTarget;
 				if (hitTarget) {
 					// Project cached model bounds, not the framing sphere: empty foreground
 					// margins must not intercept clicks on visible neighbouring spatialElements.
@@ -463,10 +466,9 @@ export class CatalogSpatialElementLayer {
 					hitTarget.style.height = `${bottom - top}px`;
 					hitTarget.style.maxWidth = 'none';
 				}
-				const panel = actor.card.querySelector<HTMLElement>('.summary');
-				if (panel) {
-					const pw = panel.offsetWidth,
-						ph = panel.offsetHeight;
+				const panel = actor.summaryPanel;
+				if (panel && actor.summarySize) {
+					const { width: pw, height: ph } = actor.summarySize;
 					const matrix = actor.tilt.matrixWorld
 						.clone()
 						.multiply(
@@ -588,12 +590,16 @@ export class CatalogSpatialElementLayer {
 	}
 
 	draw(renderer: THREE.WebGPURenderer, band: 'rear' | 'front') {
-		this.passes++;
 		const width = window.innerWidth,
 			height = window.innerHeight;
 		const all = [...this.actors.values()].filter(
 			(actor) => actor.root.visible && this.handoff?.actor !== actor
 		);
+		if (!all.some((actor) => (actor.band ?? 'front') === band)) {
+			if (band === 'front' && this.handoff) this.renderHandoff(renderer);
+			return;
+		}
+		this.passes++;
 		for (const actor of all) actor.root.visible = (actor.band ?? 'front') === band;
 		this.geometryFade.render(renderer, this.exitOpacity, () => {
 			renderer.clearDepth();
@@ -602,7 +608,7 @@ export class CatalogSpatialElementLayer {
 			);
 			const clipped = shown.filter((actor) => actor.clip);
 			for (const actor of clipped) actor.root.visible = false;
-			renderer.render(this.scene, this.camera);
+			if (shown.length > clipped.length) renderer.render(this.scene, this.camera);
 			if (clipped.length) {
 				const oldScissor = renderer.getScissor(new THREE.Vector4());
 				const oldTest = renderer.getScissorTest();
@@ -994,6 +1000,16 @@ export class CatalogSpatialElementLayer {
 		for (const { actor } of measured) {
 			actor.cardRect = actor.card!.getBoundingClientRect();
 			actor.slotRect = actor.slot!.getBoundingClientRect();
+			if (actor.pose) {
+				actor.hitTarget = actor.card!.querySelector<HTMLElement>('.spatial-element-target') ?? undefined;
+				const panel = actor.card!.querySelector<HTMLElement>('.summary') ?? undefined;
+				if (actor.summaryPanel && actor.summaryPanel !== panel)
+					this.layoutObserver.unobserve(actor.summaryPanel);
+				actor.summaryPanel = panel;
+				actor.summarySize = panel ? { width: panel.offsetWidth, height: panel.offsetHeight } : undefined;
+				// Summary content can resize without changing its section's fixed height.
+				if (panel) this.layoutObserver.observe(panel);
+			}
 			actor.scrollX = scrollX;
 			actor.scrollY = scrollY;
 		}
@@ -1097,6 +1113,7 @@ export class CatalogSpatialElementLayer {
 	}
 
 	private disposeActor(actor: CatalogActor) {
+		if (actor.summaryPanel) this.layoutObserver.unobserve(actor.summaryPanel);
 		actor.root.removeFromParent();
 		actor.model.removeFromParent();
 		actor.card?.removeAttribute('data-catalog-model-ready');

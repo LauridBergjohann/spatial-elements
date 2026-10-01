@@ -160,7 +160,6 @@ export class VirtualScrollController {
 		this.measureFrame = 0;
 		this.hashFrame = 0;
 		this.content.style.removeProperty('transform');
-		this.content.style.removeProperty('--virtual-scroll-y');
 		this.spacer.style.removeProperty('height');
 		this.container.classList.remove(ACTIVE_CLASS);
 	}
@@ -363,7 +362,6 @@ export class VirtualScrollController {
 	private applyPosition(scrollX: number, scrollY: number) {
 		this.scrollY = scrollY;
 		this.content.style.transform = `translate3d(${-scrollX}px, ${-scrollY}px, 0)`;
-		this.content.style.setProperty('--virtual-scroll-y', `${scrollY}px`);
 	}
 
 	private measureDocumentHeight() {

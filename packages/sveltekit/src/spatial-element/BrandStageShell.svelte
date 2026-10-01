@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import Stage from '../stage/Stage.svelte';
 	import type { CatalogPage } from '@spatial-elements/core/catalog/catalogPage';
+	import type { StageRenderSettings } from '@spatial-elements/core';
 	import { getCssPanelBoxShadow, resolvePanelShadowStrength } from '@spatial-elements/core/stage/panelShadow';
 	import { provideSpatialTheme } from './brandContext.js';
 	import type { SpatialTheme, SpatialStageConfig } from '@spatial-elements/core/spatial-element/types';
@@ -9,11 +10,12 @@
 	interface Props {
 		theme: SpatialTheme;
 		stage: SpatialStageConfig;
+		renderSettings?: StageRenderSettings;
 		catalog?: CatalogPage;
 		children?: Snippet;
 	}
 
-	let { theme, stage, catalog, children }: Props = $props();
+	let { theme, stage, renderSettings, catalog, children }: Props = $props();
 
 	provideSpatialTheme(() => theme);
 
@@ -78,6 +80,7 @@
 <div class="brand-stage-shell" style={brandStyle}>
 	<Stage
 		{catalog}
+		{renderSettings}
 		background={stage.background}
 		pageBackground={theme.background}
 		hdr={stage.hdr}

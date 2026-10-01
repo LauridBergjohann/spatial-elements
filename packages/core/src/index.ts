@@ -7,4 +7,4 @@ export type { CarouselPresentation } from './catalog/catalogPose.js';
 export { catalogViewLink } from './catalog/catalogViewLink.js';
 export * from './catalog/spatialElementAssets.js';
 export * from './catalog/spatialElementLodPair.js';
-export type { StageExperienceOptions } from './stage/stageTypes.js';
+export type { StageExperienceOptions, StageRenderSettings } from './stage/stageTypes.js';

@@ -9,11 +9,13 @@
 		StageInteractionTheme,
 		StageModelSettings,
 		StagePanelTarget,
+		StageRenderSettings,
 		StageVisualTestView,
 		StageViewportTarget,
 		StageZoomFocusState
 	} from '@spatial-elements/core/stage/StageExperience';
 	import { isStageVisualTestMode, type StageVisualTestController } from '@spatial-elements/core/stage/stageVisualTest';
+	import { resolveStageRenderSettings } from '@spatial-elements/core/stage/renderSettings';
 	import { VirtualScrollController } from '@spatial-elements/core/stage/VirtualScrollController';
 	import ScrollNavigationBridge from '../catalog/ScrollNavigationBridge.svelte';
 	import { CatalogTransition } from '@spatial-elements/core/catalog/CatalogTransition';
@@ -33,6 +35,7 @@
 	} from '@spatial-elements/core/stage/panelContext';
 
 	interface Props {
+		renderSettings?: StageRenderSettings;
 		dracoDecoderPath?: string;
 		ariaLabel?: string;
 		background?: BackgroundSettings;
@@ -49,6 +52,7 @@
 
 	let {
 		ariaLabel = 'WebGPU 3D stage',
+		renderSettings,
 		dracoDecoderPath,
 		pageBackground = '#ffffff',
 		background,
@@ -102,6 +106,7 @@
 	let retainedPageSignature: string | undefined;
 	const pageSignature = () =>
 		JSON.stringify([
+			renderSettings,
 			pageBackground,
 			background,
 			hdr,
@@ -190,6 +195,7 @@
 			const panels = getPanelTargets();
 			const viewport = getViewportTarget();
 			const instance = new StageExperience(stage, {
+				renderSettings,
 				dracoDecoderPath,
 				catalog: Boolean(catalog),
 				heroIsPresented: () =>
@@ -362,6 +368,7 @@
 				? experience.setCatalogSpatialElements(catalog.brandId, catalogSpatialElements)
 				: undefined;
 			await experience.updatePage({
+				renderSettings,
 				catalog: Boolean(catalog),
 				heroIsPresented: () =>
 					!catalog?.spatialElementId ||
@@ -499,6 +506,8 @@
 				},
 			getRenderTargetStats: () =>
 				experience?.getVisualTestRenderTargetStats() ?? {
+					pixelRatio: 0,
+					renderSettings: resolveStageRenderSettings(renderSettings),
 					liveTargets: 0,
 					targets: [],
 					canvases: [],

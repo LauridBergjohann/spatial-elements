@@ -1,8 +1,46 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three/webgpu';
 import { CatalogGeometryFade } from './CatalogGeometryFade.js';
+import { getRefinementSize } from '../stage/SpatialElementRefinement.js';
 
 describe('resolved catalog geometry fade', () => {
+	it('retains the warmed capture at high DPI and bounds its physical pixel count', () => {
+		const size = getRefinementSize(3000, 1800);
+		const warm = new THREE.RenderTarget(size.width, size.height);
+		let target: THREE.RenderTarget | null = warm;
+		const renderer = {
+			getRenderTarget: () => target,
+			setRenderTarget: (next: THREE.RenderTarget | null) => { target = next; },
+			getDrawingBufferSize: (out: THREE.Vector2) => out.set(3000, 1800),
+			getClearColor: (out: THREE.Color) => out.set(0xffffff),
+			getClearAlpha: () => 1,
+			setClearColor: vi.fn(),
+			getScissor: (out: THREE.Vector4) => out.set(0, 0, 1500, 900),
+			setScissor: vi.fn(),
+			getScissorTest: () => false,
+			setScissorTest: vi.fn(),
+			clear: vi.fn()
+		} as unknown as THREE.WebGPURenderer;
+		const quad = vi.spyOn(THREE.QuadMesh.prototype, 'render').mockImplementation(() => {});
+		const fade = new CatalogGeometryFade();
+		try {
+			fade.render(renderer, 0.5, () => {});
+			const capture = fade.getRenderTargets()[0];
+			const dispose = vi.spyOn(capture, 'dispose');
+			target = null;
+			fade.render(renderer, 0.5, () => {});
+			expect(fade.getRenderTargets()).toEqual([capture]);
+			expect(capture.width * capture.height).toBeLessThanOrEqual(512 * 1024);
+			expect(capture.width / capture.height).toBeCloseTo(3000 / 1800, 2);
+			expect(dispose).not.toHaveBeenCalled();
+			expect(target).toBeNull();
+		} finally {
+			fade.dispose();
+			warm.dispose();
+			quad.mockRestore();
+		}
+	});
+
 	it('resolves normal depth occlusion before fading and restores renderer state, including on failure', () => {
 		const output = new THREE.RenderTarget(800, 600);
 		let target: THREE.RenderTarget | null = output;
