@@ -8,9 +8,10 @@ export const theme: SpatialTheme = {
  colors: { ink: '#173047', body: '#263c4d', accent: '#285c89', onAccent: '#ffffff', tabBackground: '#e4ebf1' }
 };
 const identity: SpatialElementLodPair['assetToFrame'] = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
-export const spatialElements: SpatialElementData[] = ['column','orb','ring'].map(id => {
+export const spatialElements: SpatialElementData[] = ['column','orb','ring','cube','torus-knot'].map(id => {
+ const title = id.split('-').map(word => word[0].toUpperCase() + word.slice(1)).join(' ');
  const url = '/assets/demo/' + id + '-high.glb';
- return { id, brandId: 'demo', pageTitle: id + ' | Spatial Elements', eyebrow: 'FORM STUDIES', title: id[0].toUpperCase() + id.slice(1), features: [{ label: 'Explore a sculptural form' }, { label: 'Rotate and zoom in three dimensions' }], action: { label: 'Explore features', href: '#features' },
+ return { id, brandId: 'demo', pageTitle: title + ' | Spatial Elements', eyebrow: 'FORM STUDIES', title, features: [{ label: 'Explore a sculptural form' }, { label: 'Rotate and zoom in three dimensions' }], action: { label: 'Explore features', href: '#features' },
  stage: { background: { blurriness: 0.2, tint: '#e6edf4', tintIntensity: 0.3 }, hdr: '/assets/demo/studio.hdr', glb: url, fallbackImage: '/assets/demo/' + id + '.svg', fallbackImageSize: [320,280], camera: { azimuth: 15, elevation: 10 },
  lodPair: { status: 'provisional-shared-frame', revision: 'demo-1', sourceUrl: url, low: { url: '/assets/demo/' + id + '-low.glb', format: 'glb', revision: 'demo-1' }, high: { url, format: 'glb', revision: 'demo-1' }, assetToFrame: identity, bounds: { min: [-1,-1,-1], max: [1,1,1] } } },
  breadcrumbs: [{ label: 'Collection', href: '/demo/categories/list' }, { label: id }], media: [{ id: 'model', kind: 'minimap', label: '3D view' }] };
