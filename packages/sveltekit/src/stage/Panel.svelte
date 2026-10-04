@@ -26,8 +26,10 @@
 		minimap?: boolean | StagePanelMinimapOptions;
 		/** true: proximity lift and tilt; 'lift': a 2px mouse-hover lift without tilt; false: still. */
 		pointerReactive?: boolean | 'lift';
-		/** false keeps the pose; 'top-right' moves to the viewport corner with the panel fade. */
+		/** false keeps the pose; 'top-right' moves to the corner after the surrounding UI clears. */
 		focusReactive?: boolean | 'top-right';
+		/** Optional panel frame whose top-left corner a 'top-right' control initially follows. */
+		focusAnchor?: HTMLElement;
 		/** Retain native DOM layout, including popover semantics, while rendering the glass surface. */
 		nativeContent?: boolean;
 		/** Visibility of an optional native-content panel. */
@@ -47,6 +49,7 @@
 		minimap = false,
 		pointerReactive = true,
 		focusReactive = true,
+		focusAnchor,
 		nativeContent = false,
 		visible = true,
 		pose,
@@ -77,6 +80,7 @@
 		getSurfaceElement: () => surfaceElement,
 		getPointerReactive: () => pointerReactive,
 		getFocusReactive: () => focusReactive,
+		getFocusAnchor: () => focusAnchor,
 		getNativeContent: () => nativeContent,
 		getVisible: () => visible,
 		getMinimapOptions: () => getMinimapOptions(),

@@ -31,6 +31,9 @@ test('hover help repeats until interaction, delays hiding and supports persisten
 	await expect(help(page)).toBeVisible();
 	await expect(help(page)).toContainText('Explore in 3D');
 	await expect(help(page)).toContainText('Drag with the left mouse button');
+	expect(await help(page).locator('dt').allTextContents()).toEqual(['Rotate', 'Zoom', 'Pan']);
+	await expect(help(page).locator('svg[data-input="mouse"]')).toHaveCount(3);
+	expect((await help(page).locator('dd').first().boundingBox())!.height).toBe(1);
 	expect(await help(page).evaluate(node => node.contains(document.activeElement))).toBe(false);
 	await page.mouse.move(1, 1); await page.waitForTimeout(100);
 	await page.mouse.move(point.x, point.y); await page.waitForTimeout(400);
@@ -127,6 +130,7 @@ test.describe('touch help', () => {
 		await button(page).tap();
 		await expect(button(page)).not.toHaveAttribute('data-mouse-hover');
 		await expect(help(page)).toContainText('Drag with one finger');
+		await expect(help(page).locator('svg[data-input="touch"]')).toHaveCount(3);
 		const rect = (await help(page).boundingBox())!;
 		expect(rect.x).toBeGreaterThanOrEqual(15); expect(rect.x + rect.width).toBeLessThanOrEqual(415);
 		expect(rect.y).toBeGreaterThanOrEqual(15); expect(rect.y + rect.height).toBeLessThanOrEqual(885);

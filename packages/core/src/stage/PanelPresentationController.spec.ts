@@ -4,33 +4,66 @@ import { PanelPresentationController, type PanelPresentationPorts } from './Pane
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
 import type { StageMinimapState } from './minimap/MinimapState.js';
 import { resolveLiquidGlassPanelOptions } from './LiquidGlassPanel.js';
-import { getPanelFocusOpacity } from './stageMath.js';
+import { getPanelFocusOpacity, getStageUiFocus } from './stageMath.js';
 
 afterEach(() => vi.unstubAllGlobals());
 
-test('corner controls use the exact panel fade progress in either zoom direction, with no trailing frames', () => {
-	vi.stubGlobal('window', { innerWidth: 1000, innerHeight: 800, location: { search: '' } });
-	const camera = new THREE.PerspectiveCamera(); camera.position.z = 1000;
+test.each([[1916, 907], [1280, 800]])('corner controls follow the summary edge before continuing to the minimap inset (%i x %i)', (width, height) => {
+	vi.stubGlobal('window', { innerWidth: width, innerHeight: height, location: { search: '' } });
+	const camera = new THREE.PerspectiveCamera(); camera.position.z = height / (2 * Math.tan(Math.PI / 10));
 	let focus = 0;
+	const summaryWidth = Math.min(494, width * 0.3);
+	const summaryLeft = width - 40 - summaryWidth;
+	const anchorFrame = {} as HTMLElement;
+	const summary = {
+		group: new THREE.Group(), pointerLift: 0, pointerReactive: false, focusReactive: true,
+		options: resolveLiquidGlassPanelOptions({ width: summaryWidth, height: 504,
+			position: { x: summaryLeft + summaryWidth / 2 - width / 2, y: height / 2 - 110 - 252 } }),
+		domRenderMode: 'native', nativeRestFrames: 0, surface: 'glass', glass: { setVisibilityAlpha: vi.fn() }
+	} as unknown as StagePanelRuntime;
 	const runtime = {
 		group: new THREE.Group(), pointerLift: 0, pointerReactive: false, focusReactive: 'top-right',
-		options: resolveLiquidGlassPanelOptions({ width: 40, height: 40, position: { x: 120, y: 240 } }),
+		options: resolveLiquidGlassPanelOptions({ width: 40, height: 40,
+			position: { x: summaryLeft - 44 - 20 - width / 2, y: height / 2 - 116 - 20 } }),
 		domRenderMode: 'native', nativeRestFrames: 0, surface: 'glass',
 		glass: { setVisibilityAlpha: vi.fn() }
 	} as unknown as StagePanelRuntime;
 	const controller = new PanelPresentationController({
-		camera, registrations: () => [], minimaps: () => new Map(),
-		frame: () => ({ pointer: { active: false }, uiFocus: focus, minimapFocus: 0, presentation: { active: false } }),
+		camera, registrations: () => [{ getFocusAnchor: () => anchorFrame }, { frame: anchorFrame }], minimaps: () => new Map(),
+		frame: () => ({ pointer: { active: false }, focus, uiFocus: getStageUiFocus(focus), minimapFocus: 0, presentation: { active: false } }),
 		visible: () => true, transitionOpacity: () => 1
 	} as unknown as PanelPresentationPorts);
 	controller.add(runtime);
-	for (focus of [0, 0.2, 0.5, 0.8, 1, 0.7, 0.3, 0]) {
+	controller.add(summary);
+	const positions = new Map<number, number[]>();
+	for (const step of [...Array.from({ length: 101 }, (_, i) => i), ...Array.from({ length: 101 }, (_, i) => 100 - i)]) {
+		focus = step / 100;
 		expect(controller.updatePanelPointerInteraction(1 / 60)).toBe(false);
-		const progress = 1 - getPanelFocusOpacity(focus);
-		expect(runtime.group.position.x).toBeCloseTo(120 + (464 - 120) * progress, 8);
-		expect(runtime.group.position.y).toBeCloseTo(240 + (364 - 240) * progress, 8);
+		const x = width / 2 + runtime.group.position.x - 20;
+		const y = height / 2 - runtime.group.position.y - 20;
+		expect(x).toBeGreaterThanOrEqual(10); expect(x + 40).toBeLessThanOrEqual(width - 10);
+		expect(y).toBeGreaterThanOrEqual(10); expect(y + 40).toBeLessThanOrEqual(height - 10);
+		if (getPanelFocusOpacity(getStageUiFocus(focus)) > 0.001) {
+			const layout = controller.getPanelPointerLayout(summary, 1, width, height, getStageUiFocus(focus));
+			const scale = camera.position.z / (camera.position.z - layout.focusOffset.z);
+			const left = layout.centerX - summaryWidth * scale / 2;
+			expect(left - (x + 40)).toBeCloseTo(44, 7);
+		}
+		if (step === 74) expect(width - x - 40).toBeGreaterThan(100);
+		if (step === 100) { expect(x + 40).toBe(width - 10); expect(y).toBe(10); }
+		if (positions.has(step)) expect([x, y]).toEqual(positions.get(step));
+		positions.set(step, [x, y]);
 		expect(runtime.group.position.z).toBe(0);
 		expect(runtime.glass!.setVisibilityAlpha).toHaveBeenLastCalledWith(1);
+	}
+	// The attachment transition is continuous in both position and speed.
+	const around = [0.74 - 1e-5, 0.74, 0.74 + 1e-5].map(value => {
+		focus = value;
+		return controller.getPanelPointerLayout(runtime, 0, width, height, getStageUiFocus(focus));
+	});
+	for (const axis of ['centerX', 'centerY'] as const) {
+		expect(Math.abs(around[2][axis] - around[1][axis])).toBeLessThan(0.05);
+		expect(Math.abs((around[2][axis] - around[1][axis]) - (around[1][axis] - around[0][axis]))).toBeLessThan(0.0001);
 	}
 });
 

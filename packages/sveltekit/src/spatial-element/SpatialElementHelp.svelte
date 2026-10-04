@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import { CircleHelp, X, Rotate3d, ZoomIn, Move } from 'lucide-svelte';
+	import { CircleHelp, X } from 'lucide-svelte';
+	import InteractionGesture from './InteractionGesture.svelte';
 	import { getCssPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
 	import { getInteractionGuidance, MODEL_INPUT_EVENT, type ModelInputState, type InteractionGuidance } from '@spatial-elements/core/stage/interactionGuidance';
 	import { STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
@@ -16,6 +17,7 @@
 	const help = $derived(messages.interactionHelp);
 	const id = $props.id();
 	let root: HTMLDivElement;
+	let focusAnchor = $state<HTMLElement>();
 	let button = $state<HTMLButtonElement>(null!);
 	let popover: HTMLDivElement;
 	let closeButton: HTMLButtonElement;
@@ -107,6 +109,7 @@
 			if (state.interacted) close();
 		});
 		const stage = root.closest<HTMLElement>('.stage')!;
+		focusAnchor = root.closest('.spatial-element-hero')?.querySelector<HTMLElement>('.spatial-element-panel') ?? undefined;
 		// Keep the non-modal help accessible when close-up hides the ordinary DOM layer.
 		stage.appendChild(popover);
 		// Measure the nearest wide panel above the hero, without relying on a host CSS class.
@@ -131,7 +134,7 @@
 		};
 		stageChanged();
 		const mutation = new MutationObserver(stageChanged);
-		mutation.observe(stage, { attributes: true, attributeFilter: ['data-stage-state', 'data-catalog-transition', 'data-stage-ui-focus'] });
+		mutation.observe(stage, { attributes: true, attributeFilter: ['data-stage-state', 'data-catalog-transition', 'data-stage-focus'] });
 		const observer = new IntersectionObserver(([entry]) => {
 			visible = entry.isIntersecting;
 			if (!visible) close();
@@ -189,7 +192,7 @@
 
 <div bind:this={root} class="model-tools" class:enhanced style={surfaceStyle} data-spatial-element-tools>
 	<div class="model-tools-buttons">
-		<SpatialIconButton bind:element={button} label={messages.controls.help} onclick={toggleHelp} expanded={open} controls={id} enabled={enhanced}>
+		<SpatialIconButton bind:element={button} {focusAnchor} label={messages.controls.help} onclick={toggleHelp} expanded={open} controls={id} enabled={enhanced}>
 			<CircleHelp size={21} strokeWidth={1.8} aria-hidden="true" />
 		</SpatialIconButton>
 	</div>
@@ -214,9 +217,9 @@
 					</button>
 				</div>
 				<dl>
-					<div><Rotate3d size={20} aria-hidden="true" /><dt>{help.rotate}</dt><dd>{touchInput ? help.touchRotate : help.mouseRotate}</dd></div>
-					<div><ZoomIn size={20} aria-hidden="true" /><dt>{help.zoom}</dt><dd>{touchInput ? help.touchZoom : help.mouseZoom}</dd></div>
-					<div><Move size={20} aria-hidden="true" /><dt>{help.pan}</dt><dd>{touchInput ? help.touchPan : help.mousePan}</dd></div>
+					<div><InteractionGesture action="rotate" touch={touchInput} /><dt>{help.rotate}</dt><dd>{touchInput ? help.touchRotate : help.mouseRotate}</dd></div>
+					<div><InteractionGesture action="zoom" touch={touchInput} /><dt>{help.zoom}</dt><dd>{touchInput ? help.touchZoom : help.mouseZoom}</dd></div>
+					<div><InteractionGesture action="pan" touch={touchInput} /><dt>{help.pan}</dt><dd>{touchInput ? help.touchPan : help.mousePan}</dd></div>
 				</dl>
 				{#if touchInput}<p class="scroll-hint">{help.touchScrollHint}</p>{/if}
 			</div>
@@ -240,7 +243,7 @@
 		backdrop-filter: blur(var(--help-blur)); box-shadow: var(--help-shadow);
 	}
 	.interaction-help {
-		position: fixed; inset: auto; box-sizing: border-box; width: 300px;
+		position: fixed; inset: auto; box-sizing: border-box; width: 248px;
 		margin: 0; padding: 0; overflow: visible;
 		border: 0; border-radius: var(--help-radius); color: var(--spatial-element-ink);
 		background: transparent;
@@ -255,11 +258,11 @@
 		padding: 0; border: 0; border-radius: 8px; color: inherit; background: transparent; cursor: pointer;
 	}
 	.close-help:focus-visible { outline: 2px solid var(--spatial-element-accent); }
-	dl { display: grid; gap: 14px; margin: 10px 0 0; }
-	dl > div { display: grid; grid-template-columns: 24px 1fr; column-gap: 10px; }
-	dl :global(svg) { grid-row: span 2; margin-top: 2px; }
+	dl { display: grid; gap: 8px; margin: 8px 0 0; }
+	dl > div { display: grid; grid-template-columns: 48px 1fr; column-gap: 14px; align-items: center; }
 	dt { font-weight: 650; }
-	dd { grid-column: 2; margin: 2px 0 0; color: var(--spatial-element-body); font-size: 13px; }
+	/* Keep complete host-localized instructions available to assistive technology. */
+	dd { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 	.scroll-hint { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid currentColor; font-size: 12px; }
 	@media (max-width: 1100px) { .model-tools { margin-inline-end: 0; } }
 </style>

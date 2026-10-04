@@ -121,6 +121,8 @@ export class LiquidGlassPanel {
 	readonly options: Required<LiquidGlassPanelOptions>;
 
 	private readonly geometryOptions: Required<LiquidGlassPanelOptions>;
+	private readonly authoredBezel: number;
+	private readonly authoredRadius: number;
 	private readonly backdropGeometry: THREE.BufferGeometry;
 	private readonly bezelGeometry: THREE.BufferGeometry;
 	private readonly shadowLayers: {
@@ -137,6 +139,10 @@ export class LiquidGlassPanel {
 
 	constructor(backdropTexture: THREE.Texture, options: LiquidGlassPanelOptions = {}) {
 		this.options = resolveLiquidGlassPanelOptions(options);
+		// Hidden native popovers initially measure 1px. Keep the authored optical
+		// dimensions so opening/resizing does not permanently flatten their glass edge.
+		this.authoredBezel = Math.max(0, finiteOr(options.bezel ?? DEFAULT_OPTIONS.bezel, DEFAULT_OPTIONS.bezel));
+		this.authoredRadius = Math.max(0, finiteOr(options.radius ?? DEFAULT_OPTIONS.radius, DEFAULT_OPTIONS.radius));
 		this.geometryOptions = {
 			...this.options,
 			position: { ...this.options.position }
@@ -232,10 +238,11 @@ export class LiquidGlassPanel {
 		this.backdropTextureNode.value = backdropTexture;
 	}
 
-	setVisualSize(width: number, height: number, radius = this.options.radius) {
+	setVisualSize(width: number, height: number, radius = this.authoredRadius) {
 		const nextWidth = Math.max(width, 1);
 		const nextHeight = Math.max(height, 1);
 		const nextRadius = Math.min(Math.max(radius, 0), nextWidth * 0.5, nextHeight * 0.5);
+		const nextBezel = Math.min(this.authoredBezel, nextWidth * 0.5, nextHeight * 0.5);
 
 		if (
 			Math.abs(this.geometryOptions.width - nextWidth) < 0.01 &&
@@ -248,12 +255,14 @@ export class LiquidGlassPanel {
 		this.geometryOptions.width = nextWidth;
 		this.geometryOptions.height = nextHeight;
 		this.geometryOptions.radius = nextRadius;
+		this.geometryOptions.bezel = nextBezel;
 		this.backdropProjection.panelSize.value.set(nextWidth, nextHeight);
 		this.backdropProjection.radius.value = nextRadius;
+		this.backdropProjection.bezel.value = nextBezel;
 		createRoundedGridGeometry(nextWidth, nextHeight, nextRadius, 128, 82, this.backdropGeometry);
 		copyGeometry(
 			this.bezelGeometry,
-			createRoundedBandGeometry(nextWidth, nextHeight, nextRadius, -this.options.bezel, 14, 1.7)
+			createRoundedBandGeometry(nextWidth, nextHeight, nextRadius, -nextBezel, 14, 1.7)
 		);
 		this.shadowLayers.forEach(({ geometry }, index) => {
 			const layer = PANEL_SHADOW_RECIPE[index];

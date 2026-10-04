@@ -4,12 +4,13 @@
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 
-	let { label, children, onclick, expanded, controls, enabled = true, element = $bindable() }: {
+	let { label, children, onclick, expanded, controls, focusAnchor, enabled = true, element = $bindable() }: {
 		label: string;
 		children: Snippet;
 		onclick: (event: MouseEvent) => void;
 		expanded?: boolean;
 		controls?: string;
+		focusAnchor?: HTMLElement;
 		enabled?: boolean;
 		element?: HTMLButtonElement;
 	} = $props();
@@ -23,6 +24,7 @@
 		theme={theme.panelTheme}
 		pointerReactive={false}
 		focusReactive="top-right"
+		{focusAnchor}
 		transitionGroup="enter"
 	>
 		<!-- Keep visibility on the button: Panel's content style also holds renderer positioning. -->

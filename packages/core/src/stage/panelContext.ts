@@ -58,6 +58,7 @@ export interface StagePanelRegistration {
 	getSurfaceElement(): HTMLElement | undefined;
 	getPointerReactive(): boolean | 'lift';
 	getFocusReactive?(): boolean | 'top-right';
+	getFocusAnchor?(): HTMLElement | undefined;
 	getNativeContent?(): boolean;
 	getVisible?(): boolean;
 	getMinimapOptions(): StagePanelMinimapOptions | undefined;

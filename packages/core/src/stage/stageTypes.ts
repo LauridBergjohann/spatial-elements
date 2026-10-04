@@ -117,8 +117,10 @@ export interface StagePanelTarget {
 	minimap?: StageMinimapOptions;
 	/** true: proximity lift and tilt; 'lift': mouse hover raises 2px without tilt; false: still. */
 	pointerReactive?: boolean | 'lift';
-	/** true fades/moves with close-up; false keeps its pose; 'top-right' travels with the fade. */
+	/** true fades/moves with close-up; false keeps its pose; 'top-right' travels to the corner. */
 	focusReactive?: boolean | 'top-right';
+	/** Optional neighbouring panel frame followed before a corner control detaches. */
+	getFocusAnchor?: () => HTMLElement | undefined;
 	/** Keep accessible content in its DOM owner (for example, a native popover). */
 	nativeContent?: boolean;
 	/** Whether an optional panel is currently open. */
