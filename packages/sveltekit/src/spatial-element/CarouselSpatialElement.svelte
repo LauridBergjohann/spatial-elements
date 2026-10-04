@@ -239,11 +239,15 @@
 		position: relative;
 		display: grid;
 		place-items: center;
-		touch-action: pan-y;
+		touch-action: manipulation;
 	}
 	.interactive {
 		display: block;
 		margin: 0;
+	}
+	.interactive .spatial-element-visual {
+		/* One owner for diagonal single-finger motion; two-finger page zoom stays native. */
+		touch-action: pinch-zoom;
 	}
 	.interactive[hidden] {
 		/* Keep known summary dimensions measurable without painting or registering GPU actors. */

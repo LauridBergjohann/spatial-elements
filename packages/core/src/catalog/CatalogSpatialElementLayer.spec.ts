@@ -158,6 +158,38 @@ describe('catalog spatialElement clip-space handoff', () => {
 });
 
 describe('catalog preview lifetime', () => {
+	it('clears mouse proximity immediately on touch or pen and accepts a mouse again', () => {
+		const events = new EventTarget();
+		vi.stubGlobal('window', Object.assign(events, {
+			matchMedia: () => ({ addEventListener: vi.fn(), removeEventListener: vi.fn() })
+		}));
+		vi.stubGlobal('ResizeObserver', class { disconnect() {} });
+		const invalidate = vi.fn();
+		const manager = new SpatialElementAssetManager({ loader: { load: vi.fn() } });
+		const layer = new CatalogSpatialElementLayer(manager, invalidate);
+		const pointer = (type: string, pointerType: string) => events.dispatchEvent(Object.assign(
+			new Event(type), { pointerType, clientX: 20, clientY: 30 }
+		));
+		const active = () => (layer as unknown as { pointer: { active: boolean } }).pointer.active;
+		try {
+			pointer('pointermove', 'mouse');
+			expect(active()).toBe(true);
+			pointer('pointerdown', 'touch');
+			expect(active()).toBe(false);
+			invalidate.mockClear();
+			pointer('pointermove', 'touch');
+			pointer('pointermove', 'pen');
+			expect(active()).toBe(false);
+			expect(invalidate).not.toHaveBeenCalled();
+			pointer('pointermove', 'mouse');
+			expect(active()).toBe(true);
+			pointer('pointermove', 'pen');
+			expect(active()).toBe(false);
+		} finally {
+			layer.dispose();
+		}
+	});
+
 	it('loads only nearby cards with bounded concurrency and keeps the captured actor across page removal', async () => {
 		const slots = new Map<string, unknown>();
 		for (let index = 0; index < 5; index += 1) {

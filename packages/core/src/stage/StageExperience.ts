@@ -63,6 +63,7 @@ import { getStagePositionFromRect, isViewportRectVisible } from './stageDom.js';
 import {
 	STAGE_SCROLL_PRIORITY,
 	getStageVisualScrollPosition,
+	hasPendingStageScrollFrame,
 	subscribeStageScrollFrame,
 	type StageScrollFrame
 } from './scrollFrame.js';
@@ -281,6 +282,9 @@ export class StageExperience {
 	private readonly resize = () => this.resizeRenderer();
 	private readonly render = () => {
 		this.renderRequestId = 0;
+		// The shared callback will draw after updating DOM/dock positions. Avoid
+		// submitting an older camera/scroll frame immediately before that draw.
+		if (this.stopScrollFrames && hasPendingStageScrollFrame()) return;
 		this.renderFrame();
 	};
 
@@ -288,9 +292,15 @@ export class StageExperience {
 		if (!document.hidden) this.requestRender();
 	};
 	private readonly pointerMove = (event: PointerEvent) => this.handlePointerMove(event);
-	private readonly pointerLeave = () => this.handlePointerLeave();
+	private readonly pointerLeave = (event: Event) => {
+		if (event.type === 'blur' || (event as PointerEvent).pointerType === 'mouse') {
+			this.handlePointerLeave();
+		}
+	};
+	private readonly pointerContact = (event: PointerEvent) => this.interaction.handlePointerContact(event);
 	private readonly pointerDown = (event: PointerEvent) => this.handlePointerDown(event);
 	private readonly pointerUp = (event: PointerEvent) => this.handlePointerUp(event);
+	private readonly touchStart = (event: TouchEvent) => this.interaction.handleTouchStart(event);
 	private readonly wheel = (event: WheelEvent) => this.handleWheel(event);
 	private readonly scroll = (frame: StageScrollFrame) => this.handleScrollFrame(frame);
 	private readonly finishScroll = () => {
@@ -630,12 +640,14 @@ export class StageExperience {
 		window.addEventListener(STAGE_PANEL_LAYOUT_EVENT, this.requestPanelSync);
 		window.addEventListener(STAGE_PANEL_VISUAL_EVENT, this.requestPanelVisualSync);
 		window.addEventListener('pointermove', this.pointerMove);
+		window.addEventListener('pointerdown', this.pointerContact, { capture: true, passive: true });
 		window.addEventListener('pointerup', this.pointerUp);
 		window.addEventListener('pointercancel', this.pointerUp);
 		window.addEventListener('pointerleave', this.pointerLeave);
 		window.addEventListener('blur', this.pointerLeave);
 		document.addEventListener('visibilitychange', this.visibilityChange);
 		this.backgroundCanvas.addEventListener('pointerdown', this.pointerDown, { capture: true });
+		this.backgroundCanvas.addEventListener('touchstart', this.touchStart, { passive: false });
 		this.backgroundCanvas.addEventListener('wheel', this.wheel, {
 			capture: true,
 			passive: false
@@ -657,6 +669,7 @@ export class StageExperience {
 		window.removeEventListener(STAGE_PANEL_LAYOUT_EVENT, this.requestPanelSync);
 		window.removeEventListener(STAGE_PANEL_VISUAL_EVENT, this.requestPanelVisualSync);
 		window.removeEventListener('pointermove', this.pointerMove);
+		window.removeEventListener('pointerdown', this.pointerContact, { capture: true });
 		window.removeEventListener('pointerup', this.pointerUp);
 		window.removeEventListener('pointercancel', this.pointerUp);
 		window.removeEventListener('pointerleave', this.pointerLeave);
@@ -666,6 +679,7 @@ export class StageExperience {
 			capture: true
 		});
 		this.backgroundCanvas.removeEventListener('wheel', this.wheel, { capture: true });
+		this.backgroundCanvas.removeEventListener('touchstart', this.touchStart);
 		if (this.renderRequestId) cancelAnimationFrame(this.renderRequestId);
 		this.renderRequestId = 0;
 		if (this.scrollEndTimer) window.clearTimeout(this.scrollEndTimer);

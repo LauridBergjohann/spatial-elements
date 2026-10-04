@@ -11,6 +11,14 @@
 		resolveCarouselSelection,
 		stepCarouselSelection
 	} from '@spatial-elements/core/catalog/carouselSelection';
+	import {
+		CarouselDrag,
+		CarouselScrollDrag,
+		clampCarouselPhase,
+		sampleCarouselSpring,
+		sampleCarouselScrollMomentum
+	} from '@spatial-elements/core/catalog/carouselMotion';
+	import { markStageScrollInput } from '@spatial-elements/core/stage/scrollFrame';
 
 	let {
 		section,
@@ -41,6 +49,7 @@
 	});
 	let ring: HTMLDivElement;
 	let frame = 0;
+	let scrollFrame = 0;
 	let visible = true;
 	let suppressClick = false;
 	let clickTimer: ReturnType<typeof setTimeout>;
@@ -52,14 +61,53 @@
 		selectionDirty = false;
 		sections?.remember();
 	}
-	let drag: { id: number; x: number; y: number; phase: number; active: boolean } | undefined;
+	let drag: { id: number; kind: 'pointer' | 'touch'; motion: CarouselDrag; scroll?: CarouselScrollDrag } | undefined;
+	function writeScroll(position: number) {
+		markStageScrollInput('touch');
+		window.scrollTo({ top: position, behavior: 'instant' });
+	}
+	function stopScrollMomentum() {
+		cancelAnimationFrame(scrollFrame);
+		scrollFrame = 0;
+		window.removeEventListener('touchstart', stopScrollMomentum, true);
+		window.removeEventListener('pointerdown', stopScrollMomentum, true);
+		window.removeEventListener('wheel', stopScrollMomentum, true);
+		window.removeEventListener('keydown', stopScrollMomentum, true);
+		window.removeEventListener('popstate', stopScrollMomentum);
+	}
+	function scrollMomentum(scroll: CarouselScrollDrag, velocity: number) {
+		stopScrollMomentum();
+		if (Math.abs(velocity) < 0.02 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		const start = scroll.position;
+		const started = performance.now();
+		for (const name of ['touchstart', 'pointerdown', 'wheel', 'keydown'])
+			window.addEventListener(name, stopScrollMomentum, { capture: true, passive: true });
+		window.addEventListener('popstate', stopScrollMomentum);
+		const advance = (now: number) => {
+			if (ring?.closest('[data-catalog-transition]')) {
+				stopScrollMomentum();
+				return;
+			}
+			const sample = sampleCarouselScrollMomentum(start, velocity, now - started, scroll.maximum);
+			writeScroll(sample.position);
+			if (sample.finished) stopScrollMomentum();
+			else scrollFrame = requestAnimationFrame(advance);
+		};
+		scrollFrame = requestAnimationFrame(advance);
+	}
 	function invalidate() {
 		window.dispatchEvent(new Event(CATALOG_POSE_CHANGED));
 	}
 	function releaseDrag() {
 		const current = drag;
 		drag = undefined;
-		if (current && ring?.hasPointerCapture(current.id)) ring.releasePointerCapture(current.id);
+		window.removeEventListener('pointerup', pointerup);
+		window.removeEventListener('touchstart', multitouch);
+		window.removeEventListener('touchmove', touchmove);
+		window.removeEventListener('touchend', touchend);
+		window.removeEventListener('touchcancel', touchcancel);
+		if (current?.kind === 'pointer' && ring?.hasPointerCapture(current.id))
+			ring.releasePointerCapture(current.id);
 	}
 	function settle() {
 		cancelAnimationFrame(frame);
@@ -70,12 +118,13 @@
 		void tick().then(invalidate);
 		rememberSelection();
 	}
-	function animate(target: number) {
+	function animate(target: number, velocity?: number) {
 		cancelAnimationFrame(frame);
+		frame = 0;
 		const start = phase;
 		const started = performance.now();
 		if (
-			Math.abs(target - start) > 1.5 ||
+			(velocity === undefined && Math.abs(target - start) > 1.5) ||
 			!visible ||
 			document.hidden ||
 			matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -91,10 +140,17 @@
 				frame = 0;
 				return;
 			}
-			const t = Math.min(1, (now - started) / 320);
-			phase = start + (target - start) * (1 - (1 - t) ** 2);
+			const elapsed = now - started;
+			const spring = velocity === undefined ? undefined : sampleCarouselSpring(start, velocity, target, elapsed);
+			const t = Math.min(1, elapsed / 320);
+			const finished = spring
+				? (Math.abs(spring.phase - target) < 0.001 && Math.abs(spring.velocity) < 0.00005) || elapsed >= 1000
+				: t >= 1;
+			phase = finished ? target : spring
+				? clampCarouselPhase(spring.phase, keys.length)
+				: start + (target - start) * (1 - (1 - t) ** 2);
 			void tick().then(invalidate);
-			if (t < 1) frame = requestAnimationFrame(advance);
+			if (!finished) frame = requestAnimationFrame(advance);
 			else {
 				frame = 0;
 				announced = selected;
@@ -105,43 +161,109 @@
 	}
 	function pointerdown(event: PointerEvent) {
 		if (
+			event.pointerType === 'touch' ||
+			drag ||
 			list.length < 2 ||
 			event.button !== 0 ||
 			!(event.target as Element).closest('.spatial-element-visual')
 		)
 			return;
-		drag = { id: event.pointerId, x: event.clientX, y: event.clientY, phase, active: false };
+		beginDrag(event.pointerId, 'pointer', event.clientX);
+		window.addEventListener('pointerup', pointerup);
 	}
 	function pointermove(event: PointerEvent) {
-		if (!drag || drag.id !== event.pointerId) return;
-		const x = event.clientX - drag.x,
-			y = event.clientY - drag.y;
-		if (!drag.active) {
-			if (Math.abs(y) > 10 && Math.abs(y) > Math.abs(x)) {
-				drag = undefined;
-				return;
-			}
-			if (Math.abs(x) < 10 || Math.abs(x) < Math.abs(y) * 1.2) return;
-			drag.active = true;
-			suppressClick = true;
-			cancelAnimationFrame(frame);
-			ring.setPointerCapture(event.pointerId);
-		}
-		phase = Math.max(0, Math.min(keys.length - 1, drag.phase - x / 220));
-		invalidate();
+		if (drag?.kind !== 'pointer' || drag.id !== event.pointerId) return;
+		moveDrag(event.clientX);
+		if (drag.motion.active && !ring.hasPointerCapture(event.pointerId)) ring.setPointerCapture(event.pointerId);
 	}
 	function pointerup(event: PointerEvent) {
-		if (!drag || drag.id !== event.pointerId) return;
-		const active = drag.active;
-		releaseDrag();
-		if (active) select(keys[Math.round(phase)]);
-		clearTimeout(clickTimer);
-		clickTimer = setTimeout(() => (suppressClick = false), 0);
+		if (drag?.kind !== 'pointer' || drag.id !== event.pointerId) return;
+		endDrag(false, event.clientX);
 	}
-	function pointercancel() {
-		releaseDrag();
+	function beginDrag(id: number, kind: 'pointer' | 'touch', x: number, y?: number) {
+		cancelAnimationFrame(frame);
+		stopScrollMomentum();
+		frame = 0;
+		clearTimeout(clickTimer);
 		suppressClick = false;
+		const now = performance.now();
+		drag = {
+			id, kind, motion: new CarouselDrag(x, phase, now),
+			scroll: y === undefined ? undefined : new CarouselScrollDrag(y, window.scrollY,
+				Math.max(0, document.documentElement.scrollHeight - window.innerHeight), now)
+		};
+	}
+	function moveDrag(x: number, y?: number) {
+		if (!drag) return;
+		const now = performance.now();
+		drag.motion.move(x, now, keys.length);
+		if (y !== undefined) drag.scroll?.move(y, now);
+		if (!drag.motion.active && !drag.scroll?.active) return;
+		suppressClick = true;
+		// Touch input can arrive faster than rendering. Commit only once per animation frame.
+		if (!frame) frame = requestAnimationFrame(() => {
+			frame = 0;
+			if (!drag) return;
+			phase = drag.motion.phase;
+			if (drag.scroll?.active) writeScroll(drag.scroll.position);
+			void tick().then(invalidate);
+		});
+	}
+	function endDrag(cancelled = false, x?: number, y?: number) {
+		if (!drag) return;
+		const { motion, kind, scroll } = drag;
+		const now = performance.now();
+		const release = motion.release(now, keys.length, x);
+		const scrollVelocity = scroll?.release(now, y) ?? 0;
+		if (motion.active || scroll?.active) suppressClick = true;
+		cancelAnimationFrame(frame);
+		frame = 0;
+		phase = motion.phase;
+		if (scroll?.active) writeScroll(scroll.position);
+		releaseDrag();
+		const momentum = !cancelled && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (motion.active) select(keys[momentum ? release.target : Math.round(phase)], momentum ? release.velocity : 0);
+		else animate(Math.max(0, keys.indexOf(selected ?? '')));
+		if (!cancelled && scroll?.active) scrollMomentum(scroll, scrollVelocity);
+		clearTimeout(clickTimer);
+		// Cover compatibility clicks after touch release; a new gesture always clears this.
+		clickTimer = setTimeout(() => (suppressClick = false), kind === 'touch' ? 400 : 0);
+	}
+	function pointercancel(event?: PointerEvent) {
+		// Native pinch zoom may cancel PointerEvents; TouchEvents own gesture cleanup.
+		if (event?.pointerType === 'touch') return;
+		stopScrollMomentum();
+		releaseDrag();
+		clearTimeout(clickTimer);
+		clickTimer = setTimeout(() => (suppressClick = false), 400);
 		animate(Math.max(0, keys.indexOf(selected ?? '')));
+	}
+	function touchstart(event: TouchEvent) {
+		if (drag || event.touches.length !== 1 ||
+			!(event.target as Element).closest('.spatial-element-visual')) return;
+		const touch = event.touches[0];
+		beginDrag(touch.identifier, 'touch', touch.clientX, touch.clientY);
+		window.addEventListener('touchstart', multitouch, { passive: true });
+		window.addEventListener('touchmove', touchmove, { passive: true });
+		window.addEventListener('touchend', touchend, { passive: true });
+		window.addEventListener('touchcancel', touchcancel, { passive: true });
+	}
+	function multitouch(event: TouchEvent) {
+		if (drag?.kind === 'touch' && event.touches.length > 1) endDrag(true);
+	}
+	function touchmove(event: TouchEvent) {
+		if (drag?.kind !== 'touch') return;
+		if (event.touches.length !== 1) return endDrag(true);
+		const touch = event.touches[0];
+		if (touch.identifier === drag.id) moveDrag(touch.clientX, touch.clientY);
+	}
+	function touchend(event: TouchEvent) {
+		if (drag?.kind !== 'touch') return;
+		const touch = Array.from(event.changedTouches).find((touch) => touch.identifier === drag?.id);
+		if (touch) endDrag(false, touch.clientX, touch.clientY);
+	}
+	function touchcancel() {
+		if (drag?.kind === 'touch') endDrag(true);
 	}
 	const keys = $derived(list.map(carouselKey));
 	const selected = $derived(resolveCarouselSelection(keys, requested ?? initialItemKey));
@@ -155,13 +277,13 @@
 				settle();
 			});
 	});
-	function select(key: string | undefined) {
+	function select(key: string | undefined, velocity?: number) {
 		selectionDirty = true;
 		requested = key;
 		// Persist in the current entry before a possible popstate changes the history index.
 		rememberSelection();
 		const target = Math.max(0, keys.indexOf(key ?? ''));
-		animate(target);
+		animate(target, velocity);
 		const spatialElement = list.find((item) => carouselKey(item) === selected);
 		if (spatialElement && selected) onselectionchange?.({ itemKey: selected, spatialElementId: spatialElement.id });
 	}
@@ -175,19 +297,25 @@
 	}
 	onMount(() => {
 		interactive = true;
+		// The model owns both single-finger axes; passive events still allow native pinch zoom.
+		ring.addEventListener('touchstart', touchstart, { passive: true });
 		const release = sections?.register(section.id, {
 			read: () => selected,
 			restore: (key) => {
+				stopScrollMomentum();
 				selectionDirty = false;
 				requested = resolveCarouselSelection(keys, key ?? initialItemKey);
 				cancelAnimationFrame(frame);
+				frame = 0;
+				releaseDrag();
 				phase = Math.max(0, keys.indexOf(requested ?? ''));
 				announced = requested;
 			}
 		});
 		const observer = new IntersectionObserver(([entry]) => {
 			visible = entry.isIntersecting;
-			if (!visible) {
+			// The same touch must keep scrolling after carrying the carousel out of view.
+			if (!visible && drag?.kind !== 'touch') {
 				settle();
 			}
 		});
@@ -219,9 +347,19 @@
 		sizing.observe(ring);
 		for (const panel of ring.querySelectorAll('.summary')) sizing.observe(panel);
 		const stop = () => pointercancel();
-		window.addEventListener('resize', stop);
+		let viewportWidth = window.innerWidth;
+		const resize = () => {
+			// Mobile browser chrome resizes the height during scrolling; keep that gesture alive.
+			if (window.innerWidth !== viewportWidth) stop();
+			viewportWidth = window.innerWidth;
+		};
+		window.addEventListener('resize', resize);
+		window.addEventListener('blur', stop);
 		const hidden = () => {
-			if (document.hidden) settle();
+			if (document.hidden) {
+				stopScrollMomentum();
+				settle();
+			}
 		};
 		document.addEventListener('visibilitychange', hidden);
 		const escape = (event: KeyboardEvent) => {
@@ -230,14 +368,17 @@
 		window.addEventListener('keydown', escape);
 		return () => {
 			cancelAnimationFrame(frame);
+			stopScrollMomentum();
 			clearTimeout(clickTimer);
 			releaseDrag();
+			ring.removeEventListener('touchstart', touchstart);
 			observer.disconnect();
 			sizing.disconnect();
 			contentChanges.disconnect();
 			cancelAnimationFrame(sizingFrame);
 			release?.();
-			window.removeEventListener('resize', stop);
+			window.removeEventListener('resize', resize);
+			window.removeEventListener('blur', stop);
 			window.removeEventListener('keydown', escape);
 			document.removeEventListener('visibilitychange', hidden);
 		};
@@ -259,7 +400,7 @@
 			onpointerup={pointerup}
 			onpointercancel={pointercancel}
 			onlostpointercapture={() => {
-				if (drag) pointercancel();
+				if (drag?.kind === 'pointer') pointercancel();
 			}}
 			role="group"
 			aria-label={section.title}
@@ -307,7 +448,7 @@
 	.ring {
 		container-type: inline-size;
 		position: relative;
-		touch-action: pan-y;
+		touch-action: manipulation;
 	}
 	.interactive.populated .ring {
 		min-height: var(--carousel-height, 560px);

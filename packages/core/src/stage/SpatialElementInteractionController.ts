@@ -66,6 +66,8 @@ export class SpatialElementInteractionController {
 		this._controls = this.createControls();
 	}
 	releasePage() {
+		this._interactionPointers.clear();
+		this._pointer.active = false;
 		this.clearWheelZoom();
 		this._zoomResetTargetDistance = undefined;
 		this._viewResetActive = false;
@@ -119,6 +121,7 @@ export class SpatialElementInteractionController {
 	private _spaceMouseMoving = false;
 	private _modelHover = false;
 	private _modelInteractionActive = false;
+	private readonly _interactionPointers = new Set<number>();
 	private _focusRestDistance = 1;
 	private _focusCloseDistance = 0.4;
 	private _zoomResetTargetDistance?: number;
@@ -155,7 +158,9 @@ export class SpatialElementInteractionController {
 		controls.zoomToCursor = true;
 		controls.enabled = false;
 		controls.addEventListener('change', this._controlsChange);
-		this.backgroundCanvas.style.touchAction = 'pan-y';
+		// Gesture policy is stable before contact. Touch Events claim only gestures
+		// that start on the model; empty canvas keeps native pan/pinch behavior.
+		this.backgroundCanvas.style.touchAction = 'manipulation';
 
 		return controls;
 	}
@@ -288,6 +293,10 @@ export class SpatialElementInteractionController {
 		);
 	}
 	handlePointerMove(event: PointerEvent) {
+		if (event.pointerType !== 'mouse') {
+			this.clearPointerHover();
+			return;
+		}
 		const pointerChanged =
 			!this._pointer.active ||
 			this._pointer.x !== event.clientX ||
@@ -302,23 +311,53 @@ export class SpatialElementInteractionController {
 		}
 	}
 	handlePointerDown(event: PointerEvent) {
-		const hit = this.hitTestModel(event.clientX, event.clientY, event.target);
+		if (event.pointerType !== 'mouse') this.clearPointerHover();
+		// Once a model gesture owns contact, a second finger may land outside its
+		// silhouette. Keep both fingers in the same orbit/pinch gesture.
+		const hit =
+			(event.pointerType === 'touch' && this._interactionPointers.size > 0) ||
+			this.hitTestModel(event.clientX, event.clientY, event.target);
 		if (hit) {
+			this._interactionPointers.add(event.pointerId);
 			this.backgroundCanvas.focus({ preventScroll: true });
 			this.clearWheelZoom();
+			this.clearZoomReset();
 			this.normalizeCameraFovForOrbitControls();
 			this._viewResetActive = false;
 		}
-		this._modelInteractionActive = hit;
-		this.setModelHover(hit);
+		this._modelInteractionActive = this._interactionPointers.size > 0;
+		this.setModelHover(event.pointerType === 'mouse' && hit);
 		this.updateControlsAvailability();
 		this.requestRender();
 	}
 	handlePointerUp(event: PointerEvent) {
-		this._modelInteractionActive = false;
-		this.setModelHover(this.hitTestModel(event.clientX, event.clientY, event.target));
+		this._interactionPointers.delete(event.pointerId);
+		this._modelInteractionActive = this._interactionPointers.size > 0;
+		if (event.pointerType !== 'mouse') this.clearPointerHover();
+		this.setModelHover(
+			event.pointerType === 'mouse' &&
+				event.type !== 'pointercancel' &&
+				this.hitTestModel(event.clientX, event.clientY, event.target)
+		);
 		this.updateControlsAvailability();
 		this.requestRender();
+	}
+	handleTouchStart(event: TouchEvent) {
+		// touch-action cannot be changed after pointerdown to claim the current
+		// gesture. Cancel this one start only when the exact geometry was hit.
+		// No blocking touchmove handler is needed while native scrolling proceeds.
+		if (this._modelInteractionActive && this._controls?.enabled && event.cancelable) {
+			event.preventDefault();
+		}
+	}
+	handlePointerContact(event: PointerEvent) {
+		if (event.pointerType !== 'mouse') this.clearPointerHover();
+	}
+	private clearPointerHover() {
+		const changed = this._pointer.active || this._modelHover;
+		this._pointer.active = false;
+		this.setModelHover(false);
+		if (changed) this.requestRender();
 	}
 	handleWheel(event: WheelEvent) {
 		const hit = this.hitTestModel(event.clientX, event.clientY, event.target);
@@ -553,9 +592,14 @@ export class SpatialElementInteractionController {
 		this.camera.updateProjectionMatrix();
 	}
 	handlePointerLeave() {
+		const wasInteracting = this._modelInteractionActive;
+		this._interactionPointers.clear();
 		this._pointer.active = false;
 		this._modelInteractionActive = false;
 		this.setModelHover(false);
+		// Lost focus may not deliver pointerup. Drop OrbitControls' captured
+		// pointer bookkeeping as well, so the next gesture starts immediately.
+		if (wasInteracting) this.recreateOrbitControls();
 		this.updateControlsAvailability();
 		this.requestRender();
 	}
@@ -629,7 +673,7 @@ export class SpatialElementInteractionController {
 			: enabled
 				? 'grab'
 				: 'auto';
-		this.backgroundCanvas.style.touchAction = enabled ? 'none' : 'pan-y';
+		this.backgroundCanvas.style.touchAction = 'manipulation';
 	}
 	getZoomFocusFactor() {
 		if (!this._controls) return 0;

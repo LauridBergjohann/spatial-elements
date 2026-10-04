@@ -112,6 +112,33 @@ test('fused halo renders the live mask without a separate composite submission',
 	}
 });
 
+test('active touch manipulation does not submit the mouse hover glow pass', () => {
+	const f = rendererFixture();
+	const frame = { stageViewportVisible: true, modelHover: false, modelInteractionActive: true };
+	const pipeline = new StageRenderPipeline({
+		renderer: f.renderer,
+		camera: new THREE.PerspectiveCamera(),
+		interactionTheme: () => DEFAULT_INTERACTION_THEME,
+		isInteractionMesh: () => true,
+		panelRuntimes: () => [],
+		frame: () => frame
+	} as unknown as StageRenderPorts);
+	pipeline.createModelOutline(new THREE.Group());
+	try {
+		pipeline.renderModelOutline(null);
+		expect(f.renderer.render).not.toHaveBeenCalled();
+		frame.modelHover = true;
+		pipeline.renderModelOutline(null);
+		expect(f.renderer.render).toHaveBeenCalledOnce();
+		frame.modelHover = false;
+		pipeline.renderModelOutline(null);
+		expect(f.renderer.render).toHaveBeenCalledOnce();
+	} finally {
+		pipeline.releaseOutline();
+		f.originalTarget.dispose();
+	}
+});
+
 test('High replacement retains the fused display material and frees the previous mask', () => {
 	vi.stubGlobal('window', { devicePixelRatio: 1, innerWidth: 800, innerHeight: 600 });
 	const f = rendererFixture();

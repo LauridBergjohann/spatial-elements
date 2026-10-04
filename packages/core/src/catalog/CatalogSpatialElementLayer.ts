@@ -205,13 +205,22 @@ export class CatalogSpatialElementLayer {
 	private destinationOccurrences = new Set<string>();
 	private detachedInstances = 0;
 	private readonly pointerMove = (event: PointerEvent) => {
-		if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+		if (event.pointerType !== 'mouse') {
+			this.pointerLeave();
+			return;
+		}
+		if (this.pointer.active && this.pointer.x === event.clientX && this.pointer.y === event.clientY)
+			return;
 		this.pointer.x = event.clientX;
 		this.pointer.y = event.clientY;
 		this.pointer.active = true;
 		this.invalidate();
 	};
+	private readonly pointerDown = (event: PointerEvent) => {
+		if (event.pointerType !== 'mouse') this.pointerLeave();
+	};
 	private readonly pointerLeave = () => {
+		if (!this.pointer.active) return;
 		this.pointer.active = false;
 		this.invalidate();
 	};
@@ -240,6 +249,7 @@ export class CatalogSpatialElementLayer {
 		this.camera.position.z = 1000;
 		this.camera.updateMatrixWorld();
 		window.addEventListener('pointermove', this.pointerMove, { passive: true });
+		window.addEventListener('pointerdown', this.pointerDown, { capture: true, passive: true });
 		window.addEventListener('pointerleave', this.pointerLeave);
 		window.addEventListener('blur', this.pointerLeave);
 		window.addEventListener('resize', this.resize);
@@ -882,6 +892,7 @@ export class CatalogSpatialElementLayer {
 		this.handoff = undefined;
 		for (const actor of this.actors.values()) this.disposeActor(actor);
 		window.removeEventListener('pointermove', this.pointerMove);
+		window.removeEventListener('pointerdown', this.pointerDown, true);
 		window.removeEventListener('pointerleave', this.pointerLeave);
 		window.removeEventListener('blur', this.pointerLeave);
 		window.removeEventListener('resize', this.resize);

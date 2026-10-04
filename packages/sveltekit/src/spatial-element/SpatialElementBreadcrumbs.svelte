@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import type { SpatialElementBreadcrumb } from '@spatial-elements/core/spatial-element/types';
 
 	let {
@@ -9,6 +10,7 @@
 </script>
 
 <nav
+	use:mouseHover
 	class="breadcrumbs"
 	data-stage-dom-content
 	aria-label="Breadcrumb"
@@ -56,7 +58,7 @@
 		pointer-events: auto;
 	}
 
-	a:hover {
+	.breadcrumbs:global([data-mouse-hover]) a:hover {
 		text-decoration: underline;
 	}
 
