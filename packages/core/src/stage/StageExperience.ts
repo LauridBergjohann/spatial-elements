@@ -2219,7 +2219,10 @@ export class StageExperience {
 					surface: target.surface
 				});
 				this.panelScene.add(projectionRoot ?? panel.group);
-				this.attachPanelContent(target.content, index, target.contentInset);
+				if (target.nativeContent) {
+					// Draw floating glass above regular panels; its content stays in the top layer.
+					panel.group.renderOrder = 100;
+				} else this.attachPanelContent(target.content, index, target.contentInset);
 			} else {
 				const options = resolveLiquidGlassPanelOptions(measuredOptions);
 				const group = new THREE.Group();
@@ -2237,14 +2240,15 @@ export class StageExperience {
 					surface: target.surface
 				});
 				if (projectionRoot) this.panelScene.add(projectionRoot);
-				this.attachPanelSurface(target.surfaceElement, index, Boolean(target.minimap));
+				if (!target.nativeContent) this.attachPanelSurface(target.surfaceElement, index, Boolean(target.minimap));
 			}
 			this.createMinimap(index, target.minimap);
 			const panel = this.panelRuntimes[index];
 			const group = target.frame.dataset.catalogTransitionGroup;
 			panel.transitionGroup = group === 'enter' || group === 'shared' ? group : undefined;
 			panel.glass?.setVisibilityAlpha(
-				this.getPanelTransitionOpacity(panel) * (target.getSurfaceOpacity?.() ?? 1)
+				this.getPanelTransitionOpacity(panel) * (target.getSurfaceOpacity?.() ?? 1) *
+					(target.getVisible?.() === false ? 0 : 1)
 			);
 			const minimap = this.minimaps.get(index);
 			if (minimap) {
@@ -2284,6 +2288,8 @@ export class StageExperience {
 		this.panelTargets.forEach((target, index) => {
 			const runtime = this.panelRuntimes[index];
 			if (!runtime) return;
+			// Preserve the last popup mesh while closed instead of resizing it to a 1px box.
+			if (target.nativeContent && target.getVisible?.() === false) return;
 
 			const options = this.getMeasuredPanelOptions(target, measurePanels);
 			const geometryChanged = hasPanelGeometryChanged(runtime.options, options);
@@ -2315,16 +2321,19 @@ export class StageExperience {
 				currentRuntime.group.position.set(options.position!.x, options.position!.y, 0);
 			}
 
-			if (currentRuntime.surface === 'glass') {
-				this.updateContentElement(target.content, currentRuntime, target.contentInset);
-			} else {
-				this.updateSurfaceElement(
-					target.surfaceElement,
-					currentRuntime,
-					currentRuntime.options.width,
-					currentRuntime.options.height,
-					Boolean(target.minimap)
-				);
+			// Intrinsic DOM sizing and native popover layout remain owned by the adapter.
+			if (!target.nativeContent) {
+				if (currentRuntime.surface === 'glass') {
+					this.updateContentElement(target.content, currentRuntime, target.contentInset);
+				} else {
+					this.updateSurfaceElement(
+						target.surfaceElement,
+						currentRuntime,
+						currentRuntime.options.width,
+						currentRuntime.options.height,
+						Boolean(target.minimap)
+					);
+				}
 			}
 
 			if (currentRuntime.content) {
@@ -2402,6 +2411,7 @@ export class StageExperience {
 	private isPanelTargetVisible(index: number) {
 		const target = this.panelTargets[index];
 		if (!target) return true;
+		if (target.getVisible?.() === false) return false;
 		const cachedRect = this.pageBinding.getPanelRect(target.frame);
 		if (!cachedRect) return true;
 

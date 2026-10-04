@@ -617,6 +617,8 @@
 				getMinimapModelScale: panel.getMinimapModelScale,
 				getMinimapModelTop: panel.getMinimapModelTop,
 				getSurfaceOpacity: panel.getSurfaceOpacity,
+				getVisible: panel.getVisible,
+				nativeContent: panel.getNativeContent?.() ?? false,
 				minimap: panel.getMinimapOptions(),
 				options: panel.getOptions(),
 				surface: panel.getSurface(),
@@ -785,10 +787,15 @@
 		pointer-events: none !important;
 	}
 
-	:global(.stage.stage-enhanced [data-stage-panel-fallback][data-stage-panel-bound]) {
+	:global(.stage.stage-enhanced [data-stage-panel-fallback][data-stage-panel-bound]:not([data-stage-panel-native-content])) {
 		visibility: hidden !important;
 		opacity: 0 !important;
 		pointer-events: none !important;
+	}
+
+	:global(.stage.stage-enhanced [data-stage-panel-native-content][data-stage-panel-bound][data-stage-panel-surface='glass'] > .stage-panel-surface::before),
+	:global(.stage.stage-enhanced [data-stage-panel-native-content][data-stage-panel-bound][data-stage-panel-surface='glass'] > .stage-panel-surface::after) {
+		display: none;
 	}
 
 	/* A failed binding may leave pixels in either canvas; the poster owns fallback paint. */

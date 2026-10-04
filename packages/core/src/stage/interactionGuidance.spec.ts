@@ -1,19 +1,18 @@
 import { expect, test, vi } from 'vitest';
 import { InteractionGuidance, getInteractionGuidance } from './interactionGuidance.js';
 
-test('one prompt across consumers and remounts, with interaction before hover suppressing it', () => {
-	let value: string | null = null;
+test('only actual interaction persists, including sessions saved by the older one-prompt behavior', () => {
+	let value: string | null = JSON.stringify({ prompted: true, interacted: false });
 	const storage = { getItem: () => value, setItem: (_: string, next: string) => { value = next; } };
 	const first = new InteractionGuidance(storage);
-	expect(first.claimPrompt()).toBe(true);
-	expect(first.claimPrompt()).toBe(false);
+	expect(first.snapshot.interacted).toBe(false);
 	const remounted = new InteractionGuidance(storage);
-	expect(remounted.claimPrompt()).toBe(false);
+	expect(remounted.snapshot.interacted).toBe(false);
 	remounted.interact();
 	expect(new InteractionGuidance(storage).snapshot.interacted).toBe(true);
 	const quickUser = new InteractionGuidance();
 	quickUser.interact();
-	expect(quickUser.claimPrompt()).toBe(false);
+	expect(quickUser.snapshot.interacted).toBe(true);
 });
 
 test('denied storage keeps an observable in-memory session with safe cleanup', () => {
@@ -21,7 +20,7 @@ test('denied storage keeps an observable in-memory session with safe cleanup', (
 	const listener = vi.fn();
 	const stop = session.subscribe(listener);
 	session.interact();
-	expect(listener).toHaveBeenLastCalledWith({ prompted: true, interacted: true });
+	expect(listener).toHaveBeenLastCalledWith({ interacted: true });
 	stop();
 	session.interact();
 	expect(listener).toHaveBeenCalledTimes(2);

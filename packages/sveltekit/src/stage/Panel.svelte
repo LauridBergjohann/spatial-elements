@@ -5,6 +5,7 @@
 	import type { Snippet } from 'svelte';
 	import {
 		STAGE_CONTEXT_KEY,
+		STAGE_PANEL_LAYOUT_EVENT,
 		type StageContext,
 
 		type StagePanelMinimapOptions,
@@ -25,8 +26,12 @@
 		minimap?: boolean | StagePanelMinimapOptions;
 		/** true: proximity lift and tilt; 'lift': a 2px mouse-hover lift without tilt; false: still. */
 		pointerReactive?: boolean | 'lift';
-		/** Set false for controls that must stay available during model close-up. */
-		focusReactive?: boolean;
+		/** false keeps the pose; 'top-right' moves to the viewport corner with the panel fade. */
+		focusReactive?: boolean | 'top-right';
+		/** Retain native DOM layout, including popover semantics, while rendering the glass surface. */
+		nativeContent?: boolean;
+		/** Visibility of an optional native-content panel. */
+		visible?: boolean;
 		pose?: StagePanelPose;
 		shape: StagePanelShape;
 		surface?: StagePanelSurface;
@@ -42,6 +47,8 @@
 		minimap = false,
 		pointerReactive = true,
 		focusReactive = true,
+		nativeContent = false,
+		visible = true,
 		pose,
 		shape,
 		style: contentStyle = '',
@@ -70,6 +77,8 @@
 		getSurfaceElement: () => surfaceElement,
 		getPointerReactive: () => pointerReactive,
 		getFocusReactive: () => focusReactive,
+		getNativeContent: () => nativeContent,
+		getVisible: () => visible,
 		getMinimapOptions: () => getMinimapOptions(),
 		getMinimapDockProgress,
 		getMinimapModelScale,
@@ -80,6 +89,12 @@
 	});
 
 	onDestroy(unregister);
+	$effect(() => {
+		if (nativeContent) {
+			void visible;
+			window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
+		}
+	});
 
 	onMount(() => {
 		if (!getMinimapOptions()) return;
@@ -224,6 +239,7 @@
 <div
 	bind:this={frameElement}
 	data-stage-panel-fallback
+	data-stage-panel-native-content={nativeContent ? '' : undefined}
 	data-catalog-transition-group={transitionGroup}
 	data-stage-panel-minimap={minimap ? '' : undefined}
 	data-stage-minimap-docked-view-scale={getMinimapOptions()?.dockedView?.scale}

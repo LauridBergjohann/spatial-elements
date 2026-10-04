@@ -117,8 +117,12 @@ export interface StagePanelTarget {
 	minimap?: StageMinimapOptions;
 	/** true: proximity lift and tilt; 'lift': mouse hover raises 2px without tilt; false: still. */
 	pointerReactive?: boolean | 'lift';
-	/** Whether model close-up fades/moves this panel. Defaults to true. */
-	focusReactive?: boolean;
+	/** true fades/moves with close-up; false keeps its pose; 'top-right' travels with the fade. */
+	focusReactive?: boolean | 'top-right';
+	/** Keep accessible content in its DOM owner (for example, a native popover). */
+	nativeContent?: boolean;
+	/** Whether an optional panel is currently open. */
+	getVisible?: () => boolean;
 	/** Shared geometry, tint, blur, and shadow configuration. */
 	options: LiquidGlassPanelOptions;
 	/** Visual surface backend. All variants share the same CSS3D transform pipeline. */

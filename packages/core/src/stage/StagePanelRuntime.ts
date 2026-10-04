@@ -13,7 +13,7 @@ export interface StagePanelRuntime {
 	options: Required<LiquidGlassPanelOptions>;
 	pointerLift: number;
 	pointerReactive: boolean | 'lift';
-	focusReactive?: boolean;
+	focusReactive?: boolean | 'top-right';
 	projectionRoot?: THREE.Group;
 	surface: StagePanelSurface;
 	transitionGroup?: CatalogTransitionGroup;

@@ -4,6 +4,8 @@
 	import { getCssPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
 	import { getInteractionGuidance, MODEL_INPUT_EVENT, type ModelInputState, type InteractionGuidance } from '@spatial-elements/core/stage/interactionGuidance';
 	import { STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
+	import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
+	import Panel from '../stage/Panel.svelte';
 	import SpatialIconButton from './SpatialIconButton.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 	import { useSpatialMessages } from './messagesContext.js';
@@ -24,6 +26,10 @@
 	let touchInput = $state(false);
 	let guidance: InteractionGuidance | undefined;
 	let delay: ReturnType<typeof setTimeout> | undefined;
+	let hideDelay: ReturnType<typeof setTimeout> | undefined;
+	let manual = false;
+	let helpHovered = false;
+	let buttonHovered = false;
 	let modelInput: ModelInputState = { hovered: false, active: false };
 	const surfaceStyle = $derived([
 		`--help-tint: ${typeof theme.panelTheme.tint === 'number' ? '#' + theme.panelTheme.tint.toString(16).padStart(6, '0') : theme.panelTheme.tint ?? '#ffffff'}`,
@@ -34,12 +40,15 @@
 	].join(';'));
 
 	function clearDelay() { clearTimeout(delay); delay = undefined; }
+	function clearHideDelay() { clearTimeout(hideDelay); hideDelay = undefined; }
 	function close(returnFocus = false) {
-		clearDelay();
+		clearDelay(); clearHideDelay();
 		if (!open) return;
 		const restoreFocus = returnFocus && popover.contains(document.activeElement);
 		popover.hidePopover();
 		open = false;
+		manual = false;
+		helpHovered = false;
 		if (restoreFocus) button.focus({ preventScroll: true });
 	}
 	function position() {
@@ -52,16 +61,21 @@
 		const height = viewport?.height ?? window.innerHeight;
 		popover.style.maxWidth = `${Math.max(0, width - 32)}px`;
 		popover.style.maxHeight = `${Math.max(0, height - 32)}px`;
+		popover.style.setProperty('--help-max-height', `${Math.max(0, height - 32)}px`);
 		const box = popover.getBoundingClientRect();
 		const left = Math.max(leftEdge, Math.min(rect.right - box.width, leftEdge + width - 32 - box.width));
 		const below = rect.bottom + 12;
 		const top = below + box.height <= topEdge + height - 32 ? below : Math.max(topEdge, rect.top - box.height - 12);
-		popover.style.left = `${left}px`;
-		popover.style.top = `${top}px`;
+		const nextLeft = `${left}px`, nextTop = `${top}px`;
+		if (popover.style.left !== nextLeft || popover.style.top !== nextTop) {
+			popover.style.left = nextLeft;
+			popover.style.top = nextTop;
+			window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
+		}
 	}
 	async function show(keyboard = false) {
 		if (!enhanced || !visible) return;
-		clearDelay();
+		clearDelay(); clearHideDelay();
 		popover.showPopover();
 		open = true;
 		await tick();
@@ -71,17 +85,18 @@
 	function toggleHelp(event: MouseEvent) {
 		if (open) close();
 		else {
-			guidance?.claimPrompt();
+			manual = true;
 			void show(event.detail === 0);
 		}
 	}
 	function schedule() {
-		clearDelay();
-		if (!enhanced || !visible || !modelInput.hovered || modelInput.active || touchInput ||
-			guidance?.snapshot.prompted || guidance?.snapshot.interacted) return;
-		delay = setTimeout(() => {
-			if (modelInput.hovered && !modelInput.active && enhanced && visible && guidance?.claimPrompt()) void show();
-		}, 600);
+		clearDelay(); clearHideDelay();
+		if (manual || !enhanced || !visible || modelInput.active || touchInput || guidance?.snapshot.interacted) return;
+		if (modelInput.hovered) {
+			if (!open) delay = setTimeout(() => { void show(); }, 600);
+		} else if (open && !helpHovered && !buttonHovered && !popover.contains(document.activeElement)) {
+			hideDelay = setTimeout(() => close(), 350);
+		}
 	}
 
 	onMount(() => {
@@ -94,13 +109,29 @@
 		const stage = root.closest<HTMLElement>('.stage')!;
 		// Keep the non-modal help accessible when close-up hides the ordinary DOM layer.
 		stage.appendChild(popover);
+		// Measure the nearest wide panel above the hero, without relying on a host CSS class.
+		const top = root.getBoundingClientRect().top;
+		const header = Array.from(stage.querySelectorAll<HTMLElement>('[data-stage-panel-fallback]'))
+			.filter((node) => { const rect = node.getBoundingClientRect(); return rect.width > innerWidth * 0.4 && rect.bottom <= top && rect.height > 0; })
+			.sort((a, b) => b.getBoundingClientRect().bottom - a.getBoundingClientRect().bottom)[0];
+		const measureSpacing = () => {
+			if (header) {
+				const gap = Math.max(16, root.getBoundingClientRect().top - header.getBoundingClientRect().bottom);
+				root.style.setProperty('--model-tools-gap', `${gap}px`);
+			}
+			position();
+		};
+		measureSpacing();
+		const headerSize = new ResizeObserver(measureSpacing);
+		if (header) headerSize.observe(header);
 		const stageChanged = () => {
 			enhanced = stage.dataset.stageState === 'enhanced' && !stage.hasAttribute('data-catalog-transition');
 			if (!enhanced) close();
+			else position();
 		};
 		stageChanged();
 		const mutation = new MutationObserver(stageChanged);
-		mutation.observe(stage, { attributes: true, attributeFilter: ['data-stage-state', 'data-catalog-transition'] });
+		mutation.observe(stage, { attributes: true, attributeFilter: ['data-stage-state', 'data-catalog-transition', 'data-stage-ui-focus'] });
 		const observer = new IntersectionObserver(([entry]) => {
 			visible = entry.isIntersecting;
 			if (!visible) close();
@@ -116,8 +147,10 @@
 		const inputChanged = (event: PointerEvent) => {
 			if (!event.isTrusted) return;
 			const next = event.pointerType !== 'mouse';
-			if (next !== touchInput) { touchInput = next; if (next) clearDelay(); }
+			if (next !== touchInput) { touchInput = next; if (next) { clearDelay(); clearHideDelay(); if (!manual) close(); } }
 		};
+		const buttonEnter = (event: PointerEvent) => { buttonHovered = event.pointerType === 'mouse'; schedule(); };
+		const buttonLeave = () => { buttonHovered = false; schedule(); };
 		const keydown = (event: KeyboardEvent) => {
 			if (event.key === 'Escape' && open) { event.preventDefault(); close(true); }
 		};
@@ -128,20 +161,26 @@
 			else position();
 		}, STAGE_SCROLL_PRIORITY.stage + 1);
 		stage.addEventListener(MODEL_INPUT_EVENT, modelChanged);
+		button.addEventListener('pointerenter', buttonEnter);
+		button.addEventListener('pointerleave', buttonLeave);
 		window.addEventListener('pointerdown', inputChanged, { capture: true, passive: true });
 		window.addEventListener('pointermove', inputChanged, { capture: true, passive: true });
 		window.addEventListener('keydown', keydown);
-		window.addEventListener('resize', position, { passive: true });
+		window.addEventListener('resize', measureSpacing, { passive: true });
 		window.visualViewport?.addEventListener('resize', position, { passive: true });
 		window.visualViewport?.addEventListener('scroll', position, { passive: true });
 		return () => {
-			close(); stopGuidance(); stopScroll(); mutation.disconnect(); observer.disconnect(); size.disconnect();
+			// A queued focusout microtask must not restart the hover timer after teardown.
+			enhanced = false; visible = false;
+			close(); stopGuidance(); stopScroll(); mutation.disconnect(); observer.disconnect(); size.disconnect(); headerSize.disconnect();
 			root.appendChild(popover);
 			stage.removeEventListener(MODEL_INPUT_EVENT, modelChanged);
+			button.removeEventListener('pointerenter', buttonEnter);
+			button.removeEventListener('pointerleave', buttonLeave);
 			window.removeEventListener('pointerdown', inputChanged, true);
 			window.removeEventListener('pointermove', inputChanged, true);
 			window.removeEventListener('keydown', keydown);
-			window.removeEventListener('resize', position);
+			window.removeEventListener('resize', measureSpacing);
 			window.visualViewport?.removeEventListener('resize', position);
 			window.visualViewport?.removeEventListener('scroll', position);
 		};
@@ -157,30 +196,38 @@
 	{#if enhanced && touchInput && !interacted && !open}
 		<p class="touch-hint" data-spatial-element-touch-hint>{help.touchHint}</p>
 	{/if}
-	<div bind:this={popover} {id} popover="auto" role="dialog" aria-modal="false" aria-labelledby={`${id}-title`}
+	<div bind:this={popover} {id} popover="auto" role="dialog" tabindex="-1" aria-modal="false" aria-labelledby={`${id}-title`}
 		style={surfaceStyle}
 		class="interaction-help" data-spatial-element-help data-surface={theme.panelTheme.surface ?? 'glass'}
-		ontoggle={(event) => { open = event.newState === 'open'; }}>
-		<div class="help-heading">
-			<h2 id={`${id}-title`}>{help.title}</h2>
-			<button bind:this={closeButton} type="button" class="close-help" onclick={() => close(true)}
-				aria-label={messages.controls.closeHelp} title={messages.controls.closeHelp}>
-				<X size={19} aria-hidden="true" />
-			</button>
-		</div>
-		<dl>
-			<div><Rotate3d size={20} aria-hidden="true" /><dt>{help.rotate}</dt><dd>{touchInput ? help.touchRotate : help.mouseRotate}</dd></div>
-			<div><ZoomIn size={20} aria-hidden="true" /><dt>{help.zoom}</dt><dd>{touchInput ? help.touchZoom : help.mouseZoom}</dd></div>
-			<div><Move size={20} aria-hidden="true" /><dt>{help.pan}</dt><dd>{touchInput ? help.touchPan : help.mousePan}</dd></div>
-		</dl>
-		{#if touchInput}<p class="scroll-hint">{help.touchScrollHint}</p>{/if}
+		onpointerenter={(event) => { helpHovered = event.pointerType === 'mouse'; schedule(); }}
+		onpointerleave={() => { helpHovered = false; schedule(); }}
+		onfocusin={clearHideDelay} onfocusout={() => { queueMicrotask(schedule); }}
+		ontoggle={(event) => { open = event.newState === 'open'; if (!open) { manual = false; clearHideDelay(); } }}>
+		<Panel class="interaction-help-panel" nativeContent visible={open} pointerReactive={false} focusReactive={false}
+			shape={{ ...theme.panelShape, contentInset: 0 }} theme={theme.panelTheme}>
+			<div class="help-copy">
+				<div class="help-heading">
+					<h2 id={`${id}-title`}>{help.title}</h2>
+					<button bind:this={closeButton} type="button" class="close-help" onclick={() => close(true)}
+						aria-label={messages.controls.closeHelp} title={messages.controls.closeHelp}>
+						<X size={19} aria-hidden="true" />
+					</button>
+				</div>
+				<dl>
+					<div><Rotate3d size={20} aria-hidden="true" /><dt>{help.rotate}</dt><dd>{touchInput ? help.touchRotate : help.mouseRotate}</dd></div>
+					<div><ZoomIn size={20} aria-hidden="true" /><dt>{help.zoom}</dt><dd>{touchInput ? help.touchZoom : help.mouseZoom}</dd></div>
+					<div><Move size={20} aria-hidden="true" /><dt>{help.pan}</dt><dd>{touchInput ? help.touchPan : help.mousePan}</dd></div>
+				</dl>
+				{#if touchInput}<p class="scroll-hint">{help.touchScrollHint}</p>{/if}
+			</div>
+		</Panel>
 	</div>
 </div>
 
 <style>
 	.model-tools {
 		grid-column: 1; grid-row: 1; align-self: start; justify-self: end; position: relative;
-		margin-top: 6px; margin-inline-end: calc(16px - var(--spatial-element-hero-column-gap));
+		margin-top: 6px; margin-inline-end: calc(var(--model-tools-gap, 44px) - var(--spatial-element-hero-column-gap));
 		width: 40px; height: 40px; z-index: 6; visibility: hidden; pointer-events: none;
 	}
 	.model-tools.enhanced { visibility: visible; pointer-events: auto; }
@@ -194,16 +241,12 @@
 	}
 	.interaction-help {
 		position: fixed; inset: auto; box-sizing: border-box; width: 300px;
-		margin: 0; padding: 12px 16px 16px; overflow: auto;
+		margin: 0; padding: 0; overflow: visible;
 		border: 0; border-radius: var(--help-radius); color: var(--spatial-element-ink);
-		background: color-mix(in srgb, var(--help-tint) var(--help-tint-opacity), transparent);
-		box-shadow: var(--help-shadow); backdrop-filter: blur(var(--help-blur));
+		background: transparent;
 		font: inherit; font-size: 14px; line-height: 1.45; touch-action: manipulation;
 	}
-	.interaction-help[data-surface='solid'] { backdrop-filter: none; }
-	.interaction-help[data-surface='glass'] {
-		background-image: linear-gradient(145deg, rgb(255 255 255 / 0.08), transparent 42%);
-	}
+	.help-copy { box-sizing: border-box; padding: 12px 16px 16px; max-height: var(--help-max-height); overflow: auto; border-radius: var(--help-radius); }
 	.interaction-help::backdrop { background: transparent; pointer-events: none; }
 	.help-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 	h2 { margin: 0; font-size: 15px; font-weight: 650; }

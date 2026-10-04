@@ -4,8 +4,35 @@ import { PanelPresentationController, type PanelPresentationPorts } from './Pane
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
 import type { StageMinimapState } from './minimap/MinimapState.js';
 import { resolveLiquidGlassPanelOptions } from './LiquidGlassPanel.js';
+import { getPanelFocusOpacity } from './stageMath.js';
 
 afterEach(() => vi.unstubAllGlobals());
+
+test('corner controls use the exact panel fade progress in either zoom direction, with no trailing frames', () => {
+	vi.stubGlobal('window', { innerWidth: 1000, innerHeight: 800, location: { search: '' } });
+	const camera = new THREE.PerspectiveCamera(); camera.position.z = 1000;
+	let focus = 0;
+	const runtime = {
+		group: new THREE.Group(), pointerLift: 0, pointerReactive: false, focusReactive: 'top-right',
+		options: resolveLiquidGlassPanelOptions({ width: 40, height: 40, position: { x: 120, y: 240 } }),
+		domRenderMode: 'native', nativeRestFrames: 0, surface: 'glass',
+		glass: { setVisibilityAlpha: vi.fn() }
+	} as unknown as StagePanelRuntime;
+	const controller = new PanelPresentationController({
+		camera, registrations: () => [], minimaps: () => new Map(),
+		frame: () => ({ pointer: { active: false }, uiFocus: focus, minimapFocus: 0, presentation: { active: false } }),
+		visible: () => true, transitionOpacity: () => 1
+	} as unknown as PanelPresentationPorts);
+	controller.add(runtime);
+	for (focus of [0, 0.2, 0.5, 0.8, 1, 0.7, 0.3, 0]) {
+		expect(controller.updatePanelPointerInteraction(1 / 60)).toBe(false);
+		const progress = 1 - getPanelFocusOpacity(focus);
+		expect(runtime.group.position.x).toBeCloseTo(120 + (464 - 120) * progress, 8);
+		expect(runtime.group.position.y).toBeCloseTo(240 + (364 - 240) * progress, 8);
+		expect(runtime.group.position.z).toBe(0);
+		expect(runtime.glass!.setVisibilityAlpha).toHaveBeenLastCalledWith(1);
+	}
+});
 
 test('compact controls lift without tilt or scaling and stay visible during close-up', () => {
 	vi.stubGlobal('window', { innerWidth: 1000, innerHeight: 800, location: { search: '' }, matchMedia: () => ({ matches: false }) });

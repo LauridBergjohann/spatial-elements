@@ -18,7 +18,7 @@ async function open(page: Page) {
 	});
 }
 
-test('one delayed anchored prompt, keyboard dismissal and manual reopening', async ({ page }, info) => {
+test('hover help repeats until interaction, delays hiding and supports persistent manual help', async ({ page }, info) => {
 	const point = await open(page);
 	const rect = (await button(page).boundingBox())!;
 	expect(rect.width).toBeCloseTo(40, 0); expect(rect.height).toBeCloseTo(40, 0);
@@ -31,24 +31,36 @@ test('one delayed anchored prompt, keyboard dismissal and manual reopening', asy
 	await expect(help(page)).toBeVisible();
 	await expect(help(page)).toContainText('Explore in 3D');
 	await expect(help(page)).toContainText('Drag with the left mouse button');
+	expect(await help(page).evaluate(node => node.contains(document.activeElement))).toBe(false);
+	await page.mouse.move(1, 1); await page.waitForTimeout(100);
+	await page.mouse.move(point.x, point.y); await page.waitForTimeout(400);
+	await expect(help(page)).toBeVisible();
 	const popup = (await help(page).boundingBox())!;
 	expect(Math.abs(popup.x + popup.width - rect.x - rect.width)).toBeLessThan(5);
 	await page.mouse.move(popup.x + 30, popup.y + 60);
 	await expect(help(page)).toBeVisible();
 	await page.screenshot({ path: info.outputPath('desktop-help.png') });
+	await page.mouse.move(1, 1);
+	await page.waitForTimeout(100);
+	await expect(help(page)).toBeVisible();
+	await expect(help(page)).not.toBeVisible();
+	await page.mouse.move(point.x, point.y);
+	await expect(help(page)).toBeVisible();
 	await page.keyboard.press('Escape');
 	await expect(help(page)).not.toBeVisible();
 	await page.mouse.move(1, 1); await page.mouse.move(point.x, point.y);
-	await page.waitForTimeout(850);
-	await expect(help(page)).not.toBeVisible();
+	await expect(help(page)).toBeVisible();
+	await page.keyboard.press('Escape');
 	await button(page).focus(); await page.keyboard.press('Enter');
 	await expect(page.getByRole('button', { name: 'Close help' })).toBeFocused();
+	await page.mouse.move(1, 1); await page.waitForTimeout(500);
+	await expect(help(page)).toBeVisible();
 	await page.keyboard.press('Escape');
 	await expect(button(page)).toBeFocused();
 	await page.reload();
 	await expect(button(page)).toBeVisible();
-	await page.mouse.move(point.x, point.y); await page.waitForTimeout(850);
-	await expect(help(page)).not.toBeVisible();
+	await page.mouse.move(point.x, point.y);
+	await expect(help(page)).toBeVisible();
 });
 
 test('preview settles, transfers its visible pose to dragging and stops after learning', async ({ page }) => {
@@ -60,7 +72,13 @@ test('preview settles, transfers its visible pose to dragging and stops after le
 	const preview = await orientation(page);
 	expect(difference(before, preview)).toBeGreaterThan(0.001);
 	expect(difference(before, preview)).toBeLessThan(0.06);
-	await page.waitForTimeout(1100);
+	// Opening the panel can finish an asynchronous quality/resize pass after the hover motion.
+	await expect(help(page)).toBeVisible();
+	await expect.poll(async () => {
+		const passes = await page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().stageModelRenderPasses);
+		await page.waitForTimeout(400);
+		return (await page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().stageModelRenderPasses)) - passes;
+	}).toBe(0);
 	const idle = await page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().stageModelRenderPasses);
 	await page.waitForTimeout(350);
 	expect(await page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().stageModelRenderPasses)).toBe(idle);
@@ -107,6 +125,7 @@ test.describe('touch help', () => {
 		await expect(page.locator('[data-spatial-element-touch-hint]')).toBeVisible();
 		await expect(help(page)).not.toBeVisible();
 		await button(page).tap();
+		await expect(button(page)).not.toHaveAttribute('data-mouse-hover');
 		await expect(help(page)).toContainText('Drag with one finger');
 		const rect = (await help(page).boundingBox())!;
 		expect(rect.x).toBeGreaterThanOrEqual(15); expect(rect.x + rect.width).toBeLessThanOrEqual(415);

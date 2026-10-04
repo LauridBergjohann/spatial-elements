@@ -331,6 +331,19 @@ export class PanelPresentationController {
 				: 1;
 		const visualWidth = baseWidth * expansion;
 		const visualHeight = baseHeight * expansion;
+		if (panel.focusReactive === 'top-right') {
+			// The opacity curve is already driven by the damped camera. No second easing/RAF.
+			const progress = 1 - getPanelFocusOpacity(uiFocus);
+			const inset = 16;
+			const focusOffset = {
+				x: (viewportWidth / 2 - inset - visualWidth / 2 - baseX) * progress,
+				y: (viewportHeight / 2 - inset - visualHeight / 2 - baseY) * progress,
+				z: 0
+			};
+			return { baseX, baseY, centerX: viewportWidth / 2 + baseX + focusOffset.x,
+				centerY: viewportHeight / 2 - baseY - focusOffset.y, focusOffset,
+				minimap, minimapFocus, visualWidth, visualHeight, viewportVisible: this.isPanelTargetVisible(index) };
+		}
 		const rawFocusOffset = getPanelFocusOffset(
 			panel.options,
 			uiFocus,
@@ -401,7 +414,8 @@ export class PanelPresentationController {
 		this.visibleMinimapCount = 0;
 
 		this.panelRuntimes.forEach((panel, index) => {
-			const focusOpacity = getPanelFocusOpacity(panel.focusReactive === false ? 0 : uiFocus);
+			const panelFocus = panel.focusReactive === false || panel.focusReactive === 'top-right' ? 0 : uiFocus;
+			const focusOpacity = getPanelFocusOpacity(panelFocus);
 			const {
 				baseX,
 				baseY,
@@ -471,7 +485,7 @@ export class PanelPresentationController {
 
 			const halfWidth = visualWidth * 0.5;
 			const halfHeight = visualHeight * 0.5;
-			const focusBlur = getPanelFocusBlur(panel.focusReactive === false ? 0 : uiFocus, panel.options);
+			const focusBlur = getPanelFocusBlur(panelFocus, panel.options);
 			let targetX = 0;
 			let targetY = 0;
 			let targetPointerLift = 0;

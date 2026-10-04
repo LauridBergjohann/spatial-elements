@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 
@@ -20,12 +21,12 @@
 		class="spatial-icon-panel"
 		shape={{ radius: Math.min(12, theme.panelShape.radius), contentInset: 0 }}
 		theme={theme.panelTheme}
-		pointerReactive="lift"
-		focusReactive={false}
+		pointerReactive={false}
+		focusReactive="top-right"
 		transitionGroup="enter"
 	>
 		<!-- Keep visibility on the button: Panel's content style also holds renderer positioning. -->
-		<button bind:this={element} type="button" {onclick} aria-label={label} title={label}
+		<button bind:this={element} use:mouseHover type="button" {onclick} aria-label={label} title={label}
 			disabled={!enabled}
 			style:visibility={enabled ? 'visible' : 'hidden'}
 			aria-expanded={expanded} aria-controls={controls} aria-haspopup={controls ? 'dialog' : undefined}
@@ -41,8 +42,13 @@
 	.icon-frame :global(.spatial-icon-panel) { width: 40px; height: 40px; }
 	.spatial-icon-button {
 		box-sizing: border-box; display: grid; place-items: center; width: 40px; height: 40px;
-		padding: 0; border: 0; border-radius: inherit; background: transparent;
+		padding: 0; border: 0; border-radius: min(12px, var(--spatial-element-panel-radius)); background: transparent;
 		color: var(--spatial-element-ink); cursor: pointer; touch-action: manipulation;
+		transition: background-color 180ms ease;
+	}
+	.spatial-icon-button:global([data-mouse-hover]):hover {
+		background: color-mix(in srgb, var(--spatial-element-body) 8%, transparent);
 	}
 	.spatial-icon-button:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: 3px; }
+	@media (prefers-reduced-motion: reduce) { .spatial-icon-button { transition: none; } }
 </style>

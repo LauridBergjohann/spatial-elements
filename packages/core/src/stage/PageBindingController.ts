@@ -81,7 +81,9 @@ export class PageBindingController {
 
 	measure(element: HTMLElement, scrollX: number, scrollY: number): CachedStageRect {
 		const rect = element.getBoundingClientRect();
-		const fixed = window.getComputedStyle(element).position === 'fixed';
+		const popover = element.closest?.<HTMLElement>('[popover]');
+		const fixed = window.getComputedStyle(element).position === 'fixed' ||
+			Boolean(popover && window.getComputedStyle(popover).position === 'fixed');
 		return {
 			fixed,
 			left: rect.left + (fixed ? 0 : scrollX),

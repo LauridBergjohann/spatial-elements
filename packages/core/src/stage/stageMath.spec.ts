@@ -265,12 +265,12 @@ describe('stage math', () => {
 	});
 
 	it('builds a bounded and continuous approach field from the short panel side', () => {
-		expect(getPanelPointerProximity(120, 120)).toBe(90);
-		expect(getPanelPointerProximity(1200, 66)).toBeCloseTo(81.675);
-		expect(getPanelPointerProximity(480, 52)).toBe(72);
-		expect(getPanelPointerProximity(600, 600)).toBe(180);
-		expect(getPanelPointerInfluence(90, 120, 120)).toBe(0);
-		expect(getPanelPointerInfluence(45, 120, 120)).toBeCloseTo(0.5);
+		expect(getPanelPointerProximity(120, 120)).toBe(18);
+		expect(getPanelPointerProximity(1200, 66)).toBeCloseTo(16.335);
+		expect(getPanelPointerProximity(480, 52)).toBeCloseTo(12.87);
+		expect(getPanelPointerProximity(600, 600)).toBe(32);
+		expect(getPanelPointerInfluence(18, 120, 120)).toBe(0);
+		expect(getPanelPointerInfluence(9, 120, 120)).toBeCloseTo(0.5);
 		expect(getPanelPointerInfluence(0, 120, 120)).toBe(1);
 	});
 

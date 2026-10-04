@@ -4,6 +4,19 @@ import type { StagePanelTarget } from './stageTypes.js';
 
 afterEach(() => vi.unstubAllGlobals());
 
+test('native popover surfaces retain viewport coordinates when the document scrolls', () => {
+	const popover = {} as HTMLElement;
+	const frame = {
+		closest: () => popover,
+		getBoundingClientRect: () => ({ left: 120, top: 80, width: 300, height: 250 })
+	} as unknown as HTMLElement;
+	vi.stubGlobal('window', { getComputedStyle: (node: HTMLElement) => ({ position: node === popover ? 'fixed' : 'relative' }) });
+	const owner = new PageBindingController();
+	const measured = owner.measure(frame, 0, 400);
+	expect(measured.fixed).toBe(true);
+	expect(owner.resolve(measured, 0, 500)).toMatchObject({ left: 120, top: 80, width: 300, height: 250 });
+});
+
 test('invalidates queued resize callbacks before replacing hosts', () => {
 	const callbacks: ResizeObserverCallback[] = [];
 	const disconnect = vi.fn();
