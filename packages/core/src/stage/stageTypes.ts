@@ -119,7 +119,7 @@ export interface StagePanelTarget {
 	pointerReactive?: boolean | 'lift';
 	/** true fades/moves with close-up; false keeps its pose; 'top-right' travels to the corner. */
 	focusReactive?: boolean | 'top-right';
-	/** Optional neighbouring panel frame followed before a corner control detaches. */
+	/** Optional neighbouring panel frame moved with the corner control during UI clearance. */
 	getFocusAnchor?: () => HTMLElement | undefined;
 	/** Keep accessible content in its DOM owner (for example, a native popover). */
 	nativeContent?: boolean;

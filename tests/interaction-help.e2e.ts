@@ -31,6 +31,10 @@ test('hover help repeats until interaction, delays hiding and supports persisten
 	await expect(help(page)).toBeVisible();
 	await expect(help(page)).toContainText('Explore in 3D');
 	await expect(help(page)).toContainText('Drag with the left mouse button');
+	await expect(help(page).locator('.navigation-hint')).toHaveText('Alternatively, use a SpaceMouse to navigate.');
+	const spaceMouse = help(page).getByRole('link', { name: 'SpaceMouse', exact: true });
+	await expect(spaceMouse).toHaveAttribute('href', 'https://3dconnexion.com/');
+	await expect(spaceMouse).toHaveAttribute('rel', 'noopener noreferrer');
 	expect(await help(page).locator('dt').allTextContents()).toEqual(['Rotate', 'Zoom', 'Pan']);
 	await expect(help(page).locator('svg[data-input="mouse"]')).toHaveCount(3);
 	expect((await help(page).locator('dd').first().boundingBox())!.height).toBe(1);
@@ -130,6 +134,8 @@ test.describe('touch help', () => {
 		await button(page).tap();
 		await expect(button(page)).not.toHaveAttribute('data-mouse-hover');
 		await expect(help(page)).toContainText('Drag with one finger');
+		await expect(help(page).locator('.navigation-hint')).toHaveText('Touch outside the model to scroll the page.');
+		await expect(help(page).getByRole('link', { name: 'SpaceMouse' })).toHaveCount(0);
 		await expect(help(page).locator('svg[data-input="touch"]')).toHaveCount(3);
 		const rect = (await help(page).boundingBox())!;
 		expect(rect.x).toBeGreaterThanOrEqual(15); expect(rect.x + rect.width).toBeLessThanOrEqual(415);

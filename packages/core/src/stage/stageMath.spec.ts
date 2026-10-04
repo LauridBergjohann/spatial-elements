@@ -292,7 +292,7 @@ describe('stage math', () => {
 		expect(getStageDomFocusOpacity(1)).toBe(0);
 	});
 
-	it('clears interface content before expanding the minimap', () => {
+	it('starts minimap expansion later and ends it with panel clearance', () => {
 		expect(getStageUiFocus(0)).toBe(0);
 		expect(getMinimapFocus(0)).toBe(0);
 		expect(getStageUiFocus(0.2)).toBeGreaterThan(0);
@@ -304,6 +304,15 @@ describe('stage math', () => {
 		expect(getMinimapFocus(0.78)).toBe(1);
 		expect(getStageUiFocus(1)).toBe(1);
 		expect(getMinimapFocus(1)).toBe(1);
+		for (let step = 0; step <= 1000; step++) {
+			const focus = step / 1000;
+			const uiFocus = getStageUiFocus(focus);
+			if (getPanelFocusOpacity(uiFocus) === 0) {
+				expect(getMinimapFocus(focus)).toBe(1);
+				expect(getSequencedMinimapFocus(focus, uiFocus)).toBe(1);
+				expect(getPanelFocusOffset(panelOptions, uiFocus, 1440, 900)).toEqual(getPanelFocusOffset(panelOptions, 1, 1440, 900));
+			}
+		}
 	});
 
 	it('gates minimap expansion behind animated UI clearance', () => {

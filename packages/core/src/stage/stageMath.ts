@@ -72,21 +72,18 @@ export function getViewResetInterpolation(elapsed: number, duration: number) {
 /**
  * Remaps camera focus to the earlier UI-clearance phase.
  *
- * Page content and ordinary panels deliberately clear before the minimap grows,
- * preventing the expanding minimap from colliding with nearby interface elements.
+ * Page content and ordinary panels lead the minimap, with one shared clearance endpoint.
  */
 export function getStageUiFocus(focus: number) {
 	return smoothstep(0.02, 0.82, focus);
 }
 
 /**
- * Remaps camera focus to the short, delayed minimap phase.
- *
- * The minimap remains thumbnail-sized while the surrounding interface begins to
- * clear, then reaches its complete expanded size at 78% camera focus.
+ * Starts minimap expansion after the surrounding UI begins to clear, but completes
+ * at exactly the same focus as the panel fade. No peripheral movement trails it.
  */
 export function getMinimapFocus(focus: number) {
-	return smoothstep(0.22, 0.78, focus);
+	return smoothstep(0.12, 1, getPanelFocusProgress(getStageUiFocus(focus)));
 }
 
 /**
@@ -431,7 +428,7 @@ export function getPanelFocusOffset(
 		horizontal ? 48 : 18,
 		PANEL_FOCUS_MAX_OFFSET
 	);
-	const easedFocus = smoothstep(0.12, 1, focus);
+	const easedFocus = getPanelFocusProgress(focus);
 	return {
 		x: direction.x * travel * easedFocus,
 		y: direction.y * travel * easedFocus,
@@ -456,16 +453,21 @@ export function getPanelFocusDirection(
 	return direction.normalize();
 }
 
-/** Returns panel opacity at a normalized stage focus level. */
+/** Shared, eased progress for panel motion, blur, opacity and corner controls. */
+export function getPanelFocusProgress(focus: number) {
+	return smoothstep(0.08, 0.96, focus);
+}
+
+/** Returns panel opacity at a normalized stage UI focus level. */
 export function getPanelFocusOpacity(focus: number) {
-	return THREE.MathUtils.lerp(1, PANEL_FOCUS_MIN_OPACITY, smoothstep(0.08, 0.96, focus));
+	return THREE.MathUtils.lerp(1, PANEL_FOCUS_MIN_OPACITY, getPanelFocusProgress(focus));
 }
 
 /** Returns CSS content blur at a normalized stage focus level. */
 export function getPanelFocusBlur(focus: number, options: Required<LiquidGlassPanelOptions>) {
 	const shortSide = Math.max(Math.min(options.width, options.height), 1);
 	const sizeScale = THREE.MathUtils.clamp(Math.sqrt(shortSide / 240), 0.34, 1);
-	return PANEL_FOCUS_MAX_BLUR * sizeScale * smoothstep(0.08, 0.96, focus);
+	return PANEL_FOCUS_MAX_BLUR * sizeScale * getPanelFocusProgress(focus);
 }
 
 /**

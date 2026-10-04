@@ -4,11 +4,11 @@ import { PanelPresentationController, type PanelPresentationPorts } from './Pane
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
 import type { StageMinimapState } from './minimap/MinimapState.js';
 import { resolveLiquidGlassPanelOptions } from './LiquidGlassPanel.js';
-import { getPanelFocusOpacity, getStageUiFocus } from './stageMath.js';
+import { getPanelFocusOpacity, getSequencedMinimapFocus, getStageUiFocus } from './stageMath.js';
 
 afterEach(() => vi.unstubAllGlobals());
 
-test.each([[1916, 907], [1280, 800]])('corner controls follow the summary edge before continuing to the minimap inset (%i x %i)', (width, height) => {
+test.each([[1916, 907], [1280, 800]])('summary and corner control reach their final pose together at panel clearance (%i x %i)', (width, height) => {
 	vi.stubGlobal('window', { innerWidth: width, innerHeight: height, location: { search: '' } });
 	const camera = new THREE.PerspectiveCamera(); camera.position.z = height / (2 * Math.tan(Math.PI / 10));
 	let focus = 0;
@@ -43,28 +43,54 @@ test.each([[1916, 907], [1280, 800]])('corner controls follow the summary edge b
 		const y = height / 2 - runtime.group.position.y - 20;
 		expect(x).toBeGreaterThanOrEqual(10); expect(x + 40).toBeLessThanOrEqual(width - 10);
 		expect(y).toBeGreaterThanOrEqual(10); expect(y + 40).toBeLessThanOrEqual(height - 10);
-		if (getPanelFocusOpacity(getStageUiFocus(focus)) > 0.001) {
-			const layout = controller.getPanelPointerLayout(summary, 1, width, height, getStageUiFocus(focus));
-			const scale = camera.position.z / (camera.position.z - layout.focusOffset.z);
-			const left = layout.centerX - summaryWidth * scale / 2;
-			expect(left - (x + 40)).toBeCloseTo(44, 7);
+		const layout = controller.getPanelPointerLayout(summary, 1, width, height, getStageUiFocus(focus));
+		const scale = camera.position.z / (camera.position.z - layout.focusOffset.z);
+		const left = layout.centerX - summaryWidth * scale / 2;
+		const top = layout.centerY - summary.options.height * scale / 2;
+		expect(left - (x + 40)).toBeCloseTo(44, 7);
+		expect(y - top).toBeCloseTo(6, 7);
+		if (getPanelFocusOpacity(getStageUiFocus(focus)) === 0) {
+			expect(x + 40).toBe(width - 10); expect(y).toBe(10);
+			expect(left).toBeCloseTo(width + 34, 7);
 		}
-		if (step === 74) expect(width - x - 40).toBeGreaterThan(100);
-		if (step === 100) { expect(x + 40).toBe(width - 10); expect(y).toBe(10); }
 		if (positions.has(step)) expect([x, y]).toEqual(positions.get(step));
 		positions.set(step, [x, y]);
 		expect(runtime.group.position.z).toBe(0);
 		expect(runtime.glass!.setVisibilityAlpha).toHaveBeenLastCalledWith(1);
 	}
-	// The attachment transition is continuous in both position and speed.
-	const around = [0.74 - 1e-5, 0.74, 0.74 + 1e-5].map(value => {
-		focus = value;
-		return controller.getPanelPointerLayout(runtime, 0, width, height, getStageUiFocus(focus));
-	});
+	// Position and velocity settle continuously at the exact fade endpoint.
+	const around = [0.96 - 1e-5, 0.96, 0.96 + 1e-5].map(uiFocus =>
+		controller.getPanelPointerLayout(runtime, 0, width, height, uiFocus));
 	for (const axis of ['centerX', 'centerY'] as const) {
 		expect(Math.abs(around[2][axis] - around[1][axis])).toBeLessThan(0.05);
 		expect(Math.abs((around[2][axis] - around[1][axis]) - (around[1][axis] - around[0][axis]))).toBeLessThan(0.0001);
 	}
+});
+
+test('minimap projected size and position stop changing as soon as the panels are transparent', () => {
+	vi.stubGlobal('window', { innerWidth: 1440, innerHeight: 900, location: { search: '' } });
+	const camera = new THREE.PerspectiveCamera(); camera.position.z = 1400;
+	let focus = 0;
+	const minimap = { baseWidth: 120, baseHeight: 120, options: { expandedHeight: 244 } } as StageMinimapState;
+	const panel = { options: resolveLiquidGlassPanelOptions({ width: 120, height: 120, position: { x: -608, y: 278 } }) } as StagePanelRuntime;
+	const controller = new PanelPresentationController({
+		camera, minimaps: () => new Map([[0, minimap]]), registrations: () => [], visible: () => true,
+		frame: () => ({ minimapFocus: getSequencedMinimapFocus(focus, getStageUiFocus(focus)) })
+	} as unknown as PanelPresentationPorts);
+	let finalPose: number[] | undefined;
+	for (let step = 0; step <= 100; step++) {
+		focus = step / 100;
+		const layout = controller.getPanelPointerLayout(panel, 0, 1440, 900, getStageUiFocus(focus));
+		if (getPanelFocusOpacity(getStageUiFocus(focus)) !== 0) continue;
+		const scale = camera.position.z / (camera.position.z - layout.focusOffset.z);
+		const pose = [layout.centerX, layout.centerY, layout.visualWidth * scale, layout.visualHeight * scale];
+		expect(layout.visualHeight).toBe(244);
+		expect(pose[0] - pose[2] / 2).toBeCloseTo(10, 8);
+		expect(pose[1] - pose[3] / 2).toBeCloseTo(10, 8);
+		finalPose ??= pose;
+		expect(pose).toEqual(finalPose);
+	}
+	expect(finalPose).toBeDefined();
 });
 
 test('compact controls lift without tilt or scaling and stay visible during close-up', () => {

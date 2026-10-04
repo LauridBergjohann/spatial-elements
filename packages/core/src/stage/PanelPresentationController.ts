@@ -20,6 +20,7 @@ import {
 	getPanelFocusOffset,
 	getPanelFocusPerspectiveOffset,
 	getPanelFocusOpacity,
+	getPanelFocusProgress,
 	getPanelPointerInfluence,
 	getPanelPointerRotation,
 	getPerspectiveAnchoredPanelPosition,
@@ -31,18 +32,6 @@ import type { StagePanelTarget } from './stageTypes.js';
 const PANEL_NATIVE_REST_FRAMES = 2;
 const PANEL_NATIVE_ROTATION_EPSILON = 0.000001;
 const PANEL_NATIVE_DEPTH_EPSILON = 0.0001;
-
-/** A C1-continuous clamp prevents a corner-following control from hitting the screen edge abruptly. */
-function softenViewportEdge(value: number, min: number, max: number) {
-	const band = Math.min(12, Math.max(0, (max - min) / 2));
-	if (band === 0) return min;
-	const softenMinimum = (n: number, edge: number) => {
-		if (n <= edge - band) return edge;
-		if (n >= edge + band) return n;
-		return edge + (n - edge + band) ** 2 / (4 * band);
-	};
-	return -softenMinimum(-softenMinimum(value, min), -max);
-}
 
 function getFlatCss3DTransform(matrix: THREE.Matrix4) {
 	const elements = matrix.elements;
@@ -83,7 +72,6 @@ export interface PanelPresentationPorts {
 	updateMinimap(minimap: StageMinimapState, focus: number): void;
 	frame(): {
 		presentation: CatalogTransitionPresentation;
-		focus: number;
 		minimapFocus: number;
 		uiFocus: number;
 		pointer: Readonly<{ x: number; y: number; active: boolean }>;
@@ -326,6 +314,30 @@ export class PanelPresentationController {
 		);
 		root.matrixWorldNeedsUpdate = true;
 	}
+	private getCornerControlOffset(panel: StagePanelRuntime, width: number, height: number, uiFocus: number) {
+		const inset = MINIMAP_FOCUSED_VIEWPORT_INSET;
+		const endX = width / 2 - inset - panel.options.width / 2;
+		const endY = height / 2 - inset - panel.options.height / 2;
+		const startX = THREE.MathUtils.clamp(panel.options.position.x, -endX, endX);
+		const startY = THREE.MathUtils.clamp(panel.options.position.y, -endY, endY);
+		const progress = getPanelFocusProgress(uiFocus);
+		return {
+			x: THREE.MathUtils.lerp(startX, endX, progress) - panel.options.position.x,
+			y: THREE.MathUtils.lerp(startY, endY, progress) - panel.options.position.y,
+			z: 0
+		};
+	}
+	private getAnchoredCornerControl(panel: StagePanelRuntime, index: number) {
+		const frame = this.panelTargets[index]?.frame;
+		if (!frame) return undefined;
+		return this.panelRuntimes.find((control, controlIndex) =>
+			control.focusReactive === 'top-right' &&
+			this.panelTargets[controlIndex]?.getFocusAnchor?.() === frame &&
+			// Stacked/mobile summaries below the model keep their normal exit path.
+			panel.options.position.x - panel.options.width / 2 >= control.options.position.x + control.options.width / 2 - 1 &&
+			Math.abs(control.options.position.y - (panel.options.position.y + panel.options.height / 2)) <= control.options.height
+		);
+	}
 	getPanelPointerLayout(
 		panel: StagePanelRuntime,
 		index: number,
@@ -346,39 +358,7 @@ export class PanelPresentationController {
 		const visualWidth = baseWidth * expansion;
 		const visualHeight = baseHeight * expansion;
 		if (panel.focusReactive === 'top-right') {
-			const anchorFrame = this.panelTargets[index]?.getFocusAnchor?.();
-			const anchorIndex = anchorFrame ? this.panelTargets.findIndex(target => target.frame === anchorFrame) : -1;
-			const anchor = this.panelRuntimes[anchorIndex];
-			const inset = MINIMAP_FOCUSED_VIEWPORT_INSET;
-			const restingX = viewportWidth / 2 + baseX;
-			const restingY = viewportHeight / 2 - baseY;
-			const endX = viewportWidth - inset - visualWidth / 2;
-			const endY = inset + visualHeight / 2;
-			let attachedX = restingX, attachedY = restingY;
-			// In stacked/mobile layouts the summary is below the model, not beside the control.
-			const alongside = anchor && anchor.options.position.x - anchor.options.width / 2 >= baseX + visualWidth / 2 - 1 &&
-				Math.abs(baseY - (anchor.options.position.y + anchor.options.height / 2)) <= visualHeight;
-			if (alongside) {
-				const offset = getPanelFocusOffset(anchor.options, uiFocus, viewportWidth, viewportHeight);
-				const perspective = getPanelFocusPerspectiveOffset({
-					x: anchor.options.position.x + offset.x, y: anchor.options.position.y + offset.y
-				}, offset.z, this.panelCamera.position.z);
-				const scale = this.panelCamera.position.z / Math.max(this.panelCamera.position.z - offset.z, 1);
-				// Follow the projected top-left EDGE, including growth in perspective.
-				// Following only the panel centre would drive the button over its surface.
-				attachedX += offset.x + perspective.x - anchor.options.width * (scale - 1) / 2;
-				attachedY -= offset.y + perspective.y + anchor.options.height * (scale - 1) / 2;
-			}
-			const boundedX = softenViewportEdge(attachedX, inset + visualWidth / 2, endX);
-			const boundedY = softenViewportEdge(attachedY, endY, viewportHeight - inset - visualHeight / 2);
-			// Ordinary panels are fully transparent by .74 camera focus. Only then detach;
-			// finish at full focus, on the same damped camera clock, with zero endpoint speed.
-			const progress = THREE.MathUtils.smoothstep(this.ports.frame().focus, alongside ? 0.74 : 0, 1);
-			const focusOffset = {
-				x: THREE.MathUtils.lerp(boundedX, endX, progress) - restingX,
-				y: restingY - THREE.MathUtils.lerp(boundedY, endY, progress),
-				z: 0
-			};
+			const focusOffset = this.getCornerControlOffset(panel, viewportWidth, viewportHeight, uiFocus);
 			return { baseX, baseY, centerX: viewportWidth / 2 + baseX + focusOffset.x,
 				centerY: viewportHeight / 2 - baseY - focusOffset.y, focusOffset,
 				minimap, minimapFocus, visualWidth, visualHeight, viewportVisible: this.isPanelTargetVisible(index) };
@@ -390,6 +370,21 @@ export class PanelPresentationController {
 			viewportHeight
 		);
 		const focusDepth = minimap ? rawFocusOffset.z * 0.12 : rawFocusOffset.z;
+		const cornerControl = !minimap && panel.focusReactive !== false ? this.getAnchoredCornerControl(panel, index) : undefined;
+		if (cornerControl) {
+			const controlOffset = this.getCornerControlOffset(cornerControl, viewportWidth, viewportHeight, uiFocus);
+			const scale = this.panelCamera.position.z / Math.max(this.panelCamera.position.z - focusDepth, 1);
+			// Move the projected top-left corner WITH the control, preserving its gap.
+			// Counter perspective growth so the panel never expands over the button.
+			const focusOffset = {
+				x: controlOffset.x + baseWidth * (scale - 1) / 2,
+				y: controlOffset.y - baseHeight * (scale - 1) / 2,
+				z: focusDepth
+			};
+			return { baseX, baseY, centerX: viewportWidth / 2 + baseX + focusOffset.x,
+				centerY: viewportHeight / 2 - baseY - focusOffset.y, focusOffset,
+				minimap, minimapFocus, visualWidth, visualHeight, viewportVisible: this.isPanelTargetVisible(index) };
+		}
 		const minimapProjectionScale = minimap
 			? this.panelCamera.position.z / Math.max(this.panelCamera.position.z - focusDepth, 1)
 			: 1;

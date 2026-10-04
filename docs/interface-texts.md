@@ -21,6 +21,7 @@ Spatial Elements supplies English interface copy. The host application owns the 
       mouseRotate: 'Mit gedrückter linker Maustaste ziehen',
       mouseZoom: 'Mausrad bewegen',
       mousePan: 'Mit gedrückter rechter Maustaste ziehen',
+      mouseNavigationHint: 'Nutzen Sie alternativ eine {spacemouse} zur Navigation.',
       touchRotate: 'Mit einem Finger ziehen',
       touchZoom: 'Zwei Finger auseinander- oder zusammenziehen',
       touchPan: 'Zwei Finger gemeinsam bewegen',
@@ -54,6 +55,7 @@ Both packages export `SpatialMessages`, `SpatialMessagesInput`, `defaultSpatialM
 | `interactionHelp.mouseRotate` | `Drag with the left mouse button` |
 | `interactionHelp.mouseZoom` | `Use the scroll wheel` |
 | `interactionHelp.mousePan` | `Drag with the right mouse button` |
+| `interactionHelp.mouseNavigationHint` | `Alternatively, use a {spacemouse} to navigate.` |
 | `interactionHelp.touchRotate` | `Drag with one finger` |
 | `interactionHelp.touchZoom` | `Pinch with two fingers` |
 | `interactionHelp.touchPan` | `Drag with two fingers` |
@@ -64,9 +66,11 @@ Use `controls` for control labels/tooltips and `interactionHelp` for the instruc
 
 The help displays compact mouse or touch diagrams beside the short `rotate`, `zoom` and `pan` labels. Mouse buttons, the wheel and touch-motion arrows use `theme.colors.accent`. The longer `mouse*` / `touch*` instructions remain in the accessible definition list for screen readers, without taking up visible space. Translate these descriptions as well as the short labels. Touch help also displays `touchScrollHint` below the diagrams.
 
+Mouse help displays `mouseNavigationHint` below the same separator. Its `{spacemouse}` placeholder inserts a link labelled **SpaceMouse** to `https://3dconnexion.com/`, opening in a new tab. Keep or reposition the placeholder anywhere in your translated sentence; the rest is escaped plain text. Omitting the placeholder displays your text without a link. No translated HTML or configurable URL is needed. The touch scroll hint remains unchanged.
+
 ## Detail-page interaction help
 
-Enhanced detail pages include a 40 × 40 CSS-pixel icon button at the upper right of the model area, next to the summary panel on desktop. Its gap to the summary matches its gap below the header. During close-up it first follows the summary's projected top-left corner, maintaining the gap as that panel grows and fades. After the panel disappears, the button continues smoothly to the top-right viewport corner. Its final top/right inset is 10px, matching the minimap. The control stays within the viewport; on stacked layouts it travels directly from the model column to that corner. Both phases use the same damped camera position and reverse with zoom, without a separate animation or delay. It uses the theme's panel surface, tint, blur, shadow and ink color. Mouse hover uses the same 8% body-color highlight as the section submenu, without movement or tilt. Its accessible name and native tooltip come from `controls.help`; the button contains no visible text.
+Enhanced detail pages include a 40 × 40 CSS-pixel icon button at the upper right of the model area, next to the summary panel on desktop. Its gap to the summary matches its gap below the header. During close-up the button and summary's projected top-left corner move together, keeping their gap as the panel grows and fades out past the upper-right viewport edge. The button reaches its final 10px top/right inset exactly when the panels become transparent. The minimap starts expanding slightly later but also reaches its final position and size at that same endpoint. No peripheral movement continues after clearance. All poses read the same damped camera position and reverse with zoom, without a separate animation or delay. On stacked layouts the control travels directly from the model column to the corner while the summary below follows its ordinary exit path. The control uses the theme's panel surface, tint, blur, shadow and ink color. Mouse hover uses the same 8% body-color highlight as the section submenu, without movement or tilt. Its accessible name and native tooltip come from `controls.help`; the button contains no visible text.
 
 The non-modal help opens next to this button, stays within the viewport and adapts the gesture descriptions to actual mouse/touch input. Its surface uses the same panel renderer, including WebGPU refraction in the `glass` theme. Clicking the button opens persistent help. Keyboard activation focuses its close button; Escape or the close button restores focus when appropriate. Automatically displayed help does not move keyboard focus. The user can move the pointer into the help or focus its controls and read without a time limit.
 
@@ -78,6 +82,6 @@ Before the first manual interaction, nearby mouse movement can gently orbit the 
 
 ## Related panel options
 
-`Panel` accepts `pointerReactive={true}` for proximity lift and tilt, `"lift"` for a 2px mouse-only lift, or `false` for no motion. The approach band outside a panel is bounded to 12–32px. `focusReactive={false}` keeps a panel available when model close-up fades the surrounding UI; `focusReactive="top-right"` also moves it to the viewport corner. An optional `focusAnchor` panel frame lets the control first follow that neighbour's top-left edge before continuing to the corner after clearance. Defaults remain `true` for both reactive options. The built-in help button uses `pointerReactive={false}`, `focusReactive="top-right"` and the summary frame as its anchor.
+`Panel` accepts `pointerReactive={true}` for proximity lift and tilt, `"lift"` for a 2px mouse-only lift, or `false` for no motion. The approach band outside a panel is bounded to 12–32px. `focusReactive={false}` keeps a panel available when model close-up fades the surrounding UI; `focusReactive="top-right"` also moves it to the viewport corner. An optional `focusAnchor` panel frame couples that neighbour's projected top-left edge to the control's exit path. Both finish with the panel fade, preserving their authored spacing. Defaults remain `true` for both reactive options. The built-in help button uses `pointerReactive={false}`, `focusReactive="top-right"` and the summary frame as its anchor.
 
 For native overlays, `nativeContent` retains the panel's content in its DOM owner (for example, a `popover`) while rendering its glass surface through the stage. Combine it with `pointerReactive={false}`, `focusReactive={false}` and `visible={open}`. Native layout determines its size; signal `STAGE_PANEL_LAYOUT_EVENT` after changing its position. Visibility changes and resize observation update its surface automatically. The built-in help uses this internally; hosts do not need to construct either control.

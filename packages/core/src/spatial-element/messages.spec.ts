@@ -6,6 +6,7 @@ test('partial locale overrides retain English defaults, including explicit undef
 	expect(result.controls).toEqual({ help: '3D-Steuerung', closeHelp: 'Close help' });
 	expect(result.interactionHelp.rotate).toBe('Drehen');
 	expect(result.interactionHelp.mouseRotate).toBe(defaultSpatialMessages.interactionHelp.mouseRotate);
+	expect(result.interactionHelp.mouseNavigationHint).toBe('Alternatively, use a {spacemouse} to navigate.');
 	expect(defaultSpatialMessages.controls.help).toBe('3D controls');
 	result.interactionHelp.zoom = 'Changed';
 	expect(resolveSpatialMessages().interactionHelp.zoom).toBe('Zoom');

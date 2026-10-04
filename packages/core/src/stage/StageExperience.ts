@@ -485,7 +485,6 @@ export class StageExperience {
 			updateMinimap: (minimap, focus) => this.minimapController.updateMinimapState(minimap, focus),
 			frame: () => ({
 				presentation: this.catalogPresentation,
-				focus: this.panelFocus,
 				minimapFocus: this.minimapFocus,
 				uiFocus: this.panelUiFocus,
 				pointer: this.pointer

@@ -221,7 +221,13 @@
 					<div><InteractionGesture action="zoom" touch={touchInput} /><dt>{help.zoom}</dt><dd>{touchInput ? help.touchZoom : help.mouseZoom}</dd></div>
 					<div><InteractionGesture action="pan" touch={touchInput} /><dt>{help.pan}</dt><dd>{touchInput ? help.touchPan : help.mousePan}</dd></div>
 				</dl>
-				{#if touchInput}<p class="scroll-hint">{help.touchScrollHint}</p>{/if}
+				<p class="navigation-hint">
+					{#if touchInput}
+						{help.touchScrollHint}
+					{:else}
+						{#each help.mouseNavigationHint.split('{spacemouse}') as part, index}{#if index > 0}<a href="https://3dconnexion.com/" target="_blank" rel="noopener noreferrer">SpaceMouse</a>{/if}{part}{/each}
+					{/if}
+				</p>
 			</div>
 		</Panel>
 	</div>
@@ -263,6 +269,8 @@
 	dt { font-weight: 650; }
 	/* Keep complete host-localized instructions available to assistive technology. */
 	dd { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-	.scroll-hint { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid currentColor; font-size: 12px; }
+	.navigation-hint { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid currentColor; font-size: 12px; }
+	.navigation-hint a { color: var(--spatial-element-accent); text-decoration: underline; text-underline-offset: 2px; }
+	.navigation-hint a:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: 3px; border-radius: 2px; }
 	@media (max-width: 1100px) { .model-tools { margin-inline-end: 0; } }
 </style>

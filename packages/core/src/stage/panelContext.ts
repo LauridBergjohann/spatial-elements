@@ -58,6 +58,7 @@ export interface StagePanelRegistration {
 	getSurfaceElement(): HTMLElement | undefined;
 	getPointerReactive(): boolean | 'lift';
 	getFocusReactive?(): boolean | 'top-right';
+	/** Neighbouring panel frame that shares a corner control's exit path. */
 	getFocusAnchor?(): HTMLElement | undefined;
 	getNativeContent?(): boolean;
 	getVisible?(): boolean;

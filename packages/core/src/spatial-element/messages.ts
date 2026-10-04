@@ -12,6 +12,8 @@ export interface SpatialMessages {
 		mouseRotate: string;
 		mouseZoom: string;
 		mousePan: string;
+		/** Plain text; {spacemouse} inserts the external SpaceMouse link. */
+		mouseNavigationHint: string;
 		touchRotate: string;
 		touchZoom: string;
 		touchPan: string;
@@ -35,6 +37,7 @@ export const defaultSpatialMessages: Readonly<{
 		mouseRotate: 'Drag with the left mouse button',
 		mouseZoom: 'Use the scroll wheel',
 		mousePan: 'Drag with the right mouse button',
+		mouseNavigationHint: 'Alternatively, use a {spacemouse} to navigate.',
 		touchRotate: 'Drag with one finger',
 		touchZoom: 'Pinch with two fingers',
 		touchPan: 'Drag with two fingers',
