@@ -1,4 +1,5 @@
 export { StageExperience } from './stage/StageExperience.js';
+export { defaultSpatialMessages, resolveSpatialMessages, type SpatialMessages, type SpatialMessagesInput } from './spatial-element/messages.js';
 export { SpatialElementAssetManager, GltfSpatialElementAssetLoader } from './catalog/assets/SpatialElementAssetManager.js';
 export * from './spatial-element/types.js';
 export { findSpatialElement, getSpatialListItems, getSpatialElementSectionStyle, isSpatialElementSectionId } from './spatial-element/spatialElement.js';

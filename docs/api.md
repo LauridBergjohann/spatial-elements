@@ -8,7 +8,7 @@ For a runnable category/detail setup, begin with [Getting started](getting-start
 | --- | --- | --- |
 | SpatialElementData | One element's content, model, lighting and detail presentation | Application data / CMS, consumed by page load functions |
 | SpatialTheme | Shared brand identity, colors and panel materials | Persistent layout, usually via createSpatialTheme |
-| BrandStageShell | Renderer lifetime, GPU budget and decoder infrastructure | Persistent +layout.svelte |
+| BrandStageShell | Renderer lifetime, interface translations, GPU budget and decoder infrastructure | Persistent +layout.svelte |
 | ContentPageData | Category title, introduction and breadcrumbs | Category +page.svelte or its load data |
 | SpatialListItem | Derived link, summary and assets for an element occurrence | getSpatialListItems(elements, basePath) |
 | Section definition | Anchor, heading and optional local CSS overrides | Content/detail page |
@@ -78,11 +78,13 @@ Color overrides do not modify GLB materials. Use element.model.materialOverrides
 
 See [createSpatialTheme](../packages/core/src/spatial-element/spatialTheme.ts), [theme types](../packages/core/src/spatial-element/types.ts), [panel controls](../packages/core/src/stage/panelContext.ts) and [renderer controls](../packages/core/src/stage/stageTypes.ts) for all fields.
 
+Interface language is independent of the theme. Pass `messages: SpatialMessagesInput` to `BrandStageShell` to override control labels, accessible names, tooltips and 3D-help instructions. Missing keys use English defaults. See [interface texts and help](interface-texts.md) for all keys and a complete translation example.
+
 ## Svelte components
 
 | Component | Props and responsibility |
 | --- | --- |
-| BrandStageShell | Required theme; optional renderSettings, dracoDecoderPath and children. Persistent layout and renderer owner. No stage/catalog props. |
+| BrandStageShell | Required theme; optional messages, renderSettings, dracoDecoderPath and children. Persistent layout and renderer owner. No stage/catalog props. |
 | ContentPage | Required hdr: environment URL and page: ContentPageData; optional children. Registers a category/content page. page.title is required; pageTitle defaults to title, eyebrow/intro/breadcrumbs are optional. |
 | ListSection | Required section: {id,title,style?}, list: SpatialListItem[]. Registers its own element occurrences. |
 | CarouselSection | Same section/list; optional presentation: {radius?,depth?}, initialItemKey, onselectionchange({itemKey,spatialElementId}). Radius defaults to 0.48 of section width (clamped 0.2..0.7); depth defaults to 700 CSS-world pixels (clamped 0..1200). |

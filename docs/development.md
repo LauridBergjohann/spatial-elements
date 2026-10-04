@@ -39,7 +39,7 @@ Build the packages first if you have not already done so. Local browser tests us
 The touch regressions use Chrome's mobile viewport and trusted touch input through the browser protocol:
 
 ~~~sh
-npm run test:e2e -- carousel-touch.e2e.ts detail-touch.e2e.ts
+npm run test:e2e -- carousel-touch.e2e.ts detail-touch.e2e.ts interaction-help.e2e.ts
 ~~~
 
 They cover simultaneous carousel rotation and page scrolling, changes of direction, release damping on both axes, model rotation/pinch handoff, immediate background scrolling, and mouse-only hover on hybrid devices. The carousel coordinates both axes inside model areas; scrolling outside them and two-finger page zoom remain native. The interaction contract is documented in [Authoring](authoring.md#touch-and-pointer-interaction). Physical-device checks remain useful for Safari and device-specific input latency.

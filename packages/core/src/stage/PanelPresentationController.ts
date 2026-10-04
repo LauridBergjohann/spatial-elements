@@ -393,15 +393,15 @@ export class PanelPresentationController {
 		const viewportWidth = window.innerWidth;
 		const viewportHeight = window.innerHeight;
 		const uiFocus = this.panelUiFocus;
-		const focusOpacity = getPanelFocusOpacity(uiFocus);
 		const layouts = this.panelRuntimes.map((panel, index) =>
-			this.getPanelPointerLayout(panel, index, viewportWidth, viewportHeight, uiFocus)
+			this.getPanelPointerLayout(panel, index, viewportWidth, viewportHeight, panel.focusReactive === false ? 0 : uiFocus)
 		);
 		let animationActive = false;
 		this.visiblePanelCount = 0;
 		this.visibleMinimapCount = 0;
 
 		this.panelRuntimes.forEach((panel, index) => {
+			const focusOpacity = getPanelFocusOpacity(panel.focusReactive === false ? 0 : uiFocus);
 			const {
 				baseX,
 				baseY,
@@ -471,7 +471,7 @@ export class PanelPresentationController {
 
 			const halfWidth = visualWidth * 0.5;
 			const halfHeight = visualHeight * 0.5;
-			const focusBlur = getPanelFocusBlur(uiFocus, panel.options);
+			const focusBlur = getPanelFocusBlur(panel.focusReactive === false ? 0 : uiFocus, panel.options);
 			let targetX = 0;
 			let targetY = 0;
 			let targetPointerLift = 0;
@@ -495,9 +495,15 @@ export class PanelPresentationController {
 					visualHeight
 				);
 
-				targetX = rotation.x;
-				targetY = rotation.y;
-				targetPointerLift = PANEL_POINTER_MAX_LIFT * influence;
+				if (panel.pointerReactive === 'lift') {
+					// Compact controls use the same surface with a small, non-tilting hover response.
+					targetPointerLift = Math.abs(pointerX) <= halfWidth && Math.abs(pointerY) <= halfHeight &&
+						!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 2 : 0;
+				} else {
+					targetX = rotation.x;
+					targetY = rotation.y;
+					targetPointerLift = PANEL_POINTER_MAX_LIFT * influence;
+				}
 			}
 			panel.pointerLift = dampAndSnap(
 				panel.pointerLift,
@@ -553,8 +559,8 @@ export class PanelPresentationController {
 					targetX,
 					targetY,
 					baseX + focusOffset.x,
-					baseY + focusOffset.y,
-					focusOffset.z + panel.pointerLift,
+					baseY + focusOffset.y + (panel.pointerReactive === 'lift' ? panel.pointerLift : 0),
+					focusOffset.z + (panel.pointerReactive === 'lift' ? 0 : panel.pointerLift),
 					delta,
 					panel.projectionRoot
 				) || animationActive;
@@ -618,8 +624,8 @@ export class PanelPresentationController {
 						targetX,
 						targetY,
 						baseX + focusOffset.x,
-						baseY + focusOffset.y,
-						PANEL_CONTENT_Z + focusOffset.z + panel.pointerLift,
+						baseY + focusOffset.y + (panel.pointerReactive === 'lift' ? panel.pointerLift : 0),
+						PANEL_CONTENT_Z + focusOffset.z + (panel.pointerReactive === 'lift' ? 0 : panel.pointerLift),
 						delta,
 						panel.contentProjectionRoot
 					) || animationActive;

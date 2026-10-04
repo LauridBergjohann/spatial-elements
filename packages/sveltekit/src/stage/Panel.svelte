@@ -23,8 +23,10 @@
 		class?: string;
 		contentClass?: string;
 		minimap?: boolean | StagePanelMinimapOptions;
-		/** Enables proximity lift and pointer-driven tilt. Defaults to true. */
-		pointerReactive?: boolean;
+		/** true: proximity lift and tilt; 'lift': a 2px mouse-hover lift without tilt; false: still. */
+		pointerReactive?: boolean | 'lift';
+		/** Set false for controls that must stay available during model close-up. */
+		focusReactive?: boolean;
 		pose?: StagePanelPose;
 		shape: StagePanelShape;
 		surface?: StagePanelSurface;
@@ -39,6 +41,7 @@
 		contentClass = '',
 		minimap = false,
 		pointerReactive = true,
+		focusReactive = true,
 		pose,
 		shape,
 		style: contentStyle = '',
@@ -66,6 +69,7 @@
 		getFrameElement: () => frameElement,
 		getSurfaceElement: () => surfaceElement,
 		getPointerReactive: () => pointerReactive,
+		getFocusReactive: () => focusReactive,
 		getMinimapOptions: () => getMinimapOptions(),
 		getMinimapDockProgress,
 		getMinimapModelScale,

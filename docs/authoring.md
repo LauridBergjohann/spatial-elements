@@ -48,6 +48,8 @@ On detail pages, a touch starting on visible model geometry rotates it, and a se
 
 Panel, minimap and model hover effects require a mouse pointer. Touch and stylus contact clear those effects, including on devices that also have a mouse. Keyboard focus indicators remain available.
 
+Detail pages also provide a compact, themed help button and once-per-session interaction guidance. Before the first manual interaction, the model subtly follows nearby mouse movement and then settles; reduced motion disables this preview. Configure all help strings through the shell's `messages` prop. See [interface texts and help](interface-texts.md) for translation examples, defaults, placement and lifecycle behavior.
+
 Keep native scrolling enabled on the page and avoid overriding the components' `touch-action` styles or cancelling their touch events in application-level handlers.
 
 ## Rendering budget

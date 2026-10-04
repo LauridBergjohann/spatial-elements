@@ -5,6 +5,7 @@
 - [Getting started](getting-started.md): install the packages and build collection and detail pages.
 - [Authoring](authoring.md): compose content, element lists, carousels and detail pages.
 - [API reference](api.md): configure element data, themes, components and rendering.
+- [Interface texts and help](interface-texts.md): host-owned translations, English defaults and 3D guidance.
 - [Asset contract](architecture/assets.md): prepare model representations and shared coordinate frames.
 - [Configuration migration](configuration-migration.md) and [SpatialElement API migration](spatial-element-migration.md): update existing pre-release integrations.
 

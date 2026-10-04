@@ -2214,6 +2214,7 @@ export class StageExperience {
 					options: panel.options,
 					pointerLift: 0,
 					pointerReactive: target.pointerReactive ?? true,
+					focusReactive: target.focusReactive ?? true,
 					projectionRoot,
 					surface: target.surface
 				});
@@ -2231,6 +2232,7 @@ export class StageExperience {
 					options,
 					pointerLift: 0,
 					pointerReactive: target.pointerReactive ?? true,
+					focusReactive: target.focusReactive ?? true,
 					projectionRoot,
 					surface: target.surface
 				});

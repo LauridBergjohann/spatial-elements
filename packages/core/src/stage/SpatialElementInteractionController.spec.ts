@@ -1,5 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import * as THREE from 'three/webgpu';
+import { getInteractionGuidance } from './interactionGuidance.js';
 import {
 	SpatialElementInteractionController,
 	type SpatialElementInteractionPorts
@@ -192,5 +193,21 @@ test('cancellation and focus loss do not leave an active gesture behind', () => 
 	owner.releasePage();
 	expect(owner.pointer.active).toBe(false);
 	expect(owner.modelInteractionActive).toBe(false);
+	owner.dispose();
+});
+
+test('only a real geometry drag consumes the introductory guidance, not hover or a click', () => {
+	vi.stubGlobal('window', {});
+	const { owner } = fixture();
+	vi.spyOn(owner, 'hitTestModel').mockReturnValue(true);
+	const guidance = getInteractionGuidance();
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	expect(guidance.snapshot.interacted).toBe(false);
+	owner.handlePointerDown(pointer(2));
+	owner.handlePointerMove({ ...pointer(2, 'touch', 'pointermove'), clientX: 52 } as PointerEvent);
+	expect(guidance.snapshot.interacted).toBe(false);
+	owner.handlePointerMove({ ...pointer(2, 'touch', 'pointermove'), clientX: 70 } as PointerEvent);
+	expect(guidance.snapshot.interacted).toBe(true);
 	owner.dispose();
 });

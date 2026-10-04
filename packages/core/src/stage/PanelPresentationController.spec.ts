@@ -3,8 +3,37 @@ import * as THREE from 'three/webgpu';
 import { PanelPresentationController, type PanelPresentationPorts } from './PanelPresentationController.js';
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
 import type { StageMinimapState } from './minimap/MinimapState.js';
+import { resolveLiquidGlassPanelOptions } from './LiquidGlassPanel.js';
 
 afterEach(() => vi.unstubAllGlobals());
+
+test('compact controls lift without tilt or scaling and stay visible during close-up', () => {
+	vi.stubGlobal('window', { innerWidth: 1000, innerHeight: 800, location: { search: '' }, matchMedia: () => ({ matches: false }) });
+	const camera = new THREE.PerspectiveCamera(); camera.position.z = 1000;
+	const pointer = { x: 509, y: 410, active: true };
+	const runtime = {
+		group: new THREE.Group(), pointerLift: 0, pointerReactive: 'lift', focusReactive: false,
+		options: resolveLiquidGlassPanelOptions({ width: 40, height: 40, position: { x: 0, y: 0 } }),
+		domRenderMode: 'native', nativeRestFrames: 0, surface: 'glass',
+		glass: { setVisibilityAlpha: vi.fn() }
+	} as unknown as StagePanelRuntime;
+	const controller = new PanelPresentationController({
+		camera, registrations: () => [], minimaps: () => new Map(),
+		frame: () => ({ pointer, uiFocus: 1, minimapFocus: 0, presentation: { active: false } }),
+		visible: () => true, transitionOpacity: () => 1
+	} as unknown as PanelPresentationPorts);
+	controller.add(runtime);
+	for (let i = 0; i < 120; i++) controller.updatePanelPointerInteraction(1 / 60);
+	expect(runtime.group.position.toArray()).toEqual([0, 2, 0]);
+	expect(runtime.group.rotation.x).toBe(0);
+	expect(runtime.group.rotation.y).toBe(0);
+	expect(runtime.group.scale.toArray()).toEqual([1, 1, 1]);
+	expect(runtime.glass!.setVisibilityAlpha).toHaveBeenLastCalledWith(1);
+	expect(controller.updatePanelPointerInteraction(1 / 60)).toBe(false);
+	pointer.active = false;
+	for (let i = 0; i < 120; i++) controller.updatePanelPointerInteraction(1 / 60);
+	expect(runtime.group.position.toArray()).toEqual([0, 0, 0]);
+});
 
 test.each([
 	{ viewport: [1280, 800], size: [240, 180], tilt: false },

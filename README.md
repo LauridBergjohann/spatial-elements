@@ -69,6 +69,7 @@ WebGPU rendering requires a capable browser/device and a secure context (HTTPS o
 - [Getting started](docs/getting-started.md): build your first collection and detail pages.
 - [Authoring](docs/authoring.md): combine lists, carousels and ordinary content.
 - [API reference](docs/api.md): element data, themes, components and renderer settings.
+- [Interface texts and help](docs/interface-texts.md): translate controls, tooltips and the 3D interaction guide.
 - [Configuration migration](docs/configuration-migration.md): update an existing beta integration.
 
 ## License and attribution

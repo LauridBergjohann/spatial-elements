@@ -621,7 +621,8 @@
 				options: panel.getOptions(),
 				surface: panel.getSurface(),
 				surfaceElement,
-				pointerReactive: panel.getPointerReactive()
+				pointerReactive: panel.getPointerReactive(),
+				focusReactive: panel.getFocusReactive?.() ?? true
 			});
 		});
 

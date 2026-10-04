@@ -69,7 +69,11 @@ creation and detail-page rebinding, before motion begins. Carousel summary dimen
 measured before per-frame writes and invalidated by resize observation. See the
 [performance analysis](../performance.md) for the measurement scope and remaining costs.
 
-detail page input updates the live page pose; transition pose ownership is separate. Zoom coordinates hero framing, content visibility and minimap presentation. Cached targets and bounded preparation reduce work but do not eliminate device-dependent GPU cost.
+Detail page input updates the live page pose; transition pose ownership is separate. Zoom coordinates hero framing, content visibility and minimap presentation. Cached targets and bounded preparation reduce work but do not eliminate device-dependent GPU cost.
+
+The core interaction owner publishes model hover/contact state to the enclosing stage and records actual manipulation in `InteractionGuidance`. This lightweight learning state is tab-scoped (lazy browser WeakMap plus optional sessionStorage), independent of page/asset ownership and isolated from SSR requests. It suppresses repeated introductions across products and stage remounts. `ModelPointerPreview` uses the existing frame clock and stops at rest; pointer takeover preserves the visible camera pose. It never runs during transition ownership or after manual interaction.
+
+The adapter owns help layout, non-modal popover lifecycle and reactive host messages. Its help popover lives under the stage outside the ordinary DOM layer, so model close-up cannot hide it from assistive technology. It is returned to its owner on teardown. The 40px control is an ordinary themed Panel with lift-only pointer response and `focusReactive=false`; it adds no permanent rendering loop. The help's timer, input/viewport observers and shared-scroll subscription are released on route teardown.
 
 ## Teardown
 

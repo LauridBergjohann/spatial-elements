@@ -1,4 +1,5 @@
 export { default as BrandStageShell } from './BrandStageShell.svelte';
+export { defaultSpatialMessages, resolveSpatialMessages, type SpatialMessages, type SpatialMessagesInput } from '@spatial-elements/core/spatial-element/messages';
 export { default as SpatialElementPage } from './SpatialElementPage.svelte';
 export { default as SpatialListPage } from './SpatialListPage.svelte';
 export { default as Section } from './Section.svelte';

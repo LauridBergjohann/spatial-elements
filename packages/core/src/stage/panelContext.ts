@@ -56,7 +56,8 @@ export interface StagePanelRegistration {
 	getElement(): HTMLElement | undefined;
 	getFrameElement(): HTMLElement | undefined;
 	getSurfaceElement(): HTMLElement | undefined;
-	getPointerReactive(): boolean;
+	getPointerReactive(): boolean | 'lift';
+	getFocusReactive?(): boolean;
 	getMinimapOptions(): StagePanelMinimapOptions | undefined;
 	getOptions(): LiquidGlassPanelOptions;
 	getSurface(): StagePanelSurface;
