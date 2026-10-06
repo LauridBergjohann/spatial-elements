@@ -20,6 +20,7 @@ import {
 	getPanelFocusOffset,
 	getPanelFocusPerspectiveOffset,
 	getPanelFocusOpacity,
+	getPanelFocusProgress,
 	getPanelPointerInfluence,
 	getPanelPointerRotation,
 	getPerspectiveAnchoredPanelPosition,
@@ -31,6 +32,7 @@ import type { StagePanelTarget } from './stageTypes.js';
 const PANEL_NATIVE_REST_FRAMES = 2;
 const PANEL_NATIVE_ROTATION_EPSILON = 0.000001;
 const PANEL_NATIVE_DEPTH_EPSILON = 0.0001;
+
 function getFlatCss3DTransform(matrix: THREE.Matrix4) {
 	const elements = matrix.elements;
 	const epsilon = (value: number) => (Math.abs(value) < 1e-10 ? 0 : value);
@@ -312,6 +314,33 @@ export class PanelPresentationController {
 		);
 		root.matrixWorldNeedsUpdate = true;
 	}
+	private getCornerControlOffset(panel: StagePanelRuntime, width: number, height: number, uiFocus: number) {
+		const inset = MINIMAP_FOCUSED_VIEWPORT_INSET;
+		// The render camera spans innerWidth, but classic scrollbars consume part
+		// of it. Express the usable viewport edge in that same camera coordinate system.
+		const usableWidth = typeof document === 'undefined' ? width : document.documentElement.clientWidth;
+		const endX = usableWidth - width / 2 - inset - panel.options.width / 2;
+		const endY = height / 2 - inset - panel.options.height / 2;
+		const startX = THREE.MathUtils.clamp(panel.options.position.x, -width / 2 + inset + panel.options.width / 2, endX);
+		const startY = THREE.MathUtils.clamp(panel.options.position.y, -endY, endY);
+		const progress = getPanelFocusProgress(uiFocus);
+		return {
+			x: THREE.MathUtils.lerp(startX, endX, progress) - panel.options.position.x,
+			y: THREE.MathUtils.lerp(startY, endY, progress) - panel.options.position.y,
+			z: 0
+		};
+	}
+	private getAnchoredCornerControl(panel: StagePanelRuntime, index: number) {
+		const frame = this.panelTargets[index]?.frame;
+		if (!frame) return undefined;
+		return this.panelRuntimes.find((control, controlIndex) =>
+			control.focusReactive === 'top-right' &&
+			this.panelTargets[controlIndex]?.getFocusAnchor?.() === frame &&
+			// Stacked/mobile summaries below the model keep their normal exit path.
+			panel.options.position.x - panel.options.width / 2 >= control.options.position.x + control.options.width / 2 - 1 &&
+			Math.abs(control.options.position.y - (panel.options.position.y + panel.options.height / 2)) <= control.options.height
+		);
+	}
 	getPanelPointerLayout(
 		panel: StagePanelRuntime,
 		index: number,
@@ -331,6 +360,12 @@ export class PanelPresentationController {
 				: 1;
 		const visualWidth = baseWidth * expansion;
 		const visualHeight = baseHeight * expansion;
+		if (panel.focusReactive === 'top-right') {
+			const focusOffset = this.getCornerControlOffset(panel, viewportWidth, viewportHeight, uiFocus);
+			return { baseX, baseY, centerX: viewportWidth / 2 + baseX + focusOffset.x,
+				centerY: viewportHeight / 2 - baseY - focusOffset.y, focusOffset,
+				minimap, minimapFocus, visualWidth, visualHeight, viewportVisible: this.isPanelTargetVisible(index) };
+		}
 		const rawFocusOffset = getPanelFocusOffset(
 			panel.options,
 			uiFocus,
@@ -338,6 +373,21 @@ export class PanelPresentationController {
 			viewportHeight
 		);
 		const focusDepth = minimap ? rawFocusOffset.z * 0.12 : rawFocusOffset.z;
+		const cornerControl = !minimap && panel.focusReactive !== false ? this.getAnchoredCornerControl(panel, index) : undefined;
+		if (cornerControl) {
+			const controlOffset = this.getCornerControlOffset(cornerControl, viewportWidth, viewportHeight, uiFocus);
+			const scale = this.panelCamera.position.z / Math.max(this.panelCamera.position.z - focusDepth, 1);
+			// Move the projected top-left corner WITH the control, preserving its gap.
+			// Counter perspective growth so the panel never expands over the button.
+			const focusOffset = {
+				x: controlOffset.x + baseWidth * (scale - 1) / 2,
+				y: controlOffset.y - baseHeight * (scale - 1) / 2,
+				z: focusDepth
+			};
+			return { baseX, baseY, centerX: viewportWidth / 2 + baseX + focusOffset.x,
+				centerY: viewportHeight / 2 - baseY - focusOffset.y, focusOffset,
+				minimap, minimapFocus, visualWidth, visualHeight, viewportVisible: this.isPanelTargetVisible(index) };
+		}
 		const minimapProjectionScale = minimap
 			? this.panelCamera.position.z / Math.max(this.panelCamera.position.z - focusDepth, 1)
 			: 1;
@@ -393,15 +443,16 @@ export class PanelPresentationController {
 		const viewportWidth = window.innerWidth;
 		const viewportHeight = window.innerHeight;
 		const uiFocus = this.panelUiFocus;
-		const focusOpacity = getPanelFocusOpacity(uiFocus);
 		const layouts = this.panelRuntimes.map((panel, index) =>
-			this.getPanelPointerLayout(panel, index, viewportWidth, viewportHeight, uiFocus)
+			this.getPanelPointerLayout(panel, index, viewportWidth, viewportHeight, panel.focusReactive === false ? 0 : uiFocus)
 		);
 		let animationActive = false;
 		this.visiblePanelCount = 0;
 		this.visibleMinimapCount = 0;
 
 		this.panelRuntimes.forEach((panel, index) => {
+			const panelFocus = panel.focusReactive === false || panel.focusReactive === 'top-right' ? 0 : uiFocus;
+			const focusOpacity = getPanelFocusOpacity(panelFocus);
 			const {
 				baseX,
 				baseY,
@@ -471,7 +522,7 @@ export class PanelPresentationController {
 
 			const halfWidth = visualWidth * 0.5;
 			const halfHeight = visualHeight * 0.5;
-			const focusBlur = getPanelFocusBlur(uiFocus, panel.options);
+			const focusBlur = getPanelFocusBlur(panelFocus, panel.options);
 			let targetX = 0;
 			let targetY = 0;
 			let targetPointerLift = 0;
@@ -495,9 +546,15 @@ export class PanelPresentationController {
 					visualHeight
 				);
 
-				targetX = rotation.x;
-				targetY = rotation.y;
-				targetPointerLift = PANEL_POINTER_MAX_LIFT * influence;
+				if (panel.pointerReactive === 'lift') {
+					// Compact controls use the same surface with a small, non-tilting hover response.
+					targetPointerLift = Math.abs(pointerX) <= halfWidth && Math.abs(pointerY) <= halfHeight &&
+						!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 2 : 0;
+				} else {
+					targetX = rotation.x;
+					targetY = rotation.y;
+					targetPointerLift = PANEL_POINTER_MAX_LIFT * influence;
+				}
 			}
 			panel.pointerLift = dampAndSnap(
 				panel.pointerLift,
@@ -553,8 +610,8 @@ export class PanelPresentationController {
 					targetX,
 					targetY,
 					baseX + focusOffset.x,
-					baseY + focusOffset.y,
-					focusOffset.z + panel.pointerLift,
+					baseY + focusOffset.y + (panel.pointerReactive === 'lift' ? panel.pointerLift : 0),
+					focusOffset.z + (panel.pointerReactive === 'lift' ? 0 : panel.pointerLift),
 					delta,
 					panel.projectionRoot
 				) || animationActive;
@@ -618,8 +675,8 @@ export class PanelPresentationController {
 						targetX,
 						targetY,
 						baseX + focusOffset.x,
-						baseY + focusOffset.y,
-						PANEL_CONTENT_Z + focusOffset.z + panel.pointerLift,
+						baseY + focusOffset.y + (panel.pointerReactive === 'lift' ? panel.pointerLift : 0),
+						PANEL_CONTENT_Z + focusOffset.z + (panel.pointerReactive === 'lift' ? 0 : panel.pointerLift),
 						delta,
 						panel.contentProjectionRoot
 					) || animationActive;

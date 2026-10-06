@@ -4,11 +4,15 @@
 	import type { StageRenderSettings } from '@spatial-elements/core';
 	import { getCssPanelBoxShadow, resolvePanelShadowStrength } from '@spatial-elements/core/stage/panelShadow';
 	import { provideSpatialTheme } from './brandContext.js';
+	import { provideSpatialMessages } from './messagesContext.js';
+	import type { SpatialMessagesInput } from '@spatial-elements/core/spatial-element/messages';
 	import type { SpatialTheme } from '@spatial-elements/core/spatial-element/types';
 
 	interface Props {
 		/** Shared appearance and namespace. Use createSpatialTheme for defaults. */
 		theme: SpatialTheme;
+		/** Localized interface copy. Missing groups/strings fall back to English; updates are reactive. */
+		messages?: SpatialMessagesInput;
 		/** Optional GPU resolution budget; defaults to DPR 1 and 2,073,600 pixels. */
 		renderSettings?: StageRenderSettings;
 		/** Draco decoder directory, including trailing slash. Default: /assets/draco/gltf/; the host must serve the files. */
@@ -17,9 +21,10 @@
 		children?: Snippet;
 	}
 
-	let { theme, renderSettings, dracoDecoderPath, children }: Props = $props();
+	let { theme, messages, renderSettings, dracoDecoderPath, children }: Props = $props();
 
 	provideSpatialTheme(() => theme);
+	provideSpatialMessages(() => messages);
 
 	const brandStyle = $derived(
 		[

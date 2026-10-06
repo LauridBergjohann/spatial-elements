@@ -67,7 +67,7 @@ export interface StageVisualTestController {
 	> | null;
 	getCatalogStats(): ReturnType<StageExperience['assets']['getStats']> | null;
 	/** Applies a deterministic camera pose and waits until dependent render state settles. */
-	setView(view: StageVisualTestView): Promise<void>;
+	setView(view: StageVisualTestView, frames?: number): Promise<void>;
 	/** Applies an equivalent zoom through the SpaceMouse camera/target dolly path. */
 	setSpaceMouseZoom(zoom: number): Promise<void>;
 	/** Repeats SpaceMouse updates while frames render, leaving the synthetic gesture active. */
@@ -76,6 +76,8 @@ export interface StageVisualTestController {
 	stopSpaceMouse(): Promise<void>;
 	/** Returns the current rendered minimap bounds in viewport pixels. */
 	getMinimapRect(): StageVisualTestRect | null;
+	/** Returns the current projected surface bounds for a registered panel frame. */
+	getPanelRect(frame: HTMLElement): StageVisualTestRect | null;
 	/** Returns the projected main element bounds in viewport pixels. */
 	getModelRect(): StageVisualTestRect | null;
 	/** Returns the projected 3D element bounds in viewport pixels. */

@@ -5,6 +5,7 @@
 	import type { Snippet } from 'svelte';
 	import {
 		STAGE_CONTEXT_KEY,
+		STAGE_PANEL_LAYOUT_EVENT,
 		type StageContext,
 
 		type StagePanelMinimapOptions,
@@ -23,8 +24,18 @@
 		class?: string;
 		contentClass?: string;
 		minimap?: boolean | StagePanelMinimapOptions;
-		/** Enables proximity lift and pointer-driven tilt. Defaults to true. */
-		pointerReactive?: boolean;
+		/** true: proximity lift and tilt; 'lift': a 2px mouse-hover lift without tilt; false: still. */
+		pointerReactive?: boolean | 'lift';
+		/** false keeps the pose; 'top-right' reaches the corner as the surrounding UI clears. */
+		focusReactive?: boolean | 'top-right';
+		/** Optional neighbouring panel frame whose top-left corner moves with a 'top-right' control. */
+		focusAnchor?: HTMLElement;
+		/** Retain native DOM layout, including popover semantics, while rendering the glass surface. */
+		nativeContent?: boolean;
+		/** Position native content in the stage render frame, after projected anchors have moved. */
+		nativeLayout?: () => void;
+		/** Visibility of an optional native-content panel. */
+		visible?: boolean;
 		pose?: StagePanelPose;
 		shape: StagePanelShape;
 		surface?: StagePanelSurface;
@@ -39,6 +50,11 @@
 		contentClass = '',
 		minimap = false,
 		pointerReactive = true,
+		focusReactive = true,
+		focusAnchor,
+		nativeContent = false,
+		nativeLayout,
+		visible = true,
 		pose,
 		shape,
 		style: contentStyle = '',
@@ -66,6 +82,11 @@
 		getFrameElement: () => frameElement,
 		getSurfaceElement: () => surfaceElement,
 		getPointerReactive: () => pointerReactive,
+		getFocusReactive: () => focusReactive,
+		getFocusAnchor: () => focusAnchor,
+		getNativeContent: () => nativeContent,
+		updateNativeLayout: () => nativeLayout?.(),
+		getVisible: () => visible,
 		getMinimapOptions: () => getMinimapOptions(),
 		getMinimapDockProgress,
 		getMinimapModelScale,
@@ -76,6 +97,12 @@
 	});
 
 	onDestroy(unregister);
+	$effect(() => {
+		if (nativeContent) {
+			void visible;
+			window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
+		}
+	});
 
 	onMount(() => {
 		if (!getMinimapOptions()) return;
@@ -220,6 +247,7 @@
 <div
 	bind:this={frameElement}
 	data-stage-panel-fallback
+	data-stage-panel-native-content={nativeContent ? '' : undefined}
 	data-catalog-transition-group={transitionGroup}
 	data-stage-panel-minimap={minimap ? '' : undefined}
 	data-stage-minimap-docked-view-scale={getMinimapOptions()?.dockedView?.scale}

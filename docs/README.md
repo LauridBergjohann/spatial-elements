@@ -1,16 +1,14 @@
 # Documentation
 
-Start with [Getting started](getting-started.md), then the [API reference](api.md). Updating a consumer? Read [configuration migration](configuration-migration.md).
+## Using the packages
 
-1. [Authoring](authoring.md): compose content, element lists, carousels and detail pages.
-2. [Architecture](architecture/README.md): current arc42 overview with C4 context, container and component views.
-3. [Runtime scenarios](architecture/runtime.md): preparation, navigation, rendering and cleanup.
-4. [Asset contract](architecture/assets.md): representations, canonical frames and resource ownership.
-5. [Decisions](architecture/decisions.md): accepted foundations and repository boundaries.
-6. [Package boundaries](package-boundaries.md) and [development](development.md): APIs and linked/packed workflows.
-7. [Migration audit](migration-audit.md), [migration record](migration.md) and [release checklist](release.md).
-8. [Performance analysis](performance.md): measured bottlenecks, render budgets, profiling and remaining work.
+- [Getting started](getting-started.md): install the packages and build collection and detail pages.
+- [Authoring](authoring.md): compose content, element lists, carousels and detail pages.
+- [API reference](api.md): configure element data, themes, components and rendering.
+- [Interface texts and help](interface-texts.md): host-owned translations, English defaults and 3D guidance.
+- [Asset contract](architecture/assets.md): prepare model representations and shared coordinate frames.
+- [Configuration migration](configuration-migration.md) and [SpatialElement API migration](spatial-element-migration.md): update existing pre-release integrations.
 
-Update architecture alongside changes to ownership, navigation order, cache lifetime or public contracts. Keep brand-specific evidence in the private examples repository.
+## Developing the packages
 
-See the [SpatialElement API migration](spatial-element-migration.md) when updating an existing pre-release consumer.
+The [development guide](development.md) covers repository setup, the public demo, checks and cross-repository workflows. It also links to architecture, package boundaries, performance analysis, migration history and release documentation.

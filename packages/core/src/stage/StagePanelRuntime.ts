@@ -12,7 +12,8 @@ export interface StagePanelRuntime {
 	nativeRestFrames: number;
 	options: Required<LiquidGlassPanelOptions>;
 	pointerLift: number;
-	pointerReactive: boolean;
+	pointerReactive: boolean | 'lift';
+	focusReactive?: boolean | 'top-right';
 	projectionRoot?: THREE.Group;
 	surface: StagePanelSurface;
 	transitionGroup?: CatalogTransitionGroup;

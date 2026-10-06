@@ -507,9 +507,9 @@
 			await Promise.resolve();
 		};
 
-		const setView = async (view: StageVisualTestView) => {
+		const setView = async (view: StageVisualTestView, frames = 18) => {
 			experience?.setVisualTestView(view);
-			await settle(18);
+			await settle(frames);
 		};
 		const setSpaceMouseZoom = async (zoom: number) => {
 			experience?.setVisualTestSpaceMouseZoom(zoom);
@@ -554,6 +554,7 @@
 			driveSpaceMouseZoom,
 			stopSpaceMouse,
 			getMinimapRect: () => experience?.getVisualTestMinimapRect() ?? null,
+			getPanelRect: (frame) => experience?.getVisualTestPanelRect(frame) ?? null,
 			getModelRect: () => experience?.getVisualTestModelRect() ?? null,
 			getMinimapModelRect: () => experience?.getVisualTestMinimapModelRect() ?? null,
 			getMinimapOrientation: () => experience?.getVisualTestMinimapOrientation() ?? null,
@@ -617,11 +618,16 @@
 				getMinimapModelScale: panel.getMinimapModelScale,
 				getMinimapModelTop: panel.getMinimapModelTop,
 				getSurfaceOpacity: panel.getSurfaceOpacity,
+				getVisible: panel.getVisible,
+				getFocusAnchor: panel.getFocusAnchor,
+				updateNativeLayout: panel.updateNativeLayout,
+				nativeContent: panel.getNativeContent?.() ?? false,
 				minimap: panel.getMinimapOptions(),
 				options: panel.getOptions(),
 				surface: panel.getSurface(),
 				surfaceElement,
-				pointerReactive: panel.getPointerReactive()
+				pointerReactive: panel.getPointerReactive(),
+				focusReactive: panel.getFocusReactive?.() ?? true
 			});
 		});
 
@@ -784,10 +790,15 @@
 		pointer-events: none !important;
 	}
 
-	:global(.stage.stage-enhanced [data-stage-panel-fallback][data-stage-panel-bound]) {
+	:global(.stage.stage-enhanced [data-stage-panel-fallback][data-stage-panel-bound]:not([data-stage-panel-native-content])) {
 		visibility: hidden !important;
 		opacity: 0 !important;
 		pointer-events: none !important;
+	}
+
+	:global(.stage.stage-enhanced [data-stage-panel-native-content][data-stage-panel-bound][data-stage-panel-surface='glass'] > .stage-panel-surface::before),
+	:global(.stage.stage-enhanced [data-stage-panel-native-content][data-stage-panel-bound][data-stage-panel-surface='glass'] > .stage-panel-surface::after) {
+		display: none;
 	}
 
 	/* A failed binding may leave pixels in either canvas; the poster owns fallback paint. */

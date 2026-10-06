@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	STAGE_SCROLL_PRIORITY,
+	hasPendingStageScrollFrame,
 	markStageScrollInput,
 	subscribeStageScrollFrame,
 	syncStageScrollToNative,
@@ -23,9 +24,34 @@ interface ScrollFrameHarness {
 
 afterEach(() => {
 	vi.unstubAllGlobals();
+	vi.restoreAllMocks();
 });
 
 describe('stage scroll frames', () => {
+	it('lets an animation defer to a pending ordered scroll update and clears it before consumers run', () => {
+		const harness = createHarness(0, 0);
+		const pendingDuringCallbacks: boolean[] = [];
+		const stop = subscribeStageScrollFrame(() => {
+			pendingDuringCallbacks.push(hasPendingStageScrollFrame());
+		});
+		expect(hasPendingStageScrollFrame()).toBe(false);
+		harness.windowStub.scrollY = 80;
+		harness.listeners.get('scroll')?.();
+		expect(hasPendingStageScrollFrame()).toBe(true);
+		harness.runFrame(16);
+		expect(pendingDuringCallbacks).toEqual([false]);
+		expect(hasPendingStageScrollFrame()).toBe(false);
+
+		markStageScrollInput('wheel');
+		harness.windowStub.scrollY = 180;
+		harness.listeners.get('scroll')?.();
+		harness.runFrame(32);
+		expect(pendingDuringCallbacks).toEqual([false, false]);
+		expect(hasPendingStageScrollFrame()).toBe(true);
+		stop();
+		expect(hasPendingStageScrollFrame()).toBe(false);
+	});
+
 	it('rebases a pending damped frame immediately in consumer order without a velocity impulse', () => {
 		const harness = createHarness(0, 0);
 		const calls: string[] = [];
@@ -179,6 +205,55 @@ describe('stage scroll frames', () => {
 		reducedHarness.runFrame(16);
 		expect(reducedFrame).toMatchObject({ scrollY: 120, settled: true });
 		stopReduced();
+	});
+
+	it.each(['touchstart', 'pointerdown'])(
+		'ends pending wheel damping on %s without waiting for another native scroll',
+		(eventType) => {
+			const harness = createHarness(0, 0);
+			const frames: StageScrollFrame[] = [];
+			const stop = subscribeStageScrollFrame((frame) => frames.push(frame));
+			markStageScrollInput('wheel');
+			harness.windowStub.scrollY = 120;
+			harness.listeners.get('scroll')?.();
+			harness.runFrame(16);
+			expect(frames[0].settled).toBe(false);
+
+			harness.listeners.get(eventType)?.({ pointerType: 'touch' });
+			harness.runFrame(32);
+			expect(frames[1]).toMatchObject({ scrollY: 120, inputSource: 'touch', settled: true });
+			expect(harness.requestedFrames).toHaveLength(0);
+			expect(harness.windowStub.addEventListener).toHaveBeenCalledWith(
+				eventType,
+				expect.any(Function),
+				{ capture: true, passive: true }
+			);
+			stop();
+			expect(harness.windowStub.removeEventListener).toHaveBeenCalledWith(
+				eventType,
+				expect.any(Function),
+				{ capture: true }
+			);
+		}
+	);
+
+	it('follows a long touch gesture and its native momentum without extra smoothing', () => {
+		const clock = vi.spyOn(performance, 'now').mockReturnValue(1000);
+		const harness = createHarness(0, 0);
+		const frames: StageScrollFrame[] = [];
+		const stop = subscribeStageScrollFrame((frame) => frames.push(frame));
+		harness.listeners.get('touchstart')?.();
+
+		for (const [time, scrollY] of [[1016, 20], [1300, 260], [1600, 420], [1900, 445]]) {
+			clock.mockReturnValue(time);
+			harness.windowStub.scrollY = scrollY;
+			harness.listeners.get('scroll')?.();
+			harness.runFrame(time);
+			expect(frames.at(-1)).toMatchObject({ scrollY, targetScrollY: scrollY, settled: true });
+			expect(harness.requestedFrames).toHaveLength(0);
+		}
+		stop();
+		clock.mockRestore();
 	});
 });
 

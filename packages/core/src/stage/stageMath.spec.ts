@@ -265,12 +265,12 @@ describe('stage math', () => {
 	});
 
 	it('builds a bounded and continuous approach field from the short panel side', () => {
-		expect(getPanelPointerProximity(120, 120)).toBe(90);
-		expect(getPanelPointerProximity(1200, 66)).toBeCloseTo(81.675);
-		expect(getPanelPointerProximity(480, 52)).toBe(72);
-		expect(getPanelPointerProximity(600, 600)).toBe(180);
-		expect(getPanelPointerInfluence(90, 120, 120)).toBe(0);
-		expect(getPanelPointerInfluence(45, 120, 120)).toBeCloseTo(0.5);
+		expect(getPanelPointerProximity(120, 120)).toBe(18);
+		expect(getPanelPointerProximity(1200, 66)).toBeCloseTo(16.335);
+		expect(getPanelPointerProximity(480, 52)).toBeCloseTo(12.87);
+		expect(getPanelPointerProximity(600, 600)).toBe(32);
+		expect(getPanelPointerInfluence(18, 120, 120)).toBe(0);
+		expect(getPanelPointerInfluence(9, 120, 120)).toBeCloseTo(0.5);
 		expect(getPanelPointerInfluence(0, 120, 120)).toBe(1);
 	});
 
@@ -292,7 +292,7 @@ describe('stage math', () => {
 		expect(getStageDomFocusOpacity(1)).toBe(0);
 	});
 
-	it('clears interface content before expanding the minimap', () => {
+	it('starts minimap expansion later and ends it with panel clearance', () => {
 		expect(getStageUiFocus(0)).toBe(0);
 		expect(getMinimapFocus(0)).toBe(0);
 		expect(getStageUiFocus(0.2)).toBeGreaterThan(0);
@@ -304,6 +304,15 @@ describe('stage math', () => {
 		expect(getMinimapFocus(0.78)).toBe(1);
 		expect(getStageUiFocus(1)).toBe(1);
 		expect(getMinimapFocus(1)).toBe(1);
+		for (let step = 0; step <= 1000; step++) {
+			const focus = step / 1000;
+			const uiFocus = getStageUiFocus(focus);
+			if (getPanelFocusOpacity(uiFocus) === 0) {
+				expect(getMinimapFocus(focus)).toBe(1);
+				expect(getSequencedMinimapFocus(focus, uiFocus)).toBe(1);
+				expect(getPanelFocusOffset(panelOptions, uiFocus, 1440, 900)).toEqual(getPanelFocusOffset(panelOptions, 1, 1440, 900));
+			}
+		}
 	});
 
 	it('gates minimap expansion behind animated UI clearance', () => {

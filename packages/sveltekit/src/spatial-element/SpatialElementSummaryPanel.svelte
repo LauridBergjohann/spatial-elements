@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { catalogActionSemantic } from '@spatial-elements/core/catalog/catalogAction';
+	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import { ShoppingCart } from 'lucide-svelte';
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
@@ -29,7 +30,7 @@
 		data-shared-role="summary-surface"
 		data-spatial-element-id={spatialElement.id}
 	>
-		<div class="summary-presentation">
+		<div class="summary-presentation" use:mouseHover>
 			<div class="panel-copy">
 				<p
 					class="panel-kicker"
@@ -264,7 +265,7 @@
 		will-change: transform;
 	}
 
-	.feature-list li:hover .feature-content {
+	.summary-presentation:global([data-mouse-hover]) .feature-list li:hover .feature-content {
 		--summary-feature-hover-progress: 1;
 	}
 
@@ -287,7 +288,8 @@
 		transform-style: preserve-3d;
 	}
 
-	.spatial-element-action:is(:hover, :focus-visible) .spatial-element-action-surface {
+	.summary-presentation:global([data-mouse-hover]) .spatial-element-action:hover .spatial-element-action-surface,
+	.spatial-element-action:focus-visible .spatial-element-action-surface {
 		--summary-action-hover-progress: 1;
 	}
 
@@ -408,9 +410,10 @@
 		}
 
 		.feature-content,
-		.feature-list li:hover .feature-content,
+		.summary-presentation:global([data-mouse-hover]) .feature-list li:hover .feature-content,
 		.spatial-element-action-surface,
-		.spatial-element-action:is(:hover, :focus-visible) .spatial-element-action-surface {
+		.summary-presentation:global([data-mouse-hover]) .spatial-element-action:hover .spatial-element-action-surface,
+		.spatial-element-action:focus-visible .spatial-element-action-surface {
 			--summary-feature-hover-progress: 0;
 			--summary-action-hover-progress: 0;
 			transition: none;

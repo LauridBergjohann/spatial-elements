@@ -115,8 +115,18 @@ export interface StagePanelTarget {
 	surfaceElement: HTMLElement;
 	/** Enables the panel's minimap rendering mode. */
 	minimap?: StageMinimapOptions;
-	/** Enables proximity lift and pointer-driven tilt. Defaults to true. */
-	pointerReactive?: boolean;
+	/** true: proximity lift and tilt; 'lift': mouse hover raises 2px without tilt; false: still. */
+	pointerReactive?: boolean | 'lift';
+	/** true fades/moves with close-up; false keeps its pose; 'top-right' travels to the corner. */
+	focusReactive?: boolean | 'top-right';
+	/** Optional neighbouring panel frame moved with the corner control during UI clearance. */
+	getFocusAnchor?: () => HTMLElement | undefined;
+	/** Keep accessible content in its DOM owner (for example, a native popover). */
+	nativeContent?: boolean;
+	/** Position native content after its anchors move, before measuring and drawing its surface. */
+	updateNativeLayout?: () => void;
+	/** Whether an optional panel is currently open. */
+	getVisible?: () => boolean;
 	/** Shared geometry, tint, blur, and shadow configuration. */
 	options: LiquidGlassPanelOptions;
 	/** Visual surface backend. All variants share the same CSS3D transform pipeline. */

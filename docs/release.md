@@ -26,8 +26,8 @@ changelog records the initial release.
 
 ## Beta and stable versions
 
-The repository is in Changesets prerelease mode (beta). The prepared release is `1.0.0-beta.3`;
-the major version reflects breaking authoring API changes. Further betas increment the prerelease counter.
+The repository is in Changesets prerelease mode (beta). The prepared release is `1.0.0-beta.4`;
+the major version reflects the earlier breaking authoring API changes. Further betas increment the prerelease counter.
 Changesets accumulates patch/minor/major intent for the eventual stable release. Humans classify the
 API impact; version numbers, dependency updates and changelogs are automated.
 
@@ -37,11 +37,11 @@ Explicit per-version exceptions in `release-channels.json` select latest for a r
 The version synchronization, metadata checks and publishing command all use this same policy.
 Do not hand-edit pre.json or package versions during normal releases.
 
-For `1.0.0-beta.3`, both packages publish directly with `--tag latest`. This intentionally makes the
+For `1.0.0-beta.4`, both packages publish directly with `--tag latest`. This intentionally makes the
 new beta the default installation. The existing beta tag is not moved by this release. Subsequent
 betas return to the beta tag unless another explicit version exception is reviewed.
 
-## Publish the prepared 1.0.0-beta.3 release
+## Publish the prepared 1.0.0-beta.4 release
 
 The versions, changelogs, exact dependencies and lockfile are already updated. Commit these changes
 with the implementation and merge the branch into main through the normal reviewed PR workflow.
@@ -49,16 +49,19 @@ with the implementation and merge the branch into main through the normal review
 version bump or release PR is needed for the already-consumed Changesets. Alternatively, use
 Actions > Release packages > Run workflow on main to retry the prepared release.
 
-Confirm that both npm package pages show version `1.0.0-beta.3` under `latest` after the workflow:
+Confirm that both npm package pages show version `1.0.0-beta.4` under `latest` after the workflow:
 
 ~~~sh
 npm view @spatial-elements/core dist-tags --json
 npm view @spatial-elements/sveltekit dist-tags --json
 ~~~
 
-This release includes rendering/transition performance improvements, Three.js ^0.186.1 and the
-simplified page-owned configuration API. Read [configuration migration](configuration-migration.md)
-before upgrading an existing application. It remains a prerelease even though it uses latest.
+This release improves touch scrolling, carousel momentum and model gestures, restricts hover effects
+to mouse input, and adds localized interaction help with synchronized glass surfaces and close-up
+controls. See [interface texts](interface-texts.md) for host-provided translations and English defaults.
+The user-facing README and separate development guides explain package use and contribution.
+Applications upgrading from older authoring APIs should also read [configuration migration](configuration-migration.md).
+It remains a prerelease even though it uses latest.
 
 ## One-time GitHub and npm configuration
 

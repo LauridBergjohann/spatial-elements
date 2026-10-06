@@ -1,5 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import * as THREE from 'three/webgpu';
+import { getInteractionGuidance } from './interactionGuidance.js';
 import {
 	SpatialElementInteractionController,
 	type SpatialElementInteractionPorts
@@ -42,6 +43,7 @@ vi.mock('three/addons/controls/OrbitControls.js', () => ({
 		dispose = vi.fn();
 		addEventListener() {}
 		removeEventListener() {}
+		saveState() {}
 	}
 }));
 
@@ -51,7 +53,7 @@ function fixture() {
 	let poseOwner: 'page' | 'transition' | 'none' = 'page';
 	const ports: SpatialElementInteractionPorts = {
 		camera,
-		canvas: { style: {} } as HTMLCanvasElement,
+		canvas: { style: {}, focus: vi.fn() } as unknown as HTMLCanvasElement,
 		container: {} as HTMLElement,
 		cssRoot: {} as HTMLElement,
 		requestRender: vi.fn(),
@@ -105,5 +107,107 @@ test('reset starts at the current non-default FOV and ends at the fitted FOV', (
 	owner.applyViewReset(10);
 	expect(camera.fov).toBe(50);
 	expect(owner.viewResetActive).toBe(false);
+	owner.dispose();
+});
+
+function pointer(pointerId: number, pointerType = 'touch', type = 'pointerdown') {
+	return { pointerId, pointerType, type, clientX: 50, clientY: 50, target: null } as PointerEvent;
+}
+
+test('touch claims geometry on the first contact and leaves the next background gesture native', () => {
+	const { owner, ports } = fixture();
+	const hit = vi.spyOn(owner, 'hitTestModel').mockReturnValue(true);
+	owner.handlePointerDown(pointer(1));
+	const preventDefault = vi.fn();
+	owner.handleTouchStart({ cancelable: true, preventDefault } as unknown as TouchEvent);
+	expect(preventDefault).toHaveBeenCalledOnce();
+	expect(owner.controls!.enabled).toBe(true);
+	expect(owner.modelHover).toBe(false);
+	expect(owner.pointer.active).toBe(false);
+	expect(ports.canvas.style.touchAction).toBe('manipulation');
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	expect(owner.controls!.enabled).toBe(false);
+	hit.mockReturnValue(false);
+	owner.handlePointerDown(pointer(2));
+	preventDefault.mockClear();
+	owner.handleTouchStart({ cancelable: true, preventDefault } as unknown as TouchEvent);
+	expect(preventDefault).not.toHaveBeenCalled();
+	expect(owner.modelInteractionActive).toBe(false);
+	expect(ports.canvas.style.touchAction).toBe('manipulation');
+	owner.dispose();
+});
+
+test('pinch keeps ownership until both fingers lift and immediately accepts the next rotation', () => {
+	const { owner } = fixture();
+	const hit = vi.spyOn(owner, 'hitTestModel').mockReturnValue(true);
+	owner.handlePointerDown(pointer(1));
+	hit.mockReturnValue(false);
+	owner.handlePointerDown(pointer(2));
+	expect(hit).toHaveBeenCalledOnce();
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	expect(owner.modelInteractionActive).toBe(true);
+	expect(owner.controls!.enabled).toBe(true);
+	owner.handlePointerUp(pointer(2, 'touch', 'pointerup'));
+	expect(owner.modelInteractionActive).toBe(false);
+	expect(owner.controls!.enabled).toBe(false);
+	hit.mockReturnValue(true);
+	owner.handlePointerDown(pointer(3));
+	expect(owner.modelInteractionActive).toBe(true);
+	expect(owner.controls!.enabled).toBe(true);
+	owner.dispose();
+});
+
+test('touch and pen clear mouse hover without raycasting on every move or release', () => {
+	const { owner, ports } = fixture();
+	const hit = vi.spyOn(owner, 'hitTestModel').mockReturnValue(true);
+	owner.handlePointerMove(pointer(1, 'mouse', 'pointermove'));
+	expect(owner.modelHover).toBe(true);
+	expect(owner.pointer.active).toBe(true);
+	for (const pointerType of ['touch', 'pen']) {
+		hit.mockClear();
+		owner.handlePointerContact(pointer(2, pointerType));
+		owner.handlePointerMove(pointer(2, pointerType, 'pointermove'));
+		owner.handlePointerUp(pointer(2, pointerType, 'pointerup'));
+		expect(owner.modelHover).toBe(false);
+		expect(owner.pointer.active).toBe(false);
+		expect(hit).not.toHaveBeenCalled();
+		expect(ports.canvas.style.touchAction).toBe('manipulation');
+	}
+	owner.dispose();
+});
+
+test('cancellation and focus loss do not leave an active gesture behind', () => {
+	const { owner } = fixture();
+	vi.spyOn(owner, 'hitTestModel').mockReturnValue(true);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointercancel'));
+	expect(owner.modelInteractionActive).toBe(false);
+	owner.handlePointerDown(pointer(2));
+	const previous = owner.controls!;
+	owner.handlePointerLeave();
+	expect(previous.dispose).toHaveBeenCalledOnce();
+	expect(owner.modelInteractionActive).toBe(false);
+	expect(owner.controls!.enabled).toBe(false);
+	owner.handlePointerDown(pointer(3));
+	expect(owner.modelInteractionActive).toBe(true);
+	owner.releasePage();
+	expect(owner.pointer.active).toBe(false);
+	expect(owner.modelInteractionActive).toBe(false);
+	owner.dispose();
+});
+
+test('only a real geometry drag consumes the introductory guidance, not hover or a click', () => {
+	vi.stubGlobal('window', {});
+	const { owner } = fixture();
+	vi.spyOn(owner, 'hitTestModel').mockReturnValue(true);
+	const guidance = getInteractionGuidance();
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	expect(guidance.snapshot.interacted).toBe(false);
+	owner.handlePointerDown(pointer(2));
+	owner.handlePointerMove({ ...pointer(2, 'touch', 'pointermove'), clientX: 52 } as PointerEvent);
+	expect(guidance.snapshot.interacted).toBe(false);
+	owner.handlePointerMove({ ...pointer(2, 'touch', 'pointermove'), clientX: 70 } as PointerEvent);
+	expect(guidance.snapshot.interacted).toBe(true);
 	owner.dispose();
 });

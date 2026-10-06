@@ -2,6 +2,8 @@
 
 SvelteKit components and navigation for Spatial Elements.
 
+Detail pages include a compact 3D help button. Pass optional `messages` to `BrandStageShell` to translate its labels, tooltips and instructions; missing strings use English defaults. See [interface texts and help](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/interface-texts.md) for the complete typed dictionary and examples.
+
 See the [authoring guide](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/authoring.md) and [development guide](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/development.md).
 
 Beta API; MPL-2.0; see LICENSE.

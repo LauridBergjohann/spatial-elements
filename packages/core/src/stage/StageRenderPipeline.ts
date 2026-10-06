@@ -896,7 +896,7 @@ export class StageRenderPipeline {
 			return withRendererState(this.ports.renderer, () => {
 				if (
 					!this.ports.frame().stageViewportVisible ||
-					!(this.ports.frame().modelHover || this.ports.frame().modelInteractionActive) ||
+					!this.ports.frame().modelHover ||
 					!this.outlineMaskTarget ||
 					!this.outlineQuad
 				)

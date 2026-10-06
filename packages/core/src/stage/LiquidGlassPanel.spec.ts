@@ -13,6 +13,25 @@ function getBackdropGeometry(panel: LiquidGlassPanel) {
 }
 
 describe('LiquidGlassPanel backdrop projection', () => {
+	it('restores the complete authored glass edge when a hidden popover opens', () => {
+		const texture = new THREE.Texture();
+		const theme = { radius: 22, bezel: 20, refraction: 20 };
+		const popup = new LiquidGlassPanel(texture, { ...theme, width: 1, height: 1 });
+		const reference = new LiquidGlassPanel(texture, { ...theme, width: 248, height: 224 });
+		for (const size of [[248, 224], [16, 16], [248, 224]]) {
+			popup.setVisualSize(...size as [number, number]);
+			if (size[0] === 16) continue;
+			popup.group.children.forEach((child, i) => {
+				const geometry = (child as THREE.Mesh).geometry;
+				const expected = (reference.group.children[i] as THREE.Mesh).geometry;
+				expect(geometry.getAttribute('position').array).toEqual(expected.getAttribute('position').array);
+			});
+			// The shader must regain the optical edge as well as its specular/depth mesh.
+			const projection = (popup as unknown as { backdropProjection: { bezel: { value: number } } }).backdropProjection;
+			expect(projection.bezel.value).toBe(20);
+		}
+		popup.dispose(); reference.dispose(); texture.dispose();
+	});
 	it('keeps backdrop buffers when rounded corner topology changes and restores the original mesh', () => {
 		const texture = new THREE.Texture();
 		const panel = new LiquidGlassPanel(texture, { width: 120, height: 120, radius: 12 });

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import {
 		STAGE_ANCHOR_SCROLL_DURATION_MS,
 		STAGE_ANCHOR_SCROLL_EASING
@@ -81,6 +82,7 @@
 </script>
 
 <nav
+	use:mouseHover
 	class="spatial-element-tab-list"
 	data-spatial-element-tab-list={variant}
 	aria-label="Elementbereiche"
@@ -218,7 +220,7 @@
 		visibility: hidden;
 	}
 
-	a:hover:not([aria-current='location']) {
+	.spatial-element-tab-list:global([data-mouse-hover]) a:hover:not([aria-current='location']) {
 		background: color-mix(in srgb, var(--spatial-element-body) 8%, transparent);
 	}
 

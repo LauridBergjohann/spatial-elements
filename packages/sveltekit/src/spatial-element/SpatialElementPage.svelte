@@ -16,6 +16,7 @@
 	import { useSpatialTheme } from './brandContext.js';
 	import SpatialElementMediaRail from './SpatialElementMediaRail.svelte';
 	import SpatialElementSummaryPanel from './SpatialElementSummaryPanel.svelte';
+	import SpatialElementHelp from './SpatialElementHelp.svelte';
 	import SpatialElementStickyHeader from './SpatialElementStickyHeader.svelte';
 	import SpatialElementTabs from './SpatialElementTabs.svelte';
 	import { SpatialElementDockController } from '@spatial-elements/core/spatial-element/SpatialElementDockController';
@@ -178,6 +179,7 @@
 			aria-hidden={spatialElement.fallbackImage ? undefined : 'true'}
 		/>
 
+		{#key spatialElement.id}<SpatialElementHelp />{/key}
 		<SpatialElementSummaryPanel {spatialElement} />
 	</section>
 
@@ -200,11 +202,12 @@
 	}
 
 	.spatial-element-hero {
+		--spatial-element-hero-column-gap: clamp(28px, 4vw, 70px);
 		position: relative;
 		box-sizing: border-box;
 		display: grid;
 		grid-template-columns: minmax(420px, 1fr) minmax(360px, 494px);
-		gap: clamp(28px, 4vw, 70px);
+		gap: var(--spatial-element-hero-column-gap);
 		align-items: start;
 		width: calc(100vw - var(--spatial-element-hero-edge-gap) - var(--spatial-element-hero-edge-gap));
 		min-height: clamp(610px, calc(100vh - 230px), 760px);
@@ -229,6 +232,11 @@
 
 	.spatial-element-section-list :global(.content-section:first-child) {
 		margin-top: 8px;
+	}
+
+	.spatial-element-hero :global(.spatial-element-visual) {
+		grid-column: 1;
+		grid-row: 1;
 	}
 
 	:global(.spatial-element-visual) {

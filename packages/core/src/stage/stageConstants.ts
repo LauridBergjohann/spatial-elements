@@ -35,10 +35,10 @@ export const PANEL_POINTER_MAX_TILT = THREE.MathUtils.degToRad(10);
 export const PANEL_POINTER_MAX_LIFT = 8;
 export const PANEL_POINTER_DAMPING = 12;
 /** Pointer approach distance derived from the short side with a capped aspect correction. */
-export const PANEL_POINTER_PROXIMITY_SCALE = 0.75;
+export const PANEL_POINTER_PROXIMITY_SCALE = 0.15;
 export const PANEL_POINTER_PROXIMITY_ASPECT_LIMIT = 1.65;
-export const PANEL_POINTER_PROXIMITY_MIN = 72;
-export const PANEL_POINTER_PROXIMITY_MAX = 180;
+export const PANEL_POINTER_PROXIMITY_MIN = 12;
+export const PANEL_POINTER_PROXIMITY_MAX = 32;
 export const PANEL_FOCUS_MAX_OFFSET = 190;
 export const PANEL_FOCUS_MAX_ADVANCE = 360;
 /** Caps restored shared-perspective egress on unusually short viewports. */

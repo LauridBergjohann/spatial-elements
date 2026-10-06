@@ -63,6 +63,7 @@ import { getStagePositionFromRect, isViewportRectVisible } from './stageDom.js';
 import {
 	STAGE_SCROLL_PRIORITY,
 	getStageVisualScrollPosition,
+	hasPendingStageScrollFrame,
 	subscribeStageScrollFrame,
 	type StageScrollFrame
 } from './scrollFrame.js';
@@ -281,6 +282,9 @@ export class StageExperience {
 	private readonly resize = () => this.resizeRenderer();
 	private readonly render = () => {
 		this.renderRequestId = 0;
+		// The shared callback will draw after updating DOM/dock positions. Avoid
+		// submitting an older camera/scroll frame immediately before that draw.
+		if (this.stopScrollFrames && hasPendingStageScrollFrame()) return;
 		this.renderFrame();
 	};
 
@@ -288,9 +292,15 @@ export class StageExperience {
 		if (!document.hidden) this.requestRender();
 	};
 	private readonly pointerMove = (event: PointerEvent) => this.handlePointerMove(event);
-	private readonly pointerLeave = () => this.handlePointerLeave();
+	private readonly pointerLeave = (event: Event) => {
+		if (event.type === 'blur' || (event as PointerEvent).pointerType === 'mouse') {
+			this.handlePointerLeave();
+		}
+	};
+	private readonly pointerContact = (event: PointerEvent) => this.interaction.handlePointerContact(event);
 	private readonly pointerDown = (event: PointerEvent) => this.handlePointerDown(event);
 	private readonly pointerUp = (event: PointerEvent) => this.handlePointerUp(event);
+	private readonly touchStart = (event: TouchEvent) => this.interaction.handleTouchStart(event);
 	private readonly wheel = (event: WheelEvent) => this.handleWheel(event);
 	private readonly scroll = (frame: StageScrollFrame) => this.handleScrollFrame(frame);
 	private readonly finishScroll = () => {
@@ -630,12 +640,14 @@ export class StageExperience {
 		window.addEventListener(STAGE_PANEL_LAYOUT_EVENT, this.requestPanelSync);
 		window.addEventListener(STAGE_PANEL_VISUAL_EVENT, this.requestPanelVisualSync);
 		window.addEventListener('pointermove', this.pointerMove);
+		window.addEventListener('pointerdown', this.pointerContact, { capture: true, passive: true });
 		window.addEventListener('pointerup', this.pointerUp);
 		window.addEventListener('pointercancel', this.pointerUp);
 		window.addEventListener('pointerleave', this.pointerLeave);
 		window.addEventListener('blur', this.pointerLeave);
 		document.addEventListener('visibilitychange', this.visibilityChange);
 		this.backgroundCanvas.addEventListener('pointerdown', this.pointerDown, { capture: true });
+		this.backgroundCanvas.addEventListener('touchstart', this.touchStart, { passive: false });
 		this.backgroundCanvas.addEventListener('wheel', this.wheel, {
 			capture: true,
 			passive: false
@@ -657,6 +669,7 @@ export class StageExperience {
 		window.removeEventListener(STAGE_PANEL_LAYOUT_EVENT, this.requestPanelSync);
 		window.removeEventListener(STAGE_PANEL_VISUAL_EVENT, this.requestPanelVisualSync);
 		window.removeEventListener('pointermove', this.pointerMove);
+		window.removeEventListener('pointerdown', this.pointerContact, { capture: true });
 		window.removeEventListener('pointerup', this.pointerUp);
 		window.removeEventListener('pointercancel', this.pointerUp);
 		window.removeEventListener('pointerleave', this.pointerLeave);
@@ -666,6 +679,7 @@ export class StageExperience {
 			capture: true
 		});
 		this.backgroundCanvas.removeEventListener('wheel', this.wheel, { capture: true });
+		this.backgroundCanvas.removeEventListener('touchstart', this.touchStart);
 		if (this.renderRequestId) cancelAnimationFrame(this.renderRequestId);
 		this.renderRequestId = 0;
 		if (this.scrollEndTimer) window.clearTimeout(this.scrollEndTimer);
@@ -1628,6 +1642,26 @@ export class StageExperience {
 		this.setSpaceMouseMoving(false);
 	}
 
+	/** Projects a registered panel surface for frame-by-frame DOM/GPU alignment checks. */
+	getVisualTestPanelRect(frame: HTMLElement) {
+		const index = this.panelTargets.findIndex((target) => target.frame === frame);
+		const panel = this.panelRuntimes[index];
+		if (!panel || !panel.group.visible) return null;
+		panel.group.updateWorldMatrix(true, false);
+		this.panelCamera.updateMatrixWorld(true);
+		const { width, height } = panel.options;
+		const points = [
+			new THREE.Vector3(-width / 2, height / 2, 0),
+			new THREE.Vector3(width / 2, height / 2, 0),
+			new THREE.Vector3(width / 2, -height / 2, 0),
+			new THREE.Vector3(-width / 2, -height / 2, 0)
+		].map((corner) => panel.group.localToWorld(corner).project(this.panelCamera));
+		const xs = points.map((point) => (point.x + 1) * window.innerWidth / 2);
+		const ys = points.map((point) => (1 - point.y) * window.innerHeight / 2);
+		const x = Math.min(...xs), y = Math.min(...ys);
+		return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
+	}
+
 	/** Returns the live rendered minimap bounds rather than its hidden DOM fallback bounds. */
 	getVisualTestMinimapRect() {
 		const minimap = this.minimaps.values().next().value as StageMinimapState | undefined;
@@ -2200,11 +2234,15 @@ export class StageExperience {
 					options: panel.options,
 					pointerLift: 0,
 					pointerReactive: target.pointerReactive ?? true,
+					focusReactive: target.focusReactive ?? true,
 					projectionRoot,
 					surface: target.surface
 				});
 				this.panelScene.add(projectionRoot ?? panel.group);
-				this.attachPanelContent(target.content, index, target.contentInset);
+				if (target.nativeContent) {
+					// Draw floating glass above regular panels; its content stays in the top layer.
+					panel.group.renderOrder = 100;
+				} else this.attachPanelContent(target.content, index, target.contentInset);
 			} else {
 				const options = resolveLiquidGlassPanelOptions(measuredOptions);
 				const group = new THREE.Group();
@@ -2217,18 +2255,20 @@ export class StageExperience {
 					options,
 					pointerLift: 0,
 					pointerReactive: target.pointerReactive ?? true,
+					focusReactive: target.focusReactive ?? true,
 					projectionRoot,
 					surface: target.surface
 				});
 				if (projectionRoot) this.panelScene.add(projectionRoot);
-				this.attachPanelSurface(target.surfaceElement, index, Boolean(target.minimap));
+				if (!target.nativeContent) this.attachPanelSurface(target.surfaceElement, index, Boolean(target.minimap));
 			}
 			this.createMinimap(index, target.minimap);
 			const panel = this.panelRuntimes[index];
 			const group = target.frame.dataset.catalogTransitionGroup;
 			panel.transitionGroup = group === 'enter' || group === 'shared' ? group : undefined;
 			panel.glass?.setVisibilityAlpha(
-				this.getPanelTransitionOpacity(panel) * (target.getSurfaceOpacity?.() ?? 1)
+				this.getPanelTransitionOpacity(panel) * (target.getSurfaceOpacity?.() ?? 1) *
+					(target.getVisible?.() === false ? 0 : 1)
 			);
 			const minimap = this.minimaps.get(index);
 			if (minimap) {
@@ -2265,40 +2305,48 @@ export class StageExperience {
 		this.layoutDirty = false;
 		const measurePanels = force || this.panelMeasurementsDirty;
 
-		this.panelTargets.forEach((target, index) => {
-			const runtime = this.panelRuntimes[index];
-			if (!runtime) return;
+		this.panelTargets.forEach((target, index) => this.syncPanelLayout(target, index, measurePanels));
+		this.panelMeasurementsDirty = false;
+	}
 
-			const options = this.getMeasuredPanelOptions(target, measurePanels);
-			const geometryChanged = hasPanelGeometryChanged(runtime.options, options);
-			if (geometryChanged && runtime.glass && target.minimap) {
-				this.replacePanel(index, options);
-			} else {
-				if (geometryChanged) {
-					const radius = options.radius ?? runtime.options.radius;
-					runtime.glass?.setVisualSize(options.width, options.height, radius);
-					runtime.options.width = options.width;
-					runtime.options.height = options.height;
-					runtime.options.radius = radius;
-				}
+	private syncPanelLayout(target: StagePanelTarget, index: number, measurePanels: boolean) {
+		const runtime = this.panelRuntimes[index];
+		if (!runtime) return;
+		// Preserve the last popup mesh while closed instead of resizing it to a 1px box.
+		if (target.nativeContent && target.getVisible?.() === false) return;
+
+		const options = this.getMeasuredPanelOptions(target, measurePanels);
+		const geometryChanged = hasPanelGeometryChanged(runtime.options, options);
+		if (geometryChanged && runtime.glass && target.minimap) {
+			this.replacePanel(index, options);
+		} else {
+			if (geometryChanged) {
+				const radius = options.radius ?? runtime.options.radius;
+				runtime.glass?.setVisualSize(options.width, options.height, radius);
+				runtime.options.width = options.width;
+				runtime.options.height = options.height;
+				runtime.options.radius = radius;
 			}
+		}
 
-			const currentRuntime = this.panelRuntimes[index];
-			if (!currentRuntime) return;
-			currentRuntime.options.position.x = options.position!.x;
-			currentRuntime.options.position.y = options.position!.y;
-			if (currentRuntime.projectionRoot) {
-				currentRuntime.group.position.set(0, 0, 0);
-				this.setPanelProjectionTransform(
-					currentRuntime.projectionRoot,
-					options.position!.x,
-					options.position!.y,
-					0
-				);
-			} else {
-				currentRuntime.group.position.set(options.position!.x, options.position!.y, 0);
-			}
+		const currentRuntime = this.panelRuntimes[index];
+		if (!currentRuntime) return;
+		currentRuntime.options.position.x = options.position!.x;
+		currentRuntime.options.position.y = options.position!.y;
+		if (currentRuntime.projectionRoot) {
+			currentRuntime.group.position.set(0, 0, 0);
+			this.setPanelProjectionTransform(
+				currentRuntime.projectionRoot,
+				options.position!.x,
+				options.position!.y,
+				0
+			);
+		} else {
+			currentRuntime.group.position.set(options.position!.x, options.position!.y, 0);
+		}
 
+		// Intrinsic DOM sizing and native popover layout remain owned by the adapter.
+		if (!target.nativeContent) {
 			if (currentRuntime.surface === 'glass') {
 				this.updateContentElement(target.content, currentRuntime, target.contentInset);
 			} else {
@@ -2310,28 +2358,40 @@ export class StageExperience {
 					Boolean(target.minimap)
 				);
 			}
+		}
 
-			if (currentRuntime.content) {
-				if (currentRuntime.contentProjectionRoot) {
-					currentRuntime.content.position.set(0, 0, 0);
-					this.setPanelProjectionTransform(
-						currentRuntime.contentProjectionRoot,
-						currentRuntime.options.position.x,
-						currentRuntime.options.position.y,
-						PANEL_CONTENT_Z
-					);
-				} else {
-					currentRuntime.content.position.set(
-						currentRuntime.options.position.x,
-						currentRuntime.options.position.y,
-						PANEL_CONTENT_Z
-					);
-				}
+		if (currentRuntime.content) {
+			if (currentRuntime.contentProjectionRoot) {
+				currentRuntime.content.position.set(0, 0, 0);
+				this.setPanelProjectionTransform(
+					currentRuntime.contentProjectionRoot,
+					currentRuntime.options.position.x,
+					currentRuntime.options.position.y,
+					PANEL_CONTENT_Z
+				);
+			} else {
+				currentRuntime.content.position.set(
+					currentRuntime.options.position.x,
+					currentRuntime.options.position.y,
+					PANEL_CONTENT_Z
+				);
 			}
+		}
 
-			if (geometryChanged && target.minimap) this.createMinimap(index, target.minimap);
+		if (geometryChanged && target.minimap) this.createMinimap(index, target.minimap);
+	}
+
+	/** Commit anchor DOM positions and dependent native surfaces in one render transaction. */
+	private renderPanelContents() {
+		this.cssRenderer.render(this.panelContentScene, this.panelCamera);
+		this.renderFlatPanelSurfaces();
+		this.panelTargets.forEach((target, index) => {
+			if (!target.nativeContent || target.getVisible?.() === false) return;
+			target.updateNativeLayout?.();
+			this.syncPanelLayout(target, index, true);
+			const runtime = this.panelRuntimes[index];
+			if (runtime) runtime.group.visible = this.isPanelTargetVisible(index);
 		});
-		this.panelMeasurementsDirty = false;
 	}
 
 	private replacePanel(index: number, options: LiquidGlassPanelOptions) {
@@ -2386,6 +2446,7 @@ export class StageExperience {
 	private isPanelTargetVisible(index: number) {
 		const target = this.panelTargets[index];
 		if (!target) return true;
+		if (target.getVisible?.() === false) return false;
 		const cachedRect = this.pageBinding.getPanelRect(target.frame);
 		if (!cachedRect) return true;
 
@@ -2731,9 +2792,8 @@ export class StageExperience {
 			this.syncPanelLayouts();
 			const panelsAnimating = this.updatePanelPointerInteraction(delta);
 			const domAnimating = this.updatePanelDomRenderModes();
+			this.renderPanelContents();
 			this.pipeline.renderFrame(true, false);
-			this.cssRenderer.render(this.panelContentScene, this.panelCamera);
-			this.renderFlatPanelSurfaces();
 			this.animationActive = this.catalogLayerAnimating || panelsAnimating || domAnimating;
 			if (!force && (this.animationActive || this.renderInvalidated)) this.scheduleRender();
 			return;
@@ -2760,9 +2820,8 @@ export class StageExperience {
 		const panelsAnimating = this.updatePanelPointerInteraction(delta);
 		const panelDomModeAnimating = this.updatePanelDomRenderModes();
 
+		this.renderPanelContents();
 		this.pipeline.renderFrame(false, !this.scrollActive && !this.catalogHandoff);
-		this.cssRenderer.render(this.panelContentScene, this.panelCamera);
-		this.renderFlatPanelSurfaces();
 
 		this.animationActive =
 			this.presentation.readiness.animating ||

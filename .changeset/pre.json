@@ -6,9 +6,15 @@
     "@spatial-elements/sveltekit": "0.1.0-beta.1"
   },
   "changesets": [
+    "anchored-help-controls",
     "automatic-releases",
     "explicit-geometry-lighting",
+    "interaction-guidance",
     "page-owned-elements",
-    "three-r186"
+    "refine-interaction-help",
+    "synchronous-help-surfaces",
+    "three-r186",
+    "touch-interactions",
+    "unified-zoom-clearance"
   ]
 }

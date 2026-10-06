@@ -1,5 +1,19 @@
 # @spatial-elements/core
 
+## 1.0.0-beta.4
+
+### Minor Changes
+
+- 4b246c1: Add unobtrusive, session-aware 3D interaction guidance with a 40px themed icon button, anchored help, a touch hint and a finite introductory mouse orbit. Add host-supplied interface messages with per-string English fallbacks and document translation/accessibility behavior. Panels support a lift-only hover response and controls that remain available during model close-up.
+- c35e335: Refine interaction help with recurring hover prompts until actual model interaction, delayed hover dismissal, a synchronized close-up corner position and submenu-style button highlighting. Render native help popovers with the actual themed panel surface, including WebGPU glass, and reduce the panel pointer approach range.
+
+### Patch Changes
+
+- 004b6e0: Keep the detail help button beside the projected summary edge during zoom, with the same final viewport inset as the minimap. Restore the authored refractive glass edge when an initially hidden popup opens. Display compact, theme-accented mouse/touch diagrams beside localized action labels while preserving complete screen-reader instructions.
+- 8e1e137: Keep native help content and its glass surface aligned in every zoom frame. Move the help control closer to the summary and keep its corner inset clear of classic scrollbars.
+- 50f73da: Improve touch interaction across collection and detail pages. Carousel model areas coordinate horizontal rotation and vertical page scrolling in the same gesture, with direction changes and damped momentum on both axes. Scrolling outside model areas and two-finger page zoom remain native. Model rotation and pinch gestures release ownership correctly so the next gesture works immediately and background scrolling remains available. Restrict hover effects to mouse input, avoid touch hover raycasts, and coalesce animated rendering with shared scroll updates.
+- 432810f: Synchronize the summary panel and help control along a shared close-up path, completing control travel and minimap expansion when the panels finish fading. Add a host-localizable mouse navigation hint with a SpaceMouse link beneath the gesture diagrams.
+
 ## 1.0.0-beta.3
 
 ### Performance

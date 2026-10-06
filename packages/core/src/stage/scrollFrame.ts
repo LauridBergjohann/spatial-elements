@@ -87,6 +87,11 @@ export function getStageVisualScrollPosition() {
 		: { scrollX: window.scrollX, scrollY: window.scrollY };
 }
 
+/** Lets render owners defer to the ordered DOM/dock/scene update already queued. */
+export function hasPendingStageScrollFrame() {
+	return animationFrame !== 0;
+}
+
 /** Rebase every consumer after restoration, including when no native scroll event fires. */
 export function syncStageScrollToNative() {
 	if (animationFrame) cancelAnimationFrame(animationFrame);
@@ -141,8 +146,10 @@ function startListening() {
 	// the shared visual frame always receives the correct smoothing source.
 	window.addEventListener('wheel', handleWheelInput, { capture: true, passive: true });
 	window.addEventListener('keydown', handleKeyboardInput);
-	window.addEventListener('touchstart', handleTouchInput, { passive: true });
-	window.addEventListener('pointerdown', handlePointerInput, { passive: true });
+	// Touch may be claimed by a carousel or geometry before it bubbles. Observe
+	// contact without blocking the browser's native pan and momentum scrolling.
+	window.addEventListener('touchstart', handleTouchInput, { capture: true, passive: true });
+	window.addEventListener('pointerdown', handlePointerInput, { capture: true, passive: true });
 	listening = true;
 }
 
@@ -150,8 +157,8 @@ function stopListening() {
 	window.removeEventListener('scroll', handleNativeScroll);
 	window.removeEventListener('wheel', handleWheelInput, { capture: true });
 	window.removeEventListener('keydown', handleKeyboardInput);
-	window.removeEventListener('touchstart', handleTouchInput);
-	window.removeEventListener('pointerdown', handlePointerInput);
+	window.removeEventListener('touchstart', handleTouchInput, { capture: true });
+	window.removeEventListener('pointerdown', handlePointerInput, { capture: true });
 	if (animationFrame) cancelAnimationFrame(animationFrame);
 	animationFrame = 0;
 	lastFrameTime = 0;
@@ -184,10 +191,15 @@ function handleKeyboardInput(event: KeyboardEvent) {
 
 function handleTouchInput() {
 	markStageScrollInput('touch');
+	// A finger touching the screen stops native momentum immediately. Stop any
+	// pending synthetic wheel/keyboard damping as well, even when this contact
+	// does not produce a scroll event (for example, touching to stop the page).
+	activeInputSource = 'touch';
 }
 
 function handlePointerInput(event: PointerEvent) {
-	markStageScrollInput(event.pointerType === 'touch' ? 'touch' : 'direct');
+	if (event.pointerType === 'touch') handleTouchInput();
+	else markStageScrollInput('direct');
 }
 
 function scheduleScrollFrame() {
