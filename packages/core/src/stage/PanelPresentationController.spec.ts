@@ -8,8 +8,10 @@ import { getPanelFocusOpacity, getSequencedMinimapFocus, getStageUiFocus } from 
 
 afterEach(() => vi.unstubAllGlobals());
 
-test.each([[1916, 907], [1280, 800]])('summary and corner control reach their final pose together at panel clearance (%i x %i)', (width, height) => {
+test.each([[1916, 907, 0], [1280, 800, 0], [1916, 907, 17], [1280, 800, 15]])('summary and corner control reach their final pose together at panel clearance (%i x %i, scrollbar %i)', (width, height, scrollbar) => {
 	vi.stubGlobal('window', { innerWidth: width, innerHeight: height, location: { search: '' } });
+	const usableWidth = width - scrollbar;
+	vi.stubGlobal('document', { documentElement: { clientWidth: usableWidth } });
 	const camera = new THREE.PerspectiveCamera(); camera.position.z = height / (2 * Math.tan(Math.PI / 10));
 	let focus = 0;
 	const summaryWidth = Math.min(494, width * 0.3);
@@ -41,7 +43,7 @@ test.each([[1916, 907], [1280, 800]])('summary and corner control reach their fi
 		expect(controller.updatePanelPointerInteraction(1 / 60)).toBe(false);
 		const x = width / 2 + runtime.group.position.x - 20;
 		const y = height / 2 - runtime.group.position.y - 20;
-		expect(x).toBeGreaterThanOrEqual(10); expect(x + 40).toBeLessThanOrEqual(width - 10);
+		expect(x).toBeGreaterThanOrEqual(10); expect(x + 40).toBeLessThanOrEqual(usableWidth - 10);
 		expect(y).toBeGreaterThanOrEqual(10); expect(y + 40).toBeLessThanOrEqual(height - 10);
 		const layout = controller.getPanelPointerLayout(summary, 1, width, height, getStageUiFocus(focus));
 		const scale = camera.position.z / (camera.position.z - layout.focusOffset.z);
@@ -50,8 +52,8 @@ test.each([[1916, 907], [1280, 800]])('summary and corner control reach their fi
 		expect(left - (x + 40)).toBeCloseTo(44, 7);
 		expect(y - top).toBeCloseTo(6, 7);
 		if (getPanelFocusOpacity(getStageUiFocus(focus)) === 0) {
-			expect(x + 40).toBe(width - 10); expect(y).toBe(10);
-			expect(left).toBeCloseTo(width + 34, 7);
+			expect(x + 40).toBe(usableWidth - 10); expect(y).toBe(10);
+			expect(left).toBeCloseTo(usableWidth + 34, 7);
 		}
 		if (positions.has(step)) expect([x, y]).toEqual(positions.get(step));
 		positions.set(step, [x, y]);

@@ -123,6 +123,8 @@ export interface StagePanelTarget {
 	getFocusAnchor?: () => HTMLElement | undefined;
 	/** Keep accessible content in its DOM owner (for example, a native popover). */
 	nativeContent?: boolean;
+	/** Position native content after its anchors move, before measuring and drawing its surface. */
+	updateNativeLayout?: () => void;
 	/** Whether an optional panel is currently open. */
 	getVisible?: () => boolean;
 	/** Shared geometry, tint, blur, and shadow configuration. */

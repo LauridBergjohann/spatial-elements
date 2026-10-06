@@ -507,9 +507,9 @@
 			await Promise.resolve();
 		};
 
-		const setView = async (view: StageVisualTestView) => {
+		const setView = async (view: StageVisualTestView, frames = 18) => {
 			experience?.setVisualTestView(view);
-			await settle(18);
+			await settle(frames);
 		};
 		const setSpaceMouseZoom = async (zoom: number) => {
 			experience?.setVisualTestSpaceMouseZoom(zoom);
@@ -554,6 +554,7 @@
 			driveSpaceMouseZoom,
 			stopSpaceMouse,
 			getMinimapRect: () => experience?.getVisualTestMinimapRect() ?? null,
+			getPanelRect: (frame) => experience?.getVisualTestPanelRect(frame) ?? null,
 			getModelRect: () => experience?.getVisualTestModelRect() ?? null,
 			getMinimapModelRect: () => experience?.getVisualTestMinimapModelRect() ?? null,
 			getMinimapOrientation: () => experience?.getVisualTestMinimapOrientation() ?? null,
@@ -619,6 +620,7 @@
 				getSurfaceOpacity: panel.getSurfaceOpacity,
 				getVisible: panel.getVisible,
 				getFocusAnchor: panel.getFocusAnchor,
+				updateNativeLayout: panel.updateNativeLayout,
 				nativeContent: panel.getNativeContent?.() ?? false,
 				minimap: panel.getMinimapOptions(),
 				options: panel.getOptions(),

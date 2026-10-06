@@ -32,6 +32,8 @@
 		focusAnchor?: HTMLElement;
 		/** Retain native DOM layout, including popover semantics, while rendering the glass surface. */
 		nativeContent?: boolean;
+		/** Position native content in the stage render frame, after projected anchors have moved. */
+		nativeLayout?: () => void;
 		/** Visibility of an optional native-content panel. */
 		visible?: boolean;
 		pose?: StagePanelPose;
@@ -51,6 +53,7 @@
 		focusReactive = true,
 		focusAnchor,
 		nativeContent = false,
+		nativeLayout,
 		visible = true,
 		pose,
 		shape,
@@ -82,6 +85,7 @@
 		getFocusReactive: () => focusReactive,
 		getFocusAnchor: () => focusAnchor,
 		getNativeContent: () => nativeContent,
+		updateNativeLayout: () => nativeLayout?.(),
 		getVisible: () => visible,
 		getMinimapOptions: () => getMinimapOptions(),
 		getMinimapDockProgress,

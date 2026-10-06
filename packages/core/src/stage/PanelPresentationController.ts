@@ -316,9 +316,12 @@ export class PanelPresentationController {
 	}
 	private getCornerControlOffset(panel: StagePanelRuntime, width: number, height: number, uiFocus: number) {
 		const inset = MINIMAP_FOCUSED_VIEWPORT_INSET;
-		const endX = width / 2 - inset - panel.options.width / 2;
+		// The render camera spans innerWidth, but classic scrollbars consume part
+		// of it. Express the usable viewport edge in that same camera coordinate system.
+		const usableWidth = typeof document === 'undefined' ? width : document.documentElement.clientWidth;
+		const endX = usableWidth - width / 2 - inset - panel.options.width / 2;
 		const endY = height / 2 - inset - panel.options.height / 2;
-		const startX = THREE.MathUtils.clamp(panel.options.position.x, -endX, endX);
+		const startX = THREE.MathUtils.clamp(panel.options.position.x, -width / 2 + inset + panel.options.width / 2, endX);
 		const startY = THREE.MathUtils.clamp(panel.options.position.y, -endY, endY);
 		const progress = getPanelFocusProgress(uiFocus);
 		return {

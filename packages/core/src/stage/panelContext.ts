@@ -61,6 +61,8 @@ export interface StagePanelRegistration {
 	/** Neighbouring panel frame that shares a corner control's exit path. */
 	getFocusAnchor?(): HTMLElement | undefined;
 	getNativeContent?(): boolean;
+	/** Runs synchronously before the native panel surface is measured and drawn. */
+	updateNativeLayout?(): void;
 	getVisible?(): boolean;
 	getMinimapOptions(): StagePanelMinimapOptions | undefined;
 	getOptions(): LiquidGlassPanelOptions;

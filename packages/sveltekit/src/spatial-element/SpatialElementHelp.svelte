@@ -59,8 +59,8 @@
 		const viewport = window.visualViewport;
 		const leftEdge = (viewport?.offsetLeft ?? 0) + 16;
 		const topEdge = (viewport?.offsetTop ?? 0) + 16;
-		const width = viewport?.width ?? window.innerWidth;
-		const height = viewport?.height ?? window.innerHeight;
+		const width = Math.min(viewport?.width ?? window.innerWidth, document.documentElement.clientWidth);
+		const height = Math.min(viewport?.height ?? window.innerHeight, document.documentElement.clientHeight);
 		popover.style.maxWidth = `${Math.max(0, width - 32)}px`;
 		popover.style.maxHeight = `${Math.max(0, height - 32)}px`;
 		popover.style.setProperty('--help-max-height', `${Math.max(0, height - 32)}px`);
@@ -72,8 +72,10 @@
 		if (popover.style.left !== nextLeft || popover.style.top !== nextTop) {
 			popover.style.left = nextLeft;
 			popover.style.top = nextTop;
-			window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
 		}
+	}
+	function requestPosition() {
+		if (open) window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
 	}
 	async function show(keyboard = false) {
 		if (!enhanced || !visible) return;
@@ -81,7 +83,7 @@
 		popover.showPopover();
 		open = true;
 		await tick();
-		position();
+		requestPosition();
 		if (keyboard) closeButton.focus({ preventScroll: true });
 	}
 	function toggleHelp(event: MouseEvent) {
@@ -119,10 +121,10 @@
 			.sort((a, b) => b.getBoundingClientRect().bottom - a.getBoundingClientRect().bottom)[0];
 		const measureSpacing = () => {
 			if (header) {
-				const gap = Math.max(16, root.getBoundingClientRect().top - header.getBoundingClientRect().bottom);
+				const gap = Math.max(16, root.getBoundingClientRect().top - header.getBoundingClientRect().bottom - 12);
 				root.style.setProperty('--model-tools-gap', `${gap}px`);
 			}
-			position();
+			requestPosition();
 		};
 		measureSpacing();
 		const headerSize = new ResizeObserver(measureSpacing);
@@ -130,17 +132,16 @@
 		const stageChanged = () => {
 			enhanced = stage.dataset.stageState === 'enhanced' && !stage.hasAttribute('data-catalog-transition');
 			if (!enhanced) close();
-			else position();
 		};
 		stageChanged();
 		const mutation = new MutationObserver(stageChanged);
-		mutation.observe(stage, { attributes: true, attributeFilter: ['data-stage-state', 'data-catalog-transition', 'data-stage-focus'] });
+		mutation.observe(stage, { attributes: true, attributeFilter: ['data-stage-state', 'data-catalog-transition'] });
 		const observer = new IntersectionObserver(([entry]) => {
 			visible = entry.isIntersecting;
 			if (!visible) close();
 		});
 		observer.observe(root);
-		const size = new ResizeObserver(position);
+		const size = new ResizeObserver(requestPosition);
 		size.observe(popover);
 		const modelChanged = (event: Event) => {
 			modelInput = (event as CustomEvent<ModelInputState>).detail;
@@ -161,7 +162,7 @@
 			if (!open) return;
 			const rect = button.getBoundingClientRect();
 			if (rect.bottom < 0 || rect.top > innerHeight) close();
-			else position();
+			else requestPosition();
 		}, STAGE_SCROLL_PRIORITY.stage + 1);
 		stage.addEventListener(MODEL_INPUT_EVENT, modelChanged);
 		button.addEventListener('pointerenter', buttonEnter);
@@ -170,8 +171,8 @@
 		window.addEventListener('pointermove', inputChanged, { capture: true, passive: true });
 		window.addEventListener('keydown', keydown);
 		window.addEventListener('resize', measureSpacing, { passive: true });
-		window.visualViewport?.addEventListener('resize', position, { passive: true });
-		window.visualViewport?.addEventListener('scroll', position, { passive: true });
+		window.visualViewport?.addEventListener('resize', requestPosition, { passive: true });
+		window.visualViewport?.addEventListener('scroll', requestPosition, { passive: true });
 		return () => {
 			// A queued focusout microtask must not restart the hover timer after teardown.
 			enhanced = false; visible = false;
@@ -184,8 +185,8 @@
 			window.removeEventListener('pointermove', inputChanged, true);
 			window.removeEventListener('keydown', keydown);
 			window.removeEventListener('resize', measureSpacing);
-			window.visualViewport?.removeEventListener('resize', position);
-			window.visualViewport?.removeEventListener('scroll', position);
+			window.visualViewport?.removeEventListener('resize', requestPosition);
+			window.visualViewport?.removeEventListener('scroll', requestPosition);
 		};
 	});
 </script>
@@ -206,7 +207,7 @@
 		onpointerleave={() => { helpHovered = false; schedule(); }}
 		onfocusin={clearHideDelay} onfocusout={() => { queueMicrotask(schedule); }}
 		ontoggle={(event) => { open = event.newState === 'open'; if (!open) { manual = false; clearHideDelay(); } }}>
-		<Panel class="interaction-help-panel" nativeContent visible={open} pointerReactive={false} focusReactive={false}
+		<Panel class="interaction-help-panel" nativeContent nativeLayout={position} visible={open} pointerReactive={false} focusReactive={false}
 			shape={{ ...theme.panelShape, contentInset: 0 }} theme={theme.panelTheme}>
 			<div class="help-copy">
 				<div class="help-heading">
@@ -236,7 +237,7 @@
 <style>
 	.model-tools {
 		grid-column: 1; grid-row: 1; align-self: start; justify-self: end; position: relative;
-		margin-top: 6px; margin-inline-end: calc(var(--model-tools-gap, 44px) - var(--spatial-element-hero-column-gap));
+		margin-top: 6px; margin-inline-end: calc(var(--model-tools-gap, 32px) - var(--spatial-element-hero-column-gap));
 		width: 40px; height: 40px; z-index: 6; visibility: hidden; pointer-events: none;
 	}
 	.model-tools.enhanced { visibility: visible; pointer-events: auto; }

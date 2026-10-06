@@ -1642,6 +1642,26 @@ export class StageExperience {
 		this.setSpaceMouseMoving(false);
 	}
 
+	/** Projects a registered panel surface for frame-by-frame DOM/GPU alignment checks. */
+	getVisualTestPanelRect(frame: HTMLElement) {
+		const index = this.panelTargets.findIndex((target) => target.frame === frame);
+		const panel = this.panelRuntimes[index];
+		if (!panel || !panel.group.visible) return null;
+		panel.group.updateWorldMatrix(true, false);
+		this.panelCamera.updateMatrixWorld(true);
+		const { width, height } = panel.options;
+		const points = [
+			new THREE.Vector3(-width / 2, height / 2, 0),
+			new THREE.Vector3(width / 2, height / 2, 0),
+			new THREE.Vector3(width / 2, -height / 2, 0),
+			new THREE.Vector3(-width / 2, -height / 2, 0)
+		].map((corner) => panel.group.localToWorld(corner).project(this.panelCamera));
+		const xs = points.map((point) => (point.x + 1) * window.innerWidth / 2);
+		const ys = points.map((point) => (1 - point.y) * window.innerHeight / 2);
+		const x = Math.min(...xs), y = Math.min(...ys);
+		return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
+	}
+
 	/** Returns the live rendered minimap bounds rather than its hidden DOM fallback bounds. */
 	getVisualTestMinimapRect() {
 		const minimap = this.minimaps.values().next().value as StageMinimapState | undefined;
@@ -2285,78 +2305,93 @@ export class StageExperience {
 		this.layoutDirty = false;
 		const measurePanels = force || this.panelMeasurementsDirty;
 
-		this.panelTargets.forEach((target, index) => {
-			const runtime = this.panelRuntimes[index];
-			if (!runtime) return;
-			// Preserve the last popup mesh while closed instead of resizing it to a 1px box.
-			if (target.nativeContent && target.getVisible?.() === false) return;
+		this.panelTargets.forEach((target, index) => this.syncPanelLayout(target, index, measurePanels));
+		this.panelMeasurementsDirty = false;
+	}
 
-			const options = this.getMeasuredPanelOptions(target, measurePanels);
-			const geometryChanged = hasPanelGeometryChanged(runtime.options, options);
-			if (geometryChanged && runtime.glass && target.minimap) {
-				this.replacePanel(index, options);
-			} else {
-				if (geometryChanged) {
-					const radius = options.radius ?? runtime.options.radius;
-					runtime.glass?.setVisualSize(options.width, options.height, radius);
-					runtime.options.width = options.width;
-					runtime.options.height = options.height;
-					runtime.options.radius = radius;
-				}
+	private syncPanelLayout(target: StagePanelTarget, index: number, measurePanels: boolean) {
+		const runtime = this.panelRuntimes[index];
+		if (!runtime) return;
+		// Preserve the last popup mesh while closed instead of resizing it to a 1px box.
+		if (target.nativeContent && target.getVisible?.() === false) return;
+
+		const options = this.getMeasuredPanelOptions(target, measurePanels);
+		const geometryChanged = hasPanelGeometryChanged(runtime.options, options);
+		if (geometryChanged && runtime.glass && target.minimap) {
+			this.replacePanel(index, options);
+		} else {
+			if (geometryChanged) {
+				const radius = options.radius ?? runtime.options.radius;
+				runtime.glass?.setVisualSize(options.width, options.height, radius);
+				runtime.options.width = options.width;
+				runtime.options.height = options.height;
+				runtime.options.radius = radius;
 			}
+		}
 
-			const currentRuntime = this.panelRuntimes[index];
-			if (!currentRuntime) return;
-			currentRuntime.options.position.x = options.position!.x;
-			currentRuntime.options.position.y = options.position!.y;
-			if (currentRuntime.projectionRoot) {
-				currentRuntime.group.position.set(0, 0, 0);
+		const currentRuntime = this.panelRuntimes[index];
+		if (!currentRuntime) return;
+		currentRuntime.options.position.x = options.position!.x;
+		currentRuntime.options.position.y = options.position!.y;
+		if (currentRuntime.projectionRoot) {
+			currentRuntime.group.position.set(0, 0, 0);
+			this.setPanelProjectionTransform(
+				currentRuntime.projectionRoot,
+				options.position!.x,
+				options.position!.y,
+				0
+			);
+		} else {
+			currentRuntime.group.position.set(options.position!.x, options.position!.y, 0);
+		}
+
+		// Intrinsic DOM sizing and native popover layout remain owned by the adapter.
+		if (!target.nativeContent) {
+			if (currentRuntime.surface === 'glass') {
+				this.updateContentElement(target.content, currentRuntime, target.contentInset);
+			} else {
+				this.updateSurfaceElement(
+					target.surfaceElement,
+					currentRuntime,
+					currentRuntime.options.width,
+					currentRuntime.options.height,
+					Boolean(target.minimap)
+				);
+			}
+		}
+
+		if (currentRuntime.content) {
+			if (currentRuntime.contentProjectionRoot) {
+				currentRuntime.content.position.set(0, 0, 0);
 				this.setPanelProjectionTransform(
-					currentRuntime.projectionRoot,
-					options.position!.x,
-					options.position!.y,
-					0
+					currentRuntime.contentProjectionRoot,
+					currentRuntime.options.position.x,
+					currentRuntime.options.position.y,
+					PANEL_CONTENT_Z
 				);
 			} else {
-				currentRuntime.group.position.set(options.position!.x, options.position!.y, 0);
+				currentRuntime.content.position.set(
+					currentRuntime.options.position.x,
+					currentRuntime.options.position.y,
+					PANEL_CONTENT_Z
+				);
 			}
+		}
 
-			// Intrinsic DOM sizing and native popover layout remain owned by the adapter.
-			if (!target.nativeContent) {
-				if (currentRuntime.surface === 'glass') {
-					this.updateContentElement(target.content, currentRuntime, target.contentInset);
-				} else {
-					this.updateSurfaceElement(
-						target.surfaceElement,
-						currentRuntime,
-						currentRuntime.options.width,
-						currentRuntime.options.height,
-						Boolean(target.minimap)
-					);
-				}
-			}
+		if (geometryChanged && target.minimap) this.createMinimap(index, target.minimap);
+	}
 
-			if (currentRuntime.content) {
-				if (currentRuntime.contentProjectionRoot) {
-					currentRuntime.content.position.set(0, 0, 0);
-					this.setPanelProjectionTransform(
-						currentRuntime.contentProjectionRoot,
-						currentRuntime.options.position.x,
-						currentRuntime.options.position.y,
-						PANEL_CONTENT_Z
-					);
-				} else {
-					currentRuntime.content.position.set(
-						currentRuntime.options.position.x,
-						currentRuntime.options.position.y,
-						PANEL_CONTENT_Z
-					);
-				}
-			}
-
-			if (geometryChanged && target.minimap) this.createMinimap(index, target.minimap);
+	/** Commit anchor DOM positions and dependent native surfaces in one render transaction. */
+	private renderPanelContents() {
+		this.cssRenderer.render(this.panelContentScene, this.panelCamera);
+		this.renderFlatPanelSurfaces();
+		this.panelTargets.forEach((target, index) => {
+			if (!target.nativeContent || target.getVisible?.() === false) return;
+			target.updateNativeLayout?.();
+			this.syncPanelLayout(target, index, true);
+			const runtime = this.panelRuntimes[index];
+			if (runtime) runtime.group.visible = this.isPanelTargetVisible(index);
 		});
-		this.panelMeasurementsDirty = false;
 	}
 
 	private replacePanel(index: number, options: LiquidGlassPanelOptions) {
@@ -2757,9 +2792,8 @@ export class StageExperience {
 			this.syncPanelLayouts();
 			const panelsAnimating = this.updatePanelPointerInteraction(delta);
 			const domAnimating = this.updatePanelDomRenderModes();
+			this.renderPanelContents();
 			this.pipeline.renderFrame(true, false);
-			this.cssRenderer.render(this.panelContentScene, this.panelCamera);
-			this.renderFlatPanelSurfaces();
 			this.animationActive = this.catalogLayerAnimating || panelsAnimating || domAnimating;
 			if (!force && (this.animationActive || this.renderInvalidated)) this.scheduleRender();
 			return;
@@ -2786,9 +2820,8 @@ export class StageExperience {
 		const panelsAnimating = this.updatePanelPointerInteraction(delta);
 		const panelDomModeAnimating = this.updatePanelDomRenderModes();
 
+		this.renderPanelContents();
 		this.pipeline.renderFrame(false, !this.scrollActive && !this.catalogHandoff);
-		this.cssRenderer.render(this.panelContentScene, this.panelCamera);
-		this.renderFlatPanelSurfaces();
 
 		this.animationActive =
 			this.presentation.readiness.animating ||

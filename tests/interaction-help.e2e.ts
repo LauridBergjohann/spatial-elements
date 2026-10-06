@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
 
+// Exercise the same viewport gutter as desktop Chrome, including the help corner control.
+test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } });
+
 const help = (page: Page) => page.locator('[data-spatial-element-help]');
 const button = (page: Page) => page.getByRole('button', { name: '3D controls', exact: true });
 const orientation = (page: Page) => page.evaluate(() => window.__stageVisualTest!.getMinimapOrientation()!.live);
@@ -123,6 +126,51 @@ test('reduced motion disables the introductory orbit', async ({ page }) => {
 	await page.mouse.move(point.x, point.y);
 	await page.evaluate(() => window.__stageVisualTest!.settle(120));
 	expect(difference(before, await orientation(page))).toBeLessThan(0.00001);
+});
+
+test('help surfaces match their DOM in each zoom frame and stay clear of the scrollbar', async ({ page }, info) => {
+	await open(page);
+	// Force a real gutter even on platforms that normally use overlay scrollbars.
+	await page.addStyleTag({ content: 'html { overflow-y: scroll !important; } ::-webkit-scrollbar { width: 18px; height: 18px; }' });
+	await page.mouse.move(1, 899);
+	await button(page).click();
+	await expect(help(page)).toBeVisible();
+	await page.mouse.move(1, 899);
+	for (const width of [1440, 1280, 430]) {
+		await page.setViewportSize({ width, height: 900 });
+		await page.evaluate(() => window.__stageVisualTest!.settle(40));
+		const metrics = await page.evaluate(async () => {
+			const api = window.__stageVisualTest!;
+			const frame = document.querySelector<HTMLElement>('.spatial-icon-panel')!;
+			const control = document.querySelector<HTMLElement>('.spatial-icon-button')!;
+			const popup = document.querySelector<HTMLElement>('[data-spatial-element-help]')!;
+			const popupFrame = popup.querySelector<HTMLElement>('[data-stage-panel-native-content]')!;
+			let maxError = 0, minRightInset = Infinity, minTopInset = Infinity;
+			let finalInset = 0;
+			for (const step of [...Array.from({ length: 41 }, (_, i) => i), ...Array.from({ length: 41 }, (_, i) => 40 - i)]) {
+				// Inspect the first submitted frame at every pose, before anything can catch up.
+				await api.setView({ zoom: step / 40 }, 1);
+				for (const [element, surfaceFrame] of [[control, frame], [popup, popupFrame]]) {
+					const dom = element.getBoundingClientRect(), gpu = api.getPanelRect(surfaceFrame);
+					if (!gpu) throw new Error('Visible help surface is missing');
+					for (const key of ['x', 'y', 'width', 'height'] as const) maxError = Math.max(maxError, Math.abs(dom[key] - gpu[key]));
+				}
+				const rect = control.getBoundingClientRect();
+				const inset = document.documentElement.clientWidth - rect.right;
+				minRightInset = Math.min(minRightInset, inset);
+				minTopInset = Math.min(minTopInset, rect.top);
+				if (step === 40) finalInset = inset;
+			}
+			return { maxError, minRightInset, minTopInset, finalInset, gutter: innerWidth - document.documentElement.clientWidth };
+		});
+		expect(metrics.gutter).toBeGreaterThan(0);
+		expect(metrics.maxError).toBeLessThan(0.6);
+		expect(metrics.minRightInset).toBeGreaterThanOrEqual(9.5);
+		expect(metrics.minTopInset).toBeGreaterThanOrEqual(9.5);
+		expect(metrics.finalInset).toBeCloseTo(10, 0);
+		await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.5 }, 1));
+		await page.screenshot({ path: info.outputPath(`aligned-help-${width}.png`) });
+	}
 });
 
 test.describe('touch help', () => {
