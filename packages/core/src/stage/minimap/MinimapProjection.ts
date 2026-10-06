@@ -121,8 +121,8 @@ export function getMinimapViewportRect(
 	const maxY = Math.max(...projected.map((point) => point.y));
 	const centerX = (minX + maxX) * 0.5;
 	const centerY = (minY + maxY) * 0.5;
-	let rectWidth = maxX - minX;
-	let rectHeight = maxY - minY;
+	const rectWidth = maxX - minX;
+	const rectHeight = maxY - minY;
 	if (
 		!Number.isFinite(rectWidth) ||
 		!Number.isFinite(rectHeight) ||
@@ -132,22 +132,23 @@ export function getMinimapViewportRect(
 		return null;
 	}
 
-	const minSize = 8;
-	const minScale = Math.max(minSize / rectWidth, minSize / rectHeight, 1);
-	rectWidth *= minScale;
-	rectHeight *= minScale;
-	const fitScale = Math.min(width / rectWidth, height / rectHeight, 1);
-	rectWidth *= fitScale;
-	rectHeight *= fitScale;
-	const maxCenterX = Math.max((width - rectWidth) * 0.5, 0);
-	const maxCenterY = Math.max((height - rectHeight) * 0.5, 0);
-
+	// Preserve the true footprint, including edges outside the minimap. Fitting
+	// it into the panel would falsely crop the model on wide/tall viewports.
 	return {
-		x: THREE.MathUtils.clamp(centerX, -maxCenterX, maxCenterX),
-		y: THREE.MathUtils.clamp(centerY, -maxCenterY, maxCenterY),
+		x: centerX,
+		y: centerY,
 		width: rectWidth,
 		height: rectHeight
 	};
+}
+
+/** Intersects the projected view with the panel without scaling or shifting it. */
+export function clipMinimapViewportRect(rect: MinimapViewportRect, width: number, height: number) {
+	const left = THREE.MathUtils.clamp(width * 0.5 + rect.x - rect.width * 0.5, 0, width);
+	const right = THREE.MathUtils.clamp(width * 0.5 + rect.x + rect.width * 0.5, 0, width);
+	const top = THREE.MathUtils.clamp(height * 0.5 - rect.y - rect.height * 0.5, 0, height);
+	const bottom = THREE.MathUtils.clamp(height * 0.5 - rect.y + rect.height * 0.5, 0, height);
+	return { left, top, width: right - left, height: bottom - top };
 }
 
 /** Normalizes a CSS blur radius before it is passed to the WebGPU blur pipeline. */

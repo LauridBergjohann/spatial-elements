@@ -34,6 +34,18 @@ export interface SpatialElementInteractionPorts {
 /** Owns user navigation state; consumes the facade clock and never creates a RAF loop. */
 export class SpatialElementInteractionController {
 	private disposed = false;
+	private fullscreen = false;
+	setFullscreen(fullscreen: boolean) {
+		this.fullscreen = fullscreen;
+		this.clearWheelZoom();
+		this._viewResetActive = false;
+		this.preview.clear();
+		this._pointer.active = false;
+		this.setModelHover(false);
+		this.clearZoomReset();
+		this.updateControlsAvailability();
+		this.requestRender();
+	}
 	constructor(private readonly ports: SpatialElementInteractionPorts) {
 		this._initialCameraFov = this._viewResetStartFov = ports.camera.fov;
 	}
@@ -332,7 +344,7 @@ export class SpatialElementInteractionController {
 		this._pointer.active = true;
 		if (pointerChanged) this.requestRender();
 
-		if (!this._modelInteractionActive) {
+		if (!this._modelInteractionActive && !this.fullscreen) {
 			this.setModelHover(this.hitTestModel(event.clientX, event.clientY, event.target));
 			if (this.canInteract && this.stageViewportVisible && !this.guidance.snapshot.interacted &&
 				!this.reducedMotion?.matches && event.target === this.backgroundCanvas) {
@@ -437,7 +449,7 @@ export class SpatialElementInteractionController {
 		this.requestRender();
 	}
 	requestScrollZoomReset(scrollDelta: number) {
-		if (!this._controls) return;
+		if (!this._controls || this.fullscreen) return;
 		this.clearWheelZoom();
 		this._viewResetActive = false;
 
@@ -640,6 +652,9 @@ export class SpatialElementInteractionController {
 		this.requestRender();
 	}
 	hitTestModel(clientX: number, clientY: number, target: EventTarget | null) {
+		// Fullscreen owns the canvas, including its empty background. UI events
+		// never reach this gate as canvas input; no geometry or DOM picking is needed.
+		if (this.fullscreen) return this.canInteract && this.stageViewportVisible && target === this.backgroundCanvas;
 		if (
 			!this.canInteract ||
 			!this.stageViewportVisible ||
@@ -689,6 +704,7 @@ export class SpatialElementInteractionController {
 		return false;
 	}
 	setModelHover(hover: boolean) {
+		if (this.fullscreen) hover = false;
 		if (this._modelHover === hover) return;
 
 		this._modelHover = hover;
@@ -705,7 +721,7 @@ export class SpatialElementInteractionController {
 		const enabled =
 			this.canInteract &&
 			!this._spaceMouseMoving &&
-			(this._modelHover || this._modelInteractionActive);
+			(this.fullscreen || this._modelHover || this._modelInteractionActive);
 		if (this._controls) {
 			this._controls.enabled = enabled;
 		}
@@ -715,7 +731,7 @@ export class SpatialElementInteractionController {
 			: enabled
 				? 'grab'
 				: 'auto';
-		this.backgroundCanvas.style.touchAction = 'manipulation';
+		this.backgroundCanvas.style.touchAction = this.fullscreen ? 'none' : 'manipulation';
 	}
 	getZoomFocusFactor() {
 		if (!this._controls) return 0;
@@ -747,7 +763,7 @@ export class SpatialElementInteractionController {
 		const wheel = this.applyWheelZoom(delta);
 		this.applyZoomReset(delta);
 		this.applyViewReset(delta);
-		const preview = !this._modelInteractionActive && !this._spaceMouseMoving &&
+		const preview = !this.fullscreen && !this._modelInteractionActive && !this._spaceMouseMoving &&
 			this.preview.advance(this.camera, delta, this.reducedMotion?.matches);
 		return { controls: controls || preview, wheel };
 	}

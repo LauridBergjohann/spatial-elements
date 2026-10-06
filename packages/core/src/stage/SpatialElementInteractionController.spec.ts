@@ -78,6 +78,29 @@ function fixture() {
 	};
 }
 
+test('fullscreen background input bypasses picking, disables hover and retains SpaceMouse', () => {
+	const { owner, ports, camera } = fixture();
+	const occlusion = vi.spyOn(owner, 'isPointerOccludedByHtml');
+	const raycast = vi.spyOn(THREE.Raycaster.prototype, 'intersectObject');
+	owner.setModelHover(true);
+	owner.setFullscreen(true);
+	expect(owner.modelHover).toBe(false);
+	expect(owner.controls!.enabled).toBe(true);
+	expect(ports.canvas.style.touchAction).toBe('none');
+	expect(owner.hitTestModel(1, 1, ports.canvas)).toBe(true);
+	expect(owner.hitTestModel(1, 1, ports.cssRoot)).toBe(false);
+	expect(occlusion).not.toHaveBeenCalled();
+	expect(raycast).not.toHaveBeenCalled();
+	owner.setModelHover(true);
+	expect(owner.modelHover).toBe(false);
+	owner.applySpaceMouseNavigationUpdate({ viewMatrix: new THREE.Matrix4().makeTranslation(3, 0, 8).toArray() });
+	expect(camera.position.x).toBe(3);
+	owner.setFullscreen(false);
+	expect(ports.canvas.style.touchAction).toBe('manipulation');
+	expect(owner.controls!.enabled).toBe(false);
+	owner.dispose();
+});
+
 test('transition ownership prevents SpaceMouse and ordinary frame damping from writing the camera', () => {
 	const { owner, camera, ports, setOwner } = fixture();
 	setOwner('transition');

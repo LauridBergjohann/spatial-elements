@@ -87,4 +87,9 @@ export interface StageContext {
 	registerViewport(viewport: StageViewportRegistration): () => void;
 	/** Restores the element camera to its initial fitted pose. */
 	resetView(): void;
+	/** True for both native fullscreen and its viewport fallback. */
+	isFullscreen?(): boolean;
+	/** Current camera zoom focus, from the fitted detail view (0) to close-up (1). */
+	getZoomFocus?(): number;
+	setFullscreen?(fullscreen: boolean): void;
 }

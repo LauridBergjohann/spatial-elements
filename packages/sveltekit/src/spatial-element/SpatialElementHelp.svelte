@@ -1,17 +1,20 @@
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { getContext, onMount, tick } from 'svelte';
 	import { CircleHelp, X } from 'lucide-svelte';
 	import InteractionGesture from './InteractionGesture.svelte';
 	import { getCssPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
 	import { getInteractionGuidance, MODEL_INPUT_EVENT, type ModelInputState, type InteractionGuidance } from '@spatial-elements/core/stage/interactionGuidance';
 	import { STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
-	import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
+	import { STAGE_CONTEXT_KEY, STAGE_PANEL_LAYOUT_EVENT, type StageContext } from '@spatial-elements/core/stage/panelContext';
+	import SpatialElementViewToggle from './SpatialElementViewToggle.svelte';
 	import Panel from '../stage/Panel.svelte';
 	import SpatialIconButton from './SpatialIconButton.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 	import { useSpatialMessages } from './messagesContext.js';
 
 	const theme = useSpatialTheme();
+	const stageContext = getContext<StageContext>(STAGE_CONTEXT_KEY);
+	const fullscreen = $derived(stageContext.isFullscreen?.() ?? false);
 	const readMessages = useSpatialMessages();
 	const messages = $derived(readMessages());
 	const help = $derived(messages.interactionHelp);
@@ -78,7 +81,7 @@
 		if (open) window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
 	}
 	async function show(keyboard = false) {
-		if (!enhanced || !visible) return;
+		if (!enhanced || (!visible && !fullscreen)) return;
 		clearDelay(); clearHideDelay();
 		popover.showPopover();
 		open = true;
@@ -120,7 +123,7 @@
 			.filter((node) => { const rect = node.getBoundingClientRect(); return rect.width > innerWidth * 0.4 && rect.bottom <= top && rect.height > 0; })
 			.sort((a, b) => b.getBoundingClientRect().bottom - a.getBoundingClientRect().bottom)[0];
 		const measureSpacing = () => {
-			if (header) {
+			if (header && !fullscreen) {
 				const gap = Math.max(16, root.getBoundingClientRect().top - header.getBoundingClientRect().bottom - 12);
 				root.style.setProperty('--model-tools-gap', `${gap}px`);
 			}
@@ -196,8 +199,9 @@
 		<SpatialIconButton bind:element={button} {focusAnchor} label={messages.controls.help} onclick={toggleHelp} expanded={open} controls={id} enabled={enhanced}>
 			<CircleHelp size={21} strokeWidth={1.8} aria-hidden="true" />
 		</SpatialIconButton>
+		<SpatialElementViewToggle enabled={enhanced} {focusAnchor} onchange={() => close()} />
 	</div>
-	{#if enhanced && touchInput && !interacted && !open}
+	{#if enhanced && touchInput && !interacted && !open && !fullscreen}
 		<p class="touch-hint" data-spatial-element-touch-hint>{help.touchHint}</p>
 	{/if}
 	<div bind:this={popover} {id} popover="auto" role="dialog" tabindex="-1" aria-modal="false" aria-labelledby={`${id}-title`}
@@ -207,7 +211,7 @@
 		onpointerleave={() => { helpHovered = false; schedule(); }}
 		onfocusin={clearHideDelay} onfocusout={() => { queueMicrotask(schedule); }}
 		ontoggle={(event) => { open = event.newState === 'open'; if (!open) { manual = false; clearHideDelay(); } }}>
-		<Panel class="interaction-help-panel" nativeContent nativeLayout={position} visible={open} pointerReactive={false} focusReactive={false}
+		<Panel class="interaction-help-panel" data-stage-fullscreen-visible nativeContent nativeLayout={position} visible={open} pointerReactive={false} focusReactive={false}
 			shape={{ ...theme.panelShape, contentInset: 0 }} theme={theme.panelTheme}>
 			<div class="help-copy">
 				<div class="help-heading">
@@ -224,7 +228,7 @@
 				</dl>
 				<p class="navigation-hint">
 					{#if touchInput}
-						{help.touchScrollHint}
+						{#if !fullscreen}{help.touchScrollHint}{/if}
 					{:else}
 						{#each help.mouseNavigationHint.split('{spacemouse}') as part, index}{#if index > 0}<a href="https://3dconnexion.com/" target="_blank" rel="noopener noreferrer">SpaceMouse</a>{/if}{part}{/each}
 					{/if}
@@ -238,7 +242,7 @@
 	.model-tools {
 		grid-column: 1; grid-row: 1; align-self: start; justify-self: end; position: relative;
 		margin-top: 6px; margin-inline-end: calc(var(--model-tools-gap, 32px) - var(--spatial-element-hero-column-gap));
-		width: 40px; height: 40px; z-index: 6; visibility: hidden; pointer-events: none;
+		width: 128px; height: 40px; z-index: 6; visibility: hidden; pointer-events: none;
 	}
 	.model-tools.enhanced { visibility: visible; pointer-events: auto; }
 	.model-tools-buttons { display: flex; gap: 8px; justify-content: flex-end; }

@@ -74,6 +74,7 @@ export interface PanelPresentationPorts {
 		presentation: CatalogTransitionPresentation;
 		minimapFocus: number;
 		uiFocus: number;
+		fullscreen?: boolean;
 		pointer: Readonly<{ x: number; y: number; active: boolean }>;
 	};
 	visible(index: number): boolean;
@@ -314,13 +315,32 @@ export class PanelPresentationController {
 		);
 		root.matrixWorldNeedsUpdate = true;
 	}
-	private getCornerControlOffset(panel: StagePanelRuntime, width: number, height: number, uiFocus: number) {
+	private getCornerControlOffset(panel: StagePanelRuntime, width: number, height: number, uiFocus: number): { x: number; y: number; z: number } {
 		const inset = MINIMAP_FOCUSED_VIEWPORT_INSET;
 		// The render camera spans innerWidth, but classic scrollbars consume part
 		// of it. Express the usable viewport edge in that same camera coordinate system.
 		const usableWidth = typeof document === 'undefined' ? width : document.documentElement.clientWidth;
-		const endX = usableWidth - width / 2 - inset - panel.options.width / 2;
-		const endY = height / 2 - inset - panel.options.height / 2;
+		const rightEdge = Math.max(...this.panelRuntimes
+			.filter((control) => control.focusReactive === 'top-right')
+			.map((control) => control.options.position.x + control.options.width / 2));
+		const groupOffset = rightEdge - (panel.options.position.x + panel.options.width / 2);
+		const endX = usableWidth - width / 2 - inset - panel.options.width / 2 - groupOffset;
+		const leftEdge = Math.min(...this.panelRuntimes
+			.filter((control) => control.focusReactive === 'top-right')
+			.map((control) => control.options.position.x - control.options.width / 2));
+		const groupLeft = usableWidth - inset - (rightEdge - leftEdge);
+		let topInset = inset;
+		// On narrow phones retain the full close-up minimap size and place the
+		// complete control row just below it when the two corners would overlap.
+		if (this.minimapFocus > 0) for (const [index] of this.minimaps) {
+			const minimapPanel = this.panelRuntimes[index];
+			if (!minimapPanel || minimapPanel.focusReactive === 'top-right' || !this.isPanelTargetVisible(index)) continue;
+			const layout = this.getPanelPointerLayout(minimapPanel, index, width, height, uiFocus);
+			const scale = this.panelCamera.position.z / Math.max(this.panelCamera.position.z - layout.focusOffset.z, 1);
+			if (groupLeft < layout.centerX + layout.visualWidth * scale / 2 + 8)
+				topInset = Math.max(topInset, layout.centerY + layout.visualHeight * scale / 2 + 8);
+		}
+		const endY = height / 2 - topInset - panel.options.height / 2;
 		const startX = THREE.MathUtils.clamp(panel.options.position.x, -width / 2 + inset + panel.options.width / 2, endX);
 		const startY = THREE.MathUtils.clamp(panel.options.position.y, -endY, endY);
 		const progress = getPanelFocusProgress(uiFocus);
@@ -571,7 +591,7 @@ export class PanelPresentationController {
 			);
 			const panelOpacity = minimap ? 1 : focusOpacity;
 			const surfaceOpacity = THREE.MathUtils.clamp(
-				this.panelTargets[index]?.getSurfaceOpacity?.() ?? 1,
+				minimap && this.ports.frame().fullscreen ? 1 : (this.panelTargets[index]?.getSurfaceOpacity?.() ?? 1),
 				0,
 				1
 			);

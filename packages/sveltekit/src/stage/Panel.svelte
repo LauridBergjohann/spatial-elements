@@ -271,6 +271,7 @@
 			bind:this={contentElement}
 			use:registerEndpoint={catalogEndpoint}
 			data-stage-panel-content
+			data-stage-corner-control={focusReactive === 'top-right' ? '' : undefined}
 			data-catalog-transition-group={transitionGroup}
 			class={contentClass}
 			style={getContentThemeStyle()}

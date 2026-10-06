@@ -369,6 +369,13 @@ export class StageExperience {
 	private panelMeasurementsDirty = true;
 	private viewportMeasurementDirty = true;
 	private stageViewportVisible = true;
+	private fullscreen = false;
+	setFullscreen(fullscreen: boolean) {
+		if (this.fullscreen === fullscreen) return;
+		this.fullscreen = fullscreen;
+		this.interaction.setFullscreen(fullscreen);
+		this.resizeRenderer();
+	}
 	private get visiblePanelCount() {
 		return this.panels.visiblePanels;
 	}
@@ -461,12 +468,13 @@ export class StageExperience {
 				restCamera: this.initialCameraWorldQuaternion,
 				restModel: this.initialModelWorldQuaternion,
 				hasControls: Boolean(this.controls),
-				referenceTarget: this.getZoomReferenceTarget()
+				center: this.initialControlsTarget
 			}),
 			frame: () => ({
 				hovering: this.modelHover,
 				interacting: this.modelInteractionActive,
-				scrolling: this.scrollActive
+				scrolling: this.scrollActive,
+				fullscreen: this.fullscreen
 			}),
 			environment: () => this.environmentTarget,
 			capture: () => this.pipeline.activeRenderTargets,
@@ -487,6 +495,7 @@ export class StageExperience {
 				presentation: this.catalogPresentation,
 				minimapFocus: this.minimapFocus,
 				uiFocus: this.panelUiFocus,
+				fullscreen: this.fullscreen,
 				pointer: this.pointer
 			}),
 			visible: (index) => this.isPanelTargetVisible(index),
@@ -1717,6 +1726,15 @@ export class StageExperience {
 		return minimap ? this.getProjectedMinimapModelRect(minimap) : null;
 	}
 
+	/** Returns the visible viewport mask in minimap-local pixels. */
+	getVisualTestMinimapViewportRect() {
+		const minimap = this.minimaps.values().next().value as StageMinimapState | undefined;
+		if (!minimap) return null;
+		const center = minimap.overlayViewportCenter.value;
+		const halfSize = minimap.overlayViewportHalfSize.value;
+		return { x: center.x - halfSize.x, y: center.y - halfSize.y, width: halfSize.x * 2, height: halfSize.y * 2 };
+	}
+
 	/** Returns minimap orientation endpoints for query-gated browser regressions. */
 	getVisualTestMinimapOrientation() {
 		const minimap = this.minimaps.values().next().value as StageMinimapState | undefined;
@@ -2447,6 +2465,8 @@ export class StageExperience {
 		const target = this.panelTargets[index];
 		if (!target) return true;
 		if (target.getVisible?.() === false) return false;
+		if (this.fullscreen) return Boolean(target.minimap || target.focusReactive === 'top-right' ||
+			target.content.hasAttribute('data-stage-fullscreen-visible'));
 		const cachedRect = this.pageBinding.getPanelRect(target.frame);
 		if (!cachedRect) return true;
 
@@ -2499,7 +2519,7 @@ export class StageExperience {
 		const width = window.innerWidth;
 		const height = window.innerHeight;
 		const element = this.viewportTarget?.element;
-		if (!element) {
+		if (!element || this.fullscreen) {
 			this.stageViewportVisible = true;
 			this.viewportFrame.set(0, 0, width, height);
 			this.viewportLayoutSize.set(width, height);
@@ -2807,8 +2827,8 @@ export class StageExperience {
 		// The damped camera distance is the single animation clock for geometry and
 		// every close-up UI phase. Phase remapping remains, temporal lag does not.
 		this.panelFocus = this.getZoomFocusFactor();
-		this.panelUiFocus = getStageUiFocus(this.panelFocus);
-		this.minimapFocus = getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus);
+		this.panelUiFocus = this.fullscreen ? 1 : getStageUiFocus(this.panelFocus);
+		this.minimapFocus = this.fullscreen ? 1 : getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus);
 		this.updateStageCameraProjection();
 		this.reportZoomFocus({
 			focus: this.panelFocus,

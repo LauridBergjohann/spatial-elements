@@ -285,7 +285,11 @@ export class VirtualScrollController {
 	}
 
 	private readonly handleFocusIn = (event: FocusEvent) => {
+		if (this.container.hasAttribute('data-stage-fullscreen')) return;
 		if (this.navigation || !(event.target instanceof HTMLElement)) return;
+		// Corner controls are already clamped into the viewport. Their 10px inset
+		// must not trigger document scrolling when focused before a fullscreen click.
+		if (event.target.closest('[data-stage-corner-control]')) return;
 		const rect = event.target.getBoundingClientRect();
 		if (
 			rect.top >= FOCUS_VIEWPORT_MARGIN &&

@@ -2,7 +2,9 @@
 
 SvelteKit components and navigation for Spatial Elements.
 
-Detail pages include a compact 3D help button. Pass optional `messages` to `BrandStageShell` to translate its labels, tooltips and instructions; missing strings use English defaults. See [interface texts and help](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/interface-texts.md) for the complete typed dictionary and examples.
+Detail pages include 3D help and a detail/fullscreen view switch, with a viewport fallback when native fullscreen is unavailable. Pass optional `messages` to `BrandStageShell` to translate labels, tooltips and instructions, including `controls.detailView` and `controls.fullscreen`; missing strings use English defaults. See [interface texts and help](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/interface-texts.md) for the complete typed dictionary and examples.
+
+The detail button always restores the fitted camera view, including when already on the detail page. Its selected background fades with camera zoom; the fullscreen button remains selected throughout fullscreen navigation.
 
 See the [authoring guide](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/authoring.md) and [development guide](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/development.md).
 

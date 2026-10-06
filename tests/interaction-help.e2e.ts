@@ -167,7 +167,8 @@ test('help surfaces match their DOM in each zoom frame and stay clear of the scr
 		expect(metrics.maxError).toBeLessThan(0.6);
 		expect(metrics.minRightInset).toBeGreaterThanOrEqual(9.5);
 		expect(metrics.minTopInset).toBeGreaterThanOrEqual(9.5);
-		expect(metrics.finalInset).toBeCloseTo(10, 0);
+		// The view switch now occupies 80px plus an 8px gap to the right of help.
+		expect(metrics.finalInset).toBeCloseTo(98, 0);
 		await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.5 }, 1));
 		await page.screenshot({ path: info.outputPath(`aligned-help-${width}.png`) });
 	}

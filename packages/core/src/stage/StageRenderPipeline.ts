@@ -890,7 +890,7 @@ export class StageRenderPipeline {
 	}
 	renderModelOutline(target: THREE.RenderTarget | null, opacity = 1) {
 		this.displayOutlineOpacity.value = 0;
-		if (this.renderMeasurement === 'no-halo') return;
+		if (this.renderMeasurement === 'no-halo' || !this.ports.frame().modelHover) return;
 		const opacityBefore = this.outlineOpacityScale.value;
 		try {
 			return withRendererState(this.ports.renderer, () => {

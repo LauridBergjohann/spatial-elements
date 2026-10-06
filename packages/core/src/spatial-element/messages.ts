@@ -3,6 +3,8 @@ export interface SpatialMessages {
 	controls: {
 		help: string;
 		closeHelp: string;
+		detailView: string;
+		fullscreen: string;
 	};
 	interactionHelp: {
 		title: string;
@@ -28,7 +30,7 @@ export type SpatialMessagesInput = { [K in keyof SpatialMessages]?: Partial<Spat
 export const defaultSpatialMessages: Readonly<{
 	[K in keyof SpatialMessages]: Readonly<SpatialMessages[K]>;
 }> = Object.freeze({
-	controls: Object.freeze({ help: '3D controls', closeHelp: 'Close help' }),
+	controls: Object.freeze({ help: '3D controls', closeHelp: 'Close help', detailView: 'Detail view', fullscreen: 'Fullscreen' }),
 	interactionHelp: Object.freeze({
 		title: 'Explore in 3D',
 		rotate: 'Rotate',
