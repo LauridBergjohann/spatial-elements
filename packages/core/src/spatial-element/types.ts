@@ -78,6 +78,8 @@ export interface SpatialDockedPanelTheme {
 
 /** Shared visual language supplied by a brand layout to element pages beneath it. */
 export interface SpatialTheme {
+	/** Optional presentation overrides for the element's HDR backdrop; lighting is unchanged. */
+	sceneBackground?: Partial<BackgroundSettings>;
 	/** Stable namespace shared by pages and transitions, e.g. `shop`. Not an element ID. */
 	id: string;
 	/** Human-readable brand name used in accessible labels. */

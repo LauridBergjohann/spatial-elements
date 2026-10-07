@@ -74,6 +74,7 @@ export interface PanelPresentationPorts {
 		presentation: CatalogTransitionPresentation;
 		minimapFocus: number;
 		uiFocus: number;
+		fullscreen?: boolean;
 		pointer: Readonly<{ x: number; y: number; active: boolean }>;
 	};
 	visible(index: number): boolean;
@@ -112,8 +113,9 @@ export class PanelPresentationController {
 		for (const [element, home] of [...this.domHomes].reverse()) {
 			if (home.next?.parentNode === home.parent) home.parent.insertBefore(element, home.next);
 			else home.parent.appendChild(element);
-			if (home.style === null) element.removeAttribute('style');
-			else element.setAttribute('style', home.style);
+			const authoredStyle = element.dataset.stagePanelAuthoredStyle ?? home.style;
+			if (authoredStyle === null) element.removeAttribute('style');
+			else element.setAttribute('style', authoredStyle);
 			if (home.draggable === null) element.removeAttribute('draggable');
 			else element.setAttribute('draggable', home.draggable);
 			delete element.dataset.stagePanelRenderMode;
@@ -314,15 +316,36 @@ export class PanelPresentationController {
 		);
 		root.matrixWorldNeedsUpdate = true;
 	}
-	private getCornerControlOffset(panel: StagePanelRuntime, width: number, height: number, uiFocus: number) {
+	private getCornerControlOffset(panel: StagePanelRuntime, width: number, height: number, uiFocus: number): { x: number; y: number; z: number } {
 		const inset = MINIMAP_FOCUSED_VIEWPORT_INSET;
 		// The render camera spans innerWidth, but classic scrollbars consume part
 		// of it. Express the usable viewport edge in that same camera coordinate system.
 		const usableWidth = typeof document === 'undefined' ? width : document.documentElement.clientWidth;
-		const endX = usableWidth - width / 2 - inset - panel.options.width / 2;
-		const endY = height / 2 - inset - panel.options.height / 2;
-		const startX = THREE.MathUtils.clamp(panel.options.position.x, -width / 2 + inset + panel.options.width / 2, endX);
-		const startY = THREE.MathUtils.clamp(panel.options.position.y, -endY, endY);
+		const rightEdge = Math.max(...this.panelRuntimes
+			.filter((control) => control.focusReactive === 'top-right')
+			.map((control) => control.options.position.x + control.options.width / 2));
+		const groupOffset = rightEdge - (panel.options.position.x + panel.options.width / 2);
+		const endX = usableWidth - width / 2 - inset - panel.options.width / 2 - groupOffset;
+		const leftEdge = Math.min(...this.panelRuntimes
+			.filter((control) => control.focusReactive === 'top-right')
+			.map((control) => control.options.position.x - control.options.width / 2));
+		const groupLeft = usableWidth - inset - (rightEdge - leftEdge);
+		let topInset = inset;
+		// On narrow phones retain the full close-up minimap size and place the
+		// complete control row just below it when the two corners would overlap.
+		if (this.minimapFocus > 0) for (const [index] of this.minimaps) {
+			const minimapPanel = this.panelRuntimes[index];
+			if (!minimapPanel || minimapPanel.focusReactive === 'top-right' || !this.isPanelTargetVisible(index)) continue;
+			const layout = this.getPanelPointerLayout(minimapPanel, index, width, height, uiFocus);
+			const scale = this.panelCamera.position.z / Math.max(this.panelCamera.position.z - layout.focusOffset.z, 1);
+			if (groupLeft < layout.centerX + layout.visualWidth * scale / 2 + 8)
+				topInset = Math.max(topInset, layout.centerY + layout.visualHeight * scale / 2 + 8);
+		}
+		const endY = height / 2 - topInset - panel.options.height / 2;
+		// At rest, follow the authored document pose. Clamping this starting pose
+		// would pin both controls and their summary anchor during ordinary scrolling.
+		const startX = panel.options.position.x;
+		const startY = panel.options.position.y;
 		const progress = getPanelFocusProgress(uiFocus);
 		return {
 			x: THREE.MathUtils.lerp(startX, endX, progress) - panel.options.position.x,
@@ -571,7 +594,7 @@ export class PanelPresentationController {
 			);
 			const panelOpacity = minimap ? 1 : focusOpacity;
 			const surfaceOpacity = THREE.MathUtils.clamp(
-				this.panelTargets[index]?.getSurfaceOpacity?.() ?? 1,
+				minimap && this.ports.frame().fullscreen ? 1 : (this.panelTargets[index]?.getSurfaceOpacity?.() ?? 1),
 				0,
 				1
 			);

@@ -119,6 +119,30 @@ test('a quick wheel gesture skips the introduction and help remains usable in cl
 	expect(await help(page).evaluate(node => node.closest('[aria-hidden="true"]') !== null)).toBe(false);
 });
 
+test('help cleans up without errors on repeated client-side detail navigation', async ({ page }) => {
+	const errors: string[] = [];
+	page.on('pageerror', error => errors.push(error.message));
+	await page.goto('/demo/categories/list?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
+	for (const showHelp of [false, true, false, true]) {
+		await page.locator('[data-catalog-card][data-spatial-element-id="cube"]').click();
+		await expect(page).toHaveURL(/elements\/cube/);
+		await expect(button(page)).toBeVisible();
+		await expect(help(page)).toHaveCount(1);
+		if (showHelp) {
+			await button(page).focus();
+			await page.keyboard.press('Enter');
+			await expect(page.getByRole('button', { name: 'Close help' })).toBeFocused();
+		}
+		// Navigate without first clicking outside or explicitly closing the focused popover.
+		await page.goBack();
+		await expect(page).toHaveURL(/categories\/list/);
+		await expect(help(page)).toHaveCount(0);
+		await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
+		expect(errors).toEqual([]);
+	}
+});
+
 test('reduced motion disables the introductory orbit', async ({ page }) => {
 	await page.emulateMedia({ reducedMotion: 'reduce' });
 	const point = await open(page);
@@ -167,7 +191,8 @@ test('help surfaces match their DOM in each zoom frame and stay clear of the scr
 		expect(metrics.maxError).toBeLessThan(0.6);
 		expect(metrics.minRightInset).toBeGreaterThanOrEqual(9.5);
 		expect(metrics.minTopInset).toBeGreaterThanOrEqual(9.5);
-		expect(metrics.finalInset).toBeCloseTo(10, 0);
+		// The view switch now occupies 80px plus an 8px gap to the right of help.
+		expect(metrics.finalInset).toBeCloseTo(98, 0);
 		await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.5 }, 1));
 		await page.screenshot({ path: info.outputPath(`aligned-help-${width}.png`) });
 	}

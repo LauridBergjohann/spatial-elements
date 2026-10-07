@@ -38,6 +38,7 @@ test('zoom preparation restores hidden views and ring material, retries failures
 	const pipeline = new StageRenderPipeline({
 		renderer: { ...f.renderer, compileAsync: compile, backend: {} },
 		minimaps: () => new Map([[0, view]]),
+		interactionTheme: () => DEFAULT_INTERACTION_THEME,
 		minimapScene: () => scene,
 		panelRuntimes: () => [{ surface: 'frosted' }],
 		renderMinimapBlur: blur
@@ -199,7 +200,7 @@ test('frozen backdrop probe seeds each target and reseeds after resize or a fail
 		location: { search: '?stage-test=1&render-measurement=frozen-backdrop' }
 	});
 	const f = rendererFixture();
-	const pipeline = new StageRenderPipeline({ renderer: f.renderer } as unknown as StageRenderPorts);
+	const pipeline = new StageRenderPipeline({ renderer: f.renderer, interactionTheme: () => DEFAULT_INTERACTION_THEME } as unknown as StageRenderPorts);
 	const target = new THREE.RenderTarget(16, 16);
 	const render = vi.fn();
 	const targets = {
@@ -224,13 +225,14 @@ test('backdrop blur retains its CSS sampling density across DPR and scroll targe
 	const f = rendererFixture();
 	const blurred = resolveLiquidGlassPanelOptions({ backdropBlur: 5 });
 	const sharp = resolveLiquidGlassPanelOptions({ backdropBlur: 0 });
+	let panels = [blurred, sharp];
 	const pipeline = new StageRenderPipeline({
 		renderSettings: { maxPixelRatio: 2 },
 		renderer: { ...f.renderer, setPixelRatio: vi.fn(), setSize: vi.fn() },
 		backgroundCanvasTarget: f.originalCanvas,
 		container: { toggleAttribute: vi.fn() },
 		interactionTheme: () => DEFAULT_INTERACTION_THEME,
-		fallbackPanelOptions: () => [blurred, sharp],
+		fallbackPanelOptions: () => panels,
 		panelRuntimes: () => [],
 		minimaps: () => new Map(),
 		frame: () => ({ outgoingBackground: false })
@@ -258,6 +260,17 @@ test('backdrop blur retains its CSS sampling density across DPR and scroll targe
 			]);
 		}
 	}
+	const targets = pipeline.activeRenderTargets!;
+	const sceneCapture = targets.sceneCapture;
+	const sharpTexture = pipeline.getPanelBlurTexture(sharp);
+	const obsolete = vi.spyOn(targets.panelBlurCaptures.get(5)!.target, 'dispose');
+	panels = [resolveLiquidGlassPanelOptions({ backdropBlur: 9 }), sharp];
+	pipeline.syncPanelBlurCaptures();
+	expect(pipeline.activeRenderTargets!.sceneCapture).toBe(sceneCapture);
+	expect(pipeline.getPanelBlurTexture(sharp)).toBe(sharpTexture);
+	expect(pipeline.getPanelBlurTexture(panels[0]).image.width).toBe(400);
+	expect(obsolete).toHaveBeenCalledOnce();
+	expect(() => pipeline.getPanelBlurTexture(blurred)).toThrow('No backdrop capture');
 	pipeline.dispose();
 	f.originalTarget.dispose();
 });

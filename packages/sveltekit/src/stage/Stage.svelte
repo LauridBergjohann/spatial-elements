@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SpatialElementLodPair } from '@spatial-elements/core/catalog/spatialElementLodPair';
+	import { DEFAULT_BACKGROUND } from '@spatial-elements/core/stage/stageConstants';
 	import { onMount, setContext, tick } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import type {
@@ -20,6 +21,7 @@
 	} from '@spatial-elements/core/stage/stageVisualTest';
 	import { resolveStageRenderSettings } from '@spatial-elements/core/stage/renderSettings';
 	import { VirtualScrollController } from '@spatial-elements/core/stage/VirtualScrollController';
+	import { StageFullscreenController } from '@spatial-elements/core/stage/StageFullscreenController';
 	import ScrollNavigationBridge from '../catalog/ScrollNavigationBridge.svelte';
 	import { CatalogTransition } from '@spatial-elements/core/catalog/CatalogTransition';
 	import {
@@ -59,6 +61,8 @@
 		dracoDecoderPath?: string;
 		ariaLabel?: string;
 		background?: BackgroundSettings;
+		/** Theme overrides applied after each element's HDR background settings. */
+		sceneBackground?: Partial<BackgroundSettings>;
 		pageBackground?: string;
 		hdr?: string;
 		glb?: string;
@@ -78,6 +82,7 @@
 		dracoDecoderPath,
 		pageBackground = '#ffffff',
 		background: standaloneBackground,
+		sceneBackground,
 		hdr: standaloneHdr,
 		glb: standaloneGlb,
 		lodPair: standaloneLodPair,
@@ -115,7 +120,7 @@
 	const catalogSpatialElements = $derived(
 		displayedSpatialElements.length ? displayedSpatialElements : (catalog?.spatialElements ?? [])
 	);
-	const background = $derived(brandId ? activeElement?.background : standaloneBackground);
+	const background = $derived({ ...DEFAULT_BACKGROUND, ...(brandId ? activeElement?.background : standaloneBackground), ...sceneBackground });
 	const hdr = $derived(brandId
 		? (activePage?.kind === 'content' ? activePage.hdr : activeScene?.hdr ?? '')
 		: standaloneHdr);
@@ -134,6 +139,8 @@
 	let status = $state('Loading stage');
 	let showStatus = $state(true);
 	let isEnhanced = $state(false);
+	let fullscreen = $state(false);
+	let fullscreenController: StageFullscreenController | undefined;
 	let isFallback = $state(true);
 	let domLayerHidden = $state(false);
 	let domLayerOpacity = $state(1);
@@ -176,6 +183,7 @@
 	};
 
 	setContext<StageContext>(STAGE_CONTEXT_KEY, {
+		updatePanelAppearance: scheduleAppearanceUpdate,
 		prefetchSpatialElement: (config) => experience?.prefetchSpatialElement(config),
 		registerPanel(panel) {
 			registeredPanels.push(panel);
@@ -194,10 +202,17 @@
 		},
 		resetView() {
 			experience?.resetView();
-		}
+		},
+		isFullscreen: () => fullscreen,
+		getZoomFocus: () => zoomFocusState.focus,
+		setFullscreen: (active) => fullscreenController?.setFullscreen(active)
 	});
 
 	onMount(() => {
+		fullscreenController = new StageFullscreenController(stage, (active) => {
+			fullscreen = active;
+			experience?.setFullscreen(active);
+		});
 		document.documentElement.classList.add('stage-route');
 		document.body.classList.add('stage-route');
 		virtualScroll = new VirtualScrollController(stage, domLayer, virtualScrollSpacer);
@@ -269,6 +284,7 @@
 				enableSpaceMouse: !isStageVisualTestMode(),
 				onDeviceLost: () => {
 					if (disposed || experience !== instance) return;
+					fullscreenController?.setFullscreen(false);
 					navigationGeneration += 1;
 					transition?.cancel();
 					experience = null;
@@ -322,6 +338,8 @@
 		});
 
 		return () => {
+			fullscreenController?.dispose();
+			fullscreenController = undefined;
 			virtualScroll?.destroy();
 			virtualScroll = undefined;
 			destroyed = true;
@@ -340,6 +358,22 @@
 		};
 	});
 
+	$effect(() => {
+		void pageBackground; void background; void isEnhanced;
+		Object.values(interactionTheme ?? {});
+		scheduleAppearanceUpdate();
+	});
+	let appearanceUpdatePending = false;
+	function scheduleAppearanceUpdate() {
+		if (appearanceUpdatePending) return;
+		appearanceUpdatePending = true;
+		void tick().then(() => {
+			appearanceUpdatePending = false;
+			if (!destroyed && isEnhanced) experience?.updateAppearance({
+				pageBackground, background, interactionTheme, panels: getPanelTargets()
+			});
+		});
+	}
 	$effect(() => {
 		const spatialElements = catalogSpatialElements;
 		if (experience && catalog && isEnhanced) {
@@ -385,6 +419,7 @@
 
 	let navigationTimings = { dataReady: 0, captured: 0, restoring: 0, bound: 0 };
 	function captureNavigation(navigation: OnNavigate) {
+		fullscreenController?.setFullscreen(false);
 		navigationTimings = { dataReady: performance.now(), captured: 0, restoring: 0, bound: 0 };
 		navigationGeneration += 1;
 		reuseCatalogPage = Boolean(
@@ -557,6 +592,7 @@
 			getPanelRect: (frame) => experience?.getVisualTestPanelRect(frame) ?? null,
 			getModelRect: () => experience?.getVisualTestModelRect() ?? null,
 			getMinimapModelRect: () => experience?.getVisualTestMinimapModelRect() ?? null,
+			getMinimapViewportRect: () => experience?.getVisualTestMinimapViewportRect() ?? null,
 			getMinimapOrientation: () => experience?.getVisualTestMinimapOrientation() ?? null,
 			getMinimapRenderStats: () =>
 				experience?.getVisualTestMinimapRenderStats() ?? {
@@ -661,7 +697,7 @@
 >
 	<div bind:this={virtualScrollSpacer} class="stage-virtual-scroll-spacer" aria-hidden="true"></div>
 
-	<div class="stage-virtual-viewport">
+	<div class="stage-virtual-viewport" inert={fullscreen}>
 		<div
 			bind:this={domLayer}
 			class="stage-dom-layer"
@@ -696,6 +732,19 @@
 		width: 100%;
 		overflow: visible;
 		background: var(--stage-page-background, #ffffff);
+	}
+
+	.stage:global([data-stage-fullscreen]) {
+		z-index: 2147483000;
+		isolation: isolate;
+	}
+	.stage:global([data-stage-fullscreen]) .stage-virtual-viewport {
+		visibility: hidden;
+		pointer-events: none;
+	}
+	.stage:global([data-stage-fullscreen]) .stage-virtual-viewport :global(*) {
+		visibility: hidden !important;
+		pointer-events: none !important;
 	}
 
 	.stage-virtual-scroll-spacer {

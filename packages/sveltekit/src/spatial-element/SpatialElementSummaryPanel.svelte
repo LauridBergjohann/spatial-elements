@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { catalogActionSemantic } from '@spatial-elements/core/catalog/catalogAction';
 	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import { ShoppingCart } from 'lucide-svelte';
@@ -8,11 +9,27 @@
 	import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
 
 	let { spatialElement }: { spatialElement: SpatialElementData } = $props();
-	const theme = useSpatialTheme();
+	const readTheme = useSpatialTheme();
+	const theme = $derived(readTheme());
 	const catalogEndpoint = createCatalogEndpointAction();
+	const contentInset = $derived(theme.panelShape.contentInset ?? Math.max(16, Math.round(theme.panelShape.radius * 0.7)));
+	let presentation: HTMLDivElement;
+	let panelHeight = $state<number>();
+
+	onMount(() => {
+		// The stage reparents the rendered content. Keep its layout placeholder in
+		// sync using untransformed content size, including wrapping and font loads.
+		panelHeight = Math.max(504, presentation.offsetHeight + contentInset * 2);
+		const observer = new ResizeObserver(([entry]) => {
+			const height = entry.borderBoxSize?.[0]?.blockSize ?? presentation.offsetHeight;
+			panelHeight = Math.max(504, Math.ceil(height + contentInset * 2));
+		});
+		observer.observe(presentation);
+		return () => observer.disconnect();
+	});
 </script>
 
-<div class="spatial-element-aside">
+<div class="spatial-element-aside" style:--summary-panel-height={panelHeight === undefined ? undefined : `${panelHeight}px`}>
 	<Panel
 		catalogEndpoint={{
 			brandId: theme.id,
@@ -30,7 +47,7 @@
 		data-shared-role="summary-surface"
 		data-spatial-element-id={spatialElement.id}
 	>
-		<div class="summary-presentation" use:mouseHover>
+		<div bind:this={presentation} class="summary-presentation" style:min-height={`${Math.max(504 - contentInset * 2, 0)}px`} use:mouseHover>
 			<div class="panel-copy">
 				<p
 					class="panel-kicker"
@@ -153,14 +170,15 @@
 	}
 
 	.spatial-element-aside {
+		position: relative;
 		min-height: inherit;
 	}
 
 	:global(.spatial-element-panel) {
-		position: relative;
-		top: 0;
+		position: sticky;
+		top: var(--spatial-element-summary-sticky-top, 104px);
 		width: min(494px, 100%);
-		height: 504px;
+		height: var(--summary-panel-height, auto);
 		min-height: 504px;
 		pointer-events: auto;
 	}
@@ -183,8 +201,7 @@
 		--summary-action-depth: 76;
 		--summary-action-hover-depth: 24;
 
-		position: absolute;
-		inset: 0;
+		position: relative;
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
@@ -421,7 +438,9 @@
 	}
 
 	@media (max-width: 1100px) {
+		.spatial-element-aside { min-height: 0; }
 		:global(.spatial-element-panel) {
+			position: relative;
 			top: auto;
 		}
 	}

@@ -1,6 +1,6 @@
 # Getting started: a category and a detail page
 
-This guide targets `1.0.0-beta.3` and newer. Upgrade older beta installations before copying it; before publication, use the [local package workflow](development.md). See [configuration migration](configuration-migration.md) for the previous API.
+This guide targets `1.0.0-beta.5` and newer. Upgrade older beta installations before copying it; before publication, use the [local package workflow](development.md). See [configuration migration](configuration-migration.md) for the previous API.
 
 Use an existing Svelte 5 / SvelteKit 2 application with Node.js 22.12+ tooling:
 

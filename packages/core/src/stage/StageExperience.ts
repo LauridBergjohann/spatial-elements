@@ -52,6 +52,7 @@ import {
 
 import { STAGE_PANEL_LAYOUT_EVENT, STAGE_PANEL_VISUAL_EVENT } from './panelContext.js';
 import {
+	DEFAULT_BACKGROUND,
 	DEFAULT_INTERACTION_THEME,
 	DEFAULT_PANELS,
 	PANEL_CAMERA_FOV,
@@ -143,6 +144,7 @@ export class StageExperience {
 
 	private readonly pipeline: StageRenderPipeline;
 	private backgroundSettings: BackgroundSettings;
+	private appliedEnvironment?: PreparedEnvironment;
 	private pageBackground = '#ffffff';
 	private hdr: string;
 	private glb: string;
@@ -369,6 +371,13 @@ export class StageExperience {
 	private panelMeasurementsDirty = true;
 	private viewportMeasurementDirty = true;
 	private stageViewportVisible = true;
+	private fullscreen = false;
+	setFullscreen(fullscreen: boolean) {
+		if (this.fullscreen === fullscreen) return;
+		this.fullscreen = fullscreen;
+		this.interaction.setFullscreen(fullscreen);
+		this.resizeRenderer();
+	}
 	private get visiblePanelCount() {
 		return this.panels.visiblePanels;
 	}
@@ -461,12 +470,13 @@ export class StageExperience {
 				restCamera: this.initialCameraWorldQuaternion,
 				restModel: this.initialModelWorldQuaternion,
 				hasControls: Boolean(this.controls),
-				referenceTarget: this.getZoomReferenceTarget()
+				center: this.initialControlsTarget
 			}),
 			frame: () => ({
 				hovering: this.modelHover,
 				interacting: this.modelInteractionActive,
-				scrolling: this.scrollActive
+				scrolling: this.scrollActive,
+				fullscreen: this.fullscreen
 			}),
 			environment: () => this.environmentTarget,
 			capture: () => this.pipeline.activeRenderTargets,
@@ -487,6 +497,7 @@ export class StageExperience {
 				presentation: this.catalogPresentation,
 				minimapFocus: this.minimapFocus,
 				uiFocus: this.panelUiFocus,
+				fullscreen: this.fullscreen,
 				pointer: this.pointer
 			}),
 			visible: (index) => this.isPanelTargetVisible(index),
@@ -831,6 +842,75 @@ export class StageExperience {
 		const corners = [project(0, 0), project(width, 0), project(width, height), project(0, height)];
 		if (corners.some((point) => !point)) return;
 		return { width, height, corners: corners as unknown as CssProjectionQuad };
+	}
+
+	/** Updates appearance in place. Model leases, camera, interaction and page navigation stay intact. */
+	updateAppearance(options: {
+		pageBackground?: string;
+		background?: Partial<BackgroundSettings>;
+		interactionTheme?: Partial<StageInteractionTheme>;
+		panels?: StagePanelTarget[];
+	}) {
+		if (this.disposed) return;
+		this.pageBackground = options.pageBackground ?? '#ffffff';
+		this.pipeline.setPageBackground(this.pageBackground);
+		this.catalogLayer?.setPageBackground(this.pageBackground);
+		this.backgroundSettings = { ...DEFAULT_BACKGROUND, ...options.background };
+		if (this.appliedEnvironment) {
+			this.backgroundScene.background = this.backgroundSettings.blurriness <= 0
+				? this.appliedEnvironment.source : this.appliedEnvironment.target.texture;
+		}
+		this.backgroundScene.backgroundBlurriness = this.backgroundSettings.blurriness;
+		if (this.tintMaterial) {
+			this.tintMaterial.color.set(this.backgroundSettings.tint);
+			this.tintMaterial.opacity = this.backgroundSettings.tintIntensity;
+		}
+		const previousExcludeMesh = this.interactionTheme.excludeMesh;
+		Object.assign(this.interactionTheme, DEFAULT_INTERACTION_THEME, { excludeMesh: undefined }, options.interactionTheme);
+		this.pipeline.updateInteractionTheme();
+		if (previousExcludeMesh !== this.interactionTheme.excludeMesh && this.model) {
+			const pickModel = this.refinementState === 'high' && this.highPose ? this.highPose : this.model;
+			this.collectModelPickTargets(pickModel);
+			if (pickModel === this.model) this.pipeline.createModelOutline(this.model);
+			else {
+				const outline = this.model.clone(false);
+				outline.add(pickModel.clone(true));
+				this.pipeline.createModelOutline(outline);
+			}
+		}
+		const changed: number[] = [];
+		let surfaceChanged = false;
+		for (const next of options.panels ?? []) {
+			const index = this.panelTargets.findIndex((target) => target.frame === next.frame);
+			const target = this.panelTargets[index];
+			if (!target) continue; // Navigation owns newly registered panels.
+			const appearance = (panel: StagePanelTarget) => JSON.stringify([
+				panel.options, panel.minimap, panel.surface, panel.contentInset
+			]);
+			if (appearance(target) === appearance(next)) continue;
+			surfaceChanged ||= target.surface !== next.surface;
+			Object.assign(target, next);
+			changed.push(index);
+		}
+		if (changed.length) {
+			this.fallbackPanelOptions = this.panelTargets
+				.filter((target) => target.surface === 'glass' || target.minimap).map((target) => target.options);
+			this.pipeline.syncPanelBlurCaptures();
+			if (surfaceChanged) {
+				// A backend change only replaces panel presentation, never the element scene.
+				this.minimapController.dispose();
+				this.panels.release();
+				this.createPanels();
+			} else for (const index of changed) {
+				const target = this.panelTargets[index];
+				const measured = this.getMeasuredPanelOptions(target, true);
+				if (this.panelRuntimes[index]?.glass) this.replacePanel(index, measured);
+				else if (this.panelRuntimes[index]) this.panelRuntimes[index].options = resolveLiquidGlassPanelOptions(measured);
+				this.createMinimap(index, target.minimap);
+			}
+			this.panelMeasurementsDirty = this.layoutDirty = true;
+		}
+		this.requestRender();
 	}
 
 	async updatePage(options: StageExperienceOptions) {
@@ -1717,6 +1797,15 @@ export class StageExperience {
 		return minimap ? this.getProjectedMinimapModelRect(minimap) : null;
 	}
 
+	/** Returns the visible viewport mask in minimap-local pixels. */
+	getVisualTestMinimapViewportRect() {
+		const minimap = this.minimaps.values().next().value as StageMinimapState | undefined;
+		if (!minimap) return null;
+		const center = minimap.overlayViewportCenter.value;
+		const halfSize = minimap.overlayViewportHalfSize.value;
+		return { x: center.x - halfSize.x, y: center.y - halfSize.y, width: halfSize.x * 2, height: halfSize.y * 2 };
+	}
+
 	/** Returns minimap orientation endpoints for query-gated browser regressions. */
 	getVisualTestMinimapOrientation() {
 		const minimap = this.minimaps.values().next().value as StageMinimapState | undefined;
@@ -1921,6 +2010,7 @@ export class StageExperience {
 	}
 
 	private applyEnvironment(environment: PreparedEnvironment) {
+		this.appliedEnvironment = environment;
 		this.presentation.retainEnvironment(this.environments, environment);
 		this.environmentTarget = environment.target;
 		const texture = environment.target.texture;
@@ -2447,6 +2537,8 @@ export class StageExperience {
 		const target = this.panelTargets[index];
 		if (!target) return true;
 		if (target.getVisible?.() === false) return false;
+		if (this.fullscreen) return Boolean(target.minimap || target.focusReactive === 'top-right' ||
+			target.content.hasAttribute('data-stage-fullscreen-visible'));
 		const cachedRect = this.pageBinding.getPanelRect(target.frame);
 		if (!cachedRect) return true;
 
@@ -2499,7 +2591,7 @@ export class StageExperience {
 		const width = window.innerWidth;
 		const height = window.innerHeight;
 		const element = this.viewportTarget?.element;
-		if (!element) {
+		if (!element || this.fullscreen) {
 			this.stageViewportVisible = true;
 			this.viewportFrame.set(0, 0, width, height);
 			this.viewportLayoutSize.set(width, height);
@@ -2807,8 +2899,8 @@ export class StageExperience {
 		// The damped camera distance is the single animation clock for geometry and
 		// every close-up UI phase. Phase remapping remains, temporal lag does not.
 		this.panelFocus = this.getZoomFocusFactor();
-		this.panelUiFocus = getStageUiFocus(this.panelFocus);
-		this.minimapFocus = getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus);
+		this.panelUiFocus = this.fullscreen ? 1 : getStageUiFocus(this.panelFocus);
+		this.minimapFocus = this.fullscreen ? 1 : getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus);
 		this.updateStageCameraProjection();
 		this.reportZoomFocus({
 			focus: this.panelFocus,

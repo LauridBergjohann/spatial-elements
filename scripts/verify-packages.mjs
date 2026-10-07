@@ -31,6 +31,7 @@ cpSync(join(root,'fixtures/demo-assets'),join(consumer,'static/assets/demo'),{re
 for(const file of ['svelte.config.js','vite.config.ts','tsconfig.json'])cpSync(join(root,'apps/sveltekit-demo',file),join(consumer,file));
 const workspace=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
 const dependencies={...tarballs};
+dependencies['lucide-svelte']=JSON.parse(readFileSync(join(root,'apps/sveltekit-demo/package.json'),'utf8')).devDependencies['lucide-svelte'];
 for(const name of ['@sveltejs/kit','@sveltejs/package','@sveltejs/vite-plugin-svelte','@sveltejs/adapter-auto','svelte','svelte-check','vite','typescript','@types/three','@types/node'])dependencies[name]=workspace.devDependencies[name];
 writeFileSync(join(consumer,'package.json'),JSON.stringify({name:'spatial-elements-consumer-check',private:true,type:'module',scripts:{check:'svelte-kit sync && svelte-check --tsconfig ./tsconfig.json',build:'vite build'},dependencies},null,2));
 console.log('Installing independent consumer: '+consumer);

@@ -84,7 +84,14 @@ export interface StageViewportRegistration {
 export interface StageContext {
 	prefetchSpatialElement?(stage: import('../spatial-element/spatialElementScene.js').SpatialElementScene): void;
 	registerPanel(panel: StagePanelRegistration): () => void;
+	/** Refresh appearance from registered getters without rebinding the page or its camera. */
+	updatePanelAppearance?(): void;
 	registerViewport(viewport: StageViewportRegistration): () => void;
 	/** Restores the element camera to its initial fitted pose. */
 	resetView(): void;
+	/** True for both native fullscreen and its viewport fallback. */
+	isFullscreen?(): boolean;
+	/** Current camera zoom focus, from the fitted detail view (0) to close-up (1). */
+	getZoomFocus?(): number;
+	setFullscreen?(fullscreen: boolean): void;
 }

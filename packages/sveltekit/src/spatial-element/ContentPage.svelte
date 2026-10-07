@@ -19,7 +19,8 @@
 		children?: Snippet;
 	}
 	let { page, hdr, children }: Props = $props();
-	const brand = useSpatialTheme();
+	const readTheme = useSpatialTheme();
+	const brand = $derived(readTheme());
 	registerSpatialPage(() => ({ kind: 'content', hdr }));
 	setContext(SPATIAL_ELEMENT_SECTION_REGISTRY_KEY, new SpatialElementSectionRegistry());
 	setContext(SECTION_PAGE_KIND, 'content');

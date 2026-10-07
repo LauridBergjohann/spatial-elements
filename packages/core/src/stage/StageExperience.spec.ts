@@ -20,6 +20,8 @@ vi.mock('./StageRenderPipeline.js', () => ({
 	StageRenderPipeline: class {
 		activeRenderTargets = {};
 		stageDisplayQuad = {};
+		setPageBackground() {}
+		updateInteractionTheme() {}
 		renderFrame() {}
 	}
 }));
@@ -45,6 +47,44 @@ vi.mock('three/addons/controls/OrbitControls.js', () => ({
 afterEach(() => {
 	vi.unstubAllGlobals();
 	vi.restoreAllMocks();
+});
+
+test('appearance updates restore element background defaults and preserve camera and lighting', () => {
+	vi.stubGlobal('window', { innerWidth: 100, innerHeight: 100, location: { search: '' } });
+	vi.stubGlobal('document', { hidden: false, createElement: () => ({ style: {} }) });
+	vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
+	const experience = new StageExperience({} as HTMLElement);
+	const stage = experience as unknown as {
+		camera: THREE.PerspectiveCamera;
+		scene: THREE.Scene;
+		backgroundScene: THREE.Scene;
+		tintMaterial: THREE.MeshBasicMaterial;
+		appliedEnvironment: { source: THREE.Texture; target: { texture: THREE.Texture } };
+		interactionTheme: { outlineColor: string };
+	};
+	stage.camera.position.set(3, 4, 5);
+	stage.camera.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.7);
+	const orientation = stage.camera.quaternion.clone();
+	stage.scene.environment = new THREE.Texture();
+	const lighting = stage.scene.environment;
+	stage.tintMaterial = new THREE.MeshBasicMaterial();
+	stage.appliedEnvironment = { source: new THREE.Texture(), target: { texture: new THREE.Texture() } };
+	experience.updateAppearance({ background: { tint: '#111820', tintIntensity: 0.85, blurriness: 0 }, interactionTheme: { outlineColor: '#80bfff' } });
+	expect(stage.tintMaterial.color.getHexString()).toBe('111820');
+	expect(stage.tintMaterial.opacity).toBe(0.85);
+	expect(stage.backgroundScene.background).toBe(stage.appliedEnvironment.source);
+	expect(stage.interactionTheme.outlineColor).toBe('#80bfff');
+	experience.updateAppearance({ background: { tint: '#e6edf4', tintIntensity: 0.3, blurriness: 0.2 } });
+	expect(stage.tintMaterial.color.getHexString()).toBe('e6edf4');
+	expect(stage.backgroundScene.background).toBe(stage.appliedEnvironment.target.texture);
+	expect(stage.camera.position.toArray()).toEqual([3, 4, 5]);
+	expect(stage.camera.quaternion.equals(orientation)).toBe(true);
+	expect(stage.scene.environment).toBe(lighting);
+	stage.tintMaterial.dispose();
+	lighting.dispose();
+	stage.appliedEnvironment.source.dispose();
+	stage.appliedEnvironment.target.texture.dispose();
+	experience.assets.dispose();
 });
 
 test.each(['wheel', 'spacemouse'] as const)(

@@ -14,5 +14,5 @@ export function useSpatialTheme() {
 	if (!getTheme) {
 		throw new Error('SpatialElement detail components must be rendered inside a brand layout');
 	}
-	return getTheme();
+	return getTheme;
 }

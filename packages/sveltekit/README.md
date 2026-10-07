@@ -2,7 +2,11 @@
 
 SvelteKit components and navigation for Spatial Elements.
 
-Detail pages include a compact 3D help button. Pass optional `messages` to `BrandStageShell` to translate its labels, tooltips and instructions; missing strings use English defaults. See [interface texts and help](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/interface-texts.md) for the complete typed dictionary and examples.
+Pass a reactive `theme` and optional resolved `colorScheme` (`light` or `dark`) to `BrandStageShell` for live appearance changes. The host owns system preference and persistence. The public `ButtonGroup` component can implement a theme switch, language selector or other choices. See [runtime themes and ButtonGroup](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/theming.md).
+
+Detail pages include 3D help and a detail/fullscreen view switch, with a viewport fallback when native fullscreen is unavailable. Pass optional `messages` to `BrandStageShell` to translate labels, tooltips and instructions, including `controls.detailView` and `controls.fullscreen`; missing strings use English defaults. See [interface texts and help](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/interface-texts.md) for the complete typed dictionary and examples.
+
+The detail button always restores the fitted camera view, including when already on the detail page. Its selected background fades with camera zoom; the fullscreen button remains selected throughout fullscreen navigation.
 
 See the [authoring guide](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/authoring.md) and [development guide](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/development.md).
 
@@ -10,7 +14,7 @@ Beta API; MPL-2.0; see LICENSE.
 
 Read the [getting-started tutorial](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/getting-started.md), [API reference](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/api.md) and [configuration migration](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/configuration-migration.md).
 
-Element content and required `geometry: { low, high }` belong in `SpatialElementData`; shared appearance belongs in `SpatialTheme`. Use `createSpatialTheme({ id, name })` for defaults. The SvelteKit shell needs only the theme; pages register their own data. These docs target version `1.0.0-beta.3` and newer.
+Element content and required `geometry: { low, high }` belong in `SpatialElementData`; shared appearance belongs in `SpatialTheme`. Use `createSpatialTheme({ id, name })` for defaults. The SvelteKit shell needs only the theme; pages register their own data. These docs target version `1.0.0-beta.5` and newer.
 
 Installation:
 

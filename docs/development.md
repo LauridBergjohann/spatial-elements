@@ -36,6 +36,8 @@ npm run test:e2e
 
 Build the packages first if you have not already done so. Local browser tests use an installed Chrome; CI uses Playwright's Chromium.
 
+Set `SPATIAL_E2E_DEV=1` to run against Vite's development server instead of the preview build. This also checks Svelte's development-mode component cleanup in `catalog.e2e.ts` and the repeated detail-navigation regression in `interaction-help.e2e.ts`.
+
 The touch regressions use Chrome's mobile viewport and trusted touch input through the browser protocol:
 
 ~~~sh

@@ -17,6 +17,7 @@ export function createSpatialTheme(options: SpatialThemeOptions): SpatialTheme {
 		id: options.id,
 		name: options.name,
 		background: options.background ?? '#eef1f4',
+		...(options.sceneBackground ? { sceneBackground: { ...options.sceneBackground } } : {}),
 		minimapTheme: {
 			expandedHeight: 240,
 			overlayColor: '#000000',

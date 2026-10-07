@@ -43,7 +43,7 @@ test('minimap uses the independent Low representation and disposes local targets
 			restCamera: new THREE.Quaternion(),
 			restModel: new THREE.Quaternion(),
 			hasControls: false,
-			referenceTarget: new THREE.Vector3()
+			center: new THREE.Vector3()
 		}),
 		frame: () => ({ hovering: false, interacting: false, scrolling: false }),
 		environment: () => undefined,

@@ -60,12 +60,15 @@ Advanced pipelines can provide resource objects {url, format, revision, requirem
 
 ## Shared theme
 
+Themes can change at runtime. Pass the selected `theme` and optional resolved `colorScheme="light"` or `"dark"` to `BrandStageShell`. Optional `theme.sceneBackground` overrides the visible HDR backdrop without changing model lighting. The host owns preference, storage and system detection. See [Runtime themes and ButtonGroup](theming.md) for complete examples and the generic `ButtonGroup` API.
+
 Use createSpatialTheme({ id, name, ...overrides }). Only id and name are required; each appearance group merges field-by-field with defaults. Every call returns independent objects. Existing complete SpatialTheme objects remain valid.
 
 | Group | Purpose and helper defaults |
 | --- | --- |
 | id / name | Namespace matching the route prefix / accessible brand name. |
 | background | Flat page color: #eef1f4. This is not the HDR background. |
+| sceneBackground | Optional partial overrides for the element's HDR backdrop: blurriness, tint, tintIntensity. Leaves model lighting unchanged. |
 | colors | ink #173047, body #263c4d, accent #285c89, onAccent #ffffff, tabBackground #e4ebf1. |
 | panelShape | radius 16 and contentInset 26, both in CSS pixels. |
 | panelTheme | surface frosted, tint #ffffff, tintOpacity 0.65, backdropBlur 8px, shadowIntensity 0.2, opacity 1. Further glass controls use runtime defaults. |
@@ -84,7 +87,8 @@ Interface language is independent of the theme. Pass `messages: SpatialMessagesI
 
 | Component | Props and responsibility |
 | --- | --- |
-| BrandStageShell | Required theme; optional messages, renderSettings, dracoDecoderPath and children. Persistent layout and renderer owner. No stage/catalog props. |
+| BrandStageShell | Required reactive theme; optional colorScheme (light/dark), messages, renderSettings, dracoDecoderPath and children. Persistent layout and renderer owner. No stage/catalog props. |
+| ButtonGroup | Required items, label and shape; controlled value/onchange, optional theme, iconOnly and content snippet. Generic panel-backed choices owned by the host. |
 | ContentPage | Required hdr: environment URL and page: ContentPageData; optional children. Registers a category/content page. page.title is required; pageTitle defaults to title, eyebrow/intro/breadcrumbs are optional. |
 | ListSection | Required section: {id,title,style?}, list: SpatialListItem[]. Registers its own element occurrences. |
 | CarouselSection | Same section/list; optional presentation: {radius?,depth?}, initialItemKey, onselectionchange({itemKey,spatialElementId}). Radius defaults to 0.48 of section width (clamped 0.2..0.7); depth defaults to 700 CSS-world pixels (clamped 0..1200). |

@@ -39,7 +39,8 @@
 		children?: Snippet;
 	}
 	let { spatialElement: element, children }: Props = $props();
-	const brand = useSpatialTheme();
+	const readTheme = useSpatialTheme();
+	const brand = $derived(readTheme());
 	const spatialElement = $derived(resolveSpatialElementData(element, brand.id));
 	// During route teardown Kit can clear the outgoing page's data before unmount.
 	// Read raw assets here, so the parent stage never evaluates outgoing DOM-derived content.

@@ -4,6 +4,7 @@ import {
 	getMinimapDepthRange,
 	getMinimapCssBlurRadius,
 	getMinimapViewportRect,
+	clipMinimapViewportRect,
 	getPanelLocalCameraFov,
 	getProjectiveCssMatrix3d,
 	type CssProjectionQuad
@@ -218,12 +219,51 @@ describe('minimap projection', () => {
 		expect(panned?.y ?? 0).toBeGreaterThan(centered?.y ?? 0);
 	});
 
-	it('keeps an extreme projected viewport inside the minimap panel', () => {
+	it('leaves a panned viewport outside the panel instead of moving it onto the model', () => {
 		const rect = projectViewportAtTarget(4, new THREE.Vector3(20, -20, 0));
 
 		expect(rect).not.toBeNull();
-		expect(Math.abs(rect?.x ?? 0) + (rect?.width ?? 0) * 0.5).toBeLessThanOrEqual(120);
-		expect(Math.abs(rect?.y ?? 0) + (rect?.height ?? 0) * 0.5).toBeLessThanOrEqual(120);
+		expect(clipMinimapViewportRect(rect!, 240, 240)).toEqual({ left: 240, top: 240, width: 0, height: 0 });
+	});
+
+	it('clips a wide view independently on each axis without inventing a vertical crop', () => {
+		const rect = projectViewport(14)!;
+		expect(rect.width).toBeGreaterThan(240);
+		expect(rect.height).toBeGreaterThan(240);
+		expect(clipMinimapViewportRect(rect, 240, 240)).toEqual({ left: 0, top: 0, width: 240, height: 240 });
+		expect(clipMinimapViewportRect({ x: 0, y: 0, width: 160, height: 320 }, 240, 240))
+			.toEqual({ left: 40, top: 0, width: 160, height: 240 });
+	});
+
+	it('clips just the overlapping area when a zoomed view crosses the panel edge', () => {
+		expect(clipMinimapViewportRect({ x: 110, y: 90, width: 100, height: 100 }, 240, 240))
+			.toEqual({ left: 180, top: 0, width: 60, height: 80 });
+	});
+
+	it('keeps the footprint stable while orbiting a shared, non-origin model center', () => {
+		const center = new THREE.Vector3(1.2, -0.8, 0.4);
+		const stageModel = new THREE.Group();
+		const layer = new THREE.Group();
+		const miniature = new THREE.Group();
+		const sourceRoot = new THREE.Group();
+		sourceRoot.position.copy(center).negate();
+		miniature.add(sourceRoot);
+		layer.add(miniature);
+		const stageCamera = createCamera(5, 16 / 9);
+		const minimapCamera = createCamera(12);
+		const rectangles = [0, 0.6, 1.8, 3.4, 5.5].map((angle) => {
+			stageCamera.position.setFromSphericalCoords(5, 1 + angle * 0.1, angle).add(center);
+			stageCamera.lookAt(center);
+			stageCamera.updateMatrixWorld(true);
+			miniature.quaternion.copy(stageCamera.quaternion).invert();
+			return getMinimapViewportRect(stageCamera, minimapCamera, center, stageModel, sourceRoot, layer, 240, 240)!;
+		});
+		for (const rect of rectangles) {
+			expect(rect.x).toBeCloseTo(0, 7);
+			expect(rect.y).toBeCloseTo(0, 7);
+			expect(rect.width).toBeCloseTo(rectangles[0].width, 7);
+			expect(rect.height).toBeCloseTo(rectangles[0].height, 7);
+		}
 	});
 
 	it('accepts CSS-like non-negative blur radii', () => {

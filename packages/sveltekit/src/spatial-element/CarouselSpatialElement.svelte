@@ -42,7 +42,8 @@
 	const items = getContext<CatalogItems | undefined>(CATALOG_ITEMS);
 	const endpoints = getContext<CatalogEndpointRegistry | undefined>(CATALOG_ENDPOINTS);
 	const sections = getContext<CatalogSections | undefined>(CATALOG_SECTIONS);
-	const brand = useSpatialTheme();
+	const readTheme = useSpatialTheme();
+	const brand = $derived(readTheme());
 	const catalogEndpoint = createCatalogEndpointAction();
 	function address(role: CatalogEndpointRole) {
 		return interactive &&

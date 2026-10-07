@@ -11,7 +11,9 @@ Spatial Elements supplies English interface copy. The host application owns the 
   const messages = {
     controls: {
       help: '3D-Steuerung',
-      closeHelp: 'Hilfe schließen'
+      closeHelp: 'Hilfe schließen',
+      detailView: 'Detailansicht',
+      fullscreen: 'Vollbild'
     },
     interactionHelp: {
       title: 'In 3D erkunden',
@@ -48,6 +50,8 @@ Both packages export `SpatialMessages`, `SpatialMessagesInput`, `defaultSpatialM
 | --- | --- |
 | `controls.help` | `3D controls` — icon-button accessible name and tooltip |
 | `controls.closeHelp` | `Close help` — close-button accessible name and tooltip |
+| `controls.detailView` | `Detail view` — detail-mode button accessible name and tooltip |
+| `controls.fullscreen` | `Fullscreen` — fullscreen-mode button accessible name and tooltip |
 | `interactionHelp.title` | `Explore in 3D` |
 | `interactionHelp.rotate` | `Rotate` |
 | `interactionHelp.zoom` | `Zoom` |
@@ -62,15 +66,23 @@ Both packages export `SpatialMessages`, `SpatialMessagesInput`, `defaultSpatialM
 | `interactionHelp.touchHint` | `3D · Drag with one finger to rotate` |
 | `interactionHelp.touchScrollHint` | `Touch outside the model to scroll the page.` |
 
-Use `controls` for control labels/tooltips and `interactionHelp` for the instructional content. Future package controls can add keys to this same configuration, with English fallbacks. There are currently no AR or fullscreen controls or corresponding message keys.
+Use `controls` for control labels/tooltips and `interactionHelp` for the instructional content. Future package controls can add keys to this same configuration, with English fallbacks. There are currently no AR controls or corresponding message keys.
 
 The help displays compact mouse or touch diagrams beside the short `rotate`, `zoom` and `pan` labels. Mouse buttons, the wheel and touch-motion arrows use `theme.colors.accent`. The longer `mouse*` / `touch*` instructions remain in the accessible definition list for screen readers, without taking up visible space. Translate these descriptions as well as the short labels. Touch help also displays `touchScrollHint` below the diagrams.
 
 Mouse help displays `mouseNavigationHint` below the same separator. Its `{spacemouse}` placeholder inserts a link labelled **SpaceMouse** to `https://3dconnexion.com/`, opening in a new tab. Keep or reposition the placeholder anywhere in your translated sentence; the rest is escaped plain text. Omitting the placeholder displays your text without a link. No translated HTML or configurable URL is needed. The touch scroll hint remains unchanged.
 
+## Detail-page view switch
+
+Enhanced detail pages start in **Detail view**. A two-button group switches between the page and **Fullscreen**; the help button sits 8px to its left. The group shares the help button's panel material and icon color, uses the configured panel radius on its outside corners, and highlights the selected button with the section navigation's 8% body-color fill, without an underline or additional theme setting. A page-layout icon represents the detail view, and an expand icon represents fullscreen. Both buttons expose their selection through `aria-pressed`.
+
+Fullscreen uses the browser Fullscreen API. If it is missing, disabled or rejects the request, the same view fills the browser viewport. Only the model/background, expanded minimap, help and view switch remain visible. Dragging, pinching, panning and wheel zoom work across the canvas, including empty background; geometry picking, hover glow and the introductory pointer preview are disabled. SpaceMouse continues to use the same camera. The minimap stays in the close-up size and corner position, follows the live model orientation and shows the camera's visible region. Its ordinary hover and reset behavior remain available. On narrow phones, the control row moves just below the expanded minimap to keep both usable without shrinking the minimap.
+
+Select **Detail view** to return. Browser fullscreen exit and Escape also synchronize the switch; the fallback supports Escape directly. Scroll styles and the previous page position are restored on exit or navigation. The touch-only page-scroll hint is hidden while fullscreen is active. These controls require the enhanced 3D renderer; missing fullscreen support alone never hides the switch.
+
 ## Detail-page interaction help
 
-Enhanced detail pages include a 40 × 40 CSS-pixel icon button at the upper right of the model area, next to the summary panel on desktop. Its gap to the summary is 12px smaller than its gap below the header (at least 16px). During close-up the button and summary's projected top-left corner move together, keeping their gap as the panel grows and fades out past the upper-right viewport edge. The button reaches its final 10px top/right inset inside the usable viewport, excluding the scrollbar, exactly when the panels become transparent. The minimap starts expanding slightly later but also reaches its final position and size at that same endpoint. No peripheral movement continues after clearance. All poses read the same damped camera position and reverse with zoom, without a separate animation or delay. On stacked layouts the control travels directly from the model column to the corner while the summary below follows its ordinary exit path. The control uses the theme's panel surface, tint, blur, shadow and ink color. Mouse hover uses the same 8% body-color highlight as the section submenu, without movement or tilt. Its accessible name and native tooltip come from `controls.help`; the button contains no visible text.
+Enhanced detail pages include a 40 × 40 CSS-pixel help button and an 80 × 40 view switch at the upper right of the model area, next to the summary panel on desktop. The switch's gap to the summary is 12px smaller than its gap below the header (at least 16px). During close-up the controls and summary's projected top-left corner move together, keeping their gap as the panel grows and fades out past the upper-right viewport edge. The switch reaches its final 10px top/right inset inside the usable viewport, excluding the scrollbar, exactly when the panels become transparent; help stays 8px to its left. The minimap starts expanding slightly later but also reaches its final position and size at that same endpoint. No peripheral movement continues after clearance. All poses read the same damped camera position and reverse with zoom, without a separate animation or delay. On stacked layouts the controls travel directly from the model column to the corner while the summary below follows its ordinary exit path. They use the theme's panel surface, tint, blur, shadow and ink color. Mouse hover uses the same 8% body-color highlight as the section submenu, without movement or tilt. The help button's accessible name and native tooltip come from `controls.help`; the button contains no visible text.
 
 The non-modal help opens next to this button, stays within the viewport and adapts the gesture descriptions to actual mouse/touch input. Its surface uses the same panel renderer, including WebGPU refraction in the `glass` theme. Clicking the button opens persistent help. Keyboard activation focuses its close button; Escape or the close button restores focus when appropriate. Automatically displayed help does not move keyboard focus. The user can move the pointer into the help or focus its controls and read without a time limit.
 

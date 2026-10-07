@@ -9,7 +9,7 @@ Spatial Elements combines accessible HTML content with interactive element geome
 
 ## 2. Constraints
 
-The current adapter targets Svelte 5 and SvelteKit. Three.js supplies WebGPU rendering; browser GPU initialization is client-only. SSR delivers HTML and posters. Core does not import Svelte or SvelteKit. Navigation currently recognizes same-brand catalog/element route conventions described in [authoring](../authoring.md). Packages are pre-release and not published. MPL-2.0 covers project code; asset redistribution rights are separate.
+The current adapter targets Svelte 5 and SvelteKit. Three.js supplies WebGPU rendering; browser GPU initialization is client-only. SSR delivers HTML and posters. Core does not import Svelte or SvelteKit. Navigation currently recognizes same-brand catalog/element route conventions described in [authoring](../authoring.md). Packages use prerelease versions. MPL-2.0 covers project code; asset redistribution rights are separate.
 
 ## 3. Context and scope - C4 level 1
 

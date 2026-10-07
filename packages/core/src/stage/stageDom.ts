@@ -31,3 +31,8 @@ export function isViewportRectVisible(
 		rect.top <= viewportHeight + safeMargin
 	);
 }
+
+/** Resolves a sticky panel inside its document-space containing block. */
+export function getStickyPanelTop(documentTop: number, height: number, boundaryBottom: number, inset: number, scrollY: number) {
+	return Math.min(Math.max(documentTop - scrollY, inset), boundaryBottom - scrollY - height);
+}

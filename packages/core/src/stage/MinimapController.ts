@@ -68,6 +68,7 @@ import {
 	getMinimapDepthRange,
 	getMinimapCssBlurRadius,
 	getMinimapViewportRect,
+	clipMinimapViewportRect,
 	getPanelLocalCameraFov
 } from './minimap/MinimapProjection.js';
 import type { ResolvedStageMinimapOptions, StageMinimapState } from './minimap/MinimapState.js';
@@ -89,9 +90,10 @@ export interface MinimapPorts {
 		restCamera: THREE.Quaternion;
 		restModel: THREE.Quaternion;
 		hasControls: boolean;
-		referenceTarget: THREE.Vector3;
+		/** Shared model frame center, also used as the initial orbit target. */
+		center: THREE.Vector3;
 	};
-	frame(): { hovering: boolean; interacting: boolean; scrolling: boolean };
+	frame(): { hovering: boolean; interacting: boolean; scrolling: boolean; fullscreen?: boolean };
 	environment(): THREE.RenderTarget | undefined;
 	capture(): { scale: number; sceneCapture: THREE.RenderTarget } | undefined;
 	blurTexture(options: LiquidGlassPanelOptions): THREE.Texture;
@@ -159,7 +161,7 @@ export class MinimapController {
 		});
 	}
 	private getZoomReferenceTarget() {
-		return this.ports.spatialElement().referenceTarget;
+		return this.ports.spatialElement().center;
 	}
 	private getPanelTransitionOpacity(panel?: StagePanelRuntime) {
 		return this.ports.transitionOpacity(panel);
@@ -194,6 +196,11 @@ export class MinimapController {
 		this.hideExcludedMeshes(modelRoot);
 		const bounds = getMeshBounds(modelRoot, (mesh) => this.isSpatialElementMesh(mesh));
 		const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+		// Low-LOD bounds can have a different center from the shared model frame.
+		// Use the same pivot as the main view so orbiting cannot move its footprint.
+		const center = this.ports.spatialElement().center;
+		sphere.radius += sphere.center.distanceTo(center);
+		sphere.center.copy(center);
 		const modelCenter = new THREE.Group();
 		modelCenter.add(modelRoot);
 		modelCenter.position.copy(sphere.center).multiplyScalar(-1);
@@ -320,13 +327,11 @@ export class MinimapController {
 
 		const displayRoot = (this.lowModel ?? this.model).clone(true);
 		this.hideExcludedMeshes(displayRoot);
-		const displayBounds = getMeshBounds(displayRoot, (mesh) => this.isSpatialElementMesh(mesh));
-		const displaySphere = displayBounds.getBoundingSphere(new THREE.Sphere());
 		const modelBoundsPoints = getMeshBoundsPoints(displayRoot, (mesh) => this.isSpatialElementMesh(mesh));
-		modelBoundsPoints.forEach((point) => point.sub(displaySphere.center));
+		modelBoundsPoints.forEach((point) => point.sub(center));
 		const displayCenter = new THREE.Group();
 		displayCenter.add(displayRoot);
-		displayCenter.position.copy(displaySphere.center).multiplyScalar(-1);
+		displayCenter.position.copy(center).multiplyScalar(-1);
 		const displayModel = new THREE.Group();
 		displayModel.add(displayCenter);
 		const displayMaterials = prepareMinimapModel(displayModel);
@@ -715,7 +720,7 @@ export class MinimapController {
 		const contentHeight = Math.max(panelHeight - minimap.options.inset * 2, 8);
 		const availableDiameter = Math.min(contentWidth, contentHeight) * MINIMAP_MODEL_FILL;
 		const presentationScale = THREE.MathUtils.clamp(
-			this.ports.target(minimap.panelIndex)?.getMinimapModelScale?.() ?? 1,
+			this.ports.frame().fullscreen ? 1 : (this.ports.target(minimap.panelIndex)?.getMinimapModelScale?.() ?? 1),
 			0.2,
 			2
 		);
@@ -742,7 +747,7 @@ export class MinimapController {
 			liveQuaternion,
 			THREE.MathUtils.clamp(focus, 0, 1)
 		);
-		if (minimap.dockedQuaternion) {
+		if (minimap.dockedQuaternion && !this.ports.frame().fullscreen) {
 			minimap.displayModel.quaternion.slerpQuaternions(
 				baseQuaternion,
 				minimap.dockedQuaternion,
@@ -759,6 +764,7 @@ export class MinimapController {
 		minimap.displayModel.position.set(0, 0, modelZ);
 	}
 	alignMinimapModelToDockTop(minimap: StageMinimapState) {
+		if (this.ports.frame().fullscreen) return;
 		const targetTop = this.ports.target(minimap.panelIndex)?.getMinimapModelTop?.();
 		if (targetTop === undefined || !Number.isFinite(targetTop)) return;
 
@@ -941,22 +947,13 @@ export class MinimapController {
 		if (!target) return;
 
 		const progress = smoothstep(0.04, 0.72, focus);
-		const viewportWidth = Math.min(rectWidth, panelWidth);
-		const viewportHeight = Math.min(rectHeight, panelHeight);
-		const targetLeft = THREE.MathUtils.clamp(
-			panelWidth * 0.5 + rectX - viewportWidth * 0.5,
-			0,
-			panelWidth - viewportWidth
+		const clipped = clipMinimapViewportRect(
+			{ x: rectX, y: rectY, width: rectWidth, height: rectHeight }, panelWidth, panelHeight
 		);
-		const targetTop = THREE.MathUtils.clamp(
-			panelHeight * 0.5 - rectY - viewportHeight * 0.5,
-			0,
-			panelHeight - viewportHeight
-		);
-		const left = THREE.MathUtils.lerp(0, targetLeft, progress);
-		const top = THREE.MathUtils.lerp(0, targetTop, progress);
-		const currentWidth = THREE.MathUtils.lerp(panelWidth, viewportWidth, progress);
-		const currentHeight = THREE.MathUtils.lerp(panelHeight, viewportHeight, progress);
+		const left = THREE.MathUtils.lerp(0, clipped.left, progress);
+		const top = THREE.MathUtils.lerp(0, clipped.top, progress);
+		const currentWidth = THREE.MathUtils.lerp(panelWidth, clipped.width, progress);
+		const currentHeight = THREE.MathUtils.lerp(panelHeight, clipped.height, progress);
 		const radius = THREE.MathUtils.lerp(minimap.baseRadius, 2, progress);
 		const cornerRadii = getMinimapViewportCornerRadii(
 			panelWidth,
@@ -997,8 +994,8 @@ export class MinimapController {
 	) {
 		const panelW = Math.max(panelWidth, 0.001);
 		const panelH = Math.max(panelHeight, 0.001);
-		const width = THREE.MathUtils.clamp(viewportWidth, 0.001, panelW);
-		const height = THREE.MathUtils.clamp(viewportHeight, 0.001, panelH);
+		const width = THREE.MathUtils.clamp(viewportWidth, 0, panelW);
+		const height = THREE.MathUtils.clamp(viewportHeight, 0, panelH);
 		const left = THREE.MathUtils.clamp(viewportLeft, 0, panelW - width);
 		const top = THREE.MathUtils.clamp(viewportTop, 0, panelH - height);
 		const lineWidth = MINIMAP_VIEWPORT_BORDER_THICKNESS;
@@ -1050,7 +1047,7 @@ export class MinimapController {
 		const transitionOpacity = this.getPanelTransitionOpacity(this.ports.panel(minimap.panelIndex));
 		const visibleOverlay = overlayProgress * overlayFade * transitionOpacity;
 		const surfaceOpacity = THREE.MathUtils.clamp(
-			this.ports.target(minimap.panelIndex)?.getSurfaceOpacity?.() ?? 1,
+			this.ports.frame().fullscreen ? 1 : (this.ports.target(minimap.panelIndex)?.getSurfaceOpacity?.() ?? 1),
 			0,
 			1
 		);
@@ -1067,7 +1064,8 @@ export class MinimapController {
 		minimap.overlayComposite.visible =
 			this.measurementMode !== 'no-overlay' && visibleOverlay > 0.001;
 		minimap.overlayVisibility.value = visibleOverlay;
-		minimap.overlayRing.visible = ringOpacity > 0.001;
+		minimap.overlayRing.visible = ringOpacity > 0.001 &&
+			minimap.overlayViewportHalfSize.value.x > 0 && minimap.overlayViewportHalfSize.value.y > 0;
 		minimap.overlayRing.material.opacity = ringOpacity;
 
 		// The live model is the sole sharp source. The opaque outside compositor

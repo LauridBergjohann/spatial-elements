@@ -82,6 +82,8 @@ export interface StageVisualTestController {
 	getModelRect(): StageVisualTestRect | null;
 	/** Returns the projected 3D element bounds in viewport pixels. */
 	getMinimapModelRect(): StageVisualTestRect | null;
+	/** Returns the visible viewport mask in minimap-local pixels. */
+	getMinimapViewportRect(): StageVisualTestRect | null;
 	/** Returns canonical, displayed, and fully synchronized minimap orientations. */
 	getMinimapOrientation(): StageVisualTestMinimapOrientation | null;
 	/** Returns minimap overlay submissions for performance regression tests. */
