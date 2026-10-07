@@ -87,6 +87,7 @@
 		popover.showPopover();
 		open = true;
 		await tick();
+		if (!open || !enhanced) return;
 		requestPosition();
 		if (keyboard) closeButton.focus({ preventScroll: true });
 	}
@@ -108,6 +109,9 @@
 	}
 
 	onMount(() => {
+		// The child component can clear bind:element before this mount cleanup runs.
+		// Remove listeners from the same node they were registered on.
+		const helpButton = button;
 		guidance = getInteractionGuidance();
 		touchInput = window.matchMedia('(pointer: coarse)').matches;
 		const stopGuidance = guidance.subscribe((state) => {
@@ -164,13 +168,13 @@
 		};
 		const stopScroll = subscribeStageScrollFrame(() => {
 			if (!open) return;
-			const rect = button.getBoundingClientRect();
+			const rect = helpButton.getBoundingClientRect();
 			if (rect.bottom < 0 || rect.top > innerHeight) close();
 			else requestPosition();
 		}, STAGE_SCROLL_PRIORITY.stage + 1);
 		stage.addEventListener(MODEL_INPUT_EVENT, modelChanged);
-		button.addEventListener('pointerenter', buttonEnter);
-		button.addEventListener('pointerleave', buttonLeave);
+		helpButton.addEventListener('pointerenter', buttonEnter);
+		helpButton.addEventListener('pointerleave', buttonLeave);
 		window.addEventListener('pointerdown', inputChanged, { capture: true, passive: true });
 		window.addEventListener('pointermove', inputChanged, { capture: true, passive: true });
 		window.addEventListener('keydown', keydown);
@@ -183,8 +187,8 @@
 			close(); stopGuidance(); stopScroll(); mutation.disconnect(); observer.disconnect(); size.disconnect(); headerSize.disconnect();
 			root.appendChild(popover);
 			stage.removeEventListener(MODEL_INPUT_EVENT, modelChanged);
-			button.removeEventListener('pointerenter', buttonEnter);
-			button.removeEventListener('pointerleave', buttonLeave);
+			helpButton.removeEventListener('pointerenter', buttonEnter);
+			helpButton.removeEventListener('pointerleave', buttonLeave);
 			window.removeEventListener('pointerdown', inputChanged, true);
 			window.removeEventListener('pointermove', inputChanged, true);
 			window.removeEventListener('keydown', keydown);

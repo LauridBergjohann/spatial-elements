@@ -114,14 +114,15 @@
 
 	onMount(() => {
 		if (!getMinimapOptions()) return;
+		const minimapContent = contentElement;
 
 		const resetView = (event: MouseEvent) => {
 			if (event.defaultPrevented || event.button !== 0) return;
 			stage.resetView();
 		};
 
-		contentElement.addEventListener('click', resetView);
-		return () => contentElement.removeEventListener('click', resetView);
+		minimapContent.addEventListener('click', resetView);
+		return () => minimapContent.removeEventListener('click', resetView);
 	});
 
 	function getContentInset() {

@@ -296,9 +296,11 @@
 		event.preventDefault();
 	}
 	onMount(() => {
+		// Section's child snippet can clear bind:this before this mount cleanup runs.
+		const carouselRing = ring;
 		interactive = true;
 		// The model owns both single-finger axes; passive events still allow native pinch zoom.
-		ring.addEventListener('touchstart', touchstart, { passive: true });
+		carouselRing.addEventListener('touchstart', touchstart, { passive: true });
 		const release = sections?.register(section.id, {
 			read: () => selected,
 			restore: (key) => {
@@ -319,19 +321,19 @@
 				settle();
 			}
 		});
-		observer.observe(ring);
+		observer.observe(carouselRing);
 		let sizingFrame = 0;
 		const measure = () => {
 			sizingFrame = 0;
-			const heights = [...ring.querySelectorAll<HTMLElement>('.summary')].map(
+			const heights = [...carouselRing.querySelectorAll<HTMLElement>('.summary')].map(
 				(panel) => panel.offsetHeight
 			);
 			const contentHeight = Math.max(0, ...heights);
 			const height =
-				ring.clientWidth < 700 ? 408 + contentHeight : Math.max(560, contentHeight + 64);
+				carouselRing.clientWidth < 700 ? 408 + contentHeight : Math.max(560, contentHeight + 64);
 			const value = height + 'px';
-			if (ring.style.getPropertyValue('--carousel-height') !== value)
-				ring.style.setProperty('--carousel-height', value);
+			if (carouselRing.style.getPropertyValue('--carousel-height') !== value)
+				carouselRing.style.setProperty('--carousel-height', value);
 		};
 		const scheduleSize = () => {
 			if (!sizingFrame) sizingFrame = requestAnimationFrame(measure);
@@ -339,13 +341,13 @@
 		const sizing = new ResizeObserver(scheduleSize);
 		const contentChanges = new MutationObserver(() => {
 			sizing.disconnect();
-			sizing.observe(ring);
-			for (const panel of ring.querySelectorAll('.summary')) sizing.observe(panel);
+			sizing.observe(carouselRing);
+			for (const panel of carouselRing.querySelectorAll('.summary')) sizing.observe(panel);
 			scheduleSize();
 		});
-		contentChanges.observe(ring, { childList: true, subtree: true });
-		sizing.observe(ring);
-		for (const panel of ring.querySelectorAll('.summary')) sizing.observe(panel);
+		contentChanges.observe(carouselRing, { childList: true, subtree: true });
+		sizing.observe(carouselRing);
+		for (const panel of carouselRing.querySelectorAll('.summary')) sizing.observe(panel);
 		const stop = () => pointercancel();
 		let viewportWidth = window.innerWidth;
 		const resize = () => {
@@ -371,7 +373,7 @@
 			stopScrollMomentum();
 			clearTimeout(clickTimer);
 			releaseDrag();
-			ring.removeEventListener('touchstart', touchstart);
+			carouselRing.removeEventListener('touchstart', touchstart);
 			observer.disconnect();
 			sizing.disconnect();
 			contentChanges.disconnect();

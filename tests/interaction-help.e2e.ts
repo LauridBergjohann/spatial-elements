@@ -119,6 +119,30 @@ test('a quick wheel gesture skips the introduction and help remains usable in cl
 	expect(await help(page).evaluate(node => node.closest('[aria-hidden="true"]') !== null)).toBe(false);
 });
 
+test('help cleans up without errors on repeated client-side detail navigation', async ({ page }) => {
+	const errors: string[] = [];
+	page.on('pageerror', error => errors.push(error.message));
+	await page.goto('/demo/categories/list?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
+	for (const showHelp of [false, true, false, true]) {
+		await page.locator('[data-catalog-card][data-spatial-element-id="cube"]').click();
+		await expect(page).toHaveURL(/elements\/cube/);
+		await expect(button(page)).toBeVisible();
+		await expect(help(page)).toHaveCount(1);
+		if (showHelp) {
+			await button(page).focus();
+			await page.keyboard.press('Enter');
+			await expect(page.getByRole('button', { name: 'Close help' })).toBeFocused();
+		}
+		// Navigate without first clicking outside or explicitly closing the focused popover.
+		await page.goBack();
+		await expect(page).toHaveURL(/categories\/list/);
+		await expect(help(page)).toHaveCount(0);
+		await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
+		expect(errors).toEqual([]);
+	}
+});
+
 test('reduced motion disables the introductory orbit', async ({ page }) => {
 	await page.emulateMedia({ reducedMotion: 'reduce' });
 	const point = await open(page);
