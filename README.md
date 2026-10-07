@@ -11,7 +11,7 @@ Rendering is powered by Three.js and WebGPU. Visitors can explore models, rotate
 | [@spatial-elements/sveltekit](packages/sveltekit/README.md) | Ready-to-use Svelte components, page composition and SvelteKit navigation/history integration. Includes core as a dependency. |
 | [@spatial-elements/core](packages/core/README.md) | Framework-independent rendering, model loading, level of detail (LOD), camera interaction and transitions for custom integrations. |
 
-The packages are currently in beta. The usage guides target `1.0.0-beta.3` and newer. SvelteKit is the available framework adapter; custom integrations can build on core.
+The packages are currently in beta. The usage guides target `1.0.0-beta.5` and newer. SvelteKit is the available framework adapter; custom integrations can build on core.
 
 ## Installation
 

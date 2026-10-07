@@ -9,8 +9,8 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "@spatial-elements/core": "1.0.0-beta.4",
-    "@spatial-elements/sveltekit": "1.0.0-beta.4"
+    "@spatial-elements/core": "1.0.0-beta.5",
+    "@spatial-elements/sveltekit": "1.0.0-beta.5"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^7.0.1",

@@ -1,5 +1,19 @@
 # @spatial-elements/core
 
+## 1.0.0-beta.5
+
+### Minor Changes
+
+- 671b2de: Add a themed detail/fullscreen view switch beside 3D help, with localized tooltips and a viewport fallback when the Fullscreen API is unavailable or denied. Fullscreen preserves camera navigation and SpaceMouse, keeps the expanded live minimap and help, and accepts mouse/touch input across the canvas without model picking or hover glow.
+
+  Match the controls' corner radii, restore the fitted view from the detail button and fade its selection with zoom. Project and clip the minimap viewport at its actual size around the shared model center, keeping it stable during orbit. Align the demo header with the brand layouts and keep breadcrumbs visible.
+
+- a0d51dd: Support reactive runtime themes, optional HDR backdrop overrides and resolved color schemes without resetting element interaction. Export a reusable controlled ButtonGroup and use it for the detail/fullscreen switch. Add shell-owned light, dark and system examples with session preference persistence.
+
+### Patch Changes
+
+- a0d51dd: Keep detail summary panels sticky only within their hero section, synchronizing their surface and content clipping during scroll. Size summaries from their content so long titles, wrapped features and late font changes remain inside the panel. Prevent fullscreen corner controls from pinning summary panels during ordinary page scrolling.
+
 ## 1.0.0-beta.4
 
 ### Minor Changes
