@@ -1,7 +1,8 @@
 <script lang="ts">
  import type { HTMLAttributes } from "svelte/elements";
  type StagePanelAttributes = HTMLAttributes<HTMLDivElement>;
-	import { getContext, onDestroy, onMount } from 'svelte';
+	import { getContext, onDestroy, onMount, untrack } from 'svelte';
+	import { authoredStyle } from './authoredStyle.js';
 	import type { Snippet } from 'svelte';
 	import {
 		STAGE_CONTEXT_KEY,
@@ -98,6 +99,13 @@
 
 	onDestroy(unregister);
 	$effect(() => {
+		getPanelOptions();
+		getContentInset();
+		Object.values(getMinimapOptions() ?? {});
+		void resolvedSurface;
+		stage.updatePanelAppearance?.();
+	});
+	$effect(() => {
 		if (nativeContent) {
 			void visible;
 			window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
@@ -180,9 +188,6 @@
 			`--stage-panel-thickness: ${thickness}`,
 			`--stage-panel-bezel: ${bezel}px`,
 			`--stage-panel-opacity: ${clamp(theme.opacity ?? 1, 0, 1)}`,
-			'--stage-panel-surface-opacity: 1',
-			'--stage-panel-focus-opacity: 1',
-			'--stage-panel-content-opacity: 1',
 			`--stage-panel-css-blur: ${Math.min(backdropBlur, 100)}px`
 		];
 
@@ -242,6 +247,9 @@
 	function clamp(value: number, min: number, max: number) {
 		return Math.min(Math.max(value, min), max);
 	}
+	// SSR styles are static; the action patches only authored properties after hydration.
+	const initialFallbackStyle = untrack(getFallbackStyle);
+	const initialContentStyle = untrack(getContentThemeStyle);
 </script>
 
 <div
@@ -255,7 +263,8 @@
 	class={[frameClass, 'stage-panel-fallback', pose ? 'stage-panel-posed' : '']
 		.filter(Boolean)
 		.join(' ')}
-	style={getFallbackStyle()}
+	style={initialFallbackStyle}
+	use:authoredStyle={getFallbackStyle()}
 >
 	<div
 		bind:this={surfaceElement}
@@ -264,7 +273,9 @@
 		data-stage-panel-minimap={minimap ? '' : undefined}
 		data-stage-panel-surface={resolvedSurface}
 		class="stage-panel-surface"
-		style={getFallbackStyle()}
+		style={initialFallbackStyle}
+		data-stage-panel-authored-style={getFallbackStyle()}
+		use:authoredStyle={getFallbackStyle()}
 	>
 		<div
 			{...rest}
@@ -274,7 +285,9 @@
 			data-stage-corner-control={focusReactive === 'top-right' ? '' : undefined}
 			data-catalog-transition-group={transitionGroup}
 			class={contentClass}
-			style={getContentThemeStyle()}
+			style={initialContentStyle}
+			data-stage-panel-authored-style={getContentThemeStyle()}
+			use:authoredStyle={getContentThemeStyle()}
 		>
 			{@render children?.()}
 		</div>

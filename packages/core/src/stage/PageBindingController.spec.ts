@@ -4,6 +4,22 @@ import type { StagePanelTarget } from './stageTypes.js';
 
 afterEach(() => vi.unstubAllGlobals());
 
+test('sticky panels stay below the header only until the end of their containing block', () => {
+	vi.stubGlobal('window', { getComputedStyle: () => ({ position: 'sticky', top: '104px' }) });
+	const frame = {
+		getBoundingClientRect: () => ({ left: 900, top: 112, width: 494, height: 504 }),
+		parentElement: { getBoundingClientRect: () => ({ bottom: 782 }) }
+	} as unknown as HTMLElement;
+	const owner = new PageBindingController();
+	const measured = owner.measure(frame, 0, 0);
+	expect(owner.resolve(measured, 0, 0).top).toBe(112);
+	expect(owner.resolve(measured, 0, 100).top).toBe(104);
+	expect(owner.resolve(measured, 0, 174).bottom).toBe(608);
+	expect(owner.resolve(measured, 0, 300).bottom).toBe(482);
+	expect(owner.resolve(measured, 0, 800).bottom).toBe(-18);
+	expect(owner.resolve(measured, 0, 0).top).toBe(112);
+});
+
 test('native popover surfaces retain viewport coordinates when the document scrolls', () => {
 	const popover = {} as HTMLElement;
 	const frame = {

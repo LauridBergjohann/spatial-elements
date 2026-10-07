@@ -113,8 +113,9 @@ export class PanelPresentationController {
 		for (const [element, home] of [...this.domHomes].reverse()) {
 			if (home.next?.parentNode === home.parent) home.parent.insertBefore(element, home.next);
 			else home.parent.appendChild(element);
-			if (home.style === null) element.removeAttribute('style');
-			else element.setAttribute('style', home.style);
+			const authoredStyle = element.dataset.stagePanelAuthoredStyle ?? home.style;
+			if (authoredStyle === null) element.removeAttribute('style');
+			else element.setAttribute('style', authoredStyle);
 			if (home.draggable === null) element.removeAttribute('draggable');
 			else element.setAttribute('draggable', home.draggable);
 			delete element.dataset.stagePanelRenderMode;
@@ -341,8 +342,10 @@ export class PanelPresentationController {
 				topInset = Math.max(topInset, layout.centerY + layout.visualHeight * scale / 2 + 8);
 		}
 		const endY = height / 2 - topInset - panel.options.height / 2;
-		const startX = THREE.MathUtils.clamp(panel.options.position.x, -width / 2 + inset + panel.options.width / 2, endX);
-		const startY = THREE.MathUtils.clamp(panel.options.position.y, -endY, endY);
+		// At rest, follow the authored document pose. Clamping this starting pose
+		// would pin both controls and their summary anchor during ordinary scrolling.
+		const startX = panel.options.position.x;
+		const startY = panel.options.position.y;
 		const progress = getPanelFocusProgress(uiFocus);
 		return {
 			x: THREE.MathUtils.lerp(startX, endX, progress) - panel.options.position.x,

@@ -15,7 +15,8 @@
 		occurrence,
 		order = 0
 	}: { spatialElement: SpatialListItem; occurrence: string; order?: number } = $props();
-	const brand = useSpatialTheme();
+	const readTheme = useSpatialTheme();
+	const brand = $derived(readTheme());
 	const catalogEndpoint = createCatalogEndpointAction();
 	const endpoints = getContext<CatalogEndpointRegistry | undefined>(CATALOG_ENDPOINTS);
 	const items = getContext<CatalogItems | undefined>(CATALOG_ITEMS);

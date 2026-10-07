@@ -47,3 +47,12 @@ test('a minimal element supplies both category assets and detail defaults', () =
 		'shell uses "shop"'
 	);
 });
+
+test('HDR theme overrides are optional and independent of the source palette', () => {
+	const sceneBackground = { tint: '#111820', tintIntensity: 0.85 };
+	const dark = createSpatialTheme({ id: 'shop', name: 'Shop', sceneBackground });
+	expect(dark.sceneBackground).toEqual(sceneBackground);
+	dark.sceneBackground!.tintIntensity = 0.4;
+	expect(sceneBackground.tintIntensity).toBe(0.85);
+	expect(createSpatialTheme({ id: 'shop', name: 'Shop' }).sceneBackground).toBeUndefined();
+});

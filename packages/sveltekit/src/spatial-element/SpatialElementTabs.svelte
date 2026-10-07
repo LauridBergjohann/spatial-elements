@@ -14,7 +14,8 @@
 		sections: SpatialElementSectionNavigationItem[];
 	} = $props();
 	let anchorElement: HTMLDivElement;
-	const theme = useSpatialTheme();
+	const readTheme = useSpatialTheme();
+	const theme = $derived(readTheme());
 
 	onMount(() => {
 		let resizeObserver: ResizeObserver | undefined;

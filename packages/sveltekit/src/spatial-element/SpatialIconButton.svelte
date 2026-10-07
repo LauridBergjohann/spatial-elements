@@ -14,7 +14,8 @@
 		enabled?: boolean;
 		element?: HTMLButtonElement;
 	} = $props();
-	const theme = useSpatialTheme();
+	const readTheme = useSpatialTheme();
+	const theme = $derived(readTheme());
 </script>
 
 <div class="icon-frame">

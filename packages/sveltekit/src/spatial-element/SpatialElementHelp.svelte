@@ -12,7 +12,8 @@
 	import { useSpatialTheme } from './brandContext.js';
 	import { useSpatialMessages } from './messagesContext.js';
 
-	const theme = useSpatialTheme();
+	const readTheme = useSpatialTheme();
+	const theme = $derived(readTheme());
 	const stageContext = getContext<StageContext>(STAGE_CONTEXT_KEY);
 	const fullscreen = $derived(stageContext.isFullscreen?.() ?? false);
 	const readMessages = useSpatialMessages();

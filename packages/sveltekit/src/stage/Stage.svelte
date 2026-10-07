@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SpatialElementLodPair } from '@spatial-elements/core/catalog/spatialElementLodPair';
+	import { DEFAULT_BACKGROUND } from '@spatial-elements/core/stage/stageConstants';
 	import { onMount, setContext, tick } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import type {
@@ -60,6 +61,8 @@
 		dracoDecoderPath?: string;
 		ariaLabel?: string;
 		background?: BackgroundSettings;
+		/** Theme overrides applied after each element's HDR background settings. */
+		sceneBackground?: Partial<BackgroundSettings>;
 		pageBackground?: string;
 		hdr?: string;
 		glb?: string;
@@ -79,6 +82,7 @@
 		dracoDecoderPath,
 		pageBackground = '#ffffff',
 		background: standaloneBackground,
+		sceneBackground,
 		hdr: standaloneHdr,
 		glb: standaloneGlb,
 		lodPair: standaloneLodPair,
@@ -116,7 +120,7 @@
 	const catalogSpatialElements = $derived(
 		displayedSpatialElements.length ? displayedSpatialElements : (catalog?.spatialElements ?? [])
 	);
-	const background = $derived(brandId ? activeElement?.background : standaloneBackground);
+	const background = $derived({ ...DEFAULT_BACKGROUND, ...(brandId ? activeElement?.background : standaloneBackground), ...sceneBackground });
 	const hdr = $derived(brandId
 		? (activePage?.kind === 'content' ? activePage.hdr : activeScene?.hdr ?? '')
 		: standaloneHdr);
@@ -179,6 +183,7 @@
 	};
 
 	setContext<StageContext>(STAGE_CONTEXT_KEY, {
+		updatePanelAppearance: scheduleAppearanceUpdate,
 		prefetchSpatialElement: (config) => experience?.prefetchSpatialElement(config),
 		registerPanel(panel) {
 			registeredPanels.push(panel);
@@ -353,6 +358,22 @@
 		};
 	});
 
+	$effect(() => {
+		void pageBackground; void background; void isEnhanced;
+		Object.values(interactionTheme ?? {});
+		scheduleAppearanceUpdate();
+	});
+	let appearanceUpdatePending = false;
+	function scheduleAppearanceUpdate() {
+		if (appearanceUpdatePending) return;
+		appearanceUpdatePending = true;
+		void tick().then(() => {
+			appearanceUpdatePending = false;
+			if (!destroyed && isEnhanced) experience?.updateAppearance({
+				pageBackground, background, interactionTheme, panels: getPanelTargets()
+			});
+		});
+	}
 	$effect(() => {
 		const spatialElements = catalogSpatialElements;
 		if (experience && catalog && isEnhanced) {

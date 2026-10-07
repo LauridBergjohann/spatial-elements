@@ -2,6 +2,8 @@
 
 SvelteKit components and navigation for Spatial Elements.
 
+Pass a reactive `theme` and optional resolved `colorScheme` (`light` or `dark`) to `BrandStageShell` for live appearance changes. The host owns system preference and persistence. The public `ButtonGroup` component can implement a theme switch, language selector or other choices. See [runtime themes and ButtonGroup](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/theming.md).
+
 Detail pages include 3D help and a detail/fullscreen view switch, with a viewport fallback when native fullscreen is unavailable. Pass optional `messages` to `BrandStageShell` to translate labels, tooltips and instructions, including `controls.detailView` and `controls.fullscreen`; missing strings use English defaults. See [interface texts and help](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/interface-texts.md) for the complete typed dictionary and examples.
 
 The detail button always restores the fitted camera view, including when already on the detail page. Its selected background fades with camera zoom; the fullscreen button remains selected throughout fullscreen navigation.

@@ -1,4 +1,5 @@
 import type { StagePanelTarget, StageViewportTarget } from './stageTypes.js';
+import { getStickyPanelTop } from './stageDom.js';
 
 export interface CachedStageRect {
 	fixed: boolean;
@@ -6,6 +7,7 @@ export interface CachedStageRect {
 	left: number;
 	top: number;
 	width: number;
+	sticky?: { inset: number; boundaryBottom: number };
 }
 
 /** Page-local registrations only. Never owns element leases or a renderer. */
@@ -68,7 +70,10 @@ export class PageBindingController {
 		this.observer = new ResizeObserver((entries, observer) => {
 			if (this.isCurrent(token)) onResize(entries, observer);
 		});
-		for (const target of this.targets) this.observer.observe(target.frame);
+		for (const target of this.targets) {
+			this.observer.observe(target.frame);
+			if (target.frame.parentElement) this.observer.observe(target.frame.parentElement);
+		}
 		if (this.viewportHost) this.observer.observe(this.viewportHost.element);
 	}
 
@@ -82,20 +87,27 @@ export class PageBindingController {
 	measure(element: HTMLElement, scrollX: number, scrollY: number): CachedStageRect {
 		const rect = element.getBoundingClientRect();
 		const popover = element.closest?.<HTMLElement>('[popover]');
-		const fixed = window.getComputedStyle(element).position === 'fixed' ||
+		const style = window.getComputedStyle(element);
+		const fixed = style.position === 'fixed' ||
 			Boolean(popover && window.getComputedStyle(popover).position === 'fixed');
+		const sticky = style.position === 'sticky' && element.parentElement && style.top !== 'auto'
+			? { inset: Number.parseFloat(style.top) || 0, boundaryBottom: element.parentElement.getBoundingClientRect().bottom + scrollY }
+			: undefined;
 		return {
 			fixed,
 			left: rect.left + (fixed ? 0 : scrollX),
 			top: rect.top + (fixed ? 0 : scrollY),
 			width: rect.width,
-			height: rect.height
+			height: rect.height,
+			...(sticky ? { sticky } : {})
 		};
 	}
 
 	resolve(rect: CachedStageRect, scrollX: number, scrollY: number) {
 		const left = rect.left - (rect.fixed ? 0 : scrollX);
-		const top = rect.top - (rect.fixed ? 0 : scrollY);
+		const top = rect.sticky
+			? getStickyPanelTop(rect.top, rect.height, rect.sticky.boundaryBottom, rect.sticky.inset, scrollY)
+			: rect.top - (rect.fixed ? 0 : scrollY);
 		return {
 			left,
 			top,

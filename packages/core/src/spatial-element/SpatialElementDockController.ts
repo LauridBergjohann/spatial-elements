@@ -1,4 +1,5 @@
 import { STAGE_PANEL_LAYOUT_EVENT, STAGE_PANEL_VISUAL_EVENT } from '../stage/panelContext.js';
+import { getStickyPanelTop } from '../stage/stageDom.js';
 import {
 	STAGE_SCROLL_PRIORITY,
 	getStageVisualScrollPosition,
@@ -38,6 +39,8 @@ const DEPARTING_CONTENT =
 
 interface ContentPresentation {
 	element: HTMLElement;
+	frame?: HTMLElement;
+	sticky?: { documentTop: number; height: number; boundaryBottom: number; inset: number; contentInset: number };
 	clipPath: string;
 	webkitClipPath: string;
 	documentTop: number;
@@ -47,7 +50,7 @@ interface ContentPresentation {
 
 /**
  * Pins the existing minimap without transforming it and reveals a separate HTML header.
- * The normal element summary remains in document flow and simply leaves with the hero.
+ * The element summary stays bounded by its hero while the header takes over on scroll.
  */
 export class SpatialElementDockController {
 	private minimapAnchor?: HTMLElement;
@@ -136,6 +139,7 @@ export class SpatialElementDockController {
 			this.root.querySelectorAll<HTMLElement>(DEPARTING_CONTENT)
 		).map((element) => ({
 			element,
+			frame: element.closest<HTMLElement>(PANEL_FRAME) ?? undefined,
 			clipPath: element.style.clipPath,
 			webkitClipPath: element.style.getPropertyValue('-webkit-clip-path'),
 			documentTop: 0,
@@ -173,6 +177,10 @@ export class SpatialElementDockController {
 			this.resizeObserver.observe(this.minimapAnchor);
 			this.resizeObserver.observe(this.stickyHeader);
 			if (this.tabsAnchor) this.resizeObserver.observe(this.tabsAnchor);
+			for (const { frame } of this.departingContent) {
+				if (frame) this.resizeObserver.observe(frame);
+				if (frame?.parentElement) this.resizeObserver.observe(frame.parentElement);
+			}
 		}
 
 		this.setTabsActive(false);
@@ -204,6 +212,7 @@ export class SpatialElementDockController {
 		this.root.removeAttribute('data-spatial-element-dock-active');
 		this.root.removeAttribute('data-spatial-element-tabs-dock-active');
 		this.root.style.removeProperty('--spatial-element-section-scroll-offset');
+		this.root.style.removeProperty('--spatial-element-summary-sticky-top');
 		(this.layoutRoot ?? this.root).style.removeProperty('--spatial-element-content-inline-inset');
 	}
 
@@ -259,6 +268,7 @@ export class SpatialElementDockController {
 			);
 		}
 		this.stickyHeaderBottom = headerRect.top + headerRect.height;
+		this.root.style.setProperty('--spatial-element-summary-sticky-top', `${this.stickyHeaderBottom + 10}px`);
 		this.measureDepartingContent();
 		this.breakpoint = getSpatialElementDockBreakpoint(
 			minimapRect.top + this.scrollY,
@@ -651,12 +661,28 @@ export class SpatialElementDockController {
 			const rect = state.element.getBoundingClientRect();
 			state.documentTop = rect.top + this.scrollY;
 			state.height = rect.height;
+			state.sticky = undefined;
+			if (state.frame?.parentElement) {
+				const style = getComputedStyle(state.frame);
+				if (style.position !== 'sticky') continue;
+				const frameRect = state.frame.getBoundingClientRect();
+				state.sticky = {
+					documentTop: frameRect.top + this.scrollY,
+					height: frameRect.height,
+					boundaryBottom: state.frame.parentElement.getBoundingClientRect().bottom + this.scrollY,
+					inset: Number.parseFloat(style.top) || 0,
+					contentInset: Number.parseFloat(style.getPropertyValue('--stage-panel-content-inset')) || 0
+				};
+			}
 		}
 	}
 
 	private updateDepartingContentClipping() {
 		for (const state of this.departingContent) {
-			const viewportTop = state.documentTop - this.scrollY;
+			const sticky = state.sticky;
+			const viewportTop = sticky
+				? getStickyPanelTop(sticky.documentTop, sticky.height, sticky.boundaryBottom, sticky.inset, this.scrollY) + sticky.contentInset
+				: state.documentTop - this.scrollY;
 			const inset = Math.min(Math.max(this.stickyHeaderBottom - viewportTop, 0), state.height);
 			const clipPath = `inset(${inset.toFixed(2)}px 0 0 0)`;
 			if (state.appliedClipPath === clipPath) continue;

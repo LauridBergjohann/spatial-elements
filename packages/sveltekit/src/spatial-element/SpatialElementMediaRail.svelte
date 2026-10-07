@@ -4,7 +4,8 @@
 	import type { ResolvedSpatialElementData as SpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 
 	let { spatialElement }: { spatialElement: SpatialElementData } = $props();
-	const theme = useSpatialTheme();
+	const readTheme = useSpatialTheme();
+	const theme = $derived(readTheme());
 	const minimap = $derived({
 		...spatialElement.minimap,
 		...theme.minimapTheme,

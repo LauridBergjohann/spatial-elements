@@ -8,6 +8,23 @@ import { getPanelFocusOpacity, getSequencedMinimapFocus, getStageUiFocus } from 
 
 afterEach(() => vi.unstubAllGlobals());
 
+test('unzoomed corner controls follow the document offscreen instead of pinning their summary', () => {
+	vi.stubGlobal('window', { innerWidth: 1440, innerHeight: 900, location: { search: '' } });
+	vi.stubGlobal('document', { documentElement: { clientWidth: 1440 } });
+	const camera = new THREE.PerspectiveCamera(); camera.position.z = 1400;
+	const frame = {} as HTMLElement;
+	const control = { focusReactive: 'top-right', options: resolveLiquidGlassPanelOptions({ width: 40, height: 40, position: { x: 100, y: 670 } }) } as StagePanelRuntime;
+	const summary = { focusReactive: true, options: resolveLiquidGlassPanelOptions({ width: 494, height: 504, position: { x: 411, y: 450 } }) } as StagePanelRuntime;
+	const owner = new PanelPresentationController({
+		camera, registrations: () => [{ getFocusAnchor: () => frame }, { frame }],
+		minimaps: () => new Map(), frame: () => ({ minimapFocus: 0 }), visible: () => true
+	} as unknown as PanelPresentationPorts);
+	owner.add(control); owner.add(summary);
+	for (const [index, panel] of [control, summary].entries()) {
+		expect(owner.getPanelPointerLayout(panel, index, 1440, 900, 0).focusOffset).toEqual({ x: 0, y: 0, z: 0 });
+	}
+});
+
 test.each([[1916, 907, 0], [1280, 800, 0], [1916, 907, 17], [1280, 800, 15]])('summary and corner control reach their final pose together at panel clearance (%i x %i, scrollbar %i)', (width, height, scrollbar) => {
 	vi.stubGlobal('window', { innerWidth: width, innerHeight: height, location: { search: '' } });
 	const usableWidth = width - scrollbar;

@@ -52,6 +52,7 @@ import {
 
 import { STAGE_PANEL_LAYOUT_EVENT, STAGE_PANEL_VISUAL_EVENT } from './panelContext.js';
 import {
+	DEFAULT_BACKGROUND,
 	DEFAULT_INTERACTION_THEME,
 	DEFAULT_PANELS,
 	PANEL_CAMERA_FOV,
@@ -143,6 +144,7 @@ export class StageExperience {
 
 	private readonly pipeline: StageRenderPipeline;
 	private backgroundSettings: BackgroundSettings;
+	private appliedEnvironment?: PreparedEnvironment;
 	private pageBackground = '#ffffff';
 	private hdr: string;
 	private glb: string;
@@ -840,6 +842,75 @@ export class StageExperience {
 		const corners = [project(0, 0), project(width, 0), project(width, height), project(0, height)];
 		if (corners.some((point) => !point)) return;
 		return { width, height, corners: corners as unknown as CssProjectionQuad };
+	}
+
+	/** Updates appearance in place. Model leases, camera, interaction and page navigation stay intact. */
+	updateAppearance(options: {
+		pageBackground?: string;
+		background?: Partial<BackgroundSettings>;
+		interactionTheme?: Partial<StageInteractionTheme>;
+		panels?: StagePanelTarget[];
+	}) {
+		if (this.disposed) return;
+		this.pageBackground = options.pageBackground ?? '#ffffff';
+		this.pipeline.setPageBackground(this.pageBackground);
+		this.catalogLayer?.setPageBackground(this.pageBackground);
+		this.backgroundSettings = { ...DEFAULT_BACKGROUND, ...options.background };
+		if (this.appliedEnvironment) {
+			this.backgroundScene.background = this.backgroundSettings.blurriness <= 0
+				? this.appliedEnvironment.source : this.appliedEnvironment.target.texture;
+		}
+		this.backgroundScene.backgroundBlurriness = this.backgroundSettings.blurriness;
+		if (this.tintMaterial) {
+			this.tintMaterial.color.set(this.backgroundSettings.tint);
+			this.tintMaterial.opacity = this.backgroundSettings.tintIntensity;
+		}
+		const previousExcludeMesh = this.interactionTheme.excludeMesh;
+		Object.assign(this.interactionTheme, DEFAULT_INTERACTION_THEME, { excludeMesh: undefined }, options.interactionTheme);
+		this.pipeline.updateInteractionTheme();
+		if (previousExcludeMesh !== this.interactionTheme.excludeMesh && this.model) {
+			const pickModel = this.refinementState === 'high' && this.highPose ? this.highPose : this.model;
+			this.collectModelPickTargets(pickModel);
+			if (pickModel === this.model) this.pipeline.createModelOutline(this.model);
+			else {
+				const outline = this.model.clone(false);
+				outline.add(pickModel.clone(true));
+				this.pipeline.createModelOutline(outline);
+			}
+		}
+		const changed: number[] = [];
+		let surfaceChanged = false;
+		for (const next of options.panels ?? []) {
+			const index = this.panelTargets.findIndex((target) => target.frame === next.frame);
+			const target = this.panelTargets[index];
+			if (!target) continue; // Navigation owns newly registered panels.
+			const appearance = (panel: StagePanelTarget) => JSON.stringify([
+				panel.options, panel.minimap, panel.surface, panel.contentInset
+			]);
+			if (appearance(target) === appearance(next)) continue;
+			surfaceChanged ||= target.surface !== next.surface;
+			Object.assign(target, next);
+			changed.push(index);
+		}
+		if (changed.length) {
+			this.fallbackPanelOptions = this.panelTargets
+				.filter((target) => target.surface === 'glass' || target.minimap).map((target) => target.options);
+			this.pipeline.syncPanelBlurCaptures();
+			if (surfaceChanged) {
+				// A backend change only replaces panel presentation, never the element scene.
+				this.minimapController.dispose();
+				this.panels.release();
+				this.createPanels();
+			} else for (const index of changed) {
+				const target = this.panelTargets[index];
+				const measured = this.getMeasuredPanelOptions(target, true);
+				if (this.panelRuntimes[index]?.glass) this.replacePanel(index, measured);
+				else if (this.panelRuntimes[index]) this.panelRuntimes[index].options = resolveLiquidGlassPanelOptions(measured);
+				this.createMinimap(index, target.minimap);
+			}
+			this.panelMeasurementsDirty = this.layoutDirty = true;
+		}
+		this.requestRender();
 	}
 
 	async updatePage(options: StageExperienceOptions) {
@@ -1939,6 +2010,7 @@ export class StageExperience {
 	}
 
 	private applyEnvironment(environment: PreparedEnvironment) {
+		this.appliedEnvironment = environment;
 		this.presentation.retainEnvironment(this.environments, environment);
 		this.environmentTarget = environment.target;
 		const texture = environment.target.texture;

@@ -18,7 +18,6 @@ import {
 	float,
 	If,
 	mix,
-	color,
 	max as tslMax,
 	min as tslMin,
 	premultiplyAlpha,
@@ -205,6 +204,7 @@ export class StageRenderPipeline {
 		});
 	}
 	constructor(private readonly ports: StageRenderPorts) {
+		this.updateInteractionTheme();
 		this.setRenderSettings(ports.renderSettings);
 		this.setPageBackground(ports.pageBackground ?? '#ffffff');
 		this.backgroundCoverMaterial.fragmentNode = premultiplyAlpha(
@@ -224,6 +224,16 @@ export class StageRenderPipeline {
 	private readonly backgroundCoverMaterial = new THREE.NodeMaterial();
 	private readonly backgroundCover = new THREE.QuadMesh(this.backgroundCoverMaterial);
 	private readonly outlineMaskScene = new THREE.Scene();
+	private readonly outlineColor = uniform(new THREE.Color());
+	private readonly outlineStrength = uniform(1);
+	private readonly outlineGlow = uniform(1);
+	updateInteractionTheme() {
+		const theme = this.ports.interactionTheme();
+		this.outlineColor.value.set(theme.outlineColor);
+		this.outlineStrength.value = theme.outlineOpacity;
+		this.outlineGlow.value = theme.outlineGlow;
+		this.resizeOutline(this.outlineWidth, this.outlineHeight);
+	}
 	private _minimapOverlayCapturePasses = 0;
 	private _renderTargetSetCreations = 0;
 	private _renderTargetSetResizes = 0;
@@ -398,18 +408,18 @@ export class StageRenderPipeline {
 			const center = mask.sample(uv()).r;
 			const outside = center.oneMinus();
 			const edgeGradient = edgeNeighbor.max.sub(center).max(0);
-			const core = edgeGradient.mul(this.ports.interactionTheme().outlineOpacity);
+			const core = edgeGradient.mul(this.outlineStrength);
 			// Average neighbouring coverage, rather than dilating a solid band. Keep the
 			// halo outside the spatialElement so it cannot be mistaken for painted geometry.
 			const glowNear = glowNearNeighbor.average
 				.mul(outside)
-				.mul(this.ports.interactionTheme().outlineGlow * 0.6);
+				.mul(this.outlineGlow.mul(0.6));
 			const glowMid = glowMidNeighbor.average
 				.mul(outside)
-				.mul(this.ports.interactionTheme().outlineGlow * 0.3);
+				.mul(this.outlineGlow.mul(0.3));
 			const glowFar = glowFarNeighbor.average
 				.mul(outside)
-				.mul(this.ports.interactionTheme().outlineGlow * 0.1);
+				.mul(this.outlineGlow.mul(0.1));
 			const opacity = tslMin(core.add(glowNear).add(glowMid).add(glowFar), 1).mul(
 				this.outlineOpacityScale
 			);
@@ -433,7 +443,7 @@ export class StageRenderPipeline {
 			depthWrite: false,
 			transparent: true
 		});
-		material.colorNode = color(new THREE.Color(this.ports.interactionTheme().outlineColor));
+		material.colorNode = this.outlineColor;
 		material.opacityNode = this.createOutlineOpacity(texture(maskTexture));
 		material.toneMapped = false;
 		return material;
@@ -468,7 +478,7 @@ export class StageRenderPipeline {
 		if (this.fuseOutline) {
 			this.emptyOutlineMask.needsUpdate = true;
 			const source = this.stageDisplayTextureNode;
-			const haloColor = color(new THREE.Color(this.ports.interactionTheme().outlineColor));
+			const haloColor = this.outlineColor;
 			const haloOpacity = this.createOutlineOpacity(this.displayOutlineMask);
 			// Merge into the existing linear display pass before the canvas output transform.
 			this.stageDisplayMaterial.fragmentNode = Fn(() => {
@@ -682,6 +692,21 @@ export class StageRenderPipeline {
 	private getPanelBlurKey(options: LiquidGlassPanelOptions) {
 		const value = Number.isFinite(options.backdropBlur) ? (options.backdropBlur ?? 0) : 0;
 		return Math.round(THREE.MathUtils.clamp(value, 0, 100) * 100) / 100;
+	}
+	/** Allocate changed blur settings without replacing the scene capture or model resources. */
+	syncPanelBlurCaptures() {
+		const keys = new Set(this.ports.fallbackPanelOptions().map((options) => this.getPanelBlurKey(options)));
+		if (!this._activeRenderTargets && keys.size) this.createSceneCapture();
+		for (const targets of [this.fullQualityTargets, this.scrollQualityTargets]) {
+			if (!targets) continue;
+			for (const key of keys) if (!targets.panelBlurCaptures.has(key))
+				targets.panelBlurCaptures.set(key, this.createPanelBlurCapture(targets.sceneCapture.texture, key, targets.scale));
+			for (const [key, capture] of targets.panelBlurCaptures) if (!keys.has(key)) {
+				capture.target.dispose(); capture.material.dispose(); capture.effect?.dispose();
+				targets.panelBlurCaptures.delete(key);
+			}
+			this.resizeRenderTargetSet(targets, window.innerWidth, window.innerHeight, this.getFullPixelRatio());
+		}
 	}
 	getPanelBlurTexture(options: LiquidGlassPanelOptions, targets = this._activeRenderTargets) {
 		const blur = this.getPanelBlurKey(options);
