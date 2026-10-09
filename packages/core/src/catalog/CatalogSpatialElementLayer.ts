@@ -1,4 +1,9 @@
 import { CatalogGeometryFade } from './CatalogGeometryFade.js';
+import { cardModelFit } from './cardModelFit.js';
+import { CatalogDepthBlur, type BlurRect } from './CatalogDepthBlur.js';
+import { CatalogModelOutline } from './CatalogModelOutline.js';
+import { DEFAULT_INTERACTION_THEME } from '../stage/stageConstants.js';
+import type { StageInteractionTheme } from '../stage/stageTypes.js';
 import { recordCarouselPanel } from './carouselPanelProjection.js';
 import type { SpatialElementProjection } from './SpatialGeometryCapture.js';
 import { prepareSpatialElementFrame } from '../stage/spatialElementFrame.js';
@@ -51,6 +56,11 @@ interface CatalogActor {
 	view: THREE.Group;
 	radius: number;
 	hitCorners: THREE.Vector3[];
+	fitCorners: THREE.Vector3[];
+	cardScale: number;
+	hover: number;
+	blur?: number;
+	renderRect?: BlurRect;
 	referencePoint: THREE.Vector3;
 	overrides: Set<THREE.Material>;
 	materials: ReturnType<typeof captureCatalogMaterialOpacity>;
@@ -61,6 +71,7 @@ interface CatalogActor {
 	hitTarget?: HTMLElement;
 	summaryPanel?: HTMLElement;
 	summarySize?: { width: number; height: number };
+	summaryOrigin?: { x: number; y: number };
 	scrollX: number;
 	scrollY: number;
 	rotationX: number;
@@ -148,6 +159,8 @@ export function getSpatialElementHandoffProjection(
 export class CatalogSpatialElementLayer {
 	getRenderTargets() {
 		return [
+			...this.outline.getRenderTargets(),
+			...this.depthBlur.getRenderTargets(),
 			...this.glass.getRenderTargets(),
 			...this.geometryFade.getRenderTargets(),
 			...(this.handoff?.blend?.getRenderTargets() ?? [])
@@ -162,17 +175,24 @@ export class CatalogSpatialElementLayer {
 			visible: [...this.actors.values()].filter((actor) => actor.root.visible).length,
 			passes: this.passes,
 			glass: this.glass.getStats(),
+			depthBlur: this.depthBlur.getStats(),
+			outline: this.outline.getStats(),
 			actors: [...this.actors.values()].map((actor) => ({
 				spatialElementId: actor.spatialElementId,
 				band: actor.band,
 				clip: actor.clip ? { ...actor.clip } : undefined,
 				opacity: this.exitOpacity * (actor.materials[0]?.material.opacity ?? 0),
 				materialOpacity: actor.materials[0]?.material.opacity ?? 0,
-				depthWrite: actor.materials[0]?.material.depthWrite
+				depthWrite: actor.materials[0]?.material.depthWrite,
+				modelScale: actor.view.scale.x, modelDepth: actor.view.position.z,
+				blur: actor.blur ?? 0,
+				hover: actor.hover
 			}))
 		};
 	}
-	private readonly glass = new CarouselGlassCompositor();
+	private readonly depthBlur = new CatalogDepthBlur();
+	private readonly outline = new CatalogModelOutline();
+	private readonly glass = new CarouselGlassCompositor(this.depthBlur);
 	private readonly geometryFade = new CatalogGeometryFade();
 	private readonly handoffScene = new THREE.Scene();
 	private readonly camera = new THREE.PerspectiveCamera(45, 1, 1, 4000);
@@ -188,7 +208,7 @@ export class CatalogSpatialElementLayer {
 	private readonly loadingKeys = new Set<string>();
 	private readonly failedKeys = new Set<string>();
 	private readonly motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-	private readonly pointer = { x: 0, y: 0, active: false };
+	private readonly pointer = { x: 0, y: 0, active: false, pressed: false };
 	private handoff?: Handoff;
 	private handoffPoint?: { x: number; y: number };
 	private generation = 0;
@@ -218,10 +238,17 @@ export class CatalogSpatialElementLayer {
 	};
 	private readonly pointerDown = (event: PointerEvent) => {
 		if (event.pointerType !== 'mouse') this.pointerLeave();
+		this.pointer.pressed = true;
+		this.invalidate();
+	};
+	private readonly pointerUp = () => {
+		this.pointer.pressed = false;
+		this.invalidate();
 	};
 	private readonly pointerLeave = () => {
 		if (!this.pointer.active) return;
 		this.pointer.active = false;
+		this.pointer.pressed = false;
 		this.invalidate();
 	};
 	private readonly resize = () => {
@@ -238,7 +265,8 @@ export class CatalogSpatialElementLayer {
 
 	constructor(
 		private readonly assets: SpatialElementAssetManager,
-		private readonly invalidate: () => void
+		private readonly invalidate: () => void,
+		private readonly interactionTheme: () => StageInteractionTheme = () => DEFAULT_INTERACTION_THEME
 	) {
 		this.scene.environmentIntensity = 0.5;
 		this.scene.fog = new THREE.Fog(0xffffff, 1200, 2500);
@@ -250,6 +278,10 @@ export class CatalogSpatialElementLayer {
 		this.camera.updateMatrixWorld();
 		window.addEventListener('pointermove', this.pointerMove, { passive: true });
 		window.addEventListener('pointerdown', this.pointerDown, { capture: true, passive: true });
+		window.addEventListener('pointerup', this.pointerUp, { passive: true });
+		window.addEventListener('pointercancel', this.pointerUp, { passive: true });
+		window.addEventListener('focusin', this.motionChange);
+		window.addEventListener('focusout', this.motionChange);
 		window.addEventListener('pointerleave', this.pointerLeave);
 		window.addEventListener('blur', this.pointerLeave);
 		window.addEventListener('resize', this.resize);
@@ -426,6 +458,15 @@ export class CatalogSpatialElementLayer {
 
 			if (actor.pose) {
 				const pose = actor.pose.read();
+				const hoverTarget = !this.transitionActive && !this.pointer.pressed &&
+					((this.pointer.active && actor.hitTarget?.hasAttribute('data-mouse-hover')) ||
+						actor.hitTarget?.matches(':focus-visible')) ? 1 : 0;
+				actor.hover = this.motion.matches ? hoverTarget : THREE.MathUtils.damp(actor.hover, hoverTarget, 18, delta);
+				if (Math.abs(actor.hover - hoverTarget) < 0.01) actor.hover = hoverTarget;
+				animating ||= actor.hover !== hoverTarget;
+				// Reuse the outline's settled hover state: inspecting a neighbour brings it
+				// into focus without changing selection or allocating another render target.
+				actor.blur = (pose.blur ?? 0) * (1 - actor.hover);
 				actor.band = pose.front ? 'front' : 'rear';
 				actor.root.visible &&= pose.visible;
 				applyCatalogMaterialOpacity(actor.materials, pose.opacity);
@@ -444,7 +485,11 @@ export class CatalogSpatialElementLayer {
 				actor.tilt.scale.setScalar(perspective * (pose.size / 0.82));
 				actor.tilt.rotation.set(0, pose.yaw, 0);
 				actor.tilt.position.set(0, 0, 0);
-				actor.view.position.set(0, compact ? slot.height / 2 - 180 : 0, 0);
+				// Keep compact models in the 360px visual area even as their parent shrinks.
+				// Scaling the old offset pulled side previews down into the summary panel.
+				actor.view.position.set(0, compact
+					? (slot.height - 360) * pose.y / (pose.size / 0.82)
+					: 0, 0);
 				actor.view.scale.setScalar(
 					(Math.min(slot.width, compact ? 360 : slot.height) * 0.82) / (actor.radius * 2)
 				);
@@ -472,6 +517,8 @@ export class CatalogSpatialElementLayer {
 					hitTarget.style.width = `${right - left}px`;
 					hitTarget.style.height = `${bottom - top}px`;
 					hitTarget.style.maxWidth = 'none';
+					actor.renderRect = { left: left + slot.left + dx, top: top + slot.top + dy,
+						width: right - left, height: bottom - top };
 				}
 				const panel = actor.summaryPanel;
 				if (panel && actor.summarySize) {
@@ -499,7 +546,13 @@ export class CatalogSpatialElementLayer {
 							y: ((1 - point.y) * height) / 2 - slot.top - dy
 						};
 					}) as unknown as CssProjectionQuad;
-					panel.style.transform = getProjectiveCssMatrix3d(corners, pw, ph) ?? '';
+					// The semantic summary keeps its intrinsic layout slot before and after
+					// enhancement. Project relative to that slot instead of moving it to (0, 0).
+					const origin = actor.summaryOrigin ?? { x: 0, y: 0 };
+					const localCorners = corners.map(({ x, y }) => ({
+						x: x - origin.x, y: y - origin.y
+					})) as unknown as CssProjectionQuad;
+					panel.style.transform = getProjectiveCssMatrix3d(localCorners, pw, ph) ?? '';
 					recordCarouselPanel(
 						panel,
 						corners.map((point) => ({
@@ -516,7 +569,8 @@ export class CatalogSpatialElementLayer {
 						matrix,
 						pw,
 						ph,
-						hidden ? 0 : pose.panelOpacity * this.exitOpacity
+						hidden ? 0 : pose.panelOpacity * this.exitOpacity,
+						(1 - pose.panelOpacity) * 6
 					);
 				}
 				actor.clip = {
@@ -552,16 +606,18 @@ export class CatalogSpatialElementLayer {
 			const targets = [
 				-THREE.MathUtils.radToDeg(rotation.x),
 				THREE.MathUtils.radToDeg(rotation.y),
-				-influence * 8
+				-influence * 8,
+				!this.motion.matches && !this.transitionActive &&
+					((this.pointer.active && distance === 0) || actor.card.matches?.(':focus-visible')) ? 1 : 0
 			];
-			const previous = [actor.rotationX, actor.rotationY, actor.lift];
+			const previous = [actor.rotationX, actor.rotationY, actor.lift, actor.hover];
 			const values = previous.map((value, index) => {
 				const next = this.motion.matches
 					? targets[index]
 					: THREE.MathUtils.damp(value, targets[index], 14, delta);
 				return Math.abs(next - targets[index]) < 0.01 ? targets[index] : next;
 			});
-			[actor.rotationX, actor.rotationY, actor.lift] = values;
+			[actor.rotationX, actor.rotationY, actor.lift, actor.hover] = values;
 			animating ||= values.some((value, index) => value !== targets[index]);
 			actor.card.style.setProperty('--catalog-rotate-x', `${actor.rotationX}deg`);
 			actor.card.style.setProperty('--catalog-rotate-y', `${actor.rotationY}deg`);
@@ -583,9 +639,9 @@ export class CatalogSpatialElementLayer {
 			actor.view.position.set(
 				slot.left + slot.width / 2 - card.left - card.width / 2,
 				card.top + card.height / 2 - slot.top - slot.height / 2,
-				0
+				96 * actor.hover
 			);
-			actor.view.scale.setScalar((Math.min(slot.width, slot.height) * 0.84) / (actor.radius * 2));
+			actor.view.scale.setScalar(actor.cardScale * (1 + 0.12 * actor.hover));
 			if (this.isDestinationActor(actor)) actor.root.visible = false;
 		}
 		if (this.queueDirty) {
@@ -635,11 +691,25 @@ export class CatalogSpatialElementLayer {
 					if (right <= left || bottom <= top) continue;
 					renderer.setScissor(left, top, right - left, bottom - top);
 					renderer.setScissorTest(true);
-					for (const actor of group) actor.root.visible = true;
 					const fog = this.scene.fog;
 					this.scene.fog = this.carouselFog;
 					try {
-						renderer.render(this.scene, this.carouselCamera);
+						if (group.some((actor) => ((actor.blur ?? 0) >= 0.05 || actor.hover > 0) && actor.renderRect)) {
+							// Resolve far-to-near into the same output; scratch buffers are shared by every seat.
+							group.sort((a, b) => a.root.matrix.elements[14] - b.root.matrix.elements[14]);
+							for (const actor of group) {
+								actor.root.visible = true;
+								this.depthBlur.render(renderer, this.carouselCamera, actor.renderRect ?? rect,
+									actor.blur ?? 0, (camera) => renderer.render(this.scene, camera), rect);
+								if (actor.hover > 0 && actor.renderRect)
+									this.outline.render(renderer, this.carouselCamera, actor.model, actor.renderRect, rect,
+										actor.hover * (actor.materials[0]?.material.opacity ?? 1), this.interactionTheme());
+								actor.root.visible = false;
+							}
+						} else {
+							for (const actor of group) actor.root.visible = true;
+							renderer.render(this.scene, this.carouselCamera);
+						}
 					} finally {
 						this.scene.fog = fog;
 					}
@@ -883,7 +953,9 @@ export class CatalogSpatialElementLayer {
 
 	dispose() {
 		this.glass.dispose();
+		this.depthBlur.dispose();
 		this.geometryFade.dispose();
+		this.outline.dispose();
 		if (this.disposed) return;
 		this.disposed = true;
 		this.generation += 1;
@@ -893,6 +965,10 @@ export class CatalogSpatialElementLayer {
 		for (const actor of this.actors.values()) this.disposeActor(actor);
 		window.removeEventListener('pointermove', this.pointerMove);
 		window.removeEventListener('pointerdown', this.pointerDown, true);
+		window.removeEventListener('pointerup', this.pointerUp);
+		window.removeEventListener('pointercancel', this.pointerUp);
+		window.removeEventListener('focusin', this.motionChange);
+		window.removeEventListener('focusout', this.motionChange);
 		window.removeEventListener('pointerleave', this.pointerLeave);
 		window.removeEventListener('blur', this.pointerLeave);
 		window.removeEventListener('resize', this.resize);
@@ -958,6 +1034,11 @@ export class CatalogSpatialElementLayer {
 		view.add(model);
 		const materials = captureCatalogMaterialOpacity(model);
 		applyCatalogMaterialOpacity(materials, 1);
+		const hitCorners = [bounds.min.x, bounds.max.x].flatMap((x) =>
+			[bounds.min.y, bounds.max.y].flatMap((y) =>
+				[bounds.min.z, bounds.max.z].map((z) => new THREE.Vector3(x, y, z))
+			)
+		);
 		return {
 			key,
 			brandId,
@@ -969,11 +1050,10 @@ export class CatalogSpatialElementLayer {
 			tilt,
 			view,
 			radius,
-			hitCorners: [bounds.min.x, bounds.max.x].flatMap((x) =>
-				[bounds.min.y, bounds.max.y].flatMap((y) =>
-					[bounds.min.z, bounds.max.z].map((z) => new THREE.Vector3(x, y, z))
-				)
-			),
+			hitCorners,
+			fitCorners: hitCorners.map((corner) => corner.clone().applyQuaternion(view.quaternion)),
+			cardScale: 1,
+			hover: 0,
 			referencePoint,
 			overrides,
 			materials,
@@ -1008,6 +1088,8 @@ export class CatalogSpatialElementLayer {
 		for (const { actor } of measured) {
 			actor.cardRect = actor.card!.getBoundingClientRect();
 			actor.slotRect = actor.slot!.getBoundingClientRect();
+			if (!actor.pose)
+				actor.cardScale = cardModelFit(actor.fitCorners, actor.slotRect.width, actor.slotRect.height);
 			if (actor.pose) {
 				actor.hitTarget = actor.card!.querySelector<HTMLElement>('.spatial-element-target') ?? undefined;
 				const panel = actor.card!.querySelector<HTMLElement>('.summary') ?? undefined;
@@ -1015,6 +1097,7 @@ export class CatalogSpatialElementLayer {
 					this.layoutObserver.unobserve(actor.summaryPanel);
 				actor.summaryPanel = panel;
 				actor.summarySize = panel ? { width: panel.offsetWidth, height: panel.offsetHeight } : undefined;
+				actor.summaryOrigin = panel ? { x: panel.offsetLeft ?? 0, y: panel.offsetTop ?? 0 } : undefined;
 				// Summary content can resize without changing its section's fixed height.
 				if (panel) this.layoutObserver.observe(panel);
 			}
@@ -1121,6 +1204,7 @@ export class CatalogSpatialElementLayer {
 	}
 
 	private disposeActor(actor: CatalogActor) {
+		this.outline.release(actor.model);
 		if (actor.summaryPanel) this.layoutObserver.unobserve(actor.summaryPanel);
 		actor.root.removeFromParent();
 		actor.model.removeFromParent();

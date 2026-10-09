@@ -12,6 +12,7 @@ import {
 } from './catalogJourney.js';
 import { readCatalogViewContext } from './catalogViewLink.js';
 import { captureCarouselElement } from './carouselPanelProjection.js';
+import { captureCardElement } from './cardProjection.js';
 import type { CatalogTransitionPresentation } from './catalogPresentation.js';
 import { PresentationLease } from './PresentationLease.js';
 import { rebasePresentation } from './rebasePresentation.js';
@@ -274,6 +275,12 @@ function copyTypography(element: HTMLElement, style: CSSStyleDeclaration) {
 		'white-space',
 		'overflow',
 		'text-overflow',
+		'overflow-wrap',
+		'word-break',
+		'display',
+		'-webkit-box-orient',
+		'-webkit-line-clamp',
+		'line-clamp',
 		'color',
 		'text-shadow'
 	])
@@ -497,6 +504,7 @@ export class CatalogTransition {
 			role === 'summary-surface' && reverse ? this.hooks.captureSurface?.(source) : undefined;
 		const projection =
 			captureCarouselElement(source) ??
+			captureCardElement(source) ??
 			(role !== 'summary-surface' && reverse ? this.hooks.captureElement?.(source) : undefined);
 		const bounds =
 			paint?.bounds ?? (role === 'summary-surface' ? this.hooks.resolveSurface(source) : source);
@@ -1368,6 +1376,13 @@ export class CatalogTransition {
 				return;
 			}
 			await new Promise<void>((resolve) => {
+				// Route binding and shader preparation have their own bounded wait above.
+				// Give playback its full safety window instead of cancelling its first
+				// frames when preparation consumed most of the capture deadline.
+				clearTimeout(capture.timeout);
+				capture.timeout = setTimeout(() => {
+					if (this.captureState === capture) this.cancel();
+				}, 5000);
 				const mode =
 					capture.mode ?? (reverse ? 'synchronous' : this.hooks.beginMotion?.()) ?? 'asynchronous';
 				capture.mode = mode;

@@ -117,6 +117,11 @@ function clampFinite(value: number, min: number, max: number, fallback: number) 
 }
 
 export class LiquidGlassPanel {
+	/** Preserve full-backdrop coordinates while a cropped camera captures this surface. */
+	setBackdropUvTransform(x: number, y: number, width: number, height: number) {
+		this.backdropProjection.uvOffset.value.set(x, y);
+		this.backdropProjection.uvScale.value.set(width, height);
+	}
 	readonly group = new THREE.Group();
 	readonly options: Required<LiquidGlassPanelOptions>;
 
@@ -356,6 +361,8 @@ function createBackdropMaterial(
 
 function createBackdropProjectionUniforms(options: Required<LiquidGlassPanelOptions>) {
 	return {
+		uvOffset: uniform(new THREE.Vector2()),
+		uvScale: uniform(new THREE.Vector2(1, 1)),
 		panelSize: uniform(new THREE.Vector2(options.width, options.height)),
 		radius: uniform(options.radius),
 		bezel: uniform(options.bezel),
@@ -389,7 +396,7 @@ function createBackdropUvNode(projection: ReturnType<typeof createBackdropProjec
 	const ndc = clipPosition.xy.div(clipPosition.w);
 	const projectedUv = vec2(ndc.x.mul(0.5).add(0.5), ndc.y.mul(-0.5).add(0.5));
 
-	return varying(clamp(projectedUv, 0, 1), 'vLiquidGlassBackdropUv');
+	return varying(clamp(projectedUv.mul(projection.uvScale).add(projection.uvOffset), 0, 1), 'vLiquidGlassBackdropUv');
 }
 
 function roundedRectSdfNode(point: Node<'vec2'>, halfSize: Node<'vec2'>, radius: Node<'float'>) {

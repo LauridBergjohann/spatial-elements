@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
+	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
+	import { truncatedTitle } from './truncatedTitle.js';
 	import { useSpatialTheme } from './brandContext.js';
 	import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
 	import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
@@ -35,6 +37,7 @@
 </script>
 
 <a
+	use:mouseHover
 	use:catalogEndpoint={{
 		brandId: brand.id,
 		spatialElementId: spatialElement.id,
@@ -136,6 +139,7 @@
 			{spatialElement.eyebrow}
 		</p>
 		<h3
+			use:truncatedTitle={spatialElement.title}
 			use:catalogEndpoint={{
 				brandId: brand.id,
 				spatialElementId: spatialElement.id,
@@ -161,6 +165,12 @@
 		font-weight: 720;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
+		line-height: 1.4;
+		height: 1lh;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		transform: translateZ(var(--card-eyebrow-depth, 0px));
 	}
 	.catalog-loading {
 		position: absolute;
@@ -196,6 +206,7 @@
 		color: var(--spatial-element-ink);
 		text-decoration: none;
 		transform-origin: center;
+		transform-style: preserve-3d;
 		transform: perspective(1000px) translate3d(0, var(--catalog-lift, 0px), 0)
 			rotateX(var(--catalog-rotate-x, 0deg)) rotateY(var(--catalog-rotate-y, 0deg));
 	}
@@ -217,11 +228,31 @@
 			transparent
 		);
 		box-shadow: 0 12px 32px rgb(0 0 0 / 0.06);
+		transition: border-color 180ms ease;
 		pointer-events: none;
+	}
+	.spatial-element-card:global([data-mouse-hover]) .spatial-element-card-surface,
+	.spatial-element-card:focus-visible .spatial-element-card-surface {
+		border-color: var(--spatial-element-accent);
+	}
+	.spatial-element-card-surface::after {
+		content: '';
+		position: absolute;
+		inset: -1px;
+		border-radius: inherit;
+		box-shadow: 0 0 0 1px color-mix(in srgb, var(--spatial-element-accent) 25%, transparent),
+			0 0 18px color-mix(in srgb, var(--spatial-element-accent) 18%, transparent);
+		opacity: 0;
+		transition: opacity 180ms ease;
+	}
+	.spatial-element-card:global([data-mouse-hover]) .spatial-element-card-surface::after,
+	.spatial-element-card:focus-visible .spatial-element-card-surface::after {
+		opacity: 1;
 	}
 
 	.spatial-element-card-geometry {
 		position: relative;
+		transform-style: preserve-3d;
 		height: 228px;
 		margin: 12px 12px 0;
 		pointer-events: none;
@@ -232,6 +263,8 @@
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
+		transform: translateZ(var(--card-model-depth, 0px)) scale(var(--card-model-scale, 1));
+		transition: transform 260ms cubic-bezier(0.22, 0.75, 0.25, 1), opacity 240ms ease;
 	}
 
 	.spatial-element-card:global([data-catalog-model-ready]) .catalog-poster {
@@ -239,19 +272,51 @@
 	}
 
 	.spatial-element-card-copy {
+		position: relative;
 		padding: 14px 22px 24px;
+		transform-style: preserve-3d;
+	}
+
+	.spatial-element-card-eyebrow,
+	h3 {
+		text-shadow: var(--card-text-shadow, 0 0 0 transparent);
+		transition: transform 260ms cubic-bezier(0.22, 0.75, 0.25, 1),
+			text-shadow 260ms cubic-bezier(0.22, 0.75, 0.25, 1);
+	}
+
+	.spatial-element-card:global([data-mouse-hover]),
+	.spatial-element-card:focus-visible {
+		--card-eyebrow-depth: 40px;
+		--card-title-depth: 64px;
+		--card-model-depth: 96px;
+		--card-model-scale: 1.12;
+		--card-text-shadow: 0 4px 10px rgb(0 0 0 / 0.16);
 	}
 
 	h3 {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		height: 2lh;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		overflow-wrap: anywhere;
 		margin: 8px 0 0;
 		font-size: 21px;
 		font-weight: 720;
 		line-height: 1.24;
+		transform: translateZ(var(--card-title-depth, 0px));
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.spatial-element-card {
+		.spatial-element-card,
+		.spatial-element-card-eyebrow,
+		.catalog-poster,
+		h3 {
 			transform: none;
+			transition: none;
+			text-shadow: none;
 		}
 	}
 </style>

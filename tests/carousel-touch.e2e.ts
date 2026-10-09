@@ -119,6 +119,7 @@ test('a horizontal start can become a vertical scroll without lifting the finger
 
 test('a purely vertical swipe leaves the selection and carousel position unchanged', async ({ page }) => {
 	const { target, point, session } = await prepare(page);
+	const initialHref = await target.getAttribute('href');
 	const initialOpacity = await opacity(target);
 	const initialScroll = await page.evaluate(() => window.scrollY);
 	await start(session, point);
@@ -126,7 +127,16 @@ test('a purely vertical swipe leaves the selection and carousel position unchang
 	await end(session);
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(initialScroll + 70);
 	expect(await opacity(target)).toBeCloseTo(initialOpacity, 3);
-	await expect(target).toHaveAttribute('aria-pressed', 'true');
+	await expect(target).toHaveAttribute('href', initialHref!);
+	await expect(page).toHaveURL(/categories\/carousel/);
+});
+
+test('a stationary tap on the selected geometry opens its detail', async ({ page }) => {
+	const { target, point, session } = await prepare(page);
+	const href = await target.getAttribute('href');
+	await start(session, point);
+	await end(session);
+	await expect(page).toHaveURL(new RegExp(`${href}(?:\\?|$)`));
 });
 
 test('mouse clicks and dragging still select carousel items on a hybrid device', async ({ page }) => {

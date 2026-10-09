@@ -82,6 +82,8 @@ export interface StageViewportRegistration {
 }
 
 export interface StageContext {
+	/** Reactive in framework adapters; false during SSR and until the GPU has painted. */
+	isEnhanced?(): boolean;
 	prefetchSpatialElement?(stage: import('../spatial-element/spatialElementScene.js').SpatialElementScene): void;
 	registerPanel(panel: StagePanelRegistration): () => void;
 	/** Refresh appearance from registered getters without rebinding the page or its camera. */

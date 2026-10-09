@@ -85,6 +85,7 @@ import { disposeMinimapModelMaterials } from './minimap/MinimapModel.js';
 import { type CssProjectionQuad } from './minimap/MinimapProjection.js';
 import type { StageMinimapState } from './minimap/MinimapState.js';
 import { disposeMaterialOnly, getMeshBounds, getMeshMaterials, isMesh } from './stageSceneUtils.js';
+import { isOutlineMesh } from './interactionOutline.js';
 import type {
 	BackgroundSettings,
 	StageCameraSettings,
@@ -636,6 +637,9 @@ export class StageExperience {
 		if (!this.catalog || this.viewportTarget) this.pipeline.createSceneCapture();
 		this.createPanels();
 		this.resizeRenderer();
+		// Reparenting must preserve the already visible HTML in the same task;
+		// shader compilation below can yield for more than one browser frame.
+		this.renderPanelContents();
 		this.pipeline.warmRenderTargetSets();
 		await this.pipeline.prepareZoomEffects();
 		if (this.disposed) return;
@@ -980,7 +984,7 @@ export class StageExperience {
 	}
 
 	setCatalogSpatialElements(brandId: string, items: SpatialListItem[]) {
-		this.catalogLayer ??= new CatalogSpatialElementLayer(this.assets, () => this.requestRender());
+		this.catalogLayer ??= new CatalogSpatialElementLayer(this.assets, () => this.requestRender(), () => this.interactionTheme);
 		this.catalogLayer.setPageBackground(this.pageBackground);
 		this.catalogLayer.setExitOpacity(
 			this.returnSpatialElement
@@ -2262,17 +2266,7 @@ export class StageExperience {
 	}
 
 	private isInteractionMesh(mesh: Mesh) {
-		if (!this.isSpatialElementMesh(mesh)) return false;
-		if (this.interactionTheme.excludeMesh?.(mesh)) return false;
-		if (mesh.userData.stagePick === false || mesh.userData.stageOutline === false) return false;
-
-		const materialNames = getMeshMaterials(mesh)
-			.map((material) => material.name)
-			.filter(Boolean)
-			.join(' ');
-		const label = `${mesh.name} ${materialNames}`.toLowerCase();
-
-		return !/(shadow|ground|floor|plane|helper|collision|collider|reflection)/i.test(label);
+		return this.isSpatialElementMesh(mesh) && isOutlineMesh(mesh, this.interactionTheme);
 	}
 
 	private createPanels() {

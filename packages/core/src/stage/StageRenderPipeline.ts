@@ -1,3 +1,4 @@
+import { createOutlineOpacity } from './interactionOutline.js';
 import { getRefinementSize } from './SpatialElementRefinement.js';
 import { getMinimapMeasurementMode } from './minimapMeasurement.js';
 import { parseRenderMeasurement } from './renderMeasurement.js';
@@ -15,16 +16,12 @@ import { SpatialGeometryCapture } from '../catalog/SpatialGeometryCapture.js';
 import { gaussianBlur } from 'three/addons/tsl/display/GaussianBlurNode.js';
 import {
 	Fn,
-	float,
 	If,
 	mix,
-	max as tslMax,
-	min as tslMin,
 	premultiplyAlpha,
 	texture,
 	uniform,
 	uv,
-	vec2,
 	vec4
 } from 'three/tsl';
 import type { Mesh, Object3D } from 'three';
@@ -365,76 +362,10 @@ export class StageRenderPipeline {
 		return source;
 	}
 	private createOutlineOpacity(mask: THREE.TextureNode) {
-		const calculate = () => {
-			const texel = this.outlineTexel;
-			const glowTexel = this.outlineGlowTexel;
-			const sampleMaskRing = (sampleTexel: typeof texel, scale = 1) => {
-				const centerUv = uv();
-				const sampleX = sampleTexel.x.mul(scale);
-				const sampleY = sampleTexel.y.mul(scale);
-				const left = mask.sample(centerUv.sub(vec2(sampleX, 0))).r;
-				const right = mask.sample(centerUv.add(vec2(sampleX, 0))).r;
-				const up = mask.sample(centerUv.add(vec2(0, sampleY))).r;
-				const down = mask.sample(centerUv.sub(vec2(0, sampleY))).r;
-				const upLeft = mask.sample(centerUv.add(vec2(0, sampleY)).sub(vec2(sampleX, 0))).r;
-				const upRight = mask.sample(centerUv.add(vec2(sampleX, sampleY))).r;
-				const downLeft = mask.sample(centerUv.sub(vec2(sampleX, sampleY))).r;
-				const downRight = mask.sample(centerUv.add(vec2(sampleX, 0)).sub(vec2(0, sampleY))).r;
-
-				return {
-					average: left
-						.add(right)
-						.add(up)
-						.add(down)
-						.add(upLeft)
-						.add(upRight)
-						.add(downLeft)
-						.add(downRight)
-						.div(8),
-					max: tslMax(
-						tslMax(tslMax(left, right), tslMax(up, down)),
-						tslMax(tslMax(upLeft, upRight), tslMax(downLeft, downRight))
-					),
-					min: tslMin(
-						tslMin(tslMin(left, right), tslMin(up, down)),
-						tslMin(tslMin(upLeft, upRight), tslMin(downLeft, downRight))
-					)
-				};
-			};
-			const edgeNeighbor = sampleMaskRing(texel);
-			const glowNearNeighbor = sampleMaskRing(glowTexel, 0.45);
-			const glowMidNeighbor = sampleMaskRing(glowTexel, 0.7);
-			const glowFarNeighbor = sampleMaskRing(glowTexel);
-			const center = mask.sample(uv()).r;
-			const outside = center.oneMinus();
-			const edgeGradient = edgeNeighbor.max.sub(center).max(0);
-			const core = edgeGradient.mul(this.outlineStrength);
-			// Average neighbouring coverage, rather than dilating a solid band. Keep the
-			// halo outside the spatialElement so it cannot be mistaken for painted geometry.
-			const glowNear = glowNearNeighbor.average
-				.mul(outside)
-				.mul(this.outlineGlow.mul(0.6));
-			const glowMid = glowMidNeighbor.average
-				.mul(outside)
-				.mul(this.outlineGlow.mul(0.3));
-			const glowFar = glowFarNeighbor.average
-				.mul(outside)
-				.mul(this.outlineGlow.mul(0.1));
-			const opacity = tslMin(core.add(glowNear).add(glowMid).add(glowFar), 1).mul(
-				this.outlineOpacityScale
-			);
-
-			return opacity;
-		};
-		if (this.renderMeasurement === 'halo-unconditional') return calculate();
-		return Fn(() => {
-			const opacity = float(0).toVar();
-			// A fully covered pixel has zero outer halo. Skip all 32 neighbour taps there.
-			If(mask.sample(uv()).r.lessThan(1), () => {
-				opacity.assign(calculate());
-			});
-			return opacity;
-		})();
+		return createOutlineOpacity(mask, {
+			color: this.outlineColor, strength: this.outlineStrength, glow: this.outlineGlow,
+			opacityScale: this.outlineOpacityScale, texel: this.outlineTexel, glowTexel: this.outlineGlowTexel
+		}, this.renderMeasurement === 'halo-unconditional');
 	}
 	private createOutlineCompositeMaterial(maskTexture: THREE.Texture) {
 		const material = new THREE.MeshBasicNodeMaterial({

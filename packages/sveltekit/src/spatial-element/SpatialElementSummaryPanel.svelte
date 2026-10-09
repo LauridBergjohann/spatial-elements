@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { catalogActionSemantic } from '@spatial-elements/core/catalog/catalogAction';
-	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import { ShoppingCart } from 'lucide-svelte';
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
@@ -37,6 +36,7 @@
 			slot: 'detail.summary',
 			role: 'summary-surface'
 		}}
+		pointerReactive={false}
 		transitionGroup="shared"
 		class="spatial-element-panel"
 		shape={theme.panelShape}
@@ -47,7 +47,7 @@
 		data-shared-role="summary-surface"
 		data-spatial-element-id={spatialElement.id}
 	>
-		<div bind:this={presentation} class="summary-presentation" style:min-height={`${Math.max(504 - contentInset * 2, 0)}px`} use:mouseHover>
+		<div bind:this={presentation} class="summary-presentation" style:min-height={`${Math.max(504 - contentInset * 2, 0)}px`}>
 			<div class="panel-copy">
 				<p
 					class="panel-kicker"
@@ -157,18 +157,6 @@
 </div>
 
 <style>
-	@property --summary-feature-hover-progress {
-		syntax: '<number>';
-		inherits: false;
-		initial-value: 0;
-	}
-
-	@property --summary-action-hover-progress {
-		syntax: '<number>';
-		inherits: false;
-		initial-value: 0;
-	}
-
 	.spatial-element-aside {
 		position: relative;
 		min-height: inherit;
@@ -188,19 +176,9 @@
 		display: block;
 		overflow: visible;
 		color: color-mix(in srgb, var(--spatial-element-ink) 92%, transparent);
-		transform-style: preserve-3d;
 	}
 
 	.summary-presentation {
-		--summary-depth-progress: var(--stage-panel-pointer-proximity, 0);
-		--summary-shadow-strength: var(--stage-panel-shadow-strength, 0.18);
-		--summary-feature-depth: 40;
-		--summary-feature-hover-depth: 48;
-		--summary-eyebrow-depth: 60;
-		--summary-title-depth: 96;
-		--summary-action-depth: 76;
-		--summary-action-hover-depth: 24;
-
 		position: relative;
 		box-sizing: border-box;
 		display: flex;
@@ -208,11 +186,6 @@
 		justify-content: space-between;
 		gap: 24px;
 		pointer-events: auto;
-		transform-style: preserve-3d;
-	}
-
-	.panel-copy {
-		transform-style: preserve-3d;
 	}
 
 	.summary-presentation h1 {
@@ -221,8 +194,6 @@
 		font-size: clamp(30px, 3vw, 40px);
 		font-weight: 780;
 		line-height: 1.16;
-		transform-origin: left center;
-		will-change: transform;
 	}
 
 	.panel-kicker {
@@ -231,8 +202,6 @@
 		font-weight: 720;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		transform-origin: left center;
-		will-change: transform;
 	}
 
 	.feature-list {
@@ -243,47 +212,12 @@
 		color: var(--spatial-element-body);
 		font-size: 18px;
 		list-style: none;
-		transform-style: preserve-3d;
-	}
-
-	.feature-list li {
-		transform-style: preserve-3d;
 	}
 
 	.feature-content {
-		--summary-feature-hover-progress: 0;
-		--summary-feature-effective-depth: calc(
-			var(--summary-feature-depth) * var(--summary-depth-progress) +
-				var(--summary-feature-hover-depth) * var(--summary-feature-hover-progress)
-		);
-		--summary-feature-shadow-depth: calc(
-			var(--summary-feature-depth) * var(--summary-depth-progress)
-		);
-
 		display: flex;
 		align-items: baseline;
 		gap: 14px;
-		text-shadow:
-			0 calc(0.055px * var(--summary-feature-shadow-depth))
-				calc(0.055px * var(--summary-feature-shadow-depth))
-				rgb(
-					0 0 0 /
-						calc(0.0168 * var(--summary-shadow-strength) * var(--summary-feature-shadow-depth))
-				),
-			0 calc(0.194px * var(--summary-feature-shadow-depth))
-				calc(0.278px * var(--summary-feature-shadow-depth))
-				rgb(
-					0 0 0 /
-						calc(0.00936 * var(--summary-shadow-strength) * var(--summary-feature-shadow-depth))
-				);
-		transform: translateZ(calc(1px * var(--summary-feature-effective-depth)));
-		transform-origin: left center;
-		transition: --summary-feature-hover-progress 260ms cubic-bezier(0.22, 0.75, 0.25, 1);
-		will-change: transform;
-	}
-
-	.summary-presentation:global([data-mouse-hover]) .feature-list li:hover .feature-content {
-		--summary-feature-hover-progress: 1;
 	}
 
 	.feature-marker {
@@ -302,17 +236,9 @@
 		background: transparent;
 		text-decoration: none;
 		cursor: pointer;
-		transform-style: preserve-3d;
-	}
-
-	.summary-presentation:global([data-mouse-hover]) .spatial-element-action:hover .spatial-element-action-surface,
-	.spatial-element-action:focus-visible .spatial-element-action-surface {
-		--summary-action-hover-progress: 1;
 	}
 
 	.spatial-element-action-surface {
-		--summary-action-hover-progress: 0;
-
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -326,73 +252,6 @@
 		font:
 			760 22px/1 system-ui,
 			sans-serif;
-		transform-origin: center;
-		transition: --summary-action-hover-progress 260ms cubic-bezier(0.22, 0.75, 0.25, 1);
-		will-change: transform;
-	}
-
-	.panel-kicker {
-		--summary-eyebrow-effective-depth: calc(
-			var(--summary-eyebrow-depth) * var(--summary-depth-progress)
-		);
-
-		text-shadow:
-			0 calc(0.055px * var(--summary-eyebrow-effective-depth))
-				calc(0.04px * var(--summary-eyebrow-effective-depth))
-				rgb(
-					0 0 0 /
-						calc(0.0134 * var(--summary-shadow-strength) * var(--summary-eyebrow-effective-depth))
-				),
-			0 calc(0.117px * var(--summary-eyebrow-effective-depth))
-				calc(0.167px * var(--summary-eyebrow-effective-depth))
-				rgb(
-					0 0 0 /
-						calc(0.0074 * var(--summary-shadow-strength) * var(--summary-eyebrow-effective-depth))
-				);
-		transform: translateZ(calc(1px * var(--summary-eyebrow-effective-depth)));
-	}
-
-	.summary-presentation h1 {
-		--summary-title-effective-depth: calc(
-			var(--summary-title-depth) * var(--summary-depth-progress)
-		);
-
-		text-shadow:
-			0 calc(0.055px * var(--summary-title-effective-depth))
-				calc(0.04px * var(--summary-title-effective-depth))
-				rgb(
-					0 0 0 /
-						calc(0.007 * var(--summary-shadow-strength) * var(--summary-title-effective-depth))
-				),
-			0 calc(0.156px * var(--summary-title-effective-depth))
-				calc(0.203px * var(--summary-title-effective-depth))
-				rgb(
-					0 0 0 /
-						calc(0.0039 * var(--summary-shadow-strength) * var(--summary-title-effective-depth))
-				);
-		transform: translateZ(calc(1px * var(--summary-title-effective-depth)));
-	}
-
-	.spatial-element-action-surface {
-		--summary-action-effective-depth: calc(
-			var(--summary-action-depth) * var(--summary-depth-progress) +
-				var(--summary-action-hover-depth) * var(--summary-action-hover-progress)
-		);
-
-		box-shadow:
-			0 calc(0.078px * var(--summary-action-effective-depth))
-				calc(0.094px * var(--summary-action-effective-depth))
-				rgb(
-					0 0 0 /
-						calc(0.0105 * var(--summary-shadow-strength) * var(--summary-action-effective-depth))
-				),
-			0 calc(0.237px * var(--summary-action-effective-depth))
-				calc(0.316px * var(--summary-action-effective-depth))
-				rgb(
-					0 0 0 /
-						calc(0.0068 * var(--summary-shadow-strength) * var(--summary-action-effective-depth))
-				);
-		transform: translateZ(calc(1px * var(--summary-action-effective-depth)));
 	}
 
 	:global(.spatial-element-action-icon) {
@@ -401,40 +260,6 @@
 
 	.spatial-element-action-label {
 		white-space: nowrap;
-	}
-
-	/* Zero-depth transforms still promote text to composited layers in Chromium.
-	 * Remove those layers while the complete panel is in its native DOM rest mode. */
-	:global([data-stage-panel-render-mode='native']) .summary-presentation,
-	:global([data-stage-panel-render-mode='native']) .panel-copy,
-	:global([data-stage-panel-render-mode='native']) .feature-list,
-	:global([data-stage-panel-render-mode='native']) .feature-list li,
-	:global([data-stage-panel-render-mode='native']) .spatial-element-action {
-		transform-style: flat;
-	}
-
-	:global([data-stage-panel-render-mode='native']) .panel-kicker,
-	:global([data-stage-panel-render-mode='native']) .summary-presentation h1,
-	:global([data-stage-panel-render-mode='native']) .feature-content,
-	:global([data-stage-panel-render-mode='native']) .spatial-element-action-surface {
-		transform: none;
-		will-change: auto;
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.summary-presentation {
-			--summary-depth-progress: 0;
-		}
-
-		.feature-content,
-		.summary-presentation:global([data-mouse-hover]) .feature-list li:hover .feature-content,
-		.spatial-element-action-surface,
-		.summary-presentation:global([data-mouse-hover]) .spatial-element-action:hover .spatial-element-action-surface,
-		.spatial-element-action:focus-visible .spatial-element-action-surface {
-			--summary-feature-hover-progress: 0;
-			--summary-action-hover-progress: 0;
-			transition: none;
-		}
 	}
 
 	@media (max-width: 1100px) {

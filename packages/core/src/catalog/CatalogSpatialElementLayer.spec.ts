@@ -324,12 +324,15 @@ describe('catalog preview lifetime', () => {
 	it('measures carousel summary sizes before animation writes and refreshes them on resize', async () => {
 		const activity: string[] = [];
 		let summaryWidth = 360;
+		let summaryLeft = 600, summaryTop = 200;
 		const summary = {
 			style: { transform: '', visibility: '' },
 			get offsetWidth() { activity.push('measure'); return summaryWidth; },
-			get offsetHeight() { activity.push('measure'); return 200; }
+			get offsetHeight() { activity.push('measure'); return 200; },
+			get offsetLeft() { activity.push('measure'); return summaryLeft; },
+			get offsetTop() { activity.push('measure'); return summaryTop; }
 		};
-		const hitTarget = { style: new Proxy({}, {
+		const hitTarget = { matches: () => false, hasAttribute: () => false, style: new Proxy({}, {
 			set(target, property, value) {
 				activity.push('write');
 				return Reflect.set(target, property, value);
@@ -379,9 +382,16 @@ describe('catalog preview lifetime', () => {
 				getScissorTest: () => false,
 				setScissor: vi.fn(), setScissorTest: vi.fn(), clearDepth: vi.fn(), render: vi.fn()
 			} as unknown as THREE.WebGPURenderer;
+			const projectedSummaryCenter = () => {
+				const matrix = new THREE.Matrix4().fromArray(summary.style.transform.slice(9, -1).split(',').map(Number));
+				return project(matrix, new THREE.Vector3(summaryWidth / 2, 100, 0))
+					.add(new THREE.Vector3(summaryLeft, summaryTop, 0));
+			};
 			layer.update(renderer, null, 100);
-			expect(activity.slice(0, 2)).toEqual(['measure', 'measure']);
-			expect(activity.filter((item) => item === 'measure')).toHaveLength(2);
+			expect(activity.slice(0, 4)).toEqual(['measure', 'measure', 'measure', 'measure']);
+			expect(activity.filter((item) => item === 'measure')).toHaveLength(4);
+			expect(projectedSummaryCenter().x).toBeCloseTo(840);
+			expect(projectedSummaryCenter().y).toBeCloseTo(300);
 			expect(observe).toHaveBeenCalledWith(summary);
 			layer.draw(renderer, 'front');
 			// A clipped carousel group needs one scene submission, without an empty list pass.
@@ -390,10 +400,15 @@ describe('catalog preview lifetime', () => {
 			layer.update(renderer, null, 116);
 			expect(activity).not.toContain('measure');
 			summaryWidth = 420;
+			summaryLeft = 580;
+			summaryTop = 170;
 			resized();
 			activity.length = 0;
 			layer.update(renderer, null, 132);
-			expect(activity.slice(0, 2)).toEqual(['measure', 'measure']);
+			expect(activity.slice(0, 4)).toEqual(['measure', 'measure', 'measure', 'measure']);
+			// Layout may resize or reposition the semantic panel; its projected anchor stays put.
+			expect(projectedSummaryCenter().x).toBeCloseTo(840);
+			expect(projectedSummaryCenter().y).toBeCloseTo(300);
 		} finally {
 			layer.dispose();
 			manager.dispose();
