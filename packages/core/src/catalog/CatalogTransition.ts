@@ -794,7 +794,11 @@ export class CatalogTransition {
 		);
 		const sources = recipe.roles.map((role) => this.endpoints.resolve({ ...source, role }));
 		if (sources.some((element) => !element || !hasSize(element.getBoundingClientRect()))) return;
-		if (!reverse && !(composition === 'carousel' ? visiblyPresented(card) : fullyPresented(card)))
+		const carouselTarget = composition === 'carousel'
+			? card.querySelector<HTMLElement>('.spatial-element-target') : null;
+		if (!reverse && !(composition === 'carousel'
+			? visiblyPresented(card) || (carouselTarget && visiblyPresented(carouselTarget))
+			: fullyPresented(card)))
 			return;
 		if (reverse && sources.some((element) => element && !fullyPresented(element))) return;
 

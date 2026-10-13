@@ -7,7 +7,7 @@
 	import { CATALOG_ITEMS, type CatalogItems } from '@spatial-elements/core/catalog/catalogItems';
 	import { carouselKey } from '@spatial-elements/core/catalog/carouselSelection';
 	import { carouselPose, carouselResident } from '@spatial-elements/core/catalog/catalogPose';
-	import type { CarouselLayout, CarouselPresentation } from '@spatial-elements/core/catalog/catalogPose';
+	import type { CarouselLayout, CarouselPresentation, CarouselEmphasis } from '@spatial-elements/core/catalog/catalogPose';
 	import { useCatalogNavigation } from '../catalog/catalogNavigation.js';
 	import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
 	import {
@@ -25,6 +25,8 @@
 		index,
 		count,
 		phase,
+		emphasis,
+		focus,
 		windowPhase,
 		selected,
 		interactive,
@@ -38,6 +40,8 @@
 		index: number;
 		count: number;
 		phase: number;
+		emphasis?: CarouselEmphasis;
+		focus: number;
 		windowPhase: number;
 		selected: boolean;
 		interactive: boolean;
@@ -76,7 +80,7 @@
 	});
 	const occurrence = $derived(JSON.stringify([sectionId, carouselKey(spatialElement)]));
 	const tooltip = $derived([spatialElement.eyebrow, spatialElement.title].filter(Boolean).join(' — '));
-	const pose = $derived(carouselPose(index, phase, count, presentation, layout));
+	const pose = $derived(carouselPose(index, phase, count, presentation, layout, emphasis, focus));
 	const resident = $derived(carouselResident(index, windowPhase, count, presentation, layout));
 	function activate(event: MouseEvent) {
 		endpoints?.prefer(brand.id, spatialElement.id, occurrence, 'carousel.front');
@@ -93,7 +97,7 @@
 		return items?.register({
 			...spatialElement,
 			occurrence,
-			pose: { kind: 'carousel', read: () => carouselPose(index, phase, count, presentation, layout) }
+			pose: { kind: 'carousel', read: () => carouselPose(index, phase, count, presentation, layout, emphasis, focus) }
 		});
 	});
 </script>

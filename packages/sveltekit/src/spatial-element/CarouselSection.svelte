@@ -2,7 +2,7 @@
 	import { getContext, onMount, tick, untrack } from 'svelte';
 	import Section from './Section.svelte';
 	import CarouselSpatialElement from './CarouselSpatialElement.svelte';
-	import { CATALOG_POSE_CHANGED } from '@spatial-elements/core/catalog/catalogPose';
+	import { CATALOG_POSE_CHANGED, carouselEmphasis, CarouselDragEmphasis, type CarouselEmphasis } from '@spatial-elements/core/catalog/catalogPose';
 	import type { CarouselLayout, CarouselPresentation } from '@spatial-elements/core/catalog/catalogPose';
 	import type { SpatialListItem, SpatialElementSectionDefinition } from '@spatial-elements/core/spatial-element/types';
 	import { CATALOG_SECTIONS, type CatalogSections } from '@spatial-elements/core/catalog/CatalogSections';
@@ -45,6 +45,13 @@
 	let requested = $state<string>();
 	const interactive = $derived(stage?.isEnhanced?.() ?? false);
 	let phase = $state(0);
+	let emphasis = $state<CarouselEmphasis[] | undefined>();
+	const focus = $derived(emphasis ? Math.max(0, ...emphasis.map(value => value.advance)) : 1);
+	let gestureEmphasis: CarouselDragEmphasis | undefined;
+	let pendingEmphasis: CarouselEmphasis[] | undefined;
+	function currentEmphasis() {
+		return keys.map((_, index) => emphasis?.[index] ?? carouselEmphasis(index - phase));
+	}
 	let windowPhase = $state(0);
 	$effect(() => {
 		if (Math.abs(phase - windowPhase) > 0.75) windowPhase = Math.round(phase);
@@ -124,6 +131,7 @@
 			ring.releasePointerCapture(current.id);
 	}
 	function settle() {
+		emphasis = undefined;
 		cancelAnimationFrame(frame);
 		frame = 0;
 		releaseDrag();
@@ -136,6 +144,7 @@
 		cancelAnimationFrame(frame);
 		frame = 0;
 		const start = phase;
+		const initialEmphasis = emphasis;
 		const started = performance.now();
 		if (
 			!visible ||
@@ -143,6 +152,7 @@
 			matchMedia('(prefers-reduced-motion: reduce)').matches
 		) {
 			phase = target;
+			emphasis = undefined;
 			announced = selected;
 			invalidate();
 			rememberSelection();
@@ -157,12 +167,20 @@
 			const spring = velocity === undefined ? undefined : sampleCarouselSpring(start, velocity, target, elapsed);
 			const duration = Math.min(700, 320 + Math.max(0, Math.abs(target - start) - 1) * 70);
 			const t = Math.min(1, elapsed / duration);
-			const finished = spring
+			const motionFinished = spring
 				? (Math.abs(spring.phase - target) < 0.001 && Math.abs(spring.velocity) < 0.00005) || elapsed >= 1000
 				: t >= 1;
+			const finished = motionFinished && (!initialEmphasis || t >= 1);
 			phase = finished ? target : spring
 				? clampCarouselPhase(spring.phase, keys.length)
 				: start + (target - start) * (1 - (1 - t) ** 2);
+			if (initialEmphasis) {
+				const reveal = 1 - (1 - t) ** 2;
+				emphasis = finished ? undefined : initialEmphasis.map((value, index) => ({
+					advance: value.advance * (1 - reveal) + (index === target ? reveal : 0),
+					panel: value.panel * (1 - reveal) + (index === target ? reveal : 0)
+				}));
+			}
 			void tick().then(invalidate);
 			if (!finished) frame = requestAnimationFrame(advance);
 			else {
@@ -196,6 +214,8 @@
 		endDrag(false, event.clientX);
 	}
 	function beginDrag(id: number, kind: 'pointer' | 'touch', x: number, y?: number) {
+		gestureEmphasis = new CarouselDragEmphasis(phase, currentEmphasis());
+		pendingEmphasis = undefined;
 		cancelAnimationFrame(frame);
 		stopScrollMomentum();
 		frame = 0;
@@ -212,6 +232,7 @@
 		if (!drag) return;
 		const now = performance.now();
 		drag.motion.move(x, now, keys.length);
+		if (drag.motion.active) pendingEmphasis = gestureEmphasis?.move(drag.motion.phase);
 		if (y !== undefined) drag.scroll?.move(y, now);
 		if (!drag.motion.active && !drag.scroll?.active) return;
 		suppressClick = true;
@@ -220,6 +241,7 @@
 			frame = 0;
 			if (!drag) return;
 			phase = drag.motion.phase;
+			if (pendingEmphasis) emphasis = pendingEmphasis;
 			if (drag.scroll?.active) writeScroll(drag.scroll.position);
 			void tick().then(invalidate);
 		});
@@ -229,6 +251,7 @@
 		const { motion, kind, scroll } = drag;
 		const now = performance.now();
 		const release = motion.release(now, keys.length, x);
+		if (motion.active) emphasis = gestureEmphasis?.move(motion.phase);
 		const scrollVelocity = scroll?.release(now, y) ?? 0;
 		if (motion.active || scroll?.active) suppressClick = true;
 		cancelAnimationFrame(frame);
@@ -311,6 +334,8 @@
 		});
 	});
 	function select(key: string | undefined, velocity?: number) {
+		// Dots and keyboard retain the ordinary phase-driven crossfade.
+		if (velocity === undefined) emphasis = undefined;
 		selectionDirty = true;
 		requested = key;
 		// Persist in the current entry before a possible popstate changes the history index.
@@ -372,6 +397,7 @@
 		const release = sections?.register(section.id, {
 			read: () => selected,
 			restore: (key) => {
+				emphasis = undefined;
 				stopScrollMomentum();
 				selectionDirty = false;
 				requested = resolveCarouselSelection(keys, key ?? (!restored && !interactive ? nativeInitialKey : initialItemKey));
@@ -390,7 +416,7 @@
 			if (interactive && !visible && drag?.kind !== 'touch') {
 				settle();
 			}
-		});
+		}, { rootMargin: '700px 0px' });
 		observer.observe(carouselRing);
 		const stop = () => { if (interactive) pointercancel(); };
 		let viewportWidth = window.innerWidth;
@@ -461,6 +487,8 @@
 					{index}
 					count={list.length}
 					{phase}
+					emphasis={emphasis?.[index]}
+					{focus}
 					{windowPhase}
 					selected={selected === carouselKey(spatialElement)}
 					{interactive}

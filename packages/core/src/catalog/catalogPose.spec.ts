@@ -1,5 +1,48 @@
 import { describe, expect, it } from 'vitest';
-import { carouselDistance, carouselPose, carouselResident, type CarouselLayout } from './catalogPose.js';
+import { carouselDistance, carouselPose, carouselResident, carouselEmphasis, CarouselDragEmphasis } from './catalogPose.js';
+
+describe('drag presentation', () => {
+	it('advances only in depth and restores defocus with the foreground selection', () => {
+		for (const phase of [0, 0.4, 1]) {
+			for (const index of [0, 1, 2]) {
+				const resting = carouselPose(index, phase, 4);
+				for (const focus of [0, 0.25, 0.5, 1]) {
+					const pose = carouselPose(index, phase, 4, {}, undefined,
+						{ advance: focus, panel: focus }, focus);
+					expect(pose.orbit!.x).toBe(resting.orbit!.x);
+					expect(pose.blur).toBeCloseTo(resting.blur! * focus);
+				}
+			}
+		}
+	});
+	it('withdraws the initial panel and never reveals passing or revisited seats before release', () => {
+		const drag = new CarouselDragEmphasis(1, [0, 1, 2, 3].map(i => carouselEmphasis(i - 1)));
+		expect(drag.move(1)[1]).toEqual({ advance: 1, panel: 1 });
+		const partial = drag.move(1.5);
+		expect(partial[1].panel).toBe(0.25);
+		expect(partial[2]).toEqual({ advance: 0, panel: 0 });
+		for (const phase of [2, 3, 2.5, 1, 0]) {
+			const values = drag.move(phase);
+			expect(values.every(v => v.advance === 0 && v.panel === 0)).toBe(true);
+			for (let i = 0; i < values.length; i++) {
+				const pose = carouselPose(i, phase, 4, {}, undefined, values[i]);
+				const radius = 560 * 3.4;
+				const recession = -pose.depth / Math.cos(pose.orbit!.pitch);
+				expect(pose.orbit!.x ** 2 + (radius - recession + 280) ** 2)
+					.toBeCloseTo(radius ** 2, 5);
+			}
+		}
+	});
+	it('captures an interrupted presentation without a discontinuity', () => {
+		const initial = [carouselEmphasis(-0.4), carouselEmphasis(0.6)];
+		const drag = new CarouselDragEmphasis(0.4, initial);
+		expect(drag.move(0.4)).toEqual(initial);
+		for (const value of drag.move(1.4)) {
+			expect(value.advance).toBeCloseTo(0);
+			expect(value.panel).toBeCloseTo(0);
+		}
+	});
+});
 
 describe('bounded carousel groups', () => {
 	it('keeps the focused geometry sharp and increases defocus smoothly with distance', () => {
@@ -27,34 +70,44 @@ describe('bounded carousel groups', () => {
 			}
 		});
 	}
-	it('uses a wide viewport beyond a centered section without a five-item cutoff', () => {
-		const visible = (layout: CarouselLayout) => Array.from({ length: 30 }, (_, i) =>
-			carouselPose(i, 15, 30, {}, layout)).filter(pose => pose.visible).length;
-		expect(visible({ width: 1320, height: 600, left: 840, viewportWidth: 3000 })).toBeGreaterThan(5);
-		expect(visible({ width: 350, height: 800, left: 20, viewportWidth: 390 })).toBeLessThanOrEqual(3);
+	it('shows only the front arc even on ultrawide screens and long catalogs', () => {
+		const layout = { width: 1320, height: 600, left: 840, viewportWidth: 3000 };
+		const poses = Array.from({ length: 100 }, (_, i) => carouselPose(i, 50, 100, {}, layout));
+		expect(poses.filter(pose => pose.visible).length).toBe(5);
+		expect(poses[47].visible).toBe(false);
+		expect(poses[53].visible).toBe(false);
 	});
-	for (const layout of [
-		{ width: 1320, height: 600, left: 840, viewportWidth: 3000 },
-		{ width: 350, height: 800, left: 20, viewportWidth: 390 }
-	]) it(`keeps model envelopes separated and ordered at ${layout.viewportWidth}px`, () => {
-		const frame = Math.min(layout.width, layout.width < 700 ? 360 : layout.height);
-		for (let phase = 10; phase < 11; phase += 0.125) {
-			const poses = Array.from({ length: 30 }, (_, i) => carouselPose(i, phase, 30, {}, layout));
-			for (let i = 1; i < poses.length; i++) {
-				const gap = (poses[i].x - poses[i - 1].x) * layout.width;
-				const halfWidths = frame * (poses[i].size + poses[i - 1].size) / 2;
-				expect(gap - halfWidths).toBeGreaterThan(12);
-			}
+	it('puts the unselected seats on one circle and advances the selection smoothly', () => {
+		const radius = 560 * 3.4;
+		const pull = 560 * 0.5;
+		for (const distance of [1, 1.25, 1.5, 2]) {
+			const pose = carouselPose(0, distance, 20);
+			const recession = -pose.depth / Math.cos(pose.orbit!.pitch);
+			expect(pose.orbit!.x ** 2 + (radius - recession + pull) ** 2).toBeCloseTo(radius ** 2);
 		}
+		const front = carouselPose(0, 0, 20);
+		expect(front.orbit!.pitch).toBeCloseTo(6 * Math.PI / 180);
+		expect(front.depth).toBeCloseTo(0);
+		expect(front.size).toBeCloseTo(0.82);
+		let previousDepth = front.depth;
+		for (let distance = 0.01; distance <= 1; distance += 0.01) {
+			const pose = carouselPose(0, distance, 20);
+			expect(pose.depth).toBeLessThan(previousDepth);
+			expect(pose.size).toBeCloseTo(0.82 * 2500 / (2500 - pose.depth));
+			expect(pose.orbit!.y).toBeGreaterThan(0);
+			previousDepth = pose.depth;
+		}
+		const z = (distance: number) => carouselPose(0, distance, 20).depth;
+		expect(Math.abs((z(1) - z(0.999)) - (z(1.001) - z(1)))).toBeLessThan(0.01);
 	});
-	it('moves both spatialElements monotonically along the same shallow arc without a wrap', () => {
+	it('moves both spatialElements monotonically along the same circular arc without a wrap', () => {
 		for (const count of [2, 20]) {
 			for (const index of [0, 1]) {
 				let previous = carouselPose(index, 0, count).x;
 				for (let phase = 0.01; phase <= 1; phase += 0.01) {
 					const pose = carouselPose(index, phase, count);
 					expect(pose.x).toBeLessThan(previous);
-					expect(Math.abs(pose.yaw)).toBeLessThan(0.49);
+					expect(Math.abs(pose.yaw)).toBeLessThan(0.59);
 					previous = pose.x;
 				}
 			}
@@ -71,9 +124,9 @@ describe('bounded carousel groups', () => {
 	});
 });
 
-it('turns both sides toward the neutral foreground and increases neighbour separation', () => {
-	expect((carouselPose(0, 1, 3).yaw * 180) / Math.PI).toBeCloseTo(28);
+it('rotates the products with their turntable seats', () => {
+	expect((carouselPose(0, 1, 3).yaw * 180) / Math.PI).toBeCloseTo(-0.4 * 180 / Math.PI);
 	expect(carouselPose(1, 1, 3).yaw).toBeCloseTo(0);
-	expect((carouselPose(2, 1, 3).yaw * 180) / Math.PI).toBeCloseTo(-28);
+	expect((carouselPose(2, 1, 3).yaw * 180) / Math.PI).toBeCloseTo(0.4 * 180 / Math.PI);
 	expect(carouselPose(2, 1, 3).x - carouselPose(1, 1, 3).x).toBeGreaterThan(0.24);
 });

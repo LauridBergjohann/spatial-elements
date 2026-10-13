@@ -6,6 +6,7 @@ import {
 	normalizeSpatialElementClipMatrix
 } from './CatalogSpatialElementLayer.js';
 import { SpatialElementAssetManager, type LoadedSpatialElementAsset } from './assets/SpatialElementAssetManager.js';
+import { carouselPose } from './catalogPose.js';
 
 vi.mock('./CatalogGeometryFade.js', () => ({
 	CatalogGeometryFade: class {
@@ -22,7 +23,7 @@ function project(matrix: THREE.Matrix4, point: THREE.Vector3) {
 	return new THREE.Vector3(result.x / result.w, result.y / result.w, result.z / result.w);
 }
 
-function fixture() {
+function fixture(phase?: number) {
 	const reference = new THREE.Vector3(0.2, -0.3, 0.1);
 	const sourceCamera = new THREE.PerspectiveCamera(40, 1.6, 1, 4000);
 	const targetCamera = new THREE.PerspectiveCamera(45, 1.6, 0.01, 100);
@@ -40,6 +41,16 @@ function fixture() {
 		new THREE.Quaternion().setFromEuler(new THREE.Euler(0.1, -0.2, 0)),
 		new THREE.Vector3(30, 30, 30)
 	);
+	if (phase !== undefined) {
+		const pose = carouselPose(1, phase, 5);
+		sourceCamera.position.z = 2500;
+		sourceCamera.updateMatrixWorld();
+		sourceModel.compose(
+			new THREE.Vector3(-250 + pose.orbit!.x, 100 + pose.orbit!.y, pose.depth),
+			new THREE.Quaternion().setFromEuler(new THREE.Euler(pose.orbit!.pitch, pose.yaw, 0)),
+			new THREE.Vector3(200, 200, 200)
+		);
+	}
 	const targetModel = new THREE.Matrix4().compose(
 		new THREE.Vector3(-0.2, 0.3, -0.1),
 		new THREE.Quaternion(),
@@ -69,8 +80,8 @@ function fixture() {
 }
 
 describe('catalog spatialElement clip-space handoff', () => {
-	it('preserves the complete source and target projection for multiple geometry points', () => {
-		const values = fixture();
+	it.each([undefined, 0, 0.6, 1])('preserves complete detail handoff endpoints at carousel phase %s', (phase) => {
+		const values = fixture(phase);
 		const points = [
 			values.reference,
 			new THREE.Vector3(-0.4, -0.4, 0.4),
@@ -321,7 +332,9 @@ describe('catalog preview lifetime', () => {
 		manager.dispose();
 	});
 
-	it('measures carousel summary sizes before animation writes and refreshes them on resize', async () => {
+	it.each([false, true])('projects an undistorted resting panel and refreshes measurements (turntable: %s)', async (turntable) => {
+		vi.stubGlobal('innerWidth', 1440);
+		vi.stubGlobal('innerHeight', 900);
 		const activity: string[] = [];
 		let summaryWidth = 360;
 		let summaryLeft = 600, summaryTop = 200;
@@ -374,7 +387,7 @@ describe('catalog preview lifetime', () => {
 			await layer.setSpatialElements('demo', [{
 				id: 'cube', href: '/cube', eyebrow: 'Form', title: 'Cube',
 				geometry: { low: '/cube.glb', high: '/cube.glb' }, hdr: '/studio.hdr', background: { blurriness: 0, tint: '#fff', tintIntensity: 0 },
-				pose: { kind: 'carousel', read: () => ({ x: 0.5, y: 0.5, size: 0.82, depth: 0, yaw: 0, visible: true, front: true, panelOpacity: 1, opacity: 1 }) }
+				pose: { kind: 'carousel', read: () => turntable ? carouselPose(0, 0, 5, {}, { ...rect, viewportWidth: 1440 }) : ({ x: 0.5, y: 0.5, size: 0.82, depth: 0, yaw: 0, visible: true, front: true, panelOpacity: 1, opacity: 1 }) }
 			}]);
 			const renderer = {
 				coordinateSystem: THREE.WebGPUCoordinateSystem,
@@ -391,11 +404,24 @@ describe('catalog preview lifetime', () => {
 			expect(activity.slice(0, 4)).toEqual(['measure', 'measure', 'measure', 'measure']);
 			expect(activity.filter((item) => item === 'measure')).toHaveLength(4);
 			expect(projectedSummaryCenter().x).toBeCloseTo(840);
-			expect(projectedSummaryCenter().y).toBeCloseTo(300);
+			expect(projectedSummaryCenter().y).toBeCloseTo(turntable ? 324 : 300);
+			const panelMatrix = new THREE.Matrix4().fromArray(summary.style.transform.slice(9, -1).split(',').map(Number));
+			const a = project(panelMatrix, new THREE.Vector3(0, 0, 0));
+			const b = project(panelMatrix, new THREE.Vector3(summaryWidth, 0, 0));
+			const c = project(panelMatrix, new THREE.Vector3(0, 200, 0));
+			expect(b.x - a.x).toBeCloseTo(summaryWidth);
+			expect(b.y).toBeCloseTo(a.y);
+			expect(c.x).toBeCloseTo(a.x);
+			expect(c.y - a.y).toBeCloseTo(200);
 			expect(observe).toHaveBeenCalledWith(summary);
 			layer.draw(renderer, 'front');
 			// A clipped carousel group needs one scene submission, without an empty list pass.
 			expect(renderer.render).toHaveBeenCalledTimes(1);
+			// Both rendering and detail handoff use the viewport, never the section edge.
+			expect(renderer.setScissor).toHaveBeenCalledWith(0, 0, 1440, 900);
+			expect(layer.getDestinationProjection('cube')?.viewportClip)
+				.toEqual({ left: 0, top: 0, width: 1440, height: 900 });
+			expect(layer.getDestinationProjection('cube')?.fog).toBeNull();
 			activity.length = 0;
 			layer.update(renderer, null, 116);
 			expect(activity).not.toContain('measure');
@@ -408,7 +434,7 @@ describe('catalog preview lifetime', () => {
 			expect(activity.slice(0, 4)).toEqual(['measure', 'measure', 'measure', 'measure']);
 			// Layout may resize or reposition the semantic panel; its projected anchor stays put.
 			expect(projectedSummaryCenter().x).toBeCloseTo(840);
-			expect(projectedSummaryCenter().y).toBeCloseTo(300);
+			expect(projectedSummaryCenter().y).toBeCloseTo(turntable ? 324 : 300);
 		} finally {
 			layer.dispose();
 			manager.dispose();
