@@ -74,8 +74,8 @@ function framing(distance: number, presentation: CarouselPresentation, layout: C
 	const travel = Math.abs(distance);
 	// Only the front arc is presented. Never wrap a long catalog onto occupied seats.
 	const angle = Math.max(-1.35, Math.min(1.35, distance * step));
-	const pitch = 6 * Math.PI / 180;
-	const pull = frame * 0.5;
+	const pitch = 10 * Math.PI / 180;
+	const pull = frame * 1.25;
 	// Smooth at both the selected seat and the point where it rejoins the ring.
 	const advance = pull * emphasis.advance;
 	const recession = radius * (1 - Math.cos(angle)) + pull - advance;
@@ -91,7 +91,7 @@ function framing(distance: number, presentation: CarouselPresentation, layout: C
 	const center = layout.viewportWidth / 2 + (anchor - layout.viewportWidth / 2 + orbit.x) * scale;
 	const offset = center - anchor;
 	const extent = frame * 0.82 * scale * 0.6;
-	const seats = compact ? 1.49 : 2.24;
+	const seats = compact ? 1.49 : 3.24;
 	const arcOpacity = Math.max(0, Math.min(1, (seats - travel) / 0.38));
 	return { offset, scale, center, extent, orbit, z, angle, arcOpacity, seats };
 }
@@ -133,7 +133,7 @@ export function carouselPose(
 		visible: edge > 0,
 		front: Math.abs(distance) <= 0.5,
 		panelOpacity: emphasis.panel,
-		blur: Math.min(7, Math.max(0, Math.abs(distance) - 0.15) ** 1.4 * 3) * focus,
+		blur: Math.min(5, Math.max(0, Math.abs(distance) - 0.15) ** 1.4 * 2.2) * focus,
 		opacity: edge
 	};
 }

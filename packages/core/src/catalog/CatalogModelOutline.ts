@@ -59,7 +59,14 @@ export class CatalogModelOutline {
 		mask.matrix.copy(model.matrixWorld);
 		mask.matrixWorldNeedsUpdate = true;
 		this.camera.copy(camera);
-		this.camera.setViewOffset(innerWidth, innerHeight, left, top, width, height);
+		// Crop the actual projection, including custom transition camera matrices.
+		this.camera.projectionMatrix.copy(new THREE.Matrix4().set(
+			innerWidth / width, 0, 0, (innerWidth - 2 * left - width) / width,
+			0, innerHeight / height, 0, (2 * top + height - innerHeight) / height,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		).multiply(camera.projectionMatrix));
+		this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
 		const changed = this.source !== model || !this.modelMatrix.equals(model.matrixWorld) ||
 			!this.cameraMatrix.equals(camera.matrixWorld) || !this.projection.equals(this.camera.projectionMatrix);
 		if (this.source !== model) {

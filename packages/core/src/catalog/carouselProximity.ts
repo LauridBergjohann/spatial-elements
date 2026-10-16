@@ -8,7 +8,7 @@ export function carouselProximity(x: number, y: number,
 	const influence = 1 - t * t * (3 - 2 * t);
 	const limit = 4 * Math.PI / 180;
 	return {
-		x: Math.max(-1, Math.min(1, dy / Math.max(1, rect.height / 2))) * limit * influence,
-		y: Math.max(-1, Math.min(1, dx / Math.max(1, rect.width / 2))) * limit * influence
+		x: -Math.max(-1, Math.min(1, dy / Math.max(1, rect.height / 2))) * limit * influence || 0,
+		y: -Math.max(-1, Math.min(1, dx / Math.max(1, rect.width / 2))) * limit * influence || 0
 	};
 }

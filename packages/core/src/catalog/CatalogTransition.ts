@@ -899,7 +899,7 @@ export class CatalogTransition {
 		const sourcesToHide: HTMLElement[] = [];
 		const selector = isReturnRecipe(capture.recipe)
 			? '[data-catalog-transition-dom="enter"], [data-catalog-transition-group="enter"], [data-catalog-secondary]'
-			: `[data-catalog-transition-dom="exit"]${capture.captureShell ? ', [data-catalog-shell]' : ''}`;
+			: `[data-catalog-transition-dom="exit"], [data-catalog-shell][data-catalog-transition-dom="enter"]${capture.captureShell ? ', [data-catalog-shell]' : ''}`;
 		for (const source of this.root.querySelectorAll<HTMLElement>(selector)) {
 			if (source.parentElement?.closest(selector)) continue;
 			if (
@@ -948,7 +948,7 @@ export class CatalogTransition {
 			}
 			copy.dataset.catalogExitCopy = '';
 			copy.dataset.catalogBaseOpacity = style.opacity;
-			if (source.hasAttribute('data-catalog-shell')) copy.dataset.catalogShellCopy = '';
+			if (source.hasAttribute('data-catalog-shell') && source.dataset.catalogTransitionDom !== 'enter') copy.dataset.catalogShellCopy = '';
 			copy.setAttribute('aria-hidden', 'true');
 			copy.inert = true;
 			Object.assign(copy.style, {
@@ -1040,6 +1040,9 @@ export class CatalogTransition {
 	async play(): Promise<void> {
 		const capture = this.captureState;
 		if (!capture || !this.sequence.start(capture.token)) return;
+		// Persistent shell nodes survive route replacement; the exit copy owns their old pose.
+		for (const shell of this.root.querySelectorAll<HTMLElement>('[data-catalog-shell][data-catalog-transition-dom="enter"]'))
+			shell.style.removeProperty('visibility');
 		try {
 			const reverse = Boolean(capture.view) || isReturnRecipe(capture.recipe);
 			if (capture.view) {

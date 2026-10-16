@@ -1,4 +1,6 @@
 import * as THREE from 'three/webgpu';
+import { CatalogModelOutline } from './CatalogModelOutline.js';
+import type { StageInteractionTheme } from '../stage/stageTypes.js';
 import {
 	getSpatialElementHandoffProjection,
 	interpolatePose,
@@ -38,8 +40,9 @@ export function captureSpatialElementProjection(
 /** A renderer-owned element with copied projection and independently retained asset resources. */
 export class SpatialGeometryCapture {
 	getRenderTargets() {
-		return this.disposed ? [] : (this.options.blend?.getRenderTargets() ?? []);
+		return this.disposed ? [] : [...(this.options.blend?.getRenderTargets() ?? []), ...this.outline.getRenderTargets()];
 	}
+	private readonly outline = new CatalogModelOutline();
 	private readonly scene = new THREE.Scene();
 	private readonly camera = new THREE.PerspectiveCamera();
 	private target?: SpatialElementProjection;
@@ -55,6 +58,7 @@ export class SpatialGeometryCapture {
 		readonly model: THREE.Object3D,
 		private source: SpatialElementProjection,
 		options: {
+			outlineTheme?: StageInteractionTheme;
 			environment: THREE.Texture | null;
 			environmentIntensity?: number;
 			highEnvironment?: THREE.Texture;
@@ -77,6 +81,7 @@ export class SpatialGeometryCapture {
 		model.matrix.copy(source.model);
 	}
 	private readonly options: {
+		outlineTheme?: StageInteractionTheme;
 		environment: THREE.Texture | null;
 		environmentIntensity?: number;
 		highEnvironment?: THREE.Texture;
@@ -175,6 +180,12 @@ export class SpatialGeometryCapture {
 						this.highWeight >= 1 ? child === this.options.high : child !== this.options.high;
 				renderer.render(this.scene, this.camera);
 			}
+			if (this.options.outlineTheme) {
+				// A separate mask for each representation avoids retaining a High silhouette after refinement.
+				const outlined = this.highWeight >= 0.5 && this.options.high ? this.options.high : children.find(child => child !== this.options.high);
+				if (outlined) this.outline.render(renderer, this.camera, outlined, viewport, clip,
+					1 - this.progress, this.options.outlineTheme);
+			}
 			this.submitted = captureSpatialElementProjection(this.model, this.camera);
 			this.submitted.fog = this.scene.fog;
 			this.submitted.viewportClip = clip;
@@ -188,6 +199,7 @@ export class SpatialGeometryCapture {
 	getSnapshot() {
 		return {
 			frames: this.frames,
+			outline: this.outline.getStats(),
 			progress: this.progress,
 			highWeight: this.highWeight,
 			projection: (this.submitted ?? this.source).clip.toArray(),
@@ -209,6 +221,7 @@ export class SpatialGeometryCapture {
 	dispose() {
 		if (this.disposed) return;
 		this.disposed = true;
+		this.outline.dispose();
 		this.model.removeFromParent();
 		// Returning false hands the prepared blend back to its still-live page owner.
 		let retained = false;

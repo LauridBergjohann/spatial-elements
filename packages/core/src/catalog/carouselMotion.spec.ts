@@ -1,5 +1,20 @@
 import { expect, it } from 'vitest';
-import { CarouselDrag, CarouselScrollDrag, clampCarouselPhase, sampleCarouselSpring, sampleCarouselScrollMomentum } from './carouselMotion.js';
+import { CarouselDrag, CarouselScrollDrag, CarouselTouchDirection, clampCarouselPhase, sampleCarouselSpring, sampleCarouselScrollMomentum } from './carouselMotion.js';
+
+it('damps only the weaker touch axis, preserving diagonal travel and direction changes', () => {
+	for (const horizontal of [true, false]) {
+		const direction = new CarouselTouchDirection(0, 0);
+		for (let i = 1; i <= 10; i++) direction.move(horizontal ? i * 20 : i * 4, horizontal ? i * 4 : i * 20);
+		expect(horizontal ? direction.x : direction.y).toBe(200);
+		expect(horizontal ? direction.y : direction.x).toBeCloseTo(4.8);
+		const before = { x: direction.x, y: direction.y };
+		for (let i = 1; i <= 10; i++) direction.move(horizontal ? 200 : 40 + i * 20, horizontal ? 40 + i * 20 : 200);
+		expect(horizontal ? direction.y - before.y : direction.x - before.x).toBeGreaterThan(150);
+	}
+	const diagonal = new CarouselTouchDirection(0, 0);
+	expect(diagonal.move(100, 100)).toEqual({ x: 100, y: 100 });
+	expect(diagonal.move(100, 100)).toEqual({ x: 100, y: 100 });
+});
 
 it('ignores tap jitter, then tracks horizontal movement without a direction lock', () => {
 	const drag = new CarouselDrag(300, 1, 0);
@@ -25,13 +40,31 @@ it('carries a flick forward, but removes momentum after holding before release',
 it('respects both ends and empty or single-item carousels', () => {
 	const drag = new CarouselDrag(300, 1, 0);
 	drag.move(-1000, 50, 3);
-	expect(drag.phase).toBe(2);
+	expect(drag.phase).toBeGreaterThan(2);
+	expect(drag.phase).toBeLessThan(2.35);
 	expect(drag.release(50, 3).target).toBe(2);
 	drag.move(1000, 100, 3);
-	expect(drag.phase).toBe(0);
+	expect(drag.phase).toBeLessThan(0);
+	expect(drag.phase).toBeGreaterThan(-0.35);
 	expect(drag.release(100, 3).target).toBe(0);
 	expect(clampCarouselPhase(5, 0)).toBe(0);
 	expect(clampCarouselPhase(5, 1)).toBe(0);
+});
+
+it('resists overscroll symmetrically and springs back without selecting another seat', () => {
+	for (const [start, direction] of [[0, 1], [4, -1]]) {
+		const drag = new CarouselDrag(300, start, 0);
+		drag.move(300 + direction * 110, 50, 5);
+		const offset = Math.abs(drag.phase - start);
+		expect(offset).toBeGreaterThan(0.1);
+		expect(offset).toBeLessThan(0.25);
+		expect(drag.release(50, 5)).toEqual({ target: start, velocity: 0 });
+		const spring = sampleCarouselSpring(drag.phase, 0, start, 100);
+		expect(Math.abs(spring.phase - start)).toBeLessThan(offset);
+		expect(Math.abs(spring.phase - start)).toBeGreaterThan(0);
+		drag.move(300, 100, 5);
+		expect(drag.phase).toBe(start);
+	}
 });
 
 it('includes a coalesced final position without inventing velocity on an unchanged release', () => {

@@ -2,6 +2,33 @@ const PIXELS_PER_ITEM = 220;
 const DRAG_THRESHOLD = 8;
 const MAX_VELOCITY = 0.01;
 
+/** Soft direction preference based on recent travel; never locks either axis. */
+export class CarouselTouchDirection {
+	private horizontal = 0;
+	private vertical = 0;
+	private lastX: number;
+	private lastY: number;
+	constructor(public x: number, public y: number) {
+		this.lastX = x;
+		this.lastY = y;
+	}
+	move(x: number, y: number) {
+		const dx = x - this.lastX, dy = y - this.lastY;
+		this.lastX = x;
+		this.lastY = y;
+		const decay = Math.exp(-Math.hypot(dx, dy) / 36);
+		this.horizontal = this.horizontal * decay + Math.abs(dx);
+		this.vertical = this.vertical * decay + Math.abs(dy);
+		const weight = (minor: number, major: number) => {
+			const dominance = Math.max(0, Math.min(1, (major / Math.max(minor, 0.001) - 1.3) / 1.7));
+			return 1 - 0.88 * dominance;
+		};
+		this.x += dx * weight(this.horizontal, this.vertical);
+		this.y += dy * weight(this.vertical, this.horizontal);
+		return { x: this.x, y: this.y };
+	}
+}
+
 /** Horizontal carousel motion, independent of the gesture's vertical scrolling. */
 export class CarouselDrag {
 	active = false;
@@ -25,7 +52,11 @@ export class CarouselDrag {
 		const distance = this.startX - x;
 		if (!this.active && Math.abs(distance) < DRAG_THRESHOLD) return;
 		this.active = true;
-		const next = clampCarouselPhase(this.startPhase + distance / PIXELS_PER_ITEM, count);
+		const raw = this.startPhase + distance / PIXELS_PER_ITEM;
+		const boundary = clampCarouselPhase(raw, count);
+		const excess = raw - boundary;
+		// Increasing resistance, with at most a third of a seat beyond either end.
+		const next = count < 2 ? 0 : boundary + 0.35 * excess / (0.7 + Math.abs(excess));
 		const elapsed = now - this.lastTime;
 		if (elapsed > 0) {
 			const speed = Math.max(-MAX_VELOCITY, Math.min(MAX_VELOCITY, (next - this.phase) / elapsed));
@@ -39,7 +70,8 @@ export class CarouselDrag {
 		// A coalesced final move may arrive only in the release event.
 		if (x !== this.lastX) this.move(x, now, count);
 		// A held finger has no momentum, even if no move event arrived during the pause.
-		const velocity = now - this.lastTime > 100 ? 0 : this.velocity;
+		const outside = this.phase !== clampCarouselPhase(this.phase, count);
+		const velocity = outside || now - this.lastTime > 100 ? 0 : this.velocity;
 		return {
 			velocity,
 			target: Math.round(clampCarouselPhase(this.phase + velocity * 180, count))

@@ -166,6 +166,7 @@ export class CatalogSpatialElementLayer {
 			...this.outline.getRenderTargets(),
 			...this.depthBlur.getRenderTargets(),
 			...this.glass.getRenderTargets(),
+			...this.ground.getRenderTargets(),
 			...this.geometryFade.getRenderTargets(),
 			...(this.handoff?.blend?.getRenderTargets() ?? [])
 		];
@@ -522,30 +523,15 @@ export class CatalogSpatialElementLayer {
 					actor.tilt.updateMatrix();
 					actor.view.updateMatrix();
 					const upright = new THREE.Matrix4().makeRotationX(-pitch).multiply(actor.tilt.matrix);
-					const footprint = new THREE.Box3().setFromPoints(actor.hitCorners.map(corner =>
-						corner.clone().applyMatrix4(actor.view.matrix).applyMatrix4(upright)));
 					const bottom = Math.min(...actor.supportPoints.map(point =>
 						point.clone().applyMatrix4(actor.view.matrix).applyMatrix4(upright).y));
 					actor.view.position.y += (-floor - bottom) / upright.elements[5];
 					actor.view.updateMatrix();
-					footprint.setFromPoints(actor.hitCorners.map(corner =>
-						corner.clone().applyMatrix4(actor.view.matrix).applyMatrix4(upright)));
 					const groundMatrix = new THREE.Matrix4().makeTranslation(x - width / 2, height / 2 - y, 0)
 						.multiply(new THREE.Matrix4().makeRotationX(pitch))
 						.multiply(new THREE.Matrix4().makeTranslation(0, -floor, 0));
-					const section = actor.card.closest?.('[data-carousel-section]') ?? actor.card;
-					this.ground.patch(section, groundMatrix.clone().multiply(new THREE.Matrix4().makeTranslation(
-						slot.width * (compact ? 0 : 0.19), 0, -frame * 0.7)),
-						Math.max(slot.width * 2, frame * 4), frame * 5, 0.035);
-					const contacts = actor.supportPoints.map(point =>
-						point.clone().applyMatrix4(actor.view.matrix).applyMatrix4(upright))
-						.filter(point => point.y < -floor + frame * 0.025);
-					const center = new THREE.Box3().setFromPoints(contacts).getCenter(new THREE.Vector3());
-					const size = footprint.getSize(new THREE.Vector3());
-					this.ground.patch(actor, groundMatrix.multiply(new THREE.Matrix4().makeTranslation(
-						pose.orbit.x + center.x, 0.5, pose.depth / Math.cos(pitch) + center.z)),
-						Math.max(40, size.x * 1.35), Math.max(100, size.z * 1.4 + frame * 0.2),
-						0.22 * pose.opacity);
+					actor.root.updateMatrixWorld(true);
+					this.ground.shadow(actor, actor.model, groundMatrix, 0.14 * pose.opacity);
 				}
 				actor.root.updateMatrixWorld(true);
 				const hitTarget = actor.hitTarget;

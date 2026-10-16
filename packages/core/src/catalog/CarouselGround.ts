@@ -1,60 +1,99 @@
 import * as THREE from 'three/webgpu';
+import { CatalogDepthBlur } from './CatalogDepthBlur.js';
+import { isMesh } from '../stage/stageSceneUtils.js';
 
-/** A shared, horizon-free floor and soft contact patches in the carousel camera space. */
+/** Parallel light from above/right/front, projected onto the shared y=0 receiver. */
+export function carouselShadowProjection() {
+	return new THREE.Matrix4().set(1, -0.65, 0, 0, 0, 0, 0, 0.4, 0, -0.55, 1, 0, 0, 0, 0, 1);
+}
+
+interface Shadow {
+	model: THREE.Object3D;
+	group: THREE.Group;
+	meshes: { source: THREE.Mesh; shadow: THREE.Mesh }[];
+	material: THREE.MeshBasicMaterial;
+	opacity: number;
+}
+
+/** Actual mesh silhouettes on one floor; no tinted receiver or generic shadow decals. */
 export class CarouselGround {
 	private readonly scene = new THREE.Scene();
-	private readonly geometry = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
-	private readonly texture: THREE.DataTexture;
-	private readonly patches = new Map<object, THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>>();
+	private readonly blur = new CatalogDepthBlur();
+	private readonly shadows = new Map<object, Shadow>();
 	private readonly seen = new Set<object>();
-	constructor() {
-		const size = 64, data = new Uint8Array(size * size * 4);
-		for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-			const r = Math.hypot((x + 0.5) / size * 2 - 1, (y + 0.5) / size * 2 - 1);
-			const alpha = Math.max(0, 1 - r * r) ** 3;
-			const offset = (y * size + x) * 4;
-			data[offset] = data[offset + 1] = data[offset + 2] = 255;
-			data[offset + 3] = Math.round(alpha * 255);
-		}
-		this.texture = new THREE.DataTexture(data, size, size);
-		this.texture.minFilter = this.texture.magFilter = THREE.LinearFilter;
-		this.texture.needsUpdate = true;
-	}
+	getRenderTargets() { return this.blur.getRenderTargets(); }
 	beginFrame() { this.seen.clear(); }
-	patch(key: object, matrix: THREE.Matrix4, width: number, depth: number, opacity: number) {
+	shadow(key: object, model: THREE.Object3D, floor: THREE.Matrix4, opacity: number) {
 		this.seen.add(key);
-		let patch = this.patches.get(key);
-		if (!patch) {
-			patch = new THREE.Mesh(this.geometry, new THREE.MeshBasicMaterial({
-				map: this.texture, color: 0x475569, transparent: true,
-				depthWrite: false, depthTest: false, toneMapped: false, side: THREE.DoubleSide
-			}));
-			patch.matrixAutoUpdate = false;
-			this.patches.set(key, patch);
-			this.scene.add(patch);
+		let entry = this.shadows.get(key);
+		if (entry && entry.model !== model) { this.release(entry); this.shadows.delete(key); entry = undefined; }
+		if (!entry) {
+			// Replace pixels in the scratch target: overlapping triangles form one silhouette.
+			const material = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true,
+				blending: THREE.NoBlending, depthWrite: false, depthTest: false,
+				toneMapped: false, side: THREE.DoubleSide });
+			const group = new THREE.Group();
+			entry = { model, group, meshes: [], material, opacity };
+			model.traverseVisible(source => {
+				if (!isMesh(source)) return;
+				const shadow = source.clone(false);
+				shadow.material = material;
+				shadow.matrixAutoUpdate = false;
+				shadow.frustumCulled = false;
+				group.add(shadow);
+				entry!.meshes.push({ source, shadow });
+			});
+			this.shadows.set(key, entry);
+			this.scene.add(group);
 		}
-		patch.matrix.copy(matrix).scale(new THREE.Vector3(width, 1, depth));
-		patch.matrixWorldNeedsUpdate = true;
-		patch.material.opacity = opacity;
-		patch.userData.opacity = opacity;
-		patch.visible = opacity > 0.001;
+		entry.opacity = opacity;
+		const projection = floor.clone().multiply(carouselShadowProjection()).multiply(floor.clone().invert());
+		for (const { source, shadow } of entry.meshes) {
+			shadow.matrix.copy(projection).multiply(source.matrixWorld);
+			shadow.matrixWorldNeedsUpdate = true;
+			shadow.visible = source.visible;
+		}
+		entry.group.visible = false;
 	}
 	endFrame() {
-		for (const [key, patch] of this.patches) if (!this.seen.has(key)) {
-			patch.removeFromParent();
-			patch.material.dispose();
-			this.patches.delete(key);
+		for (const [key, entry] of this.shadows) if (!this.seen.has(key)) {
+			this.release(entry);
+			this.shadows.delete(key);
 		}
 	}
-	draw(renderer: THREE.WebGPURenderer, camera: THREE.Camera, opacity = 1) {
-		for (const patch of this.patches.values()) patch.material.opacity = patch.userData.opacity * opacity;
-		if (this.patches.size) renderer.render(this.scene, camera);
+	draw(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera, opacity = 1) {
+		for (const entry of this.shadows.values()) {
+			entry.material.opacity = entry.opacity * opacity;
+			if (entry.material.opacity <= 0.001) continue;
+			let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+			const point = new THREE.Vector3();
+			for (const { shadow } of entry.meshes) {
+				if (!shadow.visible) continue;
+				if (!shadow.geometry.boundingBox) shadow.geometry.computeBoundingBox();
+				const box = shadow.geometry.boundingBox!;
+				for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y])
+					for (const z of [box.min.z, box.max.z]) {
+						point.set(x, y, z).applyMatrix4(shadow.matrix).project(camera);
+						const px = (point.x + 1) * innerWidth / 2, py = (1 - point.y) * innerHeight / 2;
+						left = Math.min(left, px); right = Math.max(right, px);
+						top = Math.min(top, py); bottom = Math.max(bottom, py);
+					}
+			}
+			if (!Number.isFinite(left)) continue;
+			entry.group.visible = true;
+			try {
+				this.blur.render(renderer, camera, { left, top, width: right - left, height: bottom - top },
+					2.5, projection => renderer.render(this.scene, projection));
+			} finally { entry.group.visible = false; }
+		}
 	}
-	getStats() { return { patches: this.patches.size }; }
+	getStats() { return { silhouettes: this.shadows.size }; }
+	private release(entry: Shadow) {
+		entry.group.removeFromParent();
+		entry.material.dispose();
+		// Geometry belongs to the asset manager and is shared, never disposed here.
+	}
 	dispose() {
-		this.seen.clear();
-		this.endFrame();
-		this.geometry.dispose();
-		this.texture.dispose();
+		this.seen.clear(); this.endFrame(); this.blur.dispose();
 	}
 }

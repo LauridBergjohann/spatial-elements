@@ -28,7 +28,7 @@ describe('drag presentation', () => {
 				const pose = carouselPose(i, phase, 4, {}, undefined, values[i]);
 				const radius = 560 * 3.4;
 				const recession = -pose.depth / Math.cos(pose.orbit!.pitch);
-				expect(pose.orbit!.x ** 2 + (radius - recession + 280) ** 2)
+				expect(pose.orbit!.x ** 2 + (radius - recession + 700) ** 2)
 					.toBeCloseTo(radius ** 2, 5);
 			}
 		}
@@ -73,20 +73,20 @@ describe('bounded carousel groups', () => {
 	it('shows only the front arc even on ultrawide screens and long catalogs', () => {
 		const layout = { width: 1320, height: 600, left: 840, viewportWidth: 3000 };
 		const poses = Array.from({ length: 100 }, (_, i) => carouselPose(i, 50, 100, {}, layout));
-		expect(poses.filter(pose => pose.visible).length).toBe(5);
-		expect(poses[47].visible).toBe(false);
-		expect(poses[53].visible).toBe(false);
+		expect(poses.filter(pose => pose.visible).length).toBe(7);
+		expect(poses[46].visible).toBe(false);
+		expect(poses[54].visible).toBe(false);
 	});
 	it('puts the unselected seats on one circle and advances the selection smoothly', () => {
 		const radius = 560 * 3.4;
-		const pull = 560 * 0.5;
+		const pull = 560 * 1.25;
 		for (const distance of [1, 1.25, 1.5, 2]) {
 			const pose = carouselPose(0, distance, 20);
 			const recession = -pose.depth / Math.cos(pose.orbit!.pitch);
 			expect(pose.orbit!.x ** 2 + (radius - recession + pull) ** 2).toBeCloseTo(radius ** 2);
 		}
 		const front = carouselPose(0, 0, 20);
-		expect(front.orbit!.pitch).toBeCloseTo(6 * Math.PI / 180);
+		expect(front.orbit!.pitch).toBeCloseTo(10 * Math.PI / 180);
 		expect(front.depth).toBeCloseTo(0);
 		expect(front.size).toBeCloseTo(0.82);
 		let previousDepth = front.depth;

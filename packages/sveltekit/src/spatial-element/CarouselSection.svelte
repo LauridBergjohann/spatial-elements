@@ -14,6 +14,7 @@
 	import {
 		CarouselDrag,
 		CarouselScrollDrag,
+		CarouselTouchDirection,
 		clampCarouselPhase,
 		sampleCarouselSpring,
 		sampleCarouselScrollMomentum
@@ -47,6 +48,7 @@
 	let phase = $state(0);
 	let emphasis = $state<CarouselEmphasis[] | undefined>();
 	const focus = $derived(emphasis ? Math.max(0, ...emphasis.map(value => value.advance)) : 1);
+	const arrowOpacity = $derived(Math.max(0, ...list.map((_, index) => emphasis?.[index]?.panel ?? carouselEmphasis(index - phase).panel)));
 	let gestureEmphasis: CarouselDragEmphasis | undefined;
 	let pendingEmphasis: CarouselEmphasis[] | undefined;
 	function currentEmphasis() {
@@ -82,7 +84,29 @@
 		selectionDirty = false;
 		sections?.remember();
 	}
-	let drag: { id: number; kind: 'pointer' | 'touch'; motion: CarouselDrag; scroll?: CarouselScrollDrag } | undefined;
+	let drag: { id: number; kind: 'pointer' | 'touch' | 'wheel'; motion: CarouselDrag; scroll?: CarouselScrollDrag; direction?: CarouselTouchDirection } | undefined;
+	let wheelTimer: ReturnType<typeof setTimeout>;
+	let wheelX = 0;
+	function wheel(event: WheelEvent) {
+		if (!interactive || list.length < 2 || event.ctrlKey || ring.closest('[data-catalog-transition]')) return;
+		const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? ring.clientWidth : 1;
+		const dx = (event.shiftKey && !event.deltaX ? event.deltaY : event.deltaX) * scale;
+		const dy = event.shiftKey && !event.deltaX ? 0 : event.deltaY * scale;
+		// Once horizontal intent is established, small diagonal/zero-delta samples
+		// still belong to that gesture. They must not select a product mid-scroll.
+		if (drag?.kind !== 'wheel' && (!dx || Math.abs(dx) <= Math.abs(dy) * 1.2)) return;
+		if (drag && drag.kind !== 'wheel') return;
+		// Some browsers only allow cancelling the first event in a wheel stream.
+		// Later samples still update movement and keep the gesture alive.
+		if (event.cancelable) event.preventDefault();
+		if (!drag) { wheelX = 0; beginDrag(0, 'wheel', wheelX); }
+		wheelX -= dx;
+		moveDrag(wheelX);
+		clearTimeout(wheelTimer);
+		// WheelEvent exposes no finger-up signal. Allow sparse slow samples and the
+		// native momentum tail to finish before selecting, without a speed threshold.
+		wheelTimer = setTimeout(() => { if (drag?.kind === 'wheel') endDrag(); }, 600);
+	}
 	function writeScroll(position: number) {
 		markStageScrollInput('touch');
 		window.scrollTo({ top: position, behavior: 'instant' });
@@ -120,6 +144,7 @@
 		window.dispatchEvent(new Event(CATALOG_POSE_CHANGED));
 	}
 	function releaseDrag() {
+		clearTimeout(wheelTimer);
 		const current = drag;
 		drag = undefined;
 		window.removeEventListener('pointerup', pointerup);
@@ -172,7 +197,7 @@
 				: t >= 1;
 			const finished = motionFinished && (!initialEmphasis || t >= 1);
 			phase = finished ? target : spring
-				? clampCarouselPhase(spring.phase, keys.length)
+				? spring.phase
 				: start + (target - start) * (1 - (1 - t) ** 2);
 			if (initialEmphasis) {
 				const reveal = 1 - (1 - t) ** 2;
@@ -198,9 +223,11 @@
 			drag ||
 			list.length < 2 ||
 			event.button !== 0 ||
-			!(event.target as Element).closest('.spatial-element-visual')
+			!canStartDrag(event.target)
 		)
 			return;
+		// Own the gesture before the browser can start dragging a link or selected text.
+		event.preventDefault();
 		beginDrag(event.pointerId, 'pointer', event.clientX);
 		window.addEventListener('pointerup', pointerup);
 	}
@@ -213,7 +240,7 @@
 		if (drag?.kind !== 'pointer' || drag.id !== event.pointerId) return;
 		endDrag(false, event.clientX);
 	}
-	function beginDrag(id: number, kind: 'pointer' | 'touch', x: number, y?: number) {
+	function beginDrag(id: number, kind: 'pointer' | 'touch' | 'wheel', x: number, y?: number) {
 		gestureEmphasis = new CarouselDragEmphasis(phase, currentEmphasis());
 		pendingEmphasis = undefined;
 		cancelAnimationFrame(frame);
@@ -224,12 +251,14 @@
 		const now = performance.now();
 		drag = {
 			id, kind, motion: new CarouselDrag(x, phase, now),
+			direction: y === undefined ? undefined : new CarouselTouchDirection(x, y),
 			scroll: y === undefined ? undefined : new CarouselScrollDrag(y, window.scrollY,
 				Math.max(0, document.documentElement.scrollHeight - window.innerHeight), now)
 		};
 	}
 	function moveDrag(x: number, y?: number) {
 		if (!drag) return;
+		if (y !== undefined && drag.direction) ({ x, y } = drag.direction.move(x, y));
 		const now = performance.now();
 		drag.motion.move(x, now, keys.length);
 		if (drag.motion.active) pendingEmphasis = gestureEmphasis?.move(drag.motion.phase);
@@ -248,6 +277,7 @@
 	}
 	function endDrag(cancelled = false, x?: number, y?: number) {
 		if (!drag) return;
+		if (x !== undefined && y !== undefined && drag.direction) ({ x, y } = drag.direction.move(x, y));
 		const { motion, kind, scroll } = drag;
 		const now = performance.now();
 		const release = motion.release(now, keys.length, x);
@@ -259,8 +289,8 @@
 		phase = motion.phase;
 		if (scroll?.active) writeScroll(scroll.position);
 		releaseDrag();
-		const momentum = !cancelled && !matchMedia('(prefers-reduced-motion: reduce)').matches;
-		if (motion.active) select(keys[momentum ? release.target : Math.round(phase)], momentum ? release.velocity : 0);
+		const momentum = kind !== 'wheel' && !cancelled && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (motion.active) select(keys[momentum ? release.target : Math.round(clampCarouselPhase(phase, keys.length))], momentum ? release.velocity : 0);
 		else animate(Math.max(0, keys.indexOf(selected ?? '')));
 		if (!cancelled && scroll?.active) scrollMomentum(scroll, scrollVelocity);
 		clearTimeout(clickTimer);
@@ -278,7 +308,7 @@
 	}
 	function touchstart(event: TouchEvent) {
 		if (!interactive || drag || event.touches.length !== 1 ||
-			!(event.target as Element).closest('.spatial-element-visual')) return;
+			!canStartDrag(event.target)) return;
 		const touch = event.touches[0];
 		beginDrag(touch.identifier, 'touch', touch.clientX, touch.clientY);
 		window.addEventListener('touchstart', multitouch, { passive: true });
@@ -288,6 +318,10 @@
 	}
 	function multitouch(event: TouchEvent) {
 		if (drag?.kind === 'touch' && event.touches.length > 1) endDrag(true);
+	}
+	function canStartDrag(target: EventTarget | null) {
+		return target instanceof Element && (!target.closest('.summary, .controls button, .controls a, input, textarea, select, [contenteditable]') &&
+			(!target.closest('a, button') || Boolean(target.closest('.spatial-element-target'))));
 	}
 	function touchmove(event: TouchEvent) {
 		if (drag?.kind !== 'touch') return;
@@ -393,7 +427,9 @@
 		const nativeInitialKey = keys[(nativeSeat + initialIndex) % Math.max(1, keys.length)];
 		let restored = false;
 		// The model owns both single-finger axes; passive events still allow native pinch zoom.
-		carouselRing.addEventListener('touchstart', touchstart, { passive: true });
+		const dragSection = carouselRing.closest('section')!;
+		dragSection.addEventListener('wheel', wheel, { passive: false });
+		dragSection.addEventListener('touchstart', touchstart, { passive: true });
 		const release = sections?.register(section.id, {
 			read: () => selected,
 			restore: (key) => {
@@ -445,7 +481,8 @@
 			stopScrollMomentum();
 			clearTimeout(clickTimer);
 			releaseDrag();
-			carouselRing.removeEventListener('touchstart', touchstart);
+			dragSection.removeEventListener('touchstart', touchstart);
+			dragSection.removeEventListener('wheel', wheel);
 			observer.disconnect();
 			layoutObserver.disconnect();
 			release?.();
@@ -457,24 +494,26 @@
 	});
 </script>
 
-<Section {section} presentation="list">
+<Section {section} presentation="list" class="carousel-drag-section"
+	ondragstart={(event) => { if (interactive && canStartDrag(event.target)) event.preventDefault(); }}
+	onpointerdown={pointerdown} onpointermove={pointermove} onpointerup={pointerup} onpointercancel={pointercancel}
+	onlostpointercapture={() => { if (drag?.kind === 'pointer') pointercancel(); }}>
+	{#if interactive}
+		<div class="drag-surface" aria-hidden="true" style:left={`${-layout.left}px`} style:width={`${layout.viewportWidth}px`}></div>
+	{/if}
 	<div
 		class="carousel"
 		class:interactive
 		class:populated={list.length > 0}
 		data-carousel-section={section.id}
 	>
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex (The native scroll rail must be keyboard-scrollable without JavaScript.) -->
 		<div
 			class="ring"
+			id={`carousel-ring-${section.id}`}
+			tabindex={interactive ? undefined : 0}
 			bind:this={ring}
 			onscroll={nativeScroll}
-			onpointerdown={pointerdown}
-			onpointermove={pointermove}
-			onpointerup={pointerup}
-			onpointercancel={pointercancel}
-			onlostpointercapture={() => {
-				if (drag?.kind === 'pointer') pointercancel();
-			}}
 			role="group"
 			aria-label={section.title}
 		>
@@ -498,25 +537,31 @@
 					canActivate={() => !suppressClick}
 				/>
 			{/each}
+			{#if interactive && list.length > 1}
+				<div class="carousel-arrows" role="group" aria-label="Carousel navigation"
+					style:opacity={arrowOpacity} inert={arrowOpacity < 0.05}>
+					<button type="button" class="previous" hidden={selected === keys[0]}
+						aria-label="Previous product" aria-controls={`carousel-ring-${section.id}`}
+						onclick={() => select(stepCarouselSelection(keys, selected, -1))}>
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
+					</button>
+					<button type="button" class="next" hidden={selected === keys.at(-1)}
+						aria-label="Next product" aria-controls={`carousel-ring-${section.id}`}
+						onclick={() => select(stepCarouselSelection(keys, selected, 1))}>
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
+					</button>
+				</div>
+			{/if}
 		</div>
-		{#if list.length > 1}
+		{#if interactive && list.length > 1}
 			<div class="controls" role="group" aria-label={`${section.title}: element selection`}>
-				{#each list as spatialElement, index (carouselKey(spatialElement))}
-					{#if interactive}
+				{#each list as spatialElement (carouselKey(spatialElement))}
 					<button
 						onkeydown={keydown}
 						aria-label={spatialElement.eyebrow}
 						aria-pressed={indicated === carouselKey(spatialElement)}
 						onclick={() => select(carouselKey(spatialElement))}><span aria-hidden="true"></span></button
 					>
-					{:else}
-						<a href={`#${encodeURIComponent(`carousel-${section.id}-${index}`)}`}
-							onkeydown={keydown}
-							aria-label={spatialElement.eyebrow}
-							aria-current={selected === carouselKey(spatialElement) ? 'true' : undefined}
-							onclick={(event) => { event.preventDefault(); select(carouselKey(spatialElement)); }}
-							><span aria-hidden="true"></span></a>
-					{/if}
 				{/each}
 			</div>
 		{/if}
@@ -527,6 +572,18 @@
 </Section>
 
 <style>
+	:global(.carousel-drag-section) { position: relative; }
+	:global(.carousel-drag-section > .section-kicker) { pointer-events: none; }
+	.drag-surface {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		pointer-events: auto;
+		touch-action: pinch-zoom;
+		cursor: grab;
+	}
+	.drag-surface:active { cursor: grabbing; }
+	.carousel.interactive { pointer-events: none; }
 	.carousel {
 		pointer-events: auto;
 		margin-top: 24px;
@@ -540,24 +597,58 @@
 		overflow-x: auto;
 		scroll-snap-type: x mandatory;
 		overscroll-behavior-x: contain;
-		scrollbar-width: none;
+		scrollbar-width: auto;
+		scrollbar-color: var(--spatial-element-accent) transparent;
 		touch-action: manipulation;
 	}
-	.ring::-webkit-scrollbar { display: none; }
+	.ring:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: 4px; }
 	.interactive .ring {
+		scrollbar-width: none;
 		grid-auto-flow: row;
 		grid-template-columns: 100%;
 		overflow: visible;
 		scroll-snap-type: none;
 	}
+	.carousel-arrows {
+		position: absolute;
+		left: 12%;
+		right: 50%;
+		top: 50%;
+		transform: translateY(-50%);
+		z-index: 1500;
+		display: flex;
+		justify-content: space-between;
+		pointer-events: none;
+	}
+	.carousel-arrows button {
+		pointer-events: auto;
+		width: 44px;
+		height: 44px;
+		display: grid;
+		place-items: center;
+		padding: 8px;
+		border: 0;
+		border-radius: 50%;
+		color: var(--spatial-element-accent);
+		background: transparent;
+		cursor: pointer;
+	}
+	.carousel-arrows button[hidden] { visibility: hidden; pointer-events: none; }
+	.carousel-arrows button:hover { background: color-mix(in srgb, var(--spatial-element-accent) 12%, transparent); }
+	.carousel-arrows button:focus-visible { outline: 2px solid var(--spatial-element-accent); }
+	.carousel-arrows svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+	@container (max-width: 700px) {
+		.carousel-arrows { left: 0; right: 0; top: 180px; }
+	}
 	.controls {
+		position: relative;
 		display: flex;
 		justify-content: center;
 		flex-wrap: wrap;
 		margin-top: 16px;
 	}
-	.controls button,
-	.controls a {
+	.controls button {
+		pointer-events: auto;
 		display: grid;
 		place-items: center;
 		width: 44px;
@@ -574,12 +665,10 @@
 		border: 1px solid var(--spatial-element-accent);
 		border-radius: 50%;
 	}
-	.controls button[aria-pressed='true'] span,
-	.controls a[aria-current='true'] span {
+	.controls button[aria-pressed='true'] span {
 		background: var(--spatial-element-accent);
 	}
-	.controls button:focus-visible,
-	.controls a:focus-visible {
+	.controls button:focus-visible {
 		outline: 2px solid var(--spatial-element-accent);
 		outline-offset: -4px;
 	}

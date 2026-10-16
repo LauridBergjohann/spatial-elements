@@ -112,6 +112,8 @@ export class StageRenderPipeline {
 	freezeBackground() {
 		const targets = this._activeRenderTargets;
 		if (!targets) return false;
+		// Never bake the old screen-space halo into the outgoing background snapshot.
+		this.displayOutlineOpacity.value = 0;
 		withRendererState(this.ports.renderer, () => {
 			this.ports.renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
 			this.ports.renderer.setRenderTarget(targets.sceneCapture);
@@ -846,6 +848,8 @@ export class StageRenderPipeline {
 	}
 	renderModelOutline(target: THREE.RenderTarget | null, opacity = 1) {
 		this.displayOutlineOpacity.value = 0;
+		// The transferred model owns its moving outline, including its interpolated camera.
+		if (this.ports.spatialCapture?.()) return;
 		if (this.renderMeasurement === 'no-halo' || !this.ports.frame().modelHover) return;
 		const opacityBefore = this.outlineOpacityScale.value;
 		try {
