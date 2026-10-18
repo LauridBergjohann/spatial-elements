@@ -61,19 +61,19 @@ async function end(session: CDPSession) {
 	await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 }
 
-test('a diagonal finger drag rotates and scrolls the page together', async ({ page }) => {
+test('a predominantly vertical diagonal gesture stays native without rotating', async ({ page }) => {
 	const { target, point, session } = await prepare(page);
 	const initialOpacity = await opacity(target);
 	const initialScroll = await page.evaluate(() => window.scrollY);
 	await start(session, point);
 	await move(page, session, point, -145, -190);
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(initialScroll + 70);
-	await expect.poll(() => opacity(target)).toBeLessThan(initialOpacity - 0.5);
+	expect(await opacity(target)).toBeCloseTo(initialOpacity, 3);
 	await end(session);
 	await expect(page).toHaveURL(/categories\/carousel/);
 });
 
-test('a vertical start keeps scrolling and can turn the carousel later in the same gesture', async ({ page }) => {
+test('a vertical start stays with the browser for the rest of the gesture', async ({ page }) => {
 	const { target, point, session } = await prepare(page);
 	const initialOpacity = await opacity(target);
 	const initialScroll = await page.evaluate(() => window.scrollY);
@@ -82,11 +82,11 @@ test('a vertical start keeps scrolling and can turn the carousel later in the sa
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(initialScroll + 40);
 	expect(await opacity(target)).toBeCloseTo(initialOpacity, 3);
 	await move(page, session, next, -145, -40);
-	await expect.poll(() => opacity(target)).toBeLessThan(initialOpacity - 0.5);
+	expect(await opacity(target)).toBeCloseTo(initialOpacity, 3);
 	await end(session);
 });
 
-test('a horizontal flick carries momentum after release and a subsequent tap selects a neighbour', async ({ page }) => {
+test('a horizontal swipe selects smoothly on release and a subsequent tap selects a neighbour', async ({ page }) => {
 	const { target, point, session } = await prepare(page);
 	const firstItem = await target.locator('..').locator('..').getAttribute('data-carousel-item');
 	const firstTarget = page.locator(`[data-carousel-item="${firstItem}"] .spatial-element-target`);
@@ -95,16 +95,19 @@ test('a horizontal flick carries momentum after release and a subsequent tap sel
 	const beforeRelease = await opacity(firstTarget);
 	await end(session);
 	await expect.poll(() => opacity(firstTarget)).toBeLessThan(beforeRelease - 0.05);
-	const nextItem = page.locator('[data-carousel-item]').nth(1);
-	await expect(nextItem).toHaveClass(/selected/);
+	const nextItem = page.locator('[data-carousel-item].selected');
+	await expect(nextItem).not.toHaveAttribute('data-carousel-item', firstItem!);
+	const destination = await nextItem.getAttribute('data-carousel-item');
 	await expect.poll(() => opacity(nextItem.locator('.spatial-element-target'))).toBeCloseTo(1, 3);
-	const neighbour = page.locator('[data-carousel-item]').nth(2);
+	await expect(nextItem).toHaveAttribute('data-carousel-item', destination!);
+	const index = Number(await nextItem.getAttribute('data-catalog-order'));
+	const neighbour = page.locator('[data-carousel-item]').nth(index === 4 ? 3 : index + 1);
 	const tap = await exposedPoint(neighbour.locator('.spatial-element-target'));
 	await page.touchscreen.tap(tap.x, tap.y);
 	await expect(neighbour).toHaveClass(/selected/);
 });
 
-test('a horizontal start can become a vertical scroll without lifting the finger', async ({ page }) => {
+test('a horizontal start keeps page scrolling locked until release', async ({ page }) => {
 	const { target, point, session } = await prepare(page);
 	const initialOpacity = await opacity(target);
 	const initialScroll = await page.evaluate(() => window.scrollY);
@@ -112,7 +115,7 @@ test('a horizontal start can become a vertical scroll without lifting the finger
 	const next = await move(page, session, point, -80, 0, 5);
 	await expect.poll(() => opacity(target)).toBeLessThan(initialOpacity - 0.3);
 	await move(page, session, next, -55, -160);
-	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(initialScroll + 50);
+	expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(initialScroll, 0);
 	await expect.poll(() => opacity(target)).toBeLessThan(initialOpacity - 0.5);
 	await end(session);
 });
@@ -154,18 +157,24 @@ test('mouse clicks and dragging still select carousel items on a hybrid device',
 	await expect(second).not.toHaveClass(/selected/);
 });
 
-test('vertical momentum continues after release and stops as soon as another finger touches', async ({ page }) => {
+test('vertical touch stays browser-owned without a JavaScript scroll animation', async ({ page }) => {
 	const { point, session } = await prepare(page);
+	const before = await page.evaluate(() => {
+		const original = window.scrollTo.bind(window);
+		Object.assign(window, { carouselScrollWrites: 0 });
+		window.scrollTo = ((...args: Parameters<typeof window.scrollTo>) => {
+			(window as unknown as { carouselScrollWrites: number }).carouselScrollWrites++;
+			(original as (...args: unknown[]) => void)(...args);
+		}) as typeof window.scrollTo;
+		return scrollY;
+	});
 	await start(session, point);
 	await move(page, session, point, 0, -120, 6);
 	await end(session);
-	const released = await page.evaluate(() => window.scrollY);
-	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(released + 10);
-	await start(session, { x: 8, y: 250 });
-	const stopped = await page.evaluate(() => window.scrollY);
+	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 40);
+	await expect(page.locator('body')).toHaveAttribute('data-test-native-touch-cancel', 'true');
 	await page.waitForTimeout(150);
-	expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(stopped, 0);
-	await end(session);
+	expect(await page.evaluate(() => (window as unknown as { carouselScrollWrites: number }).carouselScrollWrites)).toBe(0);
 });
 
 test('content outside the model keeps native vertical scrolling', async ({ page }) => {

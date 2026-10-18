@@ -252,8 +252,8 @@
 		touch-action: manipulation;
 	}
 	.interactive .spatial-element-visual {
-		/* One owner for diagonal single-finger motion; two-finger page zoom stays native. */
-		touch-action: pinch-zoom;
+		/* The native rail owns horizontal panning; vertical page scroll and zoom stay native. */
+		touch-action: manipulation;
 	}
 	.interactive[hidden] {
 		/* Keep known summary dimensions measurable without painting or registering GPU actors. */
