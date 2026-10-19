@@ -1119,6 +1119,7 @@ export class StageExperience {
 	}
 
 	private getPanelTransitionOpacity(panel?: StagePanelRuntime) {
+		if (panel?.content?.element.closest('[data-catalog-shell-continuous]')) return 1;
 		return getCatalogTransitionOpacity(this.catalogPresentation, panel?.transitionGroup);
 	}
 

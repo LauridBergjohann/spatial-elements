@@ -1,5 +1,33 @@
 # @spatial-elements/sveltekit
 
+## 1.0.0-beta.6
+
+### Minor Changes
+
+- Improve progressive enhancement with a native horizontal scroll-snap carousel fallback. Add a shared spatial turntable with geometry-shaped shadows, pointer response, navigation arrows and contextual cursor hints. Coordinate mouse, touch and trackpad momentum with smooth product selection while preserving text selection and vertical page scrolling.
+
+  Unify carousel and detail summaries and stabilize their transitions, including panel backgrounds, moving hover effects and zoomed model handoff. Keep visible headers continuous across navigation and prevent duplicate fallback geometry when returning from a zoomed detail view.
+
+### Patch Changes
+
+- 9ee5858: Fit carousel visibility and preparation to the actual viewport instead of a fixed five-seat window. Space neighbouring models using their display envelope, maintain ordering on wide screens, and share visibility between GPU models, posters and hit targets. Scope detail framing styles to the hero so preloading a detail route cannot enlarge carousel geometry.
+
+  Keep compact side previews in the model area as they recede, clear of the summary below.
+
+  Give transition playback its own bounded safety window after route and shader preparation, preventing slow preparation from cancelling the first animation frames.
+
+- 9ee5858: Reuse the detail silhouette glow for hovered carousel models, allow the selected model to open its detail with drag-safe native navigation, and strengthen card hover depth and accent outlines. Share a bounded outline target and cache stationary masks to retain demand-driven rendering.
+- 9ee5858: Keep catalog cards equally tall with a single-line eyebrow and a reserved two-line title, both ellipsized when necessary. Preserve clipping and the hovered perspective while crossfading into full detail text and back. Add mouse and keyboard text depth to cards and remove pointer-driven motion from detail summary panels.
+- 9ee5858: Show native full-title tooltips only on truncated cards. Fit models to the rectangular card area and increase text and model depth on hover. Update carousel indicators during dragging, animate distant dot selections, and soften models by distance and panels as they fade. Reuse bounded defocus buffers and a single rear capture for glass compositing while retaining on-demand rendering.
+- 9ee5858: Render carousels as native horizontal scroll-snap rails before WebGPU is ready, keeping their intrinsic dimensions and selected summary position during enhancement. Preserve fallback selections and native detail links, fade posters into prepared GPU output, and align initial document and theme styles. Carousel hover and keyboard focus now smoothly remove model defocus and expose the complete element identity through a tooltip.
+- Updated dependencies [9ee5858]
+- Updated dependencies [9ee5858]
+- Updated dependencies [9ee5858]
+- Updated dependencies
+- Updated dependencies [9ee5858]
+- Updated dependencies [9ee5858]
+  - @spatial-elements/core@1.0.0-beta.6
+
 ## 1.0.0-beta.5
 
 ### Minor Changes

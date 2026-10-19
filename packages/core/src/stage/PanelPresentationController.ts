@@ -119,6 +119,7 @@ export class PanelPresentationController {
 			if (home.draggable === null) element.removeAttribute('draggable');
 			else element.setAttribute('draggable', home.draggable);
 			delete element.dataset.stagePanelRenderMode;
+			if (home.shell === null) element.removeAttribute('data-catalog-shell');
 		}
 		this.domHomes.clear();
 	}
@@ -166,7 +167,7 @@ export class PanelPresentationController {
 	}
 	private readonly domHomes = new Map<
 		HTMLElement,
-		{ parent: Node; next: ChildNode | null; style: string | null; draggable: string | null }
+		{ parent: Node; next: ChildNode | null; style: string | null; draggable: string | null; shell: string | null }
 	>();
 	private readonly minimapCssLocalCorners = [
 		new THREE.Vector3(),
@@ -189,8 +190,12 @@ export class PanelPresentationController {
 			parent: element.parentNode,
 			next: element.nextSibling,
 			style: element.getAttribute('style'),
+			shell: element.getAttribute('data-catalog-shell'),
 			draggable: element.getAttribute('draggable')
 		});
+		// Projected content leaves its semantic ancestors. Retain shell identity
+		// so navigation can keep the actual header surface and its text continuous.
+		if (element.closest?.('[data-catalog-shell]')) element.setAttribute('data-catalog-shell', '');
 	}
 	attachPanelContent(element: HTMLElement, panelIndex = 0, inset = 28) {
 		this.rememberDomHome(element);

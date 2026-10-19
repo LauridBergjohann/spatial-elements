@@ -57,3 +57,15 @@
 .stage[data-catalog-transition] [data-catalog-transition-group] * {
 	pointer-events: none !important;
 }
+
+/* The persistent shell is already present at both restored scroll positions. */
+.stage[data-catalog-transition] [data-catalog-shell-continuous] {
+	--catalog-content-opacity: 1;
+	--stage-transition-opacity: 1;
+	opacity: 1 !important;
+	visibility: visible !important;
+}
+.stage[data-catalog-transition] [data-catalog-shell-continuous] [data-catalog-transition-group='enter'] {
+	--stage-transition-opacity: 1;
+	visibility: visible !important;
+}

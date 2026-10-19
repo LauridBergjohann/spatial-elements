@@ -184,7 +184,7 @@ interface TransitionCapture {
 	panelContent?: { element: HTMLElement; rect: DOMRect; panel: DOMRect; incoming: boolean }[];
 	backgroundPrepared?: boolean;
 	retarget?: boolean;
-	captureShell?: boolean;
+	shellCopies?: Map<HTMLElement, HTMLElement>;
 	suspendedPose?: { surface: DOMRect; geometry: { x: number; y: number } | null };
 	lease?: PresentationLease<TransitionCapture>;
 	owner?: ReturnType<PresentationLease<TransitionCapture>['claim']>;
@@ -822,7 +822,6 @@ export class CatalogTransition {
 			host.style.pointerEvents = 'none';
 			const capture: TransitionCapture = {
 				view,
-				captureShell: !reverse && (intent?.history || intent?.target === 'section'),
 				elapsed: 0,
 				token,
 				identity,
@@ -899,7 +898,7 @@ export class CatalogTransition {
 		const sourcesToHide: HTMLElement[] = [];
 		const selector = isReturnRecipe(capture.recipe)
 			? '[data-catalog-transition-dom="enter"], [data-catalog-transition-group="enter"], [data-catalog-secondary]'
-			: `[data-catalog-transition-dom="exit"], [data-catalog-shell][data-catalog-transition-dom="enter"]${capture.captureShell ? ', [data-catalog-shell]' : ''}`;
+			: '[data-catalog-transition-dom="exit"], [data-catalog-shell]';
 		for (const source of this.root.querySelectorAll<HTMLElement>(selector)) {
 			if (source.parentElement?.closest(selector)) continue;
 			if (
@@ -948,7 +947,10 @@ export class CatalogTransition {
 			}
 			copy.dataset.catalogExitCopy = '';
 			copy.dataset.catalogBaseOpacity = style.opacity;
-			if (source.hasAttribute('data-catalog-shell') && source.dataset.catalogTransitionDom !== 'enter') copy.dataset.catalogShellCopy = '';
+			if (source.hasAttribute('data-catalog-shell')) {
+				copy.dataset.catalogShellCopy = '';
+				(capture.shellCopies ??= new Map()).set(source, copy);
+			}
 			copy.setAttribute('aria-hidden', 'true');
 			copy.inert = true;
 			Object.assign(copy.style, {
@@ -1041,8 +1043,17 @@ export class CatalogTransition {
 		const capture = this.captureState;
 		if (!capture || !this.sequence.start(capture.token)) return;
 		// Persistent shell nodes survive route replacement; the exit copy owns their old pose.
-		for (const shell of this.root.querySelectorAll<HTMLElement>('[data-catalog-shell][data-catalog-transition-dom="enter"]'))
+		for (const shell of this.root.querySelectorAll<HTMLElement>('[data-catalog-shell]'))
 			shell.style.removeProperty('visibility');
+		// A persistent header visible at both scroll positions is not entering or
+		// leaving the page. Hand its snapshot back without an opacity dip.
+		for (const [shell, copy] of capture.shellCopies ?? []) {
+			delete copy.dataset.catalogShellCopy;
+			if (!shell.isConnected || !intersectsViewport(shell)) continue;
+			shell.setAttribute('data-catalog-shell-continuous', '');
+			capture.restore.push(() => shell.removeAttribute('data-catalog-shell-continuous'));
+			copy.style.display = 'none';
+		}
 		try {
 			const reverse = Boolean(capture.view) || isReturnRecipe(capture.recipe);
 			if (capture.view) {
@@ -1175,6 +1186,17 @@ export class CatalogTransition {
 				this.hooks.flushFrame();
 			}
 			if (reverse) {
+				// Zoom can withdraw every summary actor. The transferred GPU model
+				// still owns geometry: never expose the destination's fallback poster.
+				const geometry = this.endpoints.resolve({
+					...capture.identity,
+					slot: capture.recipe.targetGeometry,
+					role: 'geometry'
+				});
+				if (geometry) {
+					preserveStyle(geometry, 'visibility', capture.restore);
+					geometry.style.setProperty('visibility', 'hidden', 'important');
+				}
 				const card = this.endpoints.resolve({
 					...capture.identity,
 					slot: capture.recipe.targetShared,
