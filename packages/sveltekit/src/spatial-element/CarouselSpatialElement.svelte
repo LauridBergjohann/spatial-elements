@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { catalogActionSemantic } from '@spatial-elements/core/catalog/catalogAction';
+	import SpatialElementSummaryContent from './SpatialElementSummaryContent.svelte';
 	import { getContext } from 'svelte';
 	import { getCssPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
+	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
 	import { CATALOG_ITEMS, type CatalogItems } from '@spatial-elements/core/catalog/catalogItems';
 	import { carouselKey } from '@spatial-elements/core/catalog/carouselSelection';
 	import { carouselPose, carouselResident } from '@spatial-elements/core/catalog/catalogPose';
-	import type { CarouselPresentation } from '@spatial-elements/core/catalog/catalogPose';
+	import type { CarouselLayout, CarouselPresentation, CarouselEmphasis } from '@spatial-elements/core/catalog/catalogPose';
 	import { useCatalogNavigation } from '../catalog/catalogNavigation.js';
 	import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
 	import {
@@ -20,30 +21,39 @@
 		spatialElement,
 		sectionId,
 		presentation,
+		layout,
 		index,
 		count,
 		phase,
+		emphasis,
+		focus,
 		windowPhase,
 		selected,
 		interactive,
-		onselect
+		onselect,
+		canActivate
 	}: {
 		spatialElement: SpatialListItem;
 		sectionId: string;
 		presentation?: CarouselPresentation;
+		layout: CarouselLayout;
 		index: number;
 		count: number;
 		phase: number;
+		emphasis?: CarouselEmphasis;
+		focus: number;
 		windowPhase: number;
 		selected: boolean;
 		interactive: boolean;
 		onselect: () => void;
+		canActivate: () => boolean;
 	} = $props();
 	const items = getContext<CatalogItems | undefined>(CATALOG_ITEMS);
 	const endpoints = getContext<CatalogEndpointRegistry | undefined>(CATALOG_ENDPOINTS);
 	const sections = getContext<CatalogSections | undefined>(CATALOG_SECTIONS);
 	const readTheme = useSpatialTheme();
 	const brand = $derived(readTheme());
+	const contentInset = $derived(brand.panelShape.contentInset ?? Math.max(16, Math.round(brand.panelShape.radius * 0.7)));
 	const catalogEndpoint = createCatalogEndpointAction();
 	function address(role: CatalogEndpointRole) {
 		return interactive &&
@@ -70,8 +80,9 @@
 		return () => clearTimeout(timer);
 	});
 	const occurrence = $derived(JSON.stringify([sectionId, carouselKey(spatialElement)]));
-	const pose = $derived(carouselPose(index, phase, count, presentation));
-	const resident = $derived(carouselResident(index, windowPhase, count));
+	const tooltip = $derived(spatialElement.title);
+	const pose = $derived(carouselPose(index, phase, count, presentation, layout, emphasis, focus));
+	const resident = $derived(carouselResident(index, windowPhase, count, presentation, layout));
 	function activate(event: MouseEvent) {
 		endpoints?.prefer(brand.id, spatialElement.id, occurrence, 'carousel.front');
 		sections?.activate({
@@ -87,12 +98,13 @@
 		return items?.register({
 			...spatialElement,
 			occurrence,
-			pose: { kind: 'carousel', read: () => carouselPose(index, phase, count, presentation) }
+			pose: { kind: 'carousel', read: () => carouselPose(index, phase, count, presentation, layout, emphasis, focus) }
 		});
 	});
 </script>
 
 <article
+	id={`carousel-${sectionId}-${index}`}
 	use:catalogEndpoint={address('container')}
 	class="carousel-spatial-element"
 	class:selected
@@ -116,29 +128,54 @@
 		data-catalog-geometry
 		data-spatial-element-id={spatialElement.id}
 		data-catalog-occurrence={occurrence}
+		style={interactive
+			? `--carousel-poster-x:${(pose.x - 0.19) * 100}%;--carousel-poster-mobile-x:${pose.x * 100}%;--carousel-poster-y:${pose.y * 100}%;--carousel-poster-size:${pose.size};--carousel-poster-opacity:${pose.opacity}`
+			: undefined}
 	>
-		<button
+		<a
+			use:mouseHover
 			draggable="false"
 			class="spatial-element-target"
+			title={tooltip}
 			hidden={interactive && !pose.visible}
-			aria-label={`Select ${spatialElement.eyebrow}`}
-			aria-pressed={selected}
-			onclick={onselect}
-			style={interactive
-				? `left:${(pose.x - 0.19 * Math.cos(pose.yaw)) * 100}%;top:${pose.y * 100}%;width:${pose.size * 100}%;max-width:${pose.size * 480}px;z-index:${Math.round(1300 + pose.depth)}`
-				: undefined}
+			href={href(spatialElement.href)}
+			role={interactive && !selected ? 'button' : undefined}
+			aria-label={interactive && !selected ? `Select ${tooltip}` : `More information: ${tooltip}`}
+			aria-pressed={interactive && !selected ? false : undefined}
+			aria-busy={selected && busy || undefined}
+			data-catalog-focus-key={`catalog-geometry:${occurrence}`}
+			onpointerenter={() => { if (selected) prepare(spatialElement); }}
+			onfocus={() => { if (selected) prepare(spatialElement); }}
+			onpointerdown={() => { if (selected) prepare(spatialElement); }}
+			onkeydown={(event) => {
+				if (interactive && !selected && event.key === ' ') {
+					event.preventDefault();
+					event.currentTarget.click();
+				}
+			}}
+			onclick={(event) => {
+				if (!canActivate()) { event.preventDefault(); return; }
+				if (interactive && !selected) { event.preventDefault(); onselect(); return; }
+				activate(event);
+			}}
+			style:z-index={interactive ? Math.max(1, Math.round(1200 / (1 + Math.max(0, -pose.depth) / 1000))) : undefined}
 		>
-			{#if spatialElement.fallbackImage}<img
+			{#if !spatialElement.fallbackImage}<span>{spatialElement.eyebrow}</span>{/if}
+		</a>
+		{#if spatialElement.fallbackImage}<img
+					hidden={interactive && !pose.visible}
+					class="spatial-element-poster"
 					draggable="false"
 					src={spatialElement.fallbackImage}
 					alt={`${brand.name} ${spatialElement.title}`}
+					style:--carousel-depth-blur={interactive && pose.blur ? `blur(${pose.blur}px)` : 'blur(0px)'}
 					width="320"
 					height="320"
-				/>{:else}<span>{spatialElement.eyebrow}</span>{/if}
-		</button>
+				/>{/if}
 	</div>
 	<div
 		class="summary"
+		style:--summary-content-inset={`${contentInset}px`}
 		hidden={interactive && pose.panelOpacity < 0.001}
 		inert={interactive && !selected}
 		aria-hidden={interactive && !selected}
@@ -154,55 +191,20 @@
 			100 +
 			'%'}
 		style:--carousel-panel-blur={(brand.panelTheme.backdropBlur ?? 5) + 'px'}
+		style:--carousel-focus-blur={interactive && pose.panelOpacity < 1 ? `blur(${(1 - pose.panelOpacity) * 6}px)` : 'none'}
 		style:--carousel-panel-radius={brand.panelShape.radius + 'px'}
 		use:catalogEndpoint={address('summary-surface')}
 	>
-		<p class="eyebrow" use:catalogEndpoint={address('eyebrow')}>{spatialElement.eyebrow}</p>
-		<h3 use:catalogEndpoint={address('title')}>{spatialElement.title}</h3>
-		<ul
-			use:catalogEndpoint={address('features')}
-			data-catalog-rich-shared="features"
-			data-catalog-semantic={JSON.stringify(
-				spatialElement.summary?.features ?? spatialElement.features.map((label) => ({ label }))
-			)}
-		>
-			{#each spatialElement.summary?.features ?? spatialElement.features.map( (label) => ({ label }) ) as feature, index (index)}<li
-				>
-					{feature.label}
-				</li>{/each}
-		</ul>
-		{#if spatialElement.summary?.action}
-			{@const action = spatialElement.summary.action}
-			{#if action.href}<a
-					use:catalogEndpoint={address('primary-action')}
-					data-catalog-rich-shared="primary-action"
-					data-catalog-semantic={catalogActionSemantic(action)}
-					class="action"
-					href={action.href}
-					rel="external"
-					aria-label={action.ariaLabel}>{action.label}</a
-				>
-			{:else}<button
-					class="action"
-					aria-label={action.ariaLabel}
-					use:catalogEndpoint={address('primary-action')}
-					data-catalog-rich-shared="primary-action"
-					data-catalog-semantic={catalogActionSemantic(action)}>{action.label}</button
-				>{/if}
-		{/if}
+        <SpatialElementSummaryContent {address} {contentInset} spatialElement={{
+            id: spatialElement.id, eyebrow: spatialElement.eyebrow, title: spatialElement.title,
+            features: spatialElement.summary?.features ?? spatialElement.features.map((label) => ({ label })),
+            action: spatialElement.summary?.action
+        }} />
+        <div class="information-links">
 		<a
 			data-catalog-focus-key={`catalog:${JSON.stringify([brand.id, spatialElement.id, occurrence, 'carousel.front'])}`}
 			aria-busy={busy || undefined}
-			onclick={(event) => {
-				endpoints?.prefer(brand.id, spatialElement.id, occurrence, 'carousel.front');
-				sections?.activate({
-					brandId: brand.id,
-					spatialElementId: spatialElement.id,
-					occurrence,
-					slot: 'carousel.front'
-				});
-				event.currentTarget.focus({ preventScroll: true });
-			}}
+			onclick={activate}
 			class="information"
 			href={href(spatialElement.href)}
 			onpointerenter={() => prepare(spatialElement)}
@@ -219,63 +221,69 @@
 				>{spatialElement.summary.sectionLink.label}</a
 			>
 		{/if}
+        </div>
 	</div>
 </article>
 
 <style>
 	.carousel-spatial-element {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(280px, 0.7fr);
-		gap: 32px;
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: 1fr;
 		align-items: center;
-		margin-bottom: 24px;
+		position: relative;
+		min-width: 0;
+		min-height: 600px;
+		padding: 32px 0 64px;
+		box-sizing: border-box;
+		scroll-snap-align: start;
+		scroll-snap-stop: always;
+		scroll-margin-top: 100px;
 	}
 	.interactive {
-		position: absolute;
-		inset: 0;
+		grid-area: 1 / 1;
 		pointer-events: none;
 	}
 	.spatial-element-visual {
-		height: var(--carousel-height, 560px);
-		position: relative;
+		position: absolute;
+		inset: 0;
 		display: grid;
 		place-items: center;
 		touch-action: manipulation;
 	}
-	.interactive {
-		display: block;
-		margin: 0;
-	}
 	.interactive .spatial-element-visual {
-		/* One owner for diagonal single-finger motion; two-finger page zoom stays native. */
-		touch-action: pinch-zoom;
+		/* The native rail owns horizontal panning; vertical page scroll and zoom stay native. */
+		touch-action: manipulation;
 	}
 	.interactive[hidden] {
 		/* Keep known summary dimensions measurable without painting or registering GPU actors. */
-		display: block;
+		display: grid;
 		visibility: hidden;
 	}
 	.interactive .summary {
-		position: absolute;
-		left: 0;
-		top: 0;
-		width: 40%;
-		box-sizing: border-box;
 		z-index: 1400;
 		transform-origin: 0 0;
-		transform: translate(150%, 24px);
+	}
+	.spatial-element-target,
+	.spatial-element-poster {
+		position: absolute;
+		left: var(--carousel-poster-x, 31%);
+		top: var(--carousel-poster-y, 50%);
+		width: calc(var(--carousel-poster-size, 0.82) * 100cqw);
+		max-width: calc(var(--carousel-poster-size, 0.82) * 560px);
+		transform: translate(-50%, -50%);
+		aspect-ratio: 1;
 	}
 	.spatial-element-target {
+		display: block;
+		color: inherit;
+		text-decoration: none;
 		border: none;
 		background: transparent;
 		cursor: pointer;
 		pointer-events: auto;
 		padding: 0;
 		aspect-ratio: 1;
-	}
-	.interactive .spatial-element-target {
-		position: absolute;
-		transform: translate(-50%, -50%);
 	}
 	.spatial-element-target[hidden] {
 		display: none;
@@ -285,21 +293,41 @@
 		outline-offset: 4px;
 		border-radius: 12px;
 	}
-	img {
-		width: 100%;
-		height: 100%;
-		object-fit: contain;
+	/* Enhanced geometry already has a silhouette focus outline in the renderer. */
+	.interactive:global([data-catalog-model-ready]) .spatial-element-target:focus-visible {
+		outline: none;
 	}
-	.carousel-spatial-element:global([data-catalog-model-ready]) img {
+	img {
+		opacity: var(--carousel-poster-opacity, 1);
+		height: auto;
+		pointer-events: none;
+		object-fit: contain;
+		filter: var(--carousel-hover-blur, var(--carousel-depth-blur, blur(0px))) var(--carousel-hover-shadow, drop-shadow(0 0 0 transparent));
+		transition: filter 180ms ease, opacity 240ms ease;
+	}
+	.spatial-element-target:global([data-mouse-hover]) + img,
+	.spatial-element-target:focus-visible + img {
+		--carousel-hover-blur: blur(0px);
+		--carousel-hover-shadow: drop-shadow(0 0 3px var(--spatial-element-accent));
+	}
+	.interactive:global([data-catalog-model-ready]) img {
 		opacity: 0;
+		/* The GPU replaces the poster in this frame. Fading it would draw a second
+		   product beneath the moving model when a return transition releases it. */
+		transition: filter 180ms ease;
 	}
 	.summary {
 		position: relative;
+		width: min(494px, 100%);
+		min-height: 504px;
+		margin-left: 50%;
+		box-sizing: border-box;
+		filter: var(--carousel-focus-blur, none);
 
 		border-radius: var(--carousel-panel-radius, 14px);
-		padding: 28px;
+		padding: var(--summary-content-inset);
 
-		color: var(--spatial-element-ink);
+		color: color-mix(in srgb, var(--spatial-element-ink) 92%, transparent);
 		pointer-events: auto;
 	}
 	.summary::before {
@@ -329,37 +357,15 @@
 		display: block;
 		visibility: hidden;
 	}
-	.eyebrow {
-		font-weight: 720;
-		font-size: 13px;
-	}
-	h3 {
-		font-size: clamp(24px, 2.5vw, 36px);
-		line-height: 1.15;
-		margin: 12px 0 28px;
-	}
-	ul {
-		padding-left: 20px;
-		line-height: 1.6;
-	}
-	li {
-		margin: 12px 0;
-	}
-	.action {
-		display: block;
-		width: 100%;
-		box-sizing: border-box;
-		padding: 14px;
-		margin-top: 24px;
-		border: 0;
-		border-radius: 8px;
-		background: var(--spatial-element-accent);
-		color: white;
-		text-align: center;
-		text-decoration: none;
-		font: inherit;
-		font-weight: 650;
-	}
+    .summary > .information-links {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 16px;
+    }
 	.information {
 		display: inline-block;
 		margin-top: 20px;
@@ -380,14 +386,22 @@
 		white-space: nowrap;
 	}
 	@container (max-width: 700px) {
-		.interactive .summary {
-			width: 92%;
+		.carousel-spatial-element {
+			min-height: 0;
+			padding: 360px 0 80px;
+			align-items: start;
+		}
+		.summary {
+			margin-inline: auto;
+		}
+		.spatial-element-target,
+		.spatial-element-poster {
+			left: var(--carousel-poster-mobile-x, 50%);
+			top: 180px;
+			max-width: calc(var(--carousel-poster-size, 0.82) * 360px);
 		}
 	}
-	@media (max-width: 850px) {
-		.carousel-spatial-element {
-			grid-template-columns: 1fr;
-			gap: 12px;
-		}
+	@media (prefers-reduced-motion: reduce) {
+		img { transition: none; }
 	}
 </style>

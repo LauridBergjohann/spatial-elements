@@ -62,6 +62,12 @@ One stage uses a shared WebGPU renderer/device across output bands. The pipeline
 
 Neighbour fades and Low/High blending operate on resolved rendered images: reducing every mesh material's opacity would expose internal surfaces. Carousel panel transforms follow the spatial composition while rear geometry remains available to the backdrop effect.
 
+Carousel defocus uses one shared 512-square capture and two 256-square Gaussian buffers, reused sequentially for visible models and fading glass panels. Cropped cameras limit each capture to its projected bounds; glass backdrop UVs remain in the full viewport. Focused geometry bypasses the effect. The glass compositor reuses its transparent rear capture for both its backdrop and screen output instead of submitting rear geometry twice. Resources remain owned by the catalog layer and are released with it; no continuous render loop is added. Indicator dots follow the rounded visual phase during dragging and animation, while navigation, history and selection callbacks retain the committed destination identity.
+
+Carousel hover reuses the detail silhouette shader and interaction theme. A lazy, shared 512-square mask is cropped to the hovered model; stationary masks are cached through the opacity fade. Mask clones borrow the actor geometry and release their references with the actor. Pointer capture suppresses hover during dragging, and completed fades stop requesting frames. Geometry targets keep the same DOM node while changing from neighbour selection to a native detail link, preserving measured hit bounds and keyboard focus.
+
+Carousel enhancement follows the stage's reactive readiness signal, rather than component mount. Both the native horizontal rail and the spatial stack retain in-flow summary panels in the same intrinsic CSS grid; the longest summary determines height without a post-hydration sizing loop. Cached panel layout origins are subtracted only from DOM projection matrices, leaving world-space geometry and glass surfaces unchanged. Hover defocus reuses the existing damped hover value and adds no render targets or independent animation clock. Initial stage canvases and posters fade after the prepared frame is submitted; server HTML already applies the document metrics used after hydration.
+
 Stage-wide `renderSettings` bound the WebGPU output ratio and physical pixel area independently
 of native-resolution HTML. Temporary catalog fades use the same bounded area as refinement;
 blur resolves retain their internal density. Both quality target sets are warmed on initial

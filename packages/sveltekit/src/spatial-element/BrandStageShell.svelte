@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Stage from '../stage/Stage.svelte';
+	import PointerHint from './PointerHint.svelte';
 	import type { StageRenderSettings } from '@spatial-elements/core';
 	import { getSpatialThemeStyle } from './spatialThemeStyle.js';
 	import { provideSpatialTheme } from './brandContext.js';
@@ -43,6 +44,7 @@
 	>
 		{@render children?.()}
 	</Stage>
+	<PointerHint />
 </div>
 
 <style>

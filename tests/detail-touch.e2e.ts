@@ -96,19 +96,20 @@ test('pinch can release one finger, continue rotating, then rotate again without
 });
 
 test('touch and pen never leave CSS hover while a real mouse still works', async ({ page }) => {
-	await openDetail(page);
-	const feature = page.locator('.summary-presentation').first();
-	await feature.evaluate((element) => window.scrollBy({ top: element.getBoundingClientRect().top - 280, behavior: 'instant' }));
-	await expect.poll(async () => (await feature.boundingBox())!.y).toBeLessThan(400);
-	const rect = await feature.locator('.feature-list li').first().boundingBox();
+	await page.goto('/demo/categories/list?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
+	const card = page.locator('[data-catalog-card]').first();
+	await card.evaluate((element) => window.scrollBy({ top: element.getBoundingClientRect().top - 280, behavior: 'instant' }));
+	await expect.poll(async () => (await card.boundingBox())!.y).toBeLessThan(400);
+	const rect = await card.locator('h3').boundingBox();
 	expect(rect).not.toBeNull();
 	await page.mouse.move(rect!.x + rect!.width / 2, rect!.y + rect!.height / 2);
-	await expect(feature).toHaveAttribute('data-mouse-hover', '');
-	await page.touchscreen.tap(rect!.x + rect!.width / 2, rect!.y + rect!.height / 2);
+	await expect(card).toHaveAttribute('data-mouse-hover', '');
+	await page.touchscreen.tap(8, 700);
 	await expect(page.locator('[data-mouse-hover]')).toHaveCount(0);
 	await page.mouse.move(1, 1);
 	await page.mouse.move(rect!.x + rect!.width / 2, rect!.y + rect!.height / 2);
-	await expect(feature).toHaveAttribute('data-mouse-hover', '');
+	await expect(card).toHaveAttribute('data-mouse-hover', '');
 	const cdp = await page.context().newCDPSession(page);
 	await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: rect!.x + rect!.width / 2, y: rect!.y + rect!.height / 2, pointerType: 'pen' });
 	await expect(page.locator('[data-mouse-hover]')).toHaveCount(0);

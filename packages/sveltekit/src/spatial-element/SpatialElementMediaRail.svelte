@@ -32,8 +32,11 @@
 				data-spatial-element-departing-media-content={media.kind === 'minimap' ? undefined : ''}
 			>
 				{#if media.kind === 'minimap'}
-					<button type="button" aria-label={media.label} class="thumb thumb-minimap active"
-					></button>
+					<button type="button" aria-label={media.label} class="thumb thumb-minimap active">
+						{#if spatialElement.fallbackImage}
+							<img class="minimap-poster" src={spatialElement.fallbackImage} alt="" />
+						{/if}
+					</button>
 				{:else if media.kind === 'drawing'}
 					<button type="button" aria-label={media.label} class="thumb thumb-drawing">
 						<span class="drawing-sheet" aria-hidden="true"></span>
@@ -94,6 +97,21 @@
 	.thumb-minimap {
 		position: relative;
 		overflow: hidden;
+	}
+
+	.minimap-poster {
+		position: absolute;
+		inset: 10%;
+		width: 80%;
+		height: 80%;
+		object-fit: contain;
+		transition: opacity 240ms ease;
+	}
+
+	:global(.stage-enhanced) .minimap-poster { opacity: 0; }
+
+	@media (prefers-reduced-motion: reduce) {
+		.minimap-poster { transition: none; }
 	}
 
 	.thumb-image img {

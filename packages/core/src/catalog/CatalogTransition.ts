@@ -12,6 +12,7 @@ import {
 } from './catalogJourney.js';
 import { readCatalogViewContext } from './catalogViewLink.js';
 import { captureCarouselElement } from './carouselPanelProjection.js';
+import { captureCardElement } from './cardProjection.js';
 import type { CatalogTransitionPresentation } from './catalogPresentation.js';
 import { PresentationLease } from './PresentationLease.js';
 import { rebasePresentation } from './rebasePresentation.js';
@@ -183,7 +184,7 @@ interface TransitionCapture {
 	panelContent?: { element: HTMLElement; rect: DOMRect; panel: DOMRect; incoming: boolean }[];
 	backgroundPrepared?: boolean;
 	retarget?: boolean;
-	captureShell?: boolean;
+	shellCopies?: Map<HTMLElement, HTMLElement>;
 	suspendedPose?: { surface: DOMRect; geometry: { x: number; y: number } | null };
 	lease?: PresentationLease<TransitionCapture>;
 	owner?: ReturnType<PresentationLease<TransitionCapture>['claim']>;
@@ -274,6 +275,12 @@ function copyTypography(element: HTMLElement, style: CSSStyleDeclaration) {
 		'white-space',
 		'overflow',
 		'text-overflow',
+		'overflow-wrap',
+		'word-break',
+		'display',
+		'-webkit-box-orient',
+		'-webkit-line-clamp',
+		'line-clamp',
 		'color',
 		'text-shadow'
 	])
@@ -497,6 +504,7 @@ export class CatalogTransition {
 			role === 'summary-surface' && reverse ? this.hooks.captureSurface?.(source) : undefined;
 		const projection =
 			captureCarouselElement(source) ??
+			captureCardElement(source) ??
 			(role !== 'summary-surface' && reverse ? this.hooks.captureElement?.(source) : undefined);
 		const bounds =
 			paint?.bounds ?? (role === 'summary-surface' ? this.hooks.resolveSurface(source) : source);
@@ -786,7 +794,11 @@ export class CatalogTransition {
 		);
 		const sources = recipe.roles.map((role) => this.endpoints.resolve({ ...source, role }));
 		if (sources.some((element) => !element || !hasSize(element.getBoundingClientRect()))) return;
-		if (!reverse && !(composition === 'carousel' ? visiblyPresented(card) : fullyPresented(card)))
+		const carouselTarget = composition === 'carousel'
+			? card.querySelector<HTMLElement>('.spatial-element-target') : null;
+		if (!reverse && !(composition === 'carousel'
+			? visiblyPresented(card) || (carouselTarget && visiblyPresented(carouselTarget))
+			: fullyPresented(card)))
 			return;
 		if (reverse && sources.some((element) => element && !fullyPresented(element))) return;
 
@@ -810,7 +822,6 @@ export class CatalogTransition {
 			host.style.pointerEvents = 'none';
 			const capture: TransitionCapture = {
 				view,
-				captureShell: !reverse && (intent?.history || intent?.target === 'section'),
 				elapsed: 0,
 				token,
 				identity,
@@ -887,7 +898,7 @@ export class CatalogTransition {
 		const sourcesToHide: HTMLElement[] = [];
 		const selector = isReturnRecipe(capture.recipe)
 			? '[data-catalog-transition-dom="enter"], [data-catalog-transition-group="enter"], [data-catalog-secondary]'
-			: `[data-catalog-transition-dom="exit"]${capture.captureShell ? ', [data-catalog-shell]' : ''}`;
+			: '[data-catalog-transition-dom="exit"], [data-catalog-shell]';
 		for (const source of this.root.querySelectorAll<HTMLElement>(selector)) {
 			if (source.parentElement?.closest(selector)) continue;
 			if (
@@ -936,7 +947,10 @@ export class CatalogTransition {
 			}
 			copy.dataset.catalogExitCopy = '';
 			copy.dataset.catalogBaseOpacity = style.opacity;
-			if (source.hasAttribute('data-catalog-shell')) copy.dataset.catalogShellCopy = '';
+			if (source.hasAttribute('data-catalog-shell')) {
+				copy.dataset.catalogShellCopy = '';
+				(capture.shellCopies ??= new Map()).set(source, copy);
+			}
 			copy.setAttribute('aria-hidden', 'true');
 			copy.inert = true;
 			Object.assign(copy.style, {
@@ -1028,6 +1042,18 @@ export class CatalogTransition {
 	async play(): Promise<void> {
 		const capture = this.captureState;
 		if (!capture || !this.sequence.start(capture.token)) return;
+		// Persistent shell nodes survive route replacement; the exit copy owns their old pose.
+		for (const shell of this.root.querySelectorAll<HTMLElement>('[data-catalog-shell]'))
+			shell.style.removeProperty('visibility');
+		// A persistent header visible at both scroll positions is not entering or
+		// leaving the page. Hand its snapshot back without an opacity dip.
+		for (const [shell, copy] of capture.shellCopies ?? []) {
+			delete copy.dataset.catalogShellCopy;
+			if (!shell.isConnected || !intersectsViewport(shell)) continue;
+			shell.setAttribute('data-catalog-shell-continuous', '');
+			capture.restore.push(() => shell.removeAttribute('data-catalog-shell-continuous'));
+			copy.style.display = 'none';
+		}
 		try {
 			const reverse = Boolean(capture.view) || isReturnRecipe(capture.recipe);
 			if (capture.view) {
@@ -1160,6 +1186,17 @@ export class CatalogTransition {
 				this.hooks.flushFrame();
 			}
 			if (reverse) {
+				// Zoom can withdraw every summary actor. The transferred GPU model
+				// still owns geometry: never expose the destination's fallback poster.
+				const geometry = this.endpoints.resolve({
+					...capture.identity,
+					slot: capture.recipe.targetGeometry,
+					role: 'geometry'
+				});
+				if (geometry) {
+					preserveStyle(geometry, 'visibility', capture.restore);
+					geometry.style.setProperty('visibility', 'hidden', 'important');
+				}
 				const card = this.endpoints.resolve({
 					...capture.identity,
 					slot: capture.recipe.targetShared,
@@ -1368,6 +1405,13 @@ export class CatalogTransition {
 				return;
 			}
 			await new Promise<void>((resolve) => {
+				// Route binding and shader preparation have their own bounded wait above.
+				// Give playback its full safety window instead of cancelling its first
+				// frames when preparation consumed most of the capture deadline.
+				clearTimeout(capture.timeout);
+				capture.timeout = setTimeout(() => {
+					if (this.captureState === capture) this.cancel();
+				}, 5000);
 				const mode =
 					capture.mode ?? (reverse ? 'synchronous' : this.hooks.beginMotion?.()) ?? 'asynchronous';
 				capture.mode = mode;

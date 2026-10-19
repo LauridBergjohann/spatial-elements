@@ -65,9 +65,15 @@
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
+		opacity: 1;
+		transition: opacity 240ms ease;
 	}
 
 	:global(.stage-enhanced) .stage-viewport-fallback-image {
-		visibility: hidden;
+		opacity: 0;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.stage-viewport-fallback-image { transition: none; }
 	}
 </style>

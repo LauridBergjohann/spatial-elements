@@ -137,7 +137,7 @@
 	let virtualScrollSpacer: HTMLDivElement;
 	let domLayer: HTMLDivElement;
 	let status = $state('Loading stage');
-	let showStatus = $state(true);
+	let showStatus = $state(false);
 	let isEnhanced = $state(false);
 	let fullscreen = $state(false);
 	let fullscreenController: StageFullscreenController | undefined;
@@ -183,6 +183,7 @@
 	};
 
 	setContext<StageContext>(STAGE_CONTEXT_KEY, {
+		isEnhanced: () => isEnhanced,
 		updatePanelAppearance: scheduleAppearanceUpdate,
 		prefetchSpatialElement: (config) => experience?.prefetchSpatialElement(config),
 		registerPanel(panel) {
@@ -209,6 +210,10 @@
 	});
 
 	onMount(() => {
+		// The semantic page is already usable. Only announce unusually slow enhancement.
+		const statusTimer = window.setTimeout(() => {
+			if (stageState === 'loading') showStatus = true;
+		}, 1000);
 		fullscreenController = new StageFullscreenController(stage, (active) => {
 			fullscreen = active;
 			experience?.setFullscreen(active);
@@ -216,7 +221,8 @@
 		document.documentElement.classList.add('stage-route');
 		document.body.classList.add('stage-route');
 		virtualScroll = new VirtualScrollController(stage, domLayer, virtualScrollSpacer);
-		virtualScroll.start();
+		// Native fallback pages keep native document scrolling and browser anchor behavior.
+		if (navigator.gpu) virtualScroll.start();
 		transition = new CatalogTransition(stage, catalogEndpoints, {
 			captureContentGeometry: (endpoint, secondary) =>
 				experience?.captureContentGeometry(endpoint.spatialElementId, secondary) ?? false,
@@ -294,6 +300,7 @@
 						setZoomFocusState(restingZoomFocus);
 						isEnhanced = false;
 						isFallback = true;
+						virtualScroll?.destroy();
 						stageState = 'fallback';
 						showStatus = false;
 					}
@@ -311,6 +318,8 @@
 				return;
 			}
 
+			// Paint the prepared scene before posters and fallback surfaces start fading.
+			instance.flushCatalogFrame();
 			isEnhanced = true;
 			isFallback = false;
 			showStatus = false;
@@ -330,6 +339,7 @@
 			experience?.dispose();
 			experience = null;
 			status = error instanceof Error ? error.message : 'Unable to initialize WebGPU stage';
+			virtualScroll?.destroy();
 			isEnhanced = false;
 			isFallback = true;
 			stageState = 'fallback';
@@ -338,6 +348,7 @@
 		});
 
 		return () => {
+			window.clearTimeout(statusTimer);
 			fullscreenController?.dispose();
 			fullscreenController = undefined;
 			virtualScroll?.destroy();
@@ -714,6 +725,10 @@
 </div>
 
 <style>
+	/* Apply the same document metrics before hydration; the class remains useful
+	 * to hosts that do not support :has(). */
+	:global(html:has(.stage)),
+	:global(body:has(.stage)),
 	:global(html.stage-route),
 	:global(body.stage-route) {
 		margin: 0;
@@ -722,6 +737,7 @@
 		background: #ffffff;
 	}
 
+	:global(body:has(.stage)),
 	:global(body.stage-route) {
 		overflow-x: hidden;
 	}
@@ -789,6 +805,19 @@
 	.stage :global(.stage-webgpu-carousel-rear) {
 		z-index: 0;
 		pointer-events: none;
+	}
+
+	.stage :global(.stage-webgpu-background),
+	.stage :global(.stage-webgpu-carousel-rear),
+	.stage :global(.stage-webgpu-foreground) {
+		opacity: 0;
+		transition: opacity 240ms ease;
+	}
+
+	.stage.stage-enhanced :global(.stage-webgpu-background),
+	.stage.stage-enhanced :global(.stage-webgpu-carousel-rear),
+	.stage.stage-enhanced :global(.stage-webgpu-foreground) {
+		opacity: 1;
 	}
 
 	.stage :global(.stage-webgpu-foreground) {
@@ -872,5 +901,13 @@
 		font:
 			13px/1.35 system-ui,
 			sans-serif;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.stage :global(.stage-webgpu-background),
+		.stage :global(.stage-webgpu-carousel-rear),
+		.stage :global(.stage-webgpu-foreground) {
+			transition: none;
+		}
 	}
 </style>

@@ -238,9 +238,6 @@
 	.spatial-element-hero :global(.spatial-element-visual) {
 		grid-column: 1;
 		grid-row: 1;
-	}
-
-	:global(.spatial-element-visual) {
 		min-height: clamp(540px, calc(100vh - 300px), 680px);
 		border-radius: 28px;
 		background: transparent;
