@@ -100,7 +100,9 @@ test.each(['wheel', 'spacemouse'] as const)(
 			camera: THREE.PerspectiveCamera;
 			interaction: SpatialElementInteractionController;
 			renderFrame(force: boolean): void;
+			rendererSize: THREE.Vector2;
 		};
+		stage.rendererSize.set(100, 100);
 		stage.camera.position.z = 10;
 		stage.interaction.initialize();
 		stage.interaction.captureInitialView();

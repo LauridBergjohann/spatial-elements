@@ -1,4 +1,6 @@
 import { CatalogGeometryFade } from './CatalogGeometryFade.js';
+import { CarouselDeviceCamera } from './CarouselDeviceCamera.js';
+import { getListDeviceYaw, getListDevicePitch, getListDeviceRoll, subscribeListDeviceYaw } from './listDeviceOrientation.js';
 import { cardModelFit } from './cardModelFit.js';
 import { CatalogDepthBlur, type BlurRect } from './CatalogDepthBlur.js';
 import { CatalogModelOutline } from './CatalogModelOutline.js';
@@ -57,6 +59,7 @@ interface CatalogActor {
 	root: THREE.Group;
 	tilt: THREE.Group;
 	view: THREE.Group;
+	viewOrientation: THREE.Quaternion;
 	radius: number;
 	hitCorners: THREE.Vector3[];
 	fitCorners: THREE.Vector3[];
@@ -80,6 +83,9 @@ interface CatalogActor {
 	scrollY: number;
 	rotationX: number;
 	rotationY: number;
+	deviceYaw: number;
+	devicePitch: number;
+	deviceRoll: number;
 	lift: number;
 	rendered: boolean;
 }
@@ -176,6 +182,7 @@ export class CatalogSpatialElementLayer {
 	getStats() {
 		return {
 			instances: this.actors.size,
+			deviceCamera: { pitch: this.carouselDeviceCamera.angles.x, yaw: this.carouselDeviceCamera.angles.y, roll: this.carouselDeviceCamera.angles.z },
 			detachedInstances: this.detachedInstances,
 			visible: [...this.actors.values()].filter((actor) => actor.root.visible).length,
 			passes: this.passes,
@@ -185,6 +192,7 @@ export class CatalogSpatialElementLayer {
 			outline: this.outline.getStats(),
 			actors: [...this.actors.values()].map((actor) => ({
 				spatialElementId: actor.spatialElementId,
+				projectedCenter: actor.view.getWorldPosition(new THREE.Vector3()).project(actor.pose ? this.carouselCamera : this.camera).toArray(),
 				band: actor.band,
 				clip: actor.clip ? { ...actor.clip } : undefined,
 				opacity: this.exitOpacity * (actor.materials[0]?.material.opacity ?? 0),
@@ -193,7 +201,8 @@ export class CatalogSpatialElementLayer {
 				modelScale: actor.view.scale.x, modelDepth: actor.view.position.z,
 				blur: actor.blur ?? 0,
 				hover: actor.hover,
-				proximityTilt: { x: actor.rotationX, y: actor.rotationY }
+				proximityTilt: { x: actor.rotationX, y: actor.rotationY },
+				deviceTilt: { yaw: actor.deviceYaw, pitch: actor.devicePitch, roll: actor.deviceRoll }
 			}))
 		};
 	}
@@ -207,6 +216,9 @@ export class CatalogSpatialElementLayer {
 	// The carousel sits ~2500 units from the lens. A near plane of 1 wastes depth
 	// precision and makes closely spaced CAD surfaces fight after the longer-lens change.
 	private readonly carouselCamera = new THREE.PerspectiveCamera(45, 1, 250, 6000);
+	private readonly carouselUiCamera = new THREE.PerspectiveCamera();
+	private readonly carouselDeviceCamera = new CarouselDeviceCamera();
+	private carouselSelection?: CatalogActor;
 
 	private readonly handoffCamera = new THREE.PerspectiveCamera();
 	private readonly actors = new Map<string, CatalogActor>();
@@ -216,6 +228,7 @@ export class CatalogSpatialElementLayer {
 	private readonly loadingKeys = new Set<string>();
 	private readonly failedKeys = new Set<string>();
 	private readonly motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+	private readonly unsubscribeDeviceYaw: () => void;
 	private readonly pointer = { x: 0, y: 0, active: false, pressed: false };
 	private handoff?: Handoff;
 	private handoffPoint?: { x: number; y: number };
@@ -276,6 +289,11 @@ export class CatalogSpatialElementLayer {
 		private readonly invalidate: () => void,
 		private readonly interactionTheme: () => StageInteractionTheme = () => DEFAULT_INTERACTION_THEME
 	) {
+		this.unsubscribeDeviceYaw = subscribeListDeviceYaw(() => {
+			if (!this.transitionActive && [...this.actors.values()].some(actor =>
+				actor.root.visible && actor.card?.closest('[data-device-orientation]')))
+				this.invalidate();
+		});
 		this.scene.environmentIntensity = 0.5;
 		this.scene.fog = new THREE.Fog(0xffffff, 1200, 2500);
 		this.handoffScene.fog = this.scene.fog;
@@ -420,6 +438,10 @@ export class CatalogSpatialElementLayer {
 		this.carouselCamera.aspect = width / height;
 		this.carouselCamera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(height / 5000));
 		this.carouselCamera.updateProjectionMatrix();
+		this.carouselUiCamera.copy(this.carouselCamera);
+		this.carouselUiCamera.position.set(0, 0, 2500);
+		this.carouselUiCamera.quaternion.identity();
+		this.carouselUiCamera.updateMatrixWorld(true);
 		this.scene.environment = environment;
 		this.handoffScene.environment = this.handoff?.sourceEnvironment ?? environment;
 		const scroll = getStageVisualScrollPosition();
@@ -432,6 +454,8 @@ export class CatalogSpatialElementLayer {
 		const delta = Math.min(this.lastTime ? (now - this.lastTime) / 1000 : 1 / 60, 0.05);
 		this.lastTime = now;
 		let animating = false;
+		const projectCarousels: (() => void)[] = [];
+		let selected: CatalogActor | undefined;
 		this.glass.beginFrame();
 		if (!this.handoff) this.ground.beginFrame();
 
@@ -470,6 +494,7 @@ export class CatalogSpatialElementLayer {
 			if (!actor.root.visible) continue;
 
 			if (actor.pose) {
+				actor.view.quaternion.copy(actor.viewOrientation);
 				const pose = actor.pose.read();
 				const approach = this.pointer.active && !this.pointer.pressed && !this.transitionActive &&
 					!this.motion.matches && actor.renderRect && pose.visible
@@ -477,6 +502,18 @@ export class CatalogSpatialElementLayer {
 				for (const [property, target] of [['rotationX', approach.x], ['rotationY', approach.y]] as const) {
 					actor[property] = this.motion.matches ? 0 : THREE.MathUtils.damp(actor[property], target, 12, delta);
 					if (Math.abs(actor[property] - target) < 0.0001) actor[property] = target;
+					animating ||= actor[property] !== target;
+				}
+				// Add the remaining sensor response only to the focus model. The camera keeps 25%.
+				const sensorEnabled = pose.front && !this.motion.matches && !this.transitionActive &&
+					actor.card.closest('[data-device-orientation]');
+				for (const [property, target] of [
+					['deviceYaw', sensorEnabled ? -getListDeviceYaw() * 0.75 : 0],
+					['devicePitch', sensorEnabled ? -getListDevicePitch() * 0.75 : 0],
+					['deviceRoll', sensorEnabled ? -getListDeviceRoll() * 0.75 : 0]
+				] as const) {
+					actor[property] = this.motion.matches ? 0 : THREE.MathUtils.damp(actor[property], target, 40, delta);
+					if (Math.abs(actor[property] - target) < 0.01) actor[property] = target;
 					animating ||= actor[property] !== target;
 				}
 				const hoverTarget = !this.transitionActive && !this.pointer.pressed &&
@@ -496,7 +533,7 @@ export class CatalogSpatialElementLayer {
 				// and spacing naturally, including scroll parallax and the foreground advance.
 				const x = slot.left + dx + slot.width * (pose.orbit ? (compact ? 0.5 : 0.31) : pose.x - (compact ? 0 : 0.19));
 				const y = slot.top + dy + (pose.orbit ? (compact ? 180 : slot.height * 0.54) : slot.height * pose.y);
-				const perspective = pose.orbit ? 1 : 1 - pose.depth / this.carouselCamera.position.z;
+				const perspective = pose.orbit ? 1 : 1 - pose.depth / 2500;
 				actor.root.matrix.makeTranslation(
 					(x - width / 2) * perspective + (pose.orbit?.x ?? 0),
 					(height / 2 - y) * perspective + (pose.orbit?.y ?? 0),
@@ -515,6 +552,7 @@ export class CatalogSpatialElementLayer {
 				actor.view.scale.setScalar(
 					(Math.min(slot.width, compact ? 360 : slot.height) * 0.82) / (actor.radius * 2)
 				);
+				let groundMatrix: THREE.Matrix4 | undefined;
 				if (pose.orbit && actor.root.visible) {
 					const frame = Math.min(slot.width, compact ? 360 : slot.height);
 					const floor = frame * 0.32;
@@ -527,102 +565,107 @@ export class CatalogSpatialElementLayer {
 						point.clone().applyMatrix4(actor.view.matrix).applyMatrix4(upright).y));
 					actor.view.position.y += (-floor - bottom) / upright.elements[5];
 					actor.view.updateMatrix();
-					const groundMatrix = new THREE.Matrix4().makeTranslation(x - width / 2, height / 2 - y, 0)
+					groundMatrix = new THREE.Matrix4().makeTranslation(x - width / 2, height / 2 - y, 0)
 						.multiply(new THREE.Matrix4().makeRotationX(pitch))
 						.multiply(new THREE.Matrix4().makeTranslation(0, -floor, 0));
-					actor.root.updateMatrixWorld(true);
-					this.ground.shadow(actor, actor.model, groundMatrix, 0.14 * pose.opacity);
 				}
+				// Apply after floor fitting so the model centre and UI anchors remain fixed.
+				actor.view.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(actor.devicePitch), THREE.MathUtils.degToRad(actor.deviceYaw), THREE.MathUtils.degToRad(actor.deviceRoll), 'ZXY'))
+					.multiply(actor.viewOrientation);
 				actor.root.updateMatrixWorld(true);
-				const hitTarget = actor.hitTarget;
-				if (hitTarget) {
-					// Project cached model bounds, not the framing sphere: empty foreground
-					// margins must not intercept clicks on visible neighbouring spatialElements.
-					let left = Infinity,
-						top = Infinity,
-						right = -Infinity,
-						bottom = -Infinity;
-					const point = new THREE.Vector3();
-					for (const corner of actor.hitCorners) {
-						point.copy(corner).applyMatrix4(actor.view.matrixWorld).project(this.carouselCamera);
-						const px = ((point.x + 1) * width) / 2 - slot.left - dx;
-						const py = ((1 - point.y) * height) / 2 - slot.top - dy;
-						left = Math.min(left, px);
-						right = Math.max(right, px);
-						top = Math.min(top, py);
-						bottom = Math.max(bottom, py);
+				if (groundMatrix) this.ground.shadow(actor, actor.model, groundMatrix, 0.14 * pose.opacity);
+				if (pose.front && actor.root.visible && (!selected || pose.panelOpacity > (selected.pose?.read().panelOpacity ?? 0))) selected = actor;
+				projectCarousels.push(() => {
+					const hitTarget = actor.hitTarget;
+					if (hitTarget) {
+						// Project cached model bounds, not the framing sphere: empty foreground
+						// margins must not intercept clicks on visible neighbouring spatialElements.
+						let left = Infinity,
+							top = Infinity,
+							right = -Infinity,
+							bottom = -Infinity;
+						const point = new THREE.Vector3();
+						for (const corner of actor.hitCorners) {
+							point.copy(corner).applyMatrix4(actor.view.matrixWorld).project(this.carouselCamera);
+							const px = ((point.x + 1) * width) / 2 - slot.left - dx;
+							const py = ((1 - point.y) * height) / 2 - slot.top - dy;
+							left = Math.min(left, px);
+							right = Math.max(right, px);
+							top = Math.min(top, py);
+							bottom = Math.max(bottom, py);
+						}
+						hitTarget.style.left = `${(left + right) / 2}px`;
+						hitTarget.style.top = `${(top + bottom) / 2}px`;
+						hitTarget.style.width = `${right - left}px`;
+						hitTarget.style.height = `${bottom - top}px`;
+						hitTarget.style.maxWidth = 'none';
+						actor.renderRect = { left: left + slot.left + dx, top: top + slot.top + dy,
+							width: right - left, height: bottom - top };
 					}
-					hitTarget.style.left = `${(left + right) / 2}px`;
-					hitTarget.style.top = `${(top + bottom) / 2}px`;
-					hitTarget.style.width = `${right - left}px`;
-					hitTarget.style.height = `${bottom - top}px`;
-					hitTarget.style.maxWidth = 'none';
-					actor.renderRect = { left: left + slot.left + dx, top: top + slot.top + dy,
-						width: right - left, height: bottom - top };
-				}
-				const panel = actor.summaryPanel;
-				if (panel && actor.summarySize) {
-					const { width: pw, height: ph } = actor.summarySize;
-					// The panel follows the seat and its yaw, but not the elevated
-					// product view. At rest it is parallel to the screen, also on mobile.
-					const panelFrame = pose.orbit
-						? actor.root.matrixWorld.clone().multiply(new THREE.Matrix4().makeRotationY(pose.yaw))
-						: actor.tilt.matrixWorld.clone();
-					const matrix = panelFrame
-						.multiply(
-							new THREE.Matrix4().makeTranslation(
-								compact ? 0 : slot.width * 0.39,
-								compact ? (pose.orbit ? 180 : slot.height / 2) - 360 - ph / 2 : 0,
-								0
-							)
+					const panel = actor.summaryPanel;
+					if (panel && actor.summarySize) {
+						const { width: pw, height: ph } = actor.summarySize;
+						// The panel follows the seat and its yaw, but not the elevated
+						// product view. At rest it is parallel to the screen, also on mobile.
+						const panelFrame = pose.orbit
+							? actor.root.matrixWorld.clone().multiply(new THREE.Matrix4().makeRotationY(pose.yaw))
+							: actor.tilt.matrixWorld.clone();
+						const matrix = panelFrame
+							.multiply(
+								new THREE.Matrix4().makeTranslation(
+									compact ? 0 : slot.width * 0.39,
+									compact ? (pose.orbit ? 180 : slot.height / 2) - 360 - ph / 2 : 0,
+									0
+								)
+							);
+						const corners = [
+							[-pw / 2, ph / 2],
+							[pw / 2, ph / 2],
+							[pw / 2, -ph / 2],
+							[-pw / 2, -ph / 2]
+						].map(([x, y]) => {
+							const point = new THREE.Vector3(x, y, 0)
+								.applyMatrix4(matrix)
+								.project(this.carouselUiCamera);
+							return {
+								x: ((point.x + 1) * width) / 2 - slot.left - dx,
+								y: ((1 - point.y) * height) / 2 - slot.top - dy
+							};
+						}) as unknown as CssProjectionQuad;
+						// The semantic summary keeps its intrinsic layout slot before and after
+						// enhancement. Project relative to that slot instead of moving it to (0, 0).
+						const origin = actor.summaryOrigin ?? { x: 0, y: 0 };
+						const localCorners = corners.map(({ x, y }) => ({
+							x: x - origin.x, y: y - origin.y
+						})) as unknown as CssProjectionQuad;
+						panel.style.transform = getProjectiveCssMatrix3d(localCorners, pw, ph) ?? '';
+						recordCarouselPanel(
+							panel,
+							corners.map((point) => ({
+								x: point.x + slot.left + dx,
+								y: point.y + slot.top + dy
+							})) as unknown as CssProjectionQuad,
+							pw,
+							ph
 						);
-					const corners = [
-						[-pw / 2, ph / 2],
-						[pw / 2, ph / 2],
-						[pw / 2, -ph / 2],
-						[-pw / 2, -ph / 2]
-					].map(([x, y]) => {
-						const point = new THREE.Vector3(x, y, 0)
-							.applyMatrix4(matrix)
-							.project(this.carouselCamera);
-						return {
-							x: ((point.x + 1) * width) / 2 - slot.left - dx,
-							y: ((1 - point.y) * height) / 2 - slot.top - dy
-						};
-					}) as unknown as CssProjectionQuad;
-					// The semantic summary keeps its intrinsic layout slot before and after
-					// enhancement. Project relative to that slot instead of moving it to (0, 0).
-					const origin = actor.summaryOrigin ?? { x: 0, y: 0 };
-					const localCorners = corners.map(({ x, y }) => ({
-						x: x - origin.x, y: y - origin.y
-					})) as unknown as CssProjectionQuad;
-					panel.style.transform = getProjectiveCssMatrix3d(localCorners, pw, ph) ?? '';
-					recordCarouselPanel(
-						panel,
-						corners.map((point) => ({
-							x: point.x + slot.left + dx,
-							y: point.y + slot.top + dy
-						})) as unknown as CssProjectionQuad,
-						pw,
-						ph
-					);
-					const hidden =
-						actor.card.style.visibility === 'hidden' || panel.style.visibility === 'hidden';
-					this.glass.panel(
-						actor.card,
-						matrix,
-						pw,
-						ph,
-						hidden ? 0 : pose.panelOpacity * this.exitOpacity,
-						(1 - pose.panelOpacity) * 6
-					);
-				}
-				actor.clip = {
-					left: 0,
-					top: 0,
-					width,
-					height
-				};
+						const hidden =
+							actor.card!.style.visibility === 'hidden' || panel.style.visibility === 'hidden';
+						this.glass.panel(
+							actor.card!,
+							matrix,
+							pw,
+							ph,
+							hidden ? 0 : pose.panelOpacity * this.exitOpacity,
+							(1 - pose.panelOpacity) * 6
+						);
+					}
+					actor.clip = {
+						left: 0,
+						top: 0,
+						width,
+						height
+					};
+				});
 				if (this.isDestinationActor(actor)) actor.root.visible = false;
 				continue;
 			}
@@ -686,8 +729,34 @@ export class CatalogSpatialElementLayer {
 				96 * actor.hover
 			);
 			actor.view.scale.setScalar(actor.cardScale * (1 + 0.12 * actor.hover));
+			const deviceEnabled = !this.motion.matches && !this.transitionActive &&
+				actor.card.closest('[data-device-orientation]');
+			// Sensor motion remains available on hybrids even with a stationary mouse cursor.
+			for (const [property, target] of [
+				['deviceYaw', deviceEnabled ? -getListDeviceYaw() : 0],
+				['devicePitch', deviceEnabled ? -getListDevicePitch() : 0],
+				['deviceRoll', deviceEnabled ? -getListDeviceRoll() : 0]
+			] as const) {
+				actor[property] = this.motion.matches ? 0 : THREE.MathUtils.damp(actor[property], target, 40, delta);
+				if (Math.abs(actor[property] - target) < 0.01) actor[property] = target;
+				animating ||= actor[property] !== target;
+			}
+			// Rotate around the model's own centre, leaving the panel and copy still.
+			actor.view.rotation.set(THREE.MathUtils.degToRad(actor.devicePitch), THREE.MathUtils.degToRad(actor.deviceYaw), THREE.MathUtils.degToRad(actor.deviceRoll), 'ZXY');
+			actor.view.quaternion.multiply(actor.viewOrientation);
 			if (this.isDestinationActor(actor)) actor.root.visible = false;
 		}
+		if (!this.transitionActive && !this.handoff) {
+			const pivot = selected?.view.getWorldPosition(new THREE.Vector3()) ?? new THREE.Vector3();
+			const enabled = selected?.card?.closest('[data-device-orientation]');
+			animating = this.carouselDeviceCamera.update(this.carouselCamera,
+				enabled ? getListDeviceYaw() : 0, enabled ? getListDevicePitch() : 0,
+				enabled ? getListDeviceRoll() : 0, delta, this.motion.matches) || animating;
+			animating = this.carouselDeviceCamera.orbit(this.carouselCamera, pivot, delta,
+				!this.motion.matches && (this.pointer.pressed || this.carouselSelection !== selected)) || animating;
+			this.carouselSelection = selected;
+		}
+		for (const project of projectCarousels) project();
 		if (this.queueDirty) {
 			this.queueDirty = false;
 			void this.loadVisibleSpatialElements(this.generation);
@@ -781,7 +850,7 @@ export class CatalogSpatialElementLayer {
 	}
 
 	renderRear(renderer: THREE.WebGPURenderer) {
-		this.glass.render(renderer, this.carouselCamera, () => {
+		this.glass.render(renderer, this.carouselUiCamera, () => {
 			this.ground.draw(renderer, this.carouselCamera, this.exitOpacity);
 			this.draw(renderer, 'rear');
 		});
@@ -1009,6 +1078,7 @@ export class CatalogSpatialElementLayer {
 		this.outline.dispose();
 		if (this.disposed) return;
 		this.disposed = true;
+		this.unsubscribeDeviceYaw();
 		this.generation += 1;
 		for (const request of this.requests) request.abort();
 		this.requests.clear();
@@ -1101,6 +1171,7 @@ export class CatalogSpatialElementLayer {
 			root,
 			tilt,
 			view,
+			viewOrientation: view.quaternion.clone(),
 			radius,
 			hitCorners,
 			fitCorners: hitCorners.map((corner) => corner.clone().applyQuaternion(view.quaternion)),
@@ -1114,6 +1185,9 @@ export class CatalogSpatialElementLayer {
 			scrollY: 0,
 			rotationX: 0,
 			rotationY: 0,
+			deviceYaw: 0,
+			devicePitch: 0,
+			deviceRoll: 0,
 			lift: 0,
 			rendered: false
 		};

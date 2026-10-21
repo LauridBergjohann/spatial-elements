@@ -77,6 +77,7 @@ import type { StageCameraSettings, StageMinimapOptions, StagePanelTarget } from 
 
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
 export interface MinimapPorts {
+	sensorRotation?(): THREE.Quaternion;
 	renderer: THREE.WebGPURenderer;
 	camera: THREE.PerspectiveCamera;
 	panelCamera: THREE.PerspectiveCamera;
@@ -742,6 +743,10 @@ export class MinimapController {
 		this.model?.getWorldQuaternion(modelWorldQuaternion);
 		this.camera.getWorldQuaternion(mainCameraWorldQuaternion);
 		liveQuaternion.copy(mainCameraWorldQuaternion).invert().multiply(modelWorldQuaternion);
+		const sensor = this.ports.sensorRotation?.();
+		// Main geometry already includes the sensor pose. Remove it before blending
+		// rest/live/dock views, then apply it once to every minimap presentation.
+		if (sensor) liveQuaternion.premultiply(sensor.clone().invert());
 		baseQuaternion.slerpQuaternions(
 			minimap.restQuaternion,
 			liveQuaternion,
@@ -761,6 +766,7 @@ export class MinimapController {
 			minimap.displayModel.quaternion.copy(baseQuaternion);
 		}
 		minimap.displayModel.scale.setScalar(targetScale);
+		if (sensor) minimap.displayModel.quaternion.premultiply(sensor);
 		minimap.displayModel.position.set(0, 0, modelZ);
 	}
 	alignMinimapModelToDockTop(minimap: StageMinimapState) {

@@ -55,6 +55,7 @@
 	} from '@spatial-elements/core/stage/panelContext';
 
 	interface Props {
+		deviceOrientation?: boolean;
 		/** Namespace for automatic ContentPage/SpatialElementPage registration. Supplied by BrandStageShell. */
 		brandId?: string;
 		renderSettings?: StageRenderSettings;
@@ -76,6 +77,7 @@
 	}
 
 	let {
+		deviceOrientation = false,
 		brandId,
 		ariaLabel = 'WebGPU 3D stage',
 		renderSettings,
@@ -268,6 +270,7 @@
 			const panels = getPanelTargets();
 			const viewport = getViewportTarget();
 			const instance = new StageExperience(stage, {
+				deviceOrientation,
 				renderSettings,
 				dracoDecoderPath,
 				catalog: Boolean(catalog),

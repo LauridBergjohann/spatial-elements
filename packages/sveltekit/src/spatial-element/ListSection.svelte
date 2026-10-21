@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { retainListDeviceOrientation } from '@spatial-elements/core/catalog/listDeviceOrientation';
 	import Section from './Section.svelte';
 	import SpatialElementCard from './SpatialElementCard.svelte';
 	import type {
@@ -10,12 +11,19 @@
 		section: SpatialElementSectionDefinition;
 		/** Project element documents with getSpatialListItems; assets register automatically. */
 		list: SpatialListItem[];
+		/** Experimental, bounded sensor rotation for list geometry only. */
+		deviceOrientation?: boolean;
 	}
-	let { section, list }: Props = $props();
+	let { section, list, deviceOrientation = false }: Props = $props();
+	let catalog: HTMLDivElement;
+	$effect(() => {
+		if (deviceOrientation && catalog)
+			return retainListDeviceOrientation(catalog, () => {});
+	});
 </script>
 
 <Section {section} presentation="list">
-	<div class="catalog">
+	<div class="catalog" bind:this={catalog} data-device-orientation={deviceOrientation ? '' : undefined}>
 		{#each list as spatialElement, index (spatialElement.itemKey ?? spatialElement.id)}
 			<SpatialElementCard
 				{spatialElement}
