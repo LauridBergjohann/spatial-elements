@@ -1049,10 +1049,21 @@ export class CatalogTransition {
 		// leaving the page. Hand its snapshot back without an opacity dip.
 		for (const [shell, copy] of capture.shellCopies ?? []) {
 			delete copy.dataset.catalogShellCopy;
-			if (!shell.isConnected || !intersectsViewport(shell)) continue;
-			shell.setAttribute('data-catalog-shell-continuous', '');
-			capture.restore.push(() => shell.removeAttribute('data-catalog-shell-continuous'));
-			copy.style.display = 'none';
+			const sourceRect = copy.getBoundingClientRect();
+			// A surface switch can move header text out of the captured surface into
+			// a native layer. Transfer continuity to its current shell nodes as well.
+			const candidates = new Set([shell, ...this.root.querySelectorAll<HTMLElement>('[data-catalog-shell]')]);
+			let continuous = false;
+			for (const current of candidates) {
+				if (!current.isConnected || !intersectsViewport(current)) continue;
+				const rect = current.getBoundingClientRect();
+				if (current !== shell && !(rect.left < sourceRect.right && rect.right > sourceRect.left &&
+					rect.top < sourceRect.bottom && rect.bottom > sourceRect.top)) continue;
+				current.setAttribute('data-catalog-shell-continuous', '');
+				capture.restore.push(() => current.removeAttribute('data-catalog-shell-continuous'));
+				continuous = true;
+			}
+			if (continuous) copy.style.display = 'none';
 		}
 		try {
 			const reverse = Boolean(capture.view) || isReturnRecipe(capture.recipe);

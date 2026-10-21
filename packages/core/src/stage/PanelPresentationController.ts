@@ -185,8 +185,8 @@ export class PanelPresentationController {
 	private visiblePanelCount = 0;
 	private visibleMinimapCount = 0;
 	rememberDomHome(element: HTMLElement) {
-		if (!element.parentNode || this.domHomes.has(element)) return;
-		this.domHomes.set(element, {
+		if (!element.parentNode) return;
+		if (!this.domHomes.has(element)) this.domHomes.set(element, {
 			parent: element.parentNode,
 			next: element.nextSibling,
 			style: element.getAttribute('style'),
@@ -195,7 +195,12 @@ export class PanelPresentationController {
 		});
 		// Projected content leaves its semantic ancestors. Retain shell identity
 		// so navigation can keep the actual header surface and its text continuous.
-		if (element.closest?.('[data-catalog-shell]')) element.setAttribute('data-catalog-shell', '');
+		// Surface changes can restore the original attributes before reattaching the
+		// same content. Reapply shell identity even when its DOM home is already known.
+		const home = this.domHomes.get(element)?.parent;
+		if (element.closest?.('[data-catalog-shell]') ||
+			(home instanceof HTMLElement && home.closest('[data-catalog-shell]')))
+			element.setAttribute('data-catalog-shell', '');
 	}
 	attachPanelContent(element: HTMLElement, panelIndex = 0, inset = 28) {
 		this.rememberDomHome(element);

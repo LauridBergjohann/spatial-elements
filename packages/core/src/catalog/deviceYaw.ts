@@ -25,8 +25,9 @@ export class DeviceYawFilter {
 		this.filteredPitch = this.pitch = 0;
 		this.filteredRoll = this.roll = 0;
 	}
-	/** Preserve the neutral grip/output across a scroll pause, ignoring the unobserved jump. */
+	/** Re-anchor to the new grip, retaining output so it can ease back to neutral. */
 	resume(q: Quaternion, now: number) {
+		this.reference = q.clone();
 		this.previous = q.clone();
 		this.time = now - 16;
 		this.quietUntil = 0;

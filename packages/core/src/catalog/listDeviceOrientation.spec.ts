@@ -8,7 +8,7 @@ let add: ReturnType<typeof vi.spyOn>;
 let remove: ReturnType<typeof vi.spyOn>;
 let cleanup: (() => void)[];
 
-it('freezes during scrolling and smoothly resumes after a long pause without losing calibration', async () => {
+it('freezes during scrolling and softly reanchors to the post-scroll grip', async () => {
 	let now = 0;
 	vi.spyOn(performance, 'now').mockImplementation(() => now);
 	const api = await import('./listDeviceOrientation.js');
@@ -33,7 +33,35 @@ it('freezes during scrolling and smoothly resumes after a long pause without los
 	emit(40);
 	expect(Math.abs(api.getListDevicePitch() - before)).toBeLessThan(1);
 	for (let i = 0; i < 70; i++) { now += 20; emit(40); }
-	expect(api.getListDevicePitch()).toBeLessThan(-7);
+	expect(api.getListDevicePitch()).toBe(0);
+	for (let i = 0; i < 60; i++) { now += 20; emit(40 + Math.min(i, 20)); }
+	expect(api.getListDevicePitch()).toBeGreaterThan(7);
+});
+
+it('pauses for held horizontal touch gestures, including a second finger and pointer cancellation', async () => {
+	let now = 0;
+	vi.spyOn(performance, 'now').mockImplementation(() => now);
+	const api = await import('./listDeviceOrientation.js');
+	const node = {} as HTMLElement;
+	cleanup.push(api.retainListDeviceOrientation(node, () => {}));
+	intersect([{ target: node, isIntersecting: true }]);
+	const emit = (beta: number) => browser.dispatchEvent(Object.assign(new Event('deviceorientation'), { alpha: 0, beta, gamma: 0 }));
+	emit(60);
+	browser.dispatchEvent(Object.assign(new Event('pointerdown'), { pointerType: 'touch', pointerId: 1 }));
+	browser.dispatchEvent(Object.assign(new Event('touchstart'), { touches: [{}, {}] }));
+	browser.dispatchEvent(Object.assign(new Event('pointercancel'), { pointerId: 1 }));
+	now = 3000; emit(90);
+	expect(api.isDeviceOrientationPaused()).toBe(true);
+	expect(api.getListDevicePitch()).toBe(0);
+	browser.dispatchEvent(Object.assign(new Event('touchend'), { touches: [{}] }));
+	now += 1000; emit(90);
+	expect(api.isDeviceOrientationPaused()).toBe(true);
+	browser.dispatchEvent(Object.assign(new Event('touchend'), { touches: [] }));
+	now += 180; emit(90);
+	expect(api.isDeviceOrientationPaused()).toBe(false);
+	expect(api.getListDevicePitch()).toBe(0);
+	for (let i = 1; i <= 60; i++) { now += 20; emit(90 + Math.min(i, 20)); }
+	expect(api.getListDevicePitch()).toBeGreaterThan(7);
 });
 
 beforeEach(() => {

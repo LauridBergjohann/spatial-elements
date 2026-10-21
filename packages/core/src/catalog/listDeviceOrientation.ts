@@ -27,6 +27,25 @@ let hasHeading: boolean | undefined;
 let scrollUntil = 0;
 let scrollPaused = false;
 let recoverUntil = 0;
+const touchPointers = new Set<number>();
+let touches = 0;
+export const isDeviceOrientationPaused = () => touches > 0 || touchPointers.size > 0 || performance.now() < scrollUntil;
+function pointerStart(event: PointerEvent) {
+	if (event.pointerType !== 'touch') return;
+	touchPointers.add(event.pointerId);
+	pauseDeviceOrientationForScroll();
+}
+function pointerEnd(event: PointerEvent) {
+	if (touchPointers.delete(event.pointerId)) pauseDeviceOrientationForScroll();
+}
+function touchChange(event: TouchEvent) {
+	touches = event.touches.length;
+	pauseDeviceOrientationForScroll();
+}
+function releaseTouches() {
+	touches = 0;
+	touchPointers.clear();
+}
 
 /** Called by native scrolling and the stage's virtual-scroll frame stream. */
 export function pauseDeviceOrientationForScroll() {
@@ -64,7 +83,7 @@ function recalibrateScreen() {
 function sample(event: DeviceOrientationEvent) {
 	const now = performance.now();
 	// Do not parse, filter, allocate quaternions or invalidate GPU rendering during scrolling.
-	if (now < scrollUntil) return;
+	if (isDeviceOrientationPaused()) return;
 	const { alpha, beta, gamma } = event;
 	if (![beta, gamma].every(value => typeof value === 'number' && Number.isFinite(value))) {
 		reset();
@@ -160,6 +179,12 @@ export function retainListDeviceOrientation(node: HTMLElement, callback: (status
 		scrollUntil = recoverUntil = 0;
 		scrollPaused = false;
 		window.addEventListener('scroll', pauseDeviceOrientationForScroll, { passive: true, capture: true });
+		window.addEventListener('pointerdown', pointerStart, { passive: true, capture: true });
+		window.addEventListener('pointerup', pointerEnd, { passive: true, capture: true });
+		window.addEventListener('pointercancel', pointerEnd, { passive: true, capture: true });
+		for (const name of ['touchstart', 'touchend', 'touchcancel'] as const)
+			window.addEventListener(name, touchChange, { passive: true, capture: true });
+		window.addEventListener('blur', releaseTouches);
 		screenAngle = readScreenAngle();
 		calibratingUntil = 0;
 		window.screen.orientation?.addEventListener?.('change', recalibrateScreen);
@@ -184,6 +209,13 @@ export function retainListDeviceOrientation(node: HTMLElement, callback: (status
 		owners.delete(node);
 		if (!owners.size) {
 			window.removeEventListener('scroll', pauseDeviceOrientationForScroll, true);
+			window.removeEventListener('pointerdown', pointerStart, true);
+			window.removeEventListener('pointerup', pointerEnd, true);
+			window.removeEventListener('pointercancel', pointerEnd, true);
+			for (const name of ['touchstart', 'touchend', 'touchcancel'] as const)
+				window.removeEventListener(name, touchChange, true);
+			window.removeEventListener('blur', releaseTouches);
+			releaseTouches();
 			window.screen.orientation?.removeEventListener?.('change', recalibrateScreen);
 			window.removeEventListener('orientationchange', recalibrateScreen);
 			observer?.disconnect();

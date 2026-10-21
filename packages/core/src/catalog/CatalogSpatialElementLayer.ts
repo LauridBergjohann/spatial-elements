@@ -1,6 +1,6 @@
 import { CatalogGeometryFade } from './CatalogGeometryFade.js';
 import { CarouselDeviceCamera } from './CarouselDeviceCamera.js';
-import { getListDeviceYaw, getListDevicePitch, getListDeviceRoll, subscribeListDeviceYaw } from './listDeviceOrientation.js';
+import { isDeviceOrientationPaused, getListDeviceYaw, getListDevicePitch, getListDeviceRoll, subscribeListDeviceYaw } from './listDeviceOrientation.js';
 import { cardModelFit } from './cardModelFit.js';
 import { CatalogDepthBlur, type BlurRect } from './CatalogDepthBlur.js';
 import { CatalogModelOutline } from './CatalogModelOutline.js';
@@ -512,6 +512,7 @@ export class CatalogSpatialElementLayer {
 					['devicePitch', sensorEnabled ? -getListDevicePitch() * 0.75 : 0],
 					['deviceRoll', sensorEnabled ? -getListDeviceRoll() * 0.75 : 0]
 				] as const) {
+					if (!this.motion.matches && isDeviceOrientationPaused()) continue;
 					actor[property] = this.motion.matches ? 0 : THREE.MathUtils.damp(actor[property], target, 40, delta);
 					if (Math.abs(actor[property] - target) < 0.01) actor[property] = target;
 					animating ||= actor[property] !== target;
@@ -737,6 +738,7 @@ export class CatalogSpatialElementLayer {
 				['devicePitch', deviceEnabled ? -getListDevicePitch() : 0],
 				['deviceRoll', deviceEnabled ? -getListDeviceRoll() : 0]
 			] as const) {
+				if (!this.motion.matches && isDeviceOrientationPaused()) continue;
 				actor[property] = this.motion.matches ? 0 : THREE.MathUtils.damp(actor[property], target, 40, delta);
 				if (Math.abs(actor[property] - target) < 0.01) actor[property] = target;
 				animating ||= actor[property] !== target;
@@ -749,7 +751,7 @@ export class CatalogSpatialElementLayer {
 		if (!this.transitionActive && !this.handoff) {
 			const pivot = selected?.view.getWorldPosition(new THREE.Vector3()) ?? new THREE.Vector3();
 			const enabled = selected?.card?.closest('[data-device-orientation]');
-			animating = this.carouselDeviceCamera.update(this.carouselCamera,
+			if (this.motion.matches || !isDeviceOrientationPaused()) animating = this.carouselDeviceCamera.update(this.carouselCamera,
 				enabled ? getListDeviceYaw() : 0, enabled ? getListDevicePitch() : 0,
 				enabled ? getListDeviceRoll() : 0, delta, this.motion.matches) || animating;
 			animating = this.carouselDeviceCamera.orbit(this.carouselCamera, pivot, delta,

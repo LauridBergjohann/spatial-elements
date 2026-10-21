@@ -4,7 +4,7 @@ import type {
 } from '../catalog/catalogGeometryRequest.js';
 import { describeRenderTargets } from './renderTargetInventory.js';
 import { DeviceGeometryMotion } from './DeviceGeometryMotion.js';
-import { getListDeviceYaw, getListDevicePitch, getListDeviceRoll, retainListDeviceOrientation, subscribeListDeviceYaw, pauseDeviceOrientationForScroll } from '../catalog/listDeviceOrientation.js';
+import { isDeviceOrientationPaused, getListDeviceYaw, getListDevicePitch, getListDeviceRoll, retainListDeviceOrientation, subscribeListDeviceYaw, pauseDeviceOrientationForScroll } from '../catalog/listDeviceOrientation.js';
 import { StageRenderPipeline } from './StageRenderPipeline.js';
 import { PanelPresentationController } from './PanelPresentationController.js';
 import { MinimapController } from './MinimapController.js';
@@ -2922,7 +2922,7 @@ export class StageExperience {
 		);
 		let deviceAnimating = false;
 		if (this.deviceOrientationEnabled && this.model?.parent === this.scene && !this.catalogHandoff && !this.spatialCapture) {
-			deviceAnimating = this.deviceMotion.update(getListDeviceYaw(), getListDevicePitch(), getListDeviceRoll(), delta);
+			if (!isDeviceOrientationPaused()) deviceAnimating = this.deviceMotion.update(getListDeviceYaw(), getListDevicePitch(), getListDeviceRoll(), delta);
 			this.deviceMotion.apply(this.model, this.camera, this.initialControlsTarget);
 		}
 

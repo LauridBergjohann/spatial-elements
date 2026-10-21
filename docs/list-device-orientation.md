@@ -81,12 +81,14 @@ client-side routing retains the request and its result.
 
 ## Scroll and viewport changes
 
-Native scroll events (including nested scrolling) and virtual scroll frames pause
-sensor evaluation immediately. Samples are ignored until 160 ms after the last
-scroll event. The existing pose and neutral reference are retained, even during
-long scrolls. For the first 700 ms after resuming, a 400 ms low-pass filter gently
-reintroduces the current sensor pose; normal filtering then resumes.
-
+Native/virtual scrolling and touch contact pause sensor evaluation and application.
+This includes horizontal carousel drags, held fingers and multi-touch. Pointer
+cancellation during native scrolling does not resume the effect while a touch
+remains. Samples stay paused until every finger has lifted and scrolling has
+been quiet for 160 ms (including momentum). The first valid sample then establishes
+a new neutral grip. Existing output is preserved and gently eased toward the new
+reference with a 400 ms filter for the first 700 ms; it never resets in one frame.
+The shared policy applies to lists, detail geometry/minimap and carousels.
 Detail geometry rotates around its original center in camera coordinates. The
 minimap applies the same motion once, including its rest and docked views.
 Authored orientations and camera controls remain the base for these rotations.

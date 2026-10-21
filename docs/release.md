@@ -26,7 +26,7 @@ changelog records the initial release.
 
 ## Beta and stable versions
 
-The repository is in Changesets prerelease mode (beta). The prepared release is `1.0.0-beta.6`;
+The repository is in Changesets prerelease mode (beta). The prepared release is `1.0.0-beta.7`;
 the major version reflects the earlier breaking authoring API changes. Further betas increment the prerelease counter.
 Changesets accumulates patch/minor/major intent for the eventual stable release. Humans classify the
 API impact; version numbers, dependency updates and changelogs are automated.
@@ -37,11 +37,11 @@ Explicit per-version exceptions in `release-channels.json` select latest for a r
 The version synchronization, metadata checks and publishing command all use this same policy.
 Do not hand-edit pre.json or package versions during normal releases.
 
-For `1.0.0-beta.6`, both packages publish directly with `--tag latest`. This intentionally makes the
+For `1.0.0-beta.7`, both packages publish directly with `--tag latest`. This intentionally makes the
 new beta the default installation. The existing beta tag is not moved by this release. Subsequent
 betas return to the beta tag unless another explicit version exception is reviewed.
 
-## Publish the prepared 1.0.0-beta.6 release
+## Publish the prepared 1.0.0-beta.7 release
 
 The versions, changelogs, exact dependencies and lockfile are already updated. Commit these changes
 with the implementation and merge the branch into main through the normal reviewed PR workflow.
@@ -49,16 +49,17 @@ with the implementation and merge the branch into main through the normal review
 version bump or release PR is needed for the already-consumed Changesets. Alternatively, use
 Actions > Release packages > Run workflow on main to retry the prepared release.
 
-Confirm that both npm package pages show version `1.0.0-beta.6` under `latest` after the workflow:
+Confirm that both npm package pages show version `1.0.0-beta.7` under `latest` after the workflow:
 
 ~~~sh
 npm view @spatial-elements/core dist-tags --json
 npm view @spatial-elements/sveltekit dist-tags --json
 ~~~
 
-This release improves progressive enhancement and the spatial carousel, including scroll-snap fallbacks,
-momentum interactions, geometry-shaped shadows and contextual cursor hints. It aligns carousel and detail
-summaries and fixes header continuity and zoomed geometry handoff during navigation.
+This release adds opt-in device orientation for list cards, detail geometry, minimaps and the carousel,
+with automatic permission handling, bounded counter-rotation and reduced-motion support. Touch and
+scroll gestures suspend sensor work; resuming establishes a new neutral grip and eases motion back in.
+It also stabilizes mobile browser viewport resizing and keeps visible headers continuous during navigation.
 See [theming](theming.md) for shell-owned theme selection and [interface texts](interface-texts.md)
 for host-provided translations and English defaults.
 The user-facing README and separate development guides explain package use and contribution.
