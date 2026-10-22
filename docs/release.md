@@ -56,7 +56,7 @@ npm view @spatial-elements/core dist-tags --json
 npm view @spatial-elements/sveltekit dist-tags --json
 ~~~
 
-This release adds opt-in device orientation for list cards, detail geometry, minimaps and the carousel,
+This release adds automatic device orientation for list cards and carousels, plus opt-in detail geometry and minimaps,
 with automatic permission handling, bounded counter-rotation and reduced-motion support. Touch and
 scroll gestures suspend sensor work; resuming establishes a new neutral grip and eases motion back in.
 It also stabilizes mobile browser viewport resizing and keeps visible headers continuous during navigation.

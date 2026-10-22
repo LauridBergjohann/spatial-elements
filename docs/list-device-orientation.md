@@ -1,7 +1,7 @@
 # Experimental device geometry motion
 
-Opt in per section with `<ListSection deviceOrientation ... />`. It defaults to
-off. Enable `deviceOrientation` on `BrandStageShell` (or `Stage`) for detail geometry and minimaps. List/detail panels, text,
+`ListSection` and `CarouselSection` enable device orientation automatically; neither
+component exposes a `deviceOrientation` option. Enable `deviceOrientation` on `BrandStageShell` (or `Stage`) for detail geometry and minimaps. List/detail panels, text,
 and fallback posters are unaffected. Added yaw is bounded to ±16 degrees and
 pitch (forward/backward tilt) to ±10 degrees. Roll is limited to ±6 degrees.
 All three axes counter-rotate: the geometry feels stationary as the viewer moves.
@@ -36,7 +36,7 @@ The initial grip and screen-orientation changes establish a neutral reference.
   does not discard usable beta/gamma; changes in heading availability recalibrate.
 - Visible geometry settles using the existing on-demand rendering loop with a
   25 ms time constant (previously about 71 ms, on top of a 180 ms sensor filter).
-- All opted-in sections share one listener. Offscreen lists, hidden documents,
+- All sensor-enabled sections share one listener. Offscreen lists, hidden documents,
   reduced motion, and unmounting suspend or release it. Mouse hover and sensor
   rotation can coexist; a stationary cursor must not disable the sensor.
 
@@ -57,7 +57,7 @@ landscape, including natural-landscape hardware:
 4. Cross north/360°, rotate the screen, background/resume, then repeat.
 5. Walk, turn rapidly and stop: the effect quiets and recalibrates without flips.
 6. Deny the navigation-triggered permission prompt and enable reduced motion: normal navigation still works.
-7. Scroll opted-in sections offscreen: no sensor-driven frames. On detail pages, verify both main geometry and minimap react; on carousels, verify the shared camera moves.
+7. Scroll list/carousel sections offscreen: no sensor-driven frames. On detail pages, verify both main geometry and minimap react; on carousels, verify the shared camera moves.
 8. On hybrid tablets, use a mouse and then touch; verify mouse hover still works.
 
 The browser regression test `device-orientation.e2e.ts` injects orientation events
@@ -69,7 +69,8 @@ Reference: https://www.w3.org/TR/orientation-event/
 
 ## Automatic access
 
-Enable `deviceOrientation` on BrandStageShell as well as the selected ListSections.
+Lists and carousels acquire sensor access automatically. Enable `deviceOrientation`
+on BrandStageShell for detail geometry and minimaps as well.
 The shell silently attempts to reuse existing permission. If user activation is
 required, it requests permission synchronously on a trusted, unmodified internal
 link click. It does not prevent or delay client-side navigation. External links,
@@ -102,14 +103,14 @@ height changes. Actual Android address-bar animation and physical-device scroll
 performance still require a hardware acceptance pass.
 ## Carousel camera
 
-Enable `<CarouselSection deviceOrientation ... />` to use the same automatic
+`CarouselSection` automatically uses the same
 permission, calibration, scroll suspension and sensor filtering as lists/details.
 The geometry camera orbits the selected model centre, preserving its screen position even in an off-centre desktop layout. All seats share this perspective: carousel seat positions and
 selection remain unchanged. Background models gain real 3D parallax. Geometry, shadows, blur and geometry hit regions use the orbit camera; DOM panels and their glass use a fixed UI camera, keeping panels, arrows and selection dots stationary. Camera motion is frozen during catalog capture/handoff.
 
 The sensor uses one quarter of the filtered card angles, capped at 4 degrees yaw, 2.5 degrees pitch and 1.5 degrees roll. This reduces background distraction without changing mouse strength or the shared sensor filter.
 Reduced motion resets the camera immediately. The shared camera affects all
-carousels on a page; enable the option consistently for its carousel sections.
+carousels on a page; all carousel sections participate automatically.
 The brand examples enable this for watches, Wera and Wurm, including mixed pages.
 The selected model receives an additional counter-rotation at 75% of the shared
 sensor angles (up to 12 degrees yaw, 7.5 pitch and 4.5 roll). Together with the

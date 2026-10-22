@@ -11,8 +11,7 @@
 	import { CarouselDrag, CarouselWheelInput, clampCarouselPhase, sampleCarouselInertia } from '@spatial-elements/core/catalog/carouselMotion';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
 
-	let { section, presentation, list, initialItemKey, onselectionchange, deviceOrientation = false }: {
-		deviceOrientation?: boolean;
+	let { section, presentation, list, initialItemKey, onselectionchange }: {
 		section: SpatialElementSectionDefinition;
 		presentation?: CarouselPresentation;
 		list: SpatialListItem[];
@@ -36,7 +35,7 @@
 	let announced = $state<string>();
 	let ring: HTMLDivElement;
 	$effect(() => {
-		if (deviceOrientation && interactive && ring) return retainListDeviceOrientation(ring, () => {});
+		if (interactive && ring) return retainListDeviceOrientation(ring, () => {});
 	});
 	let layout = $state<CarouselLayout>({ width: 1320, height: 600, left: 60, viewportWidth: 1440 });
 	let frame = 0;
@@ -332,7 +331,7 @@
 		class:interactive
 		class:populated={list.length > 0}
 		data-carousel-section={section.id}
-		data-device-orientation={deviceOrientation ? '' : undefined}
+		data-device-orientation=""
 	>
 		<!-- svelte-ignore a11y_no_noninteractive_tabindex (The native scroll rail must be keyboard-scrollable without JavaScript.) -->
 		<div

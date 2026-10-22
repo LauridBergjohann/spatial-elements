@@ -11,19 +11,17 @@
 		section: SpatialElementSectionDefinition;
 		/** Project element documents with getSpatialListItems; assets register automatically. */
 		list: SpatialListItem[];
-		/** Experimental, bounded sensor rotation for list geometry only. */
-		deviceOrientation?: boolean;
 	}
-	let { section, list, deviceOrientation = false }: Props = $props();
+	let { section, list }: Props = $props();
 	let catalog: HTMLDivElement;
 	$effect(() => {
-		if (deviceOrientation && catalog)
+		if (catalog)
 			return retainListDeviceOrientation(catalog, () => {});
 	});
 </script>
 
 <Section {section} presentation="list">
-	<div class="catalog" bind:this={catalog} data-device-orientation={deviceOrientation ? '' : undefined}>
+	<div class="catalog" bind:this={catalog} data-device-orientation="">
 		{#each list as spatialElement, index (spatialElement.itemKey ?? spatialElement.id)}
 			<SpatialElementCard
 				{spatialElement}
