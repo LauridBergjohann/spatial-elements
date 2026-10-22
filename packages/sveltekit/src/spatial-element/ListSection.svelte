@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { retainListDeviceOrientation } from '@spatial-elements/core/catalog/listDeviceOrientation';
 	import Section from './Section.svelte';
 	import SpatialElementCard from './SpatialElementCard.svelte';
 	import type {
@@ -12,10 +13,15 @@
 		list: SpatialListItem[];
 	}
 	let { section, list }: Props = $props();
+	let catalog: HTMLDivElement;
+	$effect(() => {
+		if (catalog)
+			return retainListDeviceOrientation(catalog, () => {});
+	});
 </script>
 
 <Section {section} presentation="list">
-	<div class="catalog">
+	<div class="catalog" bind:this={catalog} data-device-orientation="">
 		{#each list as spatialElement, index (spatialElement.itemKey ?? spatialElement.id)}
 			<SpatialElementCard
 				{spatialElement}

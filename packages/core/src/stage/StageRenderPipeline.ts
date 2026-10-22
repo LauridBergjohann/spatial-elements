@@ -581,7 +581,9 @@ export class StageRenderPipeline {
 	) {
 		this.ports.renderer.setCanvasTarget(target);
 		this.ports.renderer.setPixelRatio(pixelRatio);
-		this.ports.renderer.setSize(width, height, false);
+		// The CSS display rectangle must match the camera/buffer even while mobile
+		// browser chrome animates. 100vh can represent a different viewport height.
+		this.ports.renderer.setSize(width, height, true);
 	}
 	private createPanelBlurCapture(
 		sceneTexture: THREE.Texture,

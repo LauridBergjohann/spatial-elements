@@ -3,6 +3,8 @@ import type {
 	CatalogGeometryDestination
 } from '../catalog/catalogGeometryRequest.js';
 import { describeRenderTargets } from './renderTargetInventory.js';
+import { DeviceGeometryMotion } from './DeviceGeometryMotion.js';
+import { isDeviceOrientationPaused, getListDeviceYaw, getListDevicePitch, getListDeviceRoll, retainListDeviceOrientation, subscribeListDeviceYaw, pauseDeviceOrientationForScroll } from '../catalog/listDeviceOrientation.js';
 import { StageRenderPipeline } from './StageRenderPipeline.js';
 import { PanelPresentationController } from './PanelPresentationController.js';
 import { MinimapController } from './MinimapController.js';
@@ -282,7 +284,12 @@ export class StageExperience {
 		return this.minimapController.views;
 	}
 
-	private readonly resize = () => this.resizeRenderer();
+	private readonly resize = () => this.requestRender();
+	private readonly rendererSize = new THREE.Vector2();
+	private readonly deviceMotion = new DeviceGeometryMotion();
+	private readonly deviceOrientationEnabled: boolean;
+	private releaseDeviceOrientation?: () => void;
+	private unsubscribeDeviceOrientation?: () => void;
 	private readonly render = () => {
 		this.renderRequestId = 0;
 		// The shared callback will draw after updating DOM/dock positions. Avoid
@@ -438,6 +445,10 @@ export class StageExperience {
 		options: StageExperienceOptions = {}
 	) {
 		if (options.dracoDecoderPath) this.assets.setDracoDecoderPath(options.dracoDecoderPath);
+		this.deviceOrientationEnabled = options.deviceOrientation ?? false;
+		if (this.deviceOrientationEnabled) this.unsubscribeDeviceOrientation = subscribeListDeviceYaw(() => {
+			if (this.releaseDeviceOrientation && !this.scrollActive) this.requestRender();
+		});
 		this.interaction = new SpatialElementInteractionController({
 			camera: this.camera,
 			canvas: this.backgroundCanvas,
@@ -458,6 +469,7 @@ export class StageExperience {
 			})
 		});
 		this.minimapController = new MinimapController({
+			sensorRotation: () => this.deviceMotion.rotation,
 			renderer: this.renderer,
 			camera: this.camera,
 			panelCamera: this.panelCamera,
@@ -651,6 +663,7 @@ export class StageExperience {
 		this.lastScrollY = this.currentScrollY;
 
 		window.addEventListener('resize', this.resize);
+		window.visualViewport?.addEventListener('resize', this.resize);
 		this.stopScrollFrames = subscribeStageScrollFrame(this.scroll, STAGE_SCROLL_PRIORITY.stage);
 		window.addEventListener(STAGE_PANEL_LAYOUT_EVENT, this.requestPanelSync);
 		window.addEventListener(STAGE_PANEL_VISUAL_EVENT, this.requestPanelVisualSync);
@@ -675,10 +688,13 @@ export class StageExperience {
 	dispose() {
 		if (this.disposed) return;
 		this.disposed = true;
+		this.releaseDeviceOrientation?.();
+		this.unsubscribeDeviceOrientation?.();
 		this.releaseSpatialCapture();
 		this.container.removeAttribute('data-stage-scroll-rendering');
 
 		window.removeEventListener('resize', this.resize);
+		window.visualViewport?.removeEventListener('resize', this.resize);
 		this.stopScrollFrames?.();
 		this.stopScrollFrames = undefined;
 		window.removeEventListener(STAGE_PANEL_LAYOUT_EVENT, this.requestPanelSync);
@@ -2548,9 +2564,10 @@ export class StageExperience {
 		);
 	}
 
-	private resizeRenderer() {
+	private resizeRenderer(invalidate = true) {
 		const width = window.innerWidth;
 		const height = window.innerHeight;
+		this.rendererSize.set(width, height);
 		this.panelMeasurementsDirty = true;
 		this.viewportMeasurementDirty = true;
 
@@ -2575,7 +2592,7 @@ export class StageExperience {
 
 		this.layoutDirty = true;
 		this.syncPanelLayouts(true);
-		this.requestRender();
+		if (invalidate) this.requestRender();
 	}
 
 	/**
@@ -2751,6 +2768,7 @@ export class StageExperience {
 
 	private handleScrollFrame(frame: StageScrollFrame) {
 		if (this.disposed) return;
+		pauseDeviceOrientationForScroll();
 		this.currentScrollX = frame.scrollX;
 		this.currentScrollY = frame.scrollY;
 
@@ -2855,8 +2873,17 @@ export class StageExperience {
 	}
 
 	private renderFrame(force = false) {
+		if (this.disposed) return;
+		if (!this.disposed && (this.rendererSize.x !== window.innerWidth || this.rendererSize.y !== window.innerHeight))
+			this.resizeRenderer(false);
 		const renderTargets = this.pipeline.activeRenderTargets;
 		const listOnly = this.catalog && !this.viewportTarget;
+		if (this.deviceOrientationEnabled && !listOnly && this.model && !this.releaseDeviceOrientation)
+			this.releaseDeviceOrientation = retainListDeviceOrientation(this.container, () => {});
+		else if (listOnly && this.releaseDeviceOrientation) {
+			this.releaseDeviceOrientation();
+			this.releaseDeviceOrientation = undefined;
+		}
 		if (this.disposed || (!listOnly && (!renderTargets || !this.pipeline.stageDisplayQuad))) return;
 		if (!force && document.hidden) return;
 		if (!force && !this.renderInvalidated && !this.animationActive) return;
@@ -2893,6 +2920,11 @@ export class StageExperience {
 			now,
 			delta
 		);
+		let deviceAnimating = false;
+		if (this.deviceOrientationEnabled && this.model?.parent === this.scene && !this.catalogHandoff && !this.spatialCapture) {
+			if (!isDeviceOrientationPaused()) deviceAnimating = this.deviceMotion.update(getListDeviceYaw(), getListDevicePitch(), getListDeviceRoll(), delta);
+			this.deviceMotion.apply(this.model, this.camera, this.initialControlsTarget);
+		}
 
 		// The damped camera distance is the single animation clock for geometry and
 		// every close-up UI phase. Phase remapping remains, temporal lag does not.
@@ -2914,6 +2946,7 @@ export class StageExperience {
 		this.pipeline.renderFrame(false, !this.scrollActive && !this.catalogHandoff);
 
 		this.animationActive =
+			deviceAnimating ||
 			this.presentation.readiness.animating ||
 			this.catalogLayerAnimating ||
 			(this.stageViewportVisible &&

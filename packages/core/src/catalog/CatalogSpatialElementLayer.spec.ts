@@ -354,6 +354,7 @@ describe('catalog preview lifetime', () => {
 		const rect = { left: 0, top: 100, width: 1200, height: 600, right: 1200, bottom: 700 };
 		const card = {
 			isConnected: true,
+			closest: () => null,
 			dataset: {},
 			style: { transform: '', visibility: '', removeProperty: vi.fn() },
 			getBoundingClientRect: () => rect,

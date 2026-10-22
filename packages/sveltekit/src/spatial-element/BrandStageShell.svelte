@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { retainDeviceOrientationPermission } from '@spatial-elements/core/catalog/listDeviceOrientation';
 	import Stage from '../stage/Stage.svelte';
 	import PointerHint from './PointerHint.svelte';
 	import type { StageRenderSettings } from '@spatial-elements/core';
@@ -10,6 +11,8 @@
 	import type { SpatialTheme } from '@spatial-elements/core/spatial-element/types';
 
 	interface Props {
+		/** Enable automatic sensor access / permission on internal navigation for opted-in lists. */
+		deviceOrientation?: boolean;
 		/** Shared appearance and namespace. Use createSpatialTheme for defaults. */
 		theme: SpatialTheme;
 		/** Resolved by the host. System preference and persistence belong to the shell. */
@@ -24,7 +27,10 @@
 		children?: Snippet;
 	}
 
-	let { theme, colorScheme, messages, renderSettings, dracoDecoderPath, children }: Props = $props();
+	let { theme, colorScheme, messages, renderSettings, dracoDecoderPath, children, deviceOrientation = false }: Props = $props();
+	$effect(() => {
+		if (deviceOrientation) return retainDeviceOrientationPermission();
+	});
 
 	provideSpatialTheme(() => theme);
 	provideSpatialMessages(() => messages);
@@ -34,6 +40,7 @@
 
 <div class="brand-stage-shell" style={brandStyle} style:color-scheme={colorScheme} data-color-scheme={colorScheme}>
 	<Stage
+		{deviceOrientation}
 		brandId={theme.id}
 		{renderSettings}
 		{dracoDecoderPath}

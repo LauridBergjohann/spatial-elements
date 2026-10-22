@@ -180,6 +180,7 @@ export interface StageRenderSettings {
 
 /** Construction options for a {@link StageExperience}. */
 export interface StageExperienceOptions {
+	deviceOrientation?: boolean;
 	/** Stage-wide output quality; native DOM content remains at the device pixel ratio. */
 	renderSettings?: StageRenderSettings;
 	/** Directory containing Draco decoder files, including trailing slash. */

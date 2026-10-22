@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getContext, onMount, tick, untrack } from 'svelte';
 	import Section from './Section.svelte';
+	import { retainListDeviceOrientation } from '@spatial-elements/core/catalog/listDeviceOrientation';
 	import { carouselTextHit } from './carouselTextHit.js';
 	import CarouselSpatialElement from './CarouselSpatialElement.svelte';
 	import { CATALOG_POSE_CHANGED, carouselEmphasis, CarouselDragEmphasis, type CarouselEmphasis, type CarouselLayout, type CarouselPresentation } from '@spatial-elements/core/catalog/catalogPose';
@@ -33,6 +34,9 @@
 	const indicated = $derived(keys[Math.round(clampCarouselPhase(phase, keys.length))]);
 	let announced = $state<string>();
 	let ring: HTMLDivElement;
+	$effect(() => {
+		if (interactive && ring) return retainListDeviceOrientation(ring, () => {});
+	});
 	let layout = $state<CarouselLayout>({ width: 1320, height: 600, left: 60, viewportWidth: 1440 });
 	let frame = 0;
 	let nativeFrame = 0;
@@ -327,6 +331,7 @@
 		class:interactive
 		class:populated={list.length > 0}
 		data-carousel-section={section.id}
+		data-device-orientation=""
 	>
 		<!-- svelte-ignore a11y_no_noninteractive_tabindex (The native scroll rail must be keyboard-scrollable without JavaScript.) -->
 		<div
