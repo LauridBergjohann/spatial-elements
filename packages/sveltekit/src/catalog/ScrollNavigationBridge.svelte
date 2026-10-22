@@ -31,6 +31,7 @@
 
 	interface Props {
 		controller?: VirtualScrollController;
+		onStart?: () => void;
 		onCapture?: (navigation: OnNavigate) => void | Promise<void>;
 		onInterrupt?: () => void;
 		onSupersede?: (destination: URL) => void;
@@ -38,7 +39,7 @@
 		handlesNavigation?: (navigation: OnNavigate) => boolean;
 	}
 
-	let { controller, onCapture, onInterrupt, onSupersede, onRestored, handlesNavigation }: Props =
+	let { controller, onStart, onCapture, onInterrupt, onSupersede, onRestored, handlesNavigation }: Props =
 		$props();
 	const endpoints = getContext<CatalogEndpointRegistry | undefined>(CATALOG_ENDPOINTS);
 	const sections = getContext<CatalogSections | undefined>(CATALOG_SECTIONS);
@@ -191,6 +192,9 @@
 		if (!pendingNavigation) rememberPosition();
 		stopActive(navigation.to?.url);
 		pendingNavigation = true;
+		if (controller?.active && !navigation.willUnload && navigation.to && navigation.from &&
+			navigation.from.url.pathname !== navigation.to.url.pathname &&
+			navigation.from.url.pathname.split('/')[1] === navigation.to.url.pathname.split('/')[1]) onStart?.();
 		const epoch = generation;
 		void navigation.complete
 			.catch(() => {})
@@ -210,6 +214,9 @@
 		if (!complete || !active?.complete || complete === active.complete) return;
 		stopActive(navigating.to?.url);
 		pendingNavigation = true;
+		if (controller?.active && navigating.to && navigating.from &&
+			navigating.from.url.pathname !== navigating.to.url.pathname &&
+			navigating.from.url.pathname.split('/')[1] === navigating.to.url.pathname.split('/')[1]) onStart?.();
 		const epoch = generation;
 		void complete
 			.catch(() => {})

@@ -23,6 +23,7 @@
 	import { VirtualScrollController } from '@spatial-elements/core/stage/VirtualScrollController';
 	import { StageFullscreenController } from '@spatial-elements/core/stage/StageFullscreenController';
 	import ScrollNavigationBridge from '../catalog/ScrollNavigationBridge.svelte';
+	import { NavigationFeedback } from '@spatial-elements/core/catalog/NavigationFeedback';
 	import { CatalogTransition } from '@spatial-elements/core/catalog/CatalogTransition';
 	import {
 		CATALOG_ENDPOINTS,
@@ -159,6 +160,7 @@
 	let transition: CatalogTransition | undefined;
 	let initialized: Promise<void> | undefined;
 	let navigationGeneration = 0;
+	let navigationFeedback: NavigationFeedback | undefined;
 	let destroyed = false;
 	let nextPageBinding: Promise<void> | undefined;
 	let releasePageBinding: (() => void) | undefined;
@@ -225,6 +227,7 @@
 		virtualScroll = new VirtualScrollController(stage, domLayer, virtualScrollSpacer);
 		// Native fallback pages keep native document scrolling and browser anchor behavior.
 		if (navigator.gpu) virtualScroll.start();
+		navigationFeedback = new NavigationFeedback(stage);
 		transition = new CatalogTransition(stage, catalogEndpoints, {
 			captureContentGeometry: (endpoint, secondary) =>
 				experience?.captureContentGeometry(endpoint.spatialElementId, secondary) ?? false,
@@ -239,7 +242,10 @@
 			prepareDestination: (destination) =>
 				experience?.prepareGeometryDestination(destination) ?? false,
 			setGeometryProgress: (progress) => experience?.setCatalogGeometryProgress(progress),
-			flushFrame: () => experience?.flushCatalogFrame(),
+			flushFrame: () => {
+				if (stage.dataset.catalogTransition === 'animating') navigationFeedback?.end();
+				experience?.flushCatalogFrame();
+			},
 			finishGeometry: () => {
 				try {
 					experience?.finishCatalogGeometry();
@@ -294,6 +300,7 @@
 				onDeviceLost: () => {
 					if (disposed || experience !== instance) return;
 					fullscreenController?.setFullscreen(false);
+					navigationFeedback?.end();
 					navigationGeneration += 1;
 					transition?.cancel();
 					experience = null;
@@ -359,6 +366,7 @@
 			destroyed = true;
 			releasePageBinding?.();
 			navigationGeneration += 1;
+			navigationFeedback?.end();
 			transition?.dispose();
 			document.documentElement.classList.remove('stage-route');
 			document.body.classList.remove('stage-route');
@@ -419,6 +427,7 @@
 	}
 
 	function interruptNavigation() {
+		navigationFeedback?.end();
 		navigationGeneration += 1;
 		reuseCatalogPage = false;
 		transition?.cancel();
@@ -426,16 +435,19 @@
 	}
 
 	function supersedeNavigation(destination: URL) {
+		navigationFeedback?.end();
 		navigationGeneration += 1;
 		transition?.supersede(destination);
 		if (pageBindingConsumed) releasePageBinding?.();
 	}
 
 	let navigationTimings = { dataReady: 0, captured: 0, restoring: 0, bound: 0 };
-	function captureNavigation(navigation: OnNavigate) {
+	async function captureNavigation(navigation: OnNavigate) {
 		fullscreenController?.setFullscreen(false);
 		navigationTimings = { dataReady: performance.now(), captured: 0, restoring: 0, bound: 0 };
-		navigationGeneration += 1;
+		const generation = ++navigationGeneration;
+		await navigationFeedback?.painted;
+		if (destroyed || generation !== navigationGeneration) return;
 		reuseCatalogPage = Boolean(
 			navigation.from &&
 			navigation.to &&
@@ -530,6 +542,8 @@
 			isEnhanced = false;
 			isFallback = true;
 			stageState = 'fallback';
+		} finally {
+			if (generation === navigationGeneration) navigationFeedback?.end();
 		}
 	}
 
@@ -688,6 +702,7 @@
 {#if catalog}
 	<ScrollNavigationBridge
 		controller={virtualScroll}
+		onStart={() => { if (isEnhanced) navigationFeedback?.begin(); }}
 		onCapture={captureNavigation}
 		onSupersede={supersedeNavigation}
 		onInterrupt={interruptNavigation}

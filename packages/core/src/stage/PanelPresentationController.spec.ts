@@ -10,7 +10,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 test('unzoomed corner controls follow the document offscreen instead of pinning their summary', () => {
 	vi.stubGlobal('window', { innerWidth: 1440, innerHeight: 900, location: { search: '' } });
-	vi.stubGlobal('document', { documentElement: { clientWidth: 1440 } });
+	vi.stubGlobal('document', { documentElement: { get clientWidth() { throw new Error('Resting controls must not force layout'); } } });
 	const camera = new THREE.PerspectiveCamera(); camera.position.z = 1400;
 	const frame = {} as HTMLElement;
 	const control = { focusReactive: 'top-right', options: resolveLiquidGlassPanelOptions({ width: 40, height: 40, position: { x: 100, y: 670 } }) } as StagePanelRuntime;

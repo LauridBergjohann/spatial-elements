@@ -42,6 +42,15 @@ function isRichRole(role: CatalogSharedRole) {
 	return role === 'features' || role === 'primary-action';
 }
 
+/** One CSS parse per detached clone instead of hundreds of CSSOM mutations.
+ * Retain all computed properties (including SVG and authored custom properties).
+ */
+function freezeComputedStyle(target: HTMLElement | SVGElement, style: CSSStyleDeclaration) {
+	let css = '';
+	for (const property of style) css += property + ':' + style.getPropertyValue(property) + ';';
+	target.style.cssText = css;
+}
+
 /** Full summaries retain authored row/icon layout; temporary controls never become interactive. */
 function copyRichContent(target: HTMLElement, source: HTMLElement) {
 	const copy = source.cloneNode(true) as HTMLElement;
@@ -49,8 +58,7 @@ function copyRichContent(target: HTMLElement, source: HTMLElement) {
 	const copies = [copy, ...copy.querySelectorAll<HTMLElement | SVGElement>('*')];
 	for (let index = 0; index < originals.length; index++) {
 		const style = getComputedStyle(originals[index]);
-		for (const property of style)
-			copies[index].style.setProperty(property, style.getPropertyValue(property));
+		freezeComputedStyle(copies[index], style);
 		copies[index].style.visibility = 'visible';
 		copies[index].removeAttribute('id');
 		for (const attribute of [...copies[index].attributes])
@@ -918,8 +926,7 @@ export class CatalogTransition {
 			const copies = [copy, ...copy.querySelectorAll<HTMLElement | SVGElement>('*')];
 			for (let index = 0; index < originals.length; index++) {
 				const computed = getComputedStyle(originals[index]);
-				for (const property of computed)
-					copies[index].style.setProperty(property, computed.getPropertyValue(property));
+				freezeComputedStyle(copies[index], computed);
 			}
 			for (const element of [copy, ...copy.querySelectorAll('*')]) {
 				element.removeAttribute('id');
@@ -1341,8 +1348,7 @@ export class CatalogTransition {
 							const copies = [copy, ...copy.querySelectorAll<HTMLElement | SVGElement>('*')];
 							for (let index = 0; index < originals.length; index++) {
 								const style = getComputedStyle(originals[index]);
-								for (const property of style)
-									copies[index].style.setProperty(property, style.getPropertyValue(property));
+								freezeComputedStyle(copies[index], style);
 								// The live destination is deliberately masked during binding.
 								copies[index].style.visibility = 'visible';
 							}

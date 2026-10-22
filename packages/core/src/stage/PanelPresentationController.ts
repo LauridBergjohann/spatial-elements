@@ -327,6 +327,9 @@ export class PanelPresentationController {
 		root.matrixWorldNeedsUpdate = true;
 	}
 	private getCornerControlOffset(panel: StagePanelRuntime, width: number, height: number, uiFocus: number): { x: number; y: number; z: number } {
+		const progress = getPanelFocusProgress(uiFocus);
+		// At rest the offset is exactly zero: no DOM measurement is needed.
+		if (progress === 0) return { x: 0, y: 0, z: 0 };
 		const inset = MINIMAP_FOCUSED_VIEWPORT_INSET;
 		// The render camera spans innerWidth, but classic scrollbars consume part
 		// of it. Express the usable viewport edge in that same camera coordinate system.
@@ -356,7 +359,6 @@ export class PanelPresentationController {
 		// would pin both controls and their summary anchor during ordinary scrolling.
 		const startX = panel.options.position.x;
 		const startY = panel.options.position.y;
-		const progress = getPanelFocusProgress(uiFocus);
 		return {
 			x: THREE.MathUtils.lerp(startX, endX, progress) - panel.options.position.x,
 			y: THREE.MathUtils.lerp(startY, endY, progress) - panel.options.position.y,

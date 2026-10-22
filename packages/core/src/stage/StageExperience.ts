@@ -193,6 +193,8 @@ export class StageExperience {
 	private catalogLayer?: CatalogSpatialElementLayer;
 	private catalogHandoff = false;
 	private catalogMotionComplete = false;
+	private deferredZoomPreparation = false;
+	private zoomPreparationFrame = 0;
 	private catalogLayerAnimating = false;
 	private catalogPresentation: CatalogTransitionPresentation = { ...RESTING_CATALOG_PRESENTATION };
 	private pageModelReady = false;
@@ -742,6 +744,9 @@ export class StageExperience {
 
 	/** Page DOM is a replaceable binding, not the owner of the device or element cache. */
 	releasePage() {
+		cancelAnimationFrame(this.zoomPreparationFrame);
+		this.zoomPreparationFrame = 0;
+		this.deferredZoomPreparation = false;
 		this.pageBinding.invalidate();
 		this.pageModelReady = false;
 		this.presentation.cancelRequests();
@@ -987,11 +992,12 @@ export class StageExperience {
 		this.createPanels();
 		this.observePanelTargets();
 		this.resizeRenderer();
-		// New page targets must be GPU-ready before navigation or the first zoom.
-		// Resting frosted panels do not otherwise submit their hidden backdrop blur.
-		this.pipeline.warmRenderTargetSets();
+		// Navigation needs the visible full-quality frame, not future scroll/zoom variants.
+		// Direct/zoomed entries keep eager warming; ordinary handoffs warm after their final paint.
+		this.deferredZoomPreparation = this.catalogPresentation.active && this.panelUiFocus === 0;
+		if (!this.deferredZoomPreparation) this.pipeline.warmRenderTargetSets();
 		this.renderFrame(true);
-		await this.pipeline.prepareZoomEffects();
+		if (!this.deferredZoomPreparation) await this.pipeline.prepareZoomEffects();
 		if (this.disposed || !this.pageBinding.isCurrent(generation)) return;
 		// A submitted Low/panel frame is not yet GPU-ready. Drain the required binding work
 		// before the navigation bridge starts motion, especially on the first cold DETAIL.
@@ -1014,6 +1020,7 @@ export class StageExperience {
 	}
 
 	setCatalogTransitionPresentation(state: CatalogTransitionPresentation) {
+		if (!state.active) this.scheduleZoomPreparation();
 		this.catalogPresentation = normalizeCatalogPresentation(state);
 		for (const entry of this.exitingMinimaps) {
 			this.setMinimapDisplayModelOpacity(entry.minimap, entry.opacity * state.exitOpacity);
@@ -1049,6 +1056,28 @@ export class StageExperience {
 		if (this.outgoingBackground)
 			this.backgroundCanvas.style.opacity = String(state.active ? state.exitOpacity : 0);
 		this.requestRender();
+	}
+
+	private scheduleZoomPreparation() {
+		if (!this.deferredZoomPreparation || this.zoomPreparationFrame || this.disposed) return;
+		const generation = this.pageBinding.token;
+		// A nested RAF lets the final transition frame paint before optional work starts.
+		this.zoomPreparationFrame = requestAnimationFrame(() => {
+			this.zoomPreparationFrame = requestAnimationFrame(() => {
+				this.zoomPreparationFrame = 0;
+				if (this.disposed || !this.pageBinding.isCurrent(generation) || this.catalogPresentation.active) return;
+				this.deferredZoomPreparation = false;
+				void (async () => {
+					this.pipeline.warmRenderTargetSets();
+					await this.pipeline.prepareZoomEffects();
+					if (!this.disposed && this.pageBinding.isCurrent(generation)) this.requestRender();
+				})().catch(error => {
+					// Rendering still prepares effects on demand if optional warming fails.
+					if (!this.disposed && this.pageBinding.isCurrent(generation))
+						console.warn('Optional zoom preparation failed', error);
+				});
+			});
+		});
 	}
 
 	/** Reports actual applied GPU alpha for browser verification without layout or style reads. */

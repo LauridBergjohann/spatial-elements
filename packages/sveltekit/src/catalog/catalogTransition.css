@@ -1,4 +1,22 @@
 /* Loaded by the persistent stage before any destination page can mount. */
+.stage-navigation-feedback {
+	position: fixed;
+	inset: 0 0 auto;
+	height: 3px;
+	z-index: 2147483647;
+	pointer-events: none;
+	background: var(--spatial-element-accent, #6688cc);
+	transform: scaleX(0.18);
+	transform-origin: left;
+	animation: stage-navigation-progress 6s cubic-bezier(0.12, 0.7, 0.1, 1) forwards;
+}
+@keyframes stage-navigation-progress {
+	to { transform: scaleX(0.9); }
+}
+@media (prefers-reduced-motion: reduce) {
+	.stage-navigation-feedback { animation: none; transform: none; }
+}
+
 .stage [data-catalog-transition-group='enter'] {
 	--stage-transition-opacity: var(--catalog-enter-opacity, 1);
 }

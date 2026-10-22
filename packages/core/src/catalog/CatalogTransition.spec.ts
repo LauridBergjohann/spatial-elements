@@ -14,6 +14,14 @@ function inlineStyle(changed: (property: string) => void = () => {}) {
 	return {
 		getPropertyValue: (property: string) => values.get(property) ?? '',
 		getPropertyPriority: () => '',
+		set cssText(css: string) {
+			values.clear();
+			for (const declaration of css.split(';').filter(Boolean)) {
+				const separator = declaration.indexOf(':');
+				values.set(declaration.slice(0, separator), declaration.slice(separator + 1));
+			}
+			changed('cssText');
+		},
 		setProperty: vi.fn((property: string, value: string) => {
 			values.set(property, value);
 			changed(property);
