@@ -34,6 +34,33 @@ test('boolean picking stops after the first exact hit and retains miss behavior'
 	owner.dispose();
 });
 
+test('split free-space input belongs to the model on the left, keeps contact ownership and respects UI/media', () => {
+	vi.stubGlobal('window', { innerWidth: 100, innerHeight: 100 });
+	vi.stubGlobal('HTMLElement', class {}); vi.stubGlobal('Element', class {});
+	const { owner, ports, setOwner } = fixture();
+	const original = ports.readGeometry;
+	const detail = { media: 'minimap' as const, split: true, paneHidden: false, paneLeft: 60 };
+	ports.readGeometry = () => ({ ...original(), detail });
+	const occluded = vi.spyOn(owner, 'isPointerOccludedByHtml').mockReturnValue(false);
+	expect(owner.hitTestModel(20, 20, ports.canvas)).toBe(true);
+	expect(owner.hitTestModel(80, 20, ports.canvas)).toBe(false);
+	expect(owner.hitTestModel(20, 20, ports.cssRoot)).toBe(false);
+	owner.handlePointerDown({ pointerType: 'touch', pointerId: 1, clientX: 20, clientY: 20, target: ports.canvas } as unknown as PointerEvent);
+	expect(owner.modelInteractionActive).toBe(true);
+	owner.handlePointerMove({ pointerType: 'touch', pointerId: 1, clientX: 80, clientY: 20, target: ports.canvas } as unknown as PointerEvent);
+	expect(owner.modelInteractionActive).toBe(true);
+	owner.handlePointerUp({ pointerType: 'touch', pointerId: 1 } as PointerEvent);
+	expect(owner.modelInteractionActive).toBe(false);
+	detail.paneHidden = true;
+	expect(owner.hitTestModel(80, 20, ports.canvas)).toBe(true);
+	occluded.mockReturnValue(true);
+	expect(owner.hitTestModel(20, 20, ports.canvas)).toBe(false);
+	occluded.mockReturnValue(false);
+	setOwner('none');
+	expect(owner.hitTestModel(20, 20, ports.canvas)).toBe(false);
+	owner.dispose();
+});
+
 vi.mock('three/addons/controls/OrbitControls.js', () => ({
 	OrbitControls: class {
 		target = new THREE.Vector3();

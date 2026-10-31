@@ -22,12 +22,14 @@
 	const messages = $derived(readMessages());
 	const help = $derived(messages.interactionHelp);
 	const id = $props.id();
+	let { active = true }: { active?: boolean } = $props();
 	let root: HTMLDivElement;
 	let focusAnchor = $state<HTMLElement>();
 	let button = $state<HTMLButtonElement>(null!);
 	let popover: HTMLDivElement;
 	let closeButton: HTMLButtonElement;
 	let open = $state(false);
+	$effect(() => { if (!active) close(); });
 	let enhanced = $state(false);
 	let visible = false;
 	let interacted = $state(false);
@@ -84,7 +86,7 @@
 		if (open) window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
 	}
 	async function show(keyboard = false) {
-		if (!enhanced || (!visible && !fullscreen)) return;
+		if (!active || !enhanced || (!visible && !fullscreen)) return;
 		clearDelay(); clearHideDelay();
 		popover.showPopover();
 		open = true;
@@ -102,7 +104,7 @@
 	}
 	function schedule() {
 		clearDelay(); clearHideDelay();
-		if (manual || !enhanced || !visible || modelInput.active || touchInput || guidance?.snapshot.interacted) return;
+		if (!active || manual || !enhanced || !visible || modelInput.active || touchInput || guidance?.snapshot.interacted) return;
 		if (modelInput.hovered) {
 			if (!open) delay = setTimeout(() => { void show(); }, 600);
 		} else if (open && !helpHovered && !buttonHovered && !popover.contains(document.activeElement)) {
@@ -201,14 +203,14 @@
 	});
 </script>
 
-<div bind:this={root} class="model-tools" class:enhanced style={surfaceStyle} data-spatial-element-tools>
+<div bind:this={root} class="model-tools" class:enhanced style={surfaceStyle} style:visibility={active ? undefined : 'hidden'} inert={!active} data-spatial-element-tools data-spatial-model-controls>
 	<div class="model-tools-buttons">
-		<SpatialIconButton bind:element={button} {focusAnchor} label={messages.controls.help} onclick={toggleHelp} expanded={open} controls={id} enabled={enhanced}>
+		<SpatialIconButton bind:element={button} {focusAnchor} label={messages.controls.help} onclick={toggleHelp} expanded={open} controls={id} enabled={enhanced && active}>
 			<CircleHelp size={21} strokeWidth={1.8} aria-hidden="true" />
 		</SpatialIconButton>
-		<SpatialElementViewToggle enabled={enhanced} {focusAnchor} onchange={() => close()} />
+		<SpatialElementViewToggle enabled={enhanced && active} {focusAnchor} onchange={() => close()} />
 	</div>
-	{#if enhanced && touchInput && !interacted && !open && !fullscreen}
+	{#if active && enhanced && touchInput && !interacted && !open && !fullscreen}
 		<p class="touch-hint" data-spatial-element-touch-hint>{help.touchHint}</p>
 	{/if}
 	<div bind:this={popover} {id} popover="auto" role="dialog" tabindex="-1" aria-modal="false" aria-labelledby={`${id}-title`}

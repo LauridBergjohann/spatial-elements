@@ -180,6 +180,8 @@ export interface StageRenderSettings {
 
 /** Construction options for a {@link StageExperience}. */
 export interface StageExperienceOptions {
+	/** Transient detail selection. It never becomes part of route or asset identity. */
+	detailMedia?: import('../spatial-element/types.js').SpatialElementMediaItem['kind'];
 	/** Shared browser metrics supplied by the adapter; read without DOM measurements per frame. */
 	readLayoutMetrics?: (mode?: 'stable' | 'visible') => import('../spatial-element/responsiveLayout.js').ResponsiveLayoutInput | undefined;
 	deviceOrientation?: boolean;

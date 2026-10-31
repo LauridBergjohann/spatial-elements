@@ -17,6 +17,8 @@
 	import SpatialElementBreadcrumbs from './SpatialElementBreadcrumbs.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 	import SpatialElementMediaRail from './SpatialElementMediaRail.svelte';
+	import SpatialElementNativeMedia from './SpatialElementNativeMedia.svelte';
+	import { resolveSpatialElementMedia } from '@spatial-elements/core/spatial-element/spatialElementMedia';
 	import SpatialElementSummaryPanel from './SpatialElementSummaryPanel.svelte';
 	import SpatialElementHelp from './SpatialElementHelp.svelte';
 	import SpatialElementStickyHeader from './SpatialElementStickyHeader.svelte';
@@ -25,7 +27,7 @@
 	import './layout.generated.css';
 	import { SpatialElementDockController } from '@spatial-elements/core/spatial-element/SpatialElementDockController';
 	import { SPATIAL_ELEMENT_SECTION_REGISTRY_KEY, SpatialElementSectionRegistry } from '@spatial-elements/core/spatial-element/spatialElementSectionRegistry';
-	import type { SpatialElementData, SpatialElementSectionNavigationItem } from '@spatial-elements/core/spatial-element/types';
+	import type { SpatialElementData, SpatialElementMediaItem, SpatialElementSectionNavigationItem } from '@spatial-elements/core/spatial-element/types';
 	import { resolveSpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 	import { registerSpatialPage } from './spatialPageContext.js';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
@@ -46,7 +48,17 @@
 	let { spatialElement: element, children }: Props = $props();
 	const readTheme = useSpatialTheme();
 	const brand = $derived(readTheme());
-	const spatialElement = $derived(resolveSpatialElementData(element, brand.id));
+	const spatialElement = $derived.by(() => {
+		const resolved = resolveSpatialElementData(element, brand.id);
+		return { ...resolved, media: resolveSpatialElementMedia(resolved.media) };
+	});
+	let mediaSelection = $state<{ elementId: string; mediaId: string }>();
+	const selectedMedia = $derived(spatialElement.media.find(media =>
+		mediaSelection?.elementId === spatialElement.id && media.id === mediaSelection.mediaId) ?? spatialElement.media[0]);
+	function selectMedia(media: SpatialElementMediaItem) {
+		mediaSelection = { elementId: spatialElement.id, mediaId: media.id };
+	}
+	$effect(() => { if (mediaSelection?.elementId !== element?.id) mediaSelection = undefined; });
 	// During route teardown Kit can clear the outgoing page's data before unmount.
 	// Read raw assets here, so the parent stage never evaluates outgoing DOM-derived content.
 	registerSpatialPage(() => element ? { kind: 'detail', element } : { kind: 'content', hdr: '' });
@@ -118,6 +130,7 @@
 	}
 
 	onMount(() => {
+		const unregisterMedia = stageContext?.registerDetailMedia?.(() => element ? selectedMedia.kind : 'minimap');
 		paneController = new SpatialElementPaneController(mainElement,
 			() => stageContext?.getLayoutMetrics?.('stable'), (split) => { splitPane = split; });
 		paneController.start();
@@ -147,6 +160,7 @@
 		scheduleScrollSpy();
 
 		return () => {
+			unregisterMedia?.();
 			paneController?.destroy();
 			cancelAnimationFrame(scrollSpyFrame);
 			window.removeEventListener(STAGE_ANCHOR_NAVIGATION_EVENT, handleAnchorNavigation);
@@ -169,6 +183,7 @@
 	data-spatial-element-root
 	data-spatial-element-id={spatialElement.id}
 	data-brand-id={spatialElement.brandId}
+	data-spatial-selected-media={selectedMedia.kind}
 	style:--spatial-pane-tint={paneTint}
 	style:--spatial-pane-tint-opacity={`${Math.min(1, Math.max(0, brand.panelTheme.tintOpacity ?? 0.28)) * 100}%`}
 	style:--spatial-pane-blur={`${Math.min(100, Math.max(0, brand.panelTheme.backdropBlur ?? 5))}px`}
@@ -200,7 +215,7 @@
 		data-spatial-detail-media-region
 		data-spatial-detail-fixed
 	>
-		<SpatialElementMediaRail {spatialElement} />
+		<SpatialElementMediaRail {spatialElement} selectedId={selectedMedia.id} onselect={selectMedia} />
 
 		<StageViewport
 			catalogEndpoint={{
@@ -213,12 +228,16 @@
 			data-catalog-geometry
 			data-spatial-element-id={spatialElement.id}
 			data-catalog-slot="detail.hero"
-			fallbackSrc={spatialElement.fallbackImage}
+			fallbackSrc={selectedMedia.kind === 'minimap' ? spatialElement.fallbackImage : undefined}
 			fallbackAlt={`${brand.name} ${spatialElement.title}`}
-			aria-hidden={spatialElement.fallbackImage ? undefined : 'true'}
-		/>
+			aria-hidden={selectedMedia.kind === 'minimap' && !spatialElement.fallbackImage ? 'true' : undefined}
+		>
+			{#if selectedMedia.kind !== 'minimap'}
+				{#key `${spatialElement.id}:${selectedMedia.id}`}<SpatialElementNativeMedia media={selectedMedia} />{/key}
+			{/if}
+		</StageViewport>
 
-		{#key spatialElement.id}<SpatialElementHelp />{/key}
+		{#key spatialElement.id}<SpatialElementHelp active={selectedMedia.kind === 'minimap'} />{/key}
 	</section>
 	<div class="spatial-element-pane-body" data-spatial-detail-pane-body data-stage-scroll-viewport>
 		{#key spatialElement.id}<SpatialElementSummaryPanel {spatialElement} nativeContent={splitPane} />{/key}

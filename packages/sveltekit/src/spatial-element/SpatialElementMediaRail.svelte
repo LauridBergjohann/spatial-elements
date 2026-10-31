@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
@@ -6,6 +8,29 @@
 	import type { SpatialElementMediaItem } from '@spatial-elements/core/spatial-element/types';
 
 	let { spatialElement, selectedId, onselect }: { spatialElement: SpatialElementData; selectedId?: string; onselect?: (media: SpatialElementMediaItem) => void } = $props();
+	let rail: HTMLElement;
+	let refreshFrame = 0;
+	function refreshProjection() {
+		if (!refreshFrame) refreshFrame = requestAnimationFrame(() => {
+			refreshFrame = 0; window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
+		});
+	}
+	$effect(() => {
+		const id = selectedId;
+		if (!rail || !id) return;
+		const anchor = Array.from(rail.querySelectorAll<HTMLElement>('[data-media-id]')).find(node => node.dataset.mediaId === id);
+		if (!anchor) return;
+		const left = anchor.offsetLeft, top = anchor.offsetTop;
+		if (left < rail.scrollLeft) rail.scrollLeft = left;
+		else if (left + anchor.offsetWidth > rail.scrollLeft + rail.clientWidth) rail.scrollLeft = left + anchor.offsetWidth - rail.clientWidth;
+		if (top < rail.scrollTop) rail.scrollTop = top;
+		else if (top + anchor.offsetHeight > rail.scrollTop + rail.clientHeight) rail.scrollTop = top + anchor.offsetHeight - rail.clientHeight;
+	});
+	onMount(() => {
+		const element = rail;
+		element.addEventListener('scroll', refreshProjection, { passive: true });
+		return () => { element.removeEventListener('scroll', refreshProjection); cancelAnimationFrame(refreshFrame); };
+	});
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
 	const radii = $derived(resolveSpatialThemeRadii(theme));
@@ -16,10 +41,12 @@
 	});
 </script>
 
-<aside class="spatial-element-rail" aria-label="SpatialElement images">
+<aside bind:this={rail} class="spatial-element-rail" aria-label="SpatialElement images">
 	{#each spatialElement.media as media (media.id)}
+		{@const active = selectedId ? selectedId === media.id : media.kind === 'minimap'}
 		<div
 			class="spatial-element-media-anchor"
+			data-media-id={media.id}
 			data-spatial-element-dock-minimap-anchor={media.kind === 'minimap' ? '' : undefined}
 		>
 			<Panel
@@ -27,7 +54,7 @@
 					? { brandId: theme.id, spatialElementId: spatialElement.id, slot: 'detail.dock', role: 'geometry' }
 					: undefined}
 				transitionGroup="enter"
-				class={`thumbnail-panel ${media.kind === 'minimap' ? 'active' : ''}`}
+				class={`thumbnail-panel ${active ? 'active' : ''}`}
 				shape={{ ...theme.panelShape, radius: radii.control, contentInset: 0 }}
 				theme={theme.panelTheme}
 				contentClass="thumbnail-panel-content"
@@ -35,21 +62,21 @@
 				data-spatial-element-departing-media-content={media.kind === 'minimap' ? undefined : ''}
 			>
 				{#if media.kind === 'minimap'}
-					<button type="button" aria-label={media.label} aria-pressed={selectedId ? selectedId === media.id : true} onclick={() => onselect?.(media)} class="thumb thumb-minimap active">
+					<button type="button" aria-label={media.label} aria-pressed={active} onclick={() => onselect?.(media)} class="thumb thumb-minimap" class:active>
 						{#if spatialElement.fallbackImage}
 							<img class="minimap-poster" src={spatialElement.fallbackImage} alt="" />
 						{/if}
 					</button>
 				{:else if media.kind === 'drawing'}
-					<button type="button" aria-label={media.label} onclick={() => onselect?.(media)} class="thumb thumb-drawing">
+					<button type="button" aria-label={media.label} aria-pressed={active} onclick={() => onselect?.(media)} class="thumb thumb-drawing" class:active>
 						<span class="drawing-sheet" aria-hidden="true"></span>
 					</button>
 				{:else if media.kind === 'image'}
-					<button type="button" aria-label={media.label} aria-pressed={selectedId === media.id} onclick={() => onselect?.(media)} class="thumb thumb-image">
+					<button type="button" aria-label={media.label} aria-pressed={active} onclick={() => onselect?.(media)} class="thumb thumb-image" class:active>
 						<img src={media.src} alt={media.alt} />
 					</button>
 				{:else}
-					<button type="button" aria-label={media.label} aria-pressed={selectedId === media.id} onclick={() => onselect?.(media)} class="thumb thumb-image">
+					<button type="button" aria-label={media.label} aria-pressed={active} onclick={() => onselect?.(media)} class="thumb thumb-image" class:active>
 						{#if media.poster}<img src={media.poster} alt="" />{:else}<span aria-hidden="true">▶</span>{/if}
 					</button>
 				{/if}

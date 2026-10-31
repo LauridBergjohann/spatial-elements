@@ -37,7 +37,7 @@
 		CATALOG_SECTIONS,
 		CatalogSections
 	} from '@spatial-elements/core/catalog/CatalogSections';
-	import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
+	import type { SpatialListItem, SpatialElementMediaItem } from '@spatial-elements/core/spatial-element/types';
 	import type { CatalogPage } from '@spatial-elements/core/catalog/catalogPage';
 	import {
 		SpatialPageRegistry,
@@ -151,6 +151,9 @@
 	let domLayerOpacity = $state(1);
 	let experience = $state<StageExperience | null>(null);
 	let layoutMetrics: ResponsiveViewportMetrics | undefined;
+	let readDetailMedia = $state.raw<(() => SpatialElementMediaItem['kind']) | undefined>();
+	let detailMediaOwner: symbol | undefined;
+	const detailMedia = $derived(readDetailMedia?.() ?? 'minimap');
 	let stageState = $state<'loading' | 'enhanced' | 'fallback'>('loading');
 	let zoomFocusState = $state<StageZoomFocusState>({
 		focus: 0,
@@ -190,6 +193,10 @@
 	};
 
 	setContext<StageContext>(STAGE_CONTEXT_KEY, {
+		registerDetailMedia(read) {
+			const owner = Symbol(); detailMediaOwner = owner; readDetailMedia = read;
+			return () => { if (detailMediaOwner === owner) { detailMediaOwner = undefined; readDetailMedia = undefined; } };
+		},
 		getLayoutMetrics: (mode) => layoutMetrics?.read(mode),
 		isEnhanced: () => isEnhanced,
 		updatePanelAppearance: scheduleAppearanceUpdate,
@@ -282,6 +289,7 @@
 			const panels = getPanelTargets();
 			const viewport = getViewportTarget();
 			const instance = new StageExperience(stage, {
+				detailMedia,
 				readLayoutMetrics: (mode) => layoutMetrics?.read(mode),
 				deviceOrientation,
 				renderSettings,
@@ -389,6 +397,7 @@
 		};
 	});
 
+	$effect(() => { experience?.setDetailMedia(detailMedia); });
 	$effect(() => {
 		void resolvedPageBackground; void background; void isEnhanced;
 		Object.values(interactionTheme ?? {});

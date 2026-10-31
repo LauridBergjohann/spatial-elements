@@ -82,6 +82,8 @@ export interface StageViewportRegistration {
 }
 
 export interface StageContext {
+	/** Detail-page ownership; stale route cleanup cannot reset a newer media selection. */
+	registerDetailMedia?(read: () => import('../spatial-element/types.js').SpatialElementMediaItem['kind']): () => void;
 	/** Cached browser layout metrics; unavailable during SSR. */
 	getLayoutMetrics?(mode?: 'stable' | 'visible'): import('../spatial-element/responsiveLayout.js').ResponsiveLayoutInput | undefined;
 	/** Reactive in framework adapters; false during SSR and until the GPU has painted. */

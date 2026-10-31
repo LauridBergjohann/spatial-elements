@@ -79,6 +79,7 @@ export interface StageRenderPorts {
 		catalogHandoff: boolean;
 		catalogMotionComplete: boolean;
 		stageViewportVisible: boolean;
+		detailMediaActive?: boolean;
 		modelHover: boolean;
 		modelInteractionActive: boolean;
 		catalog: boolean;
@@ -937,6 +938,11 @@ export class StageRenderPipeline {
 	}
 	renderStageContents() {
 		this.ports.renderer.clear();
+		if (this.ports.frame().detailMediaActive === false) {
+			this.backgroundCoverOpacity.value = 1;
+			this.backgroundCover.render(this.ports.renderer);
+			return;
+		}
 		this.ports.renderer.render(this.ports.backgroundScene, this.ports.camera);
 		this.ports.renderer.render(this.ports.tintScene, this.ports.tintCamera);
 		this.backgroundCoverOpacity.value = 1 - this.ports.frame().backgroundReveal;
@@ -1049,7 +1055,7 @@ export class StageRenderPipeline {
 				this.ports.renderer.setRenderTarget(this._activeRenderTargets.sceneCapture);
 				this.ports.renderStage();
 				this.renderPanelBlurCaptures(this._activeRenderTargets);
-				if (outline) this.renderModelOutline(this._activeRenderTargets.sceneCapture, 1);
+				if (outline && this.ports.frame().detailMediaActive !== false) this.renderModelOutline(this._activeRenderTargets.sceneCapture, 1);
 				this.renderStageDisplay();
 				this.renderBackgroundPanels();
 			}

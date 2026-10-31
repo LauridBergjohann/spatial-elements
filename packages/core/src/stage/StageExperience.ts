@@ -88,7 +88,8 @@ import { type CssProjectionQuad } from './minimap/MinimapProjection.js';
 import type { StageMinimapState } from './minimap/MinimapState.js';
 import { disposeMaterialOnly, getMeshBounds, getMeshMaterials, isMesh } from './stageSceneUtils.js';
 import { isOutlineMesh } from './interactionOutline.js';
-import { resolveZoomLayout } from '../spatial-element/responsiveLayout.js';
+import { resolveDetailLayout, resolveZoomLayout } from '../spatial-element/responsiveLayout.js';
+import type { SpatialElementMediaItem } from '../spatial-element/types.js';
 import type {
 	BackgroundSettings,
 	StageCameraSettings,
@@ -383,6 +384,28 @@ export class StageExperience {
 	private viewportMeasurementDirty = true;
 	private stageViewportVisible = true;
 	private readonly readLayoutMetrics?: StageExperienceOptions['readLayoutMetrics'];
+	private detailMedia: SpatialElementMediaItem['kind'] = 'minimap';
+	private get detailMediaActive() { return this.detailMedia === 'minimap'; }
+	/** Changing media keeps the model/cache/camera but stops its interaction and sensor clock. */
+	setDetailMedia(media: SpatialElementMediaItem['kind']) {
+		if (this.detailMedia === media) return;
+		this.detailMedia = media;
+		this.interaction.releasePage();
+		if (!this.detailMediaActive) {
+			this.releaseDeviceOrientation?.();
+			this.releaseDeviceOrientation = undefined;
+		}
+		this.requestRender();
+	}
+	private readDetailInteractionLayout() {
+		const input = this.catalog ? this.readLayoutMetrics?.('stable') : undefined;
+		if (!input) return;
+		const layout = resolveDetailLayout(input);
+		const split = layout.composition === 'split';
+		return { media: this.detailMedia, split,
+			paneHidden: split && (this.fullscreen || this.panelUiFocus >= 0.99),
+			paneLeft: layout.base.pane.x };
+	}
 	private fullscreen = false;
 	setFullscreen(fullscreen: boolean) {
 		if (this.fullscreen === fullscreen) return;
@@ -449,6 +472,7 @@ export class StageExperience {
 		options: StageExperienceOptions = {}
 	) {
 		this.readLayoutMetrics = options.readLayoutMetrics;
+		this.detailMedia = options.detailMedia ?? 'minimap';
 		if (options.dracoDecoderPath) this.assets.setDracoDecoderPath(options.dracoDecoderPath);
 		this.deviceOrientationEnabled = options.deviceOrientation ?? false;
 		if (this.deviceOrientationEnabled) this.unsubscribeDeviceOrientation = subscribeListDeviceYaw(() => {
@@ -465,10 +489,11 @@ export class StageExperience {
 				poseOwner:
 					this.catalogHandoff || this.spatialCapture
 						? 'transition'
-						: this.catalog && !this.viewportTarget
+						: !this.detailMediaActive || (this.catalog && !this.viewportTarget)
 							? 'none'
 							: 'page',
-				visible: this.stageViewportVisible,
+				visible: this.stageViewportVisible && this.detailMediaActive,
+				detail: this.readDetailInteractionLayout(),
 				viewport: this.viewportFrame,
 				bounds: this.modelBounds
 			})
@@ -587,6 +612,7 @@ export class StageExperience {
 				catalogHandoff: this.catalogHandoff,
 				catalogMotionComplete: this.catalogMotionComplete,
 				stageViewportVisible: this.stageViewportVisible,
+				detailMediaActive: this.detailMediaActive,
 				modelHover: this.modelHover,
 				modelInteractionActive: this.modelInteractionActive,
 				catalog: this.catalog,
@@ -2588,6 +2614,7 @@ export class StageExperience {
 	private isPanelTargetVisible(index: number) {
 		const target = this.panelTargets[index];
 		if (!target) return true;
+		if (!this.detailMediaActive && target.frame.closest('[data-spatial-model-controls]')) return false;
 		if (target.getVisible?.() === false) return false;
 		if (this.fullscreen) return Boolean(target.minimap || target.focusReactive === 'top-right' ||
 			target.content.hasAttribute('data-stage-fullscreen-visible'));
@@ -2916,9 +2943,9 @@ export class StageExperience {
 			this.resizeRenderer(false);
 		const renderTargets = this.pipeline.activeRenderTargets;
 		const listOnly = this.catalog && !this.viewportTarget;
-		if (this.deviceOrientationEnabled && !listOnly && this.model && !this.releaseDeviceOrientation)
+		if (this.deviceOrientationEnabled && this.detailMediaActive && !listOnly && this.model && !this.releaseDeviceOrientation)
 			this.releaseDeviceOrientation = retainListDeviceOrientation(this.container, () => {});
-		else if (listOnly && this.releaseDeviceOrientation) {
+		else if ((listOnly || !this.detailMediaActive) && this.releaseDeviceOrientation) {
 			this.releaseDeviceOrientation();
 			this.releaseDeviceOrientation = undefined;
 		}
@@ -2959,14 +2986,14 @@ export class StageExperience {
 			delta
 		);
 		let deviceAnimating = false;
-		if (this.deviceOrientationEnabled && this.model?.parent === this.scene && !this.catalogHandoff && !this.spatialCapture) {
+		if (this.deviceOrientationEnabled && this.detailMediaActive && this.model?.parent === this.scene && !this.catalogHandoff && !this.spatialCapture) {
 			if (!isDeviceOrientationPaused()) deviceAnimating = this.deviceMotion.update(getListDeviceYaw(), getListDevicePitch(), getListDeviceRoll(), delta);
 			this.deviceMotion.apply(this.model, this.camera, this.initialControlsTarget);
 		}
 
 		// The damped camera distance is the single animation clock for geometry and
 		// every close-up UI phase. Phase remapping remains, temporal lag does not.
-		this.panelFocus = this.getZoomFocusFactor();
+		this.panelFocus = this.detailMediaActive ? this.getZoomFocusFactor() : 0;
 		this.panelUiFocus = this.fullscreen ? 1 : getStageUiFocus(this.panelFocus);
 		this.minimapFocus = this.fullscreen ? 1 : getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus);
 		this.updateStageCameraProjection();
@@ -2985,9 +3012,9 @@ export class StageExperience {
 
 		this.animationActive =
 			deviceAnimating ||
-			this.presentation.readiness.animating ||
+			(this.detailMediaActive && this.presentation.readiness.animating) ||
 			this.catalogLayerAnimating ||
-			(this.stageViewportVisible &&
+			(this.detailMediaActive && this.stageViewportVisible &&
 				(!this.catalogHandoff || this.catalogMotionComplete) &&
 				Boolean(this.refinement)) ||
 			this.spaceMouseMoving ||
@@ -3008,7 +3035,7 @@ export class StageExperience {
 
 	private renderStage() {
 		if (
-			this.stageViewportVisible &&
+			this.detailMediaActive && this.stageViewportVisible &&
 			(!this.catalogHandoff || this.catalogMotionComplete) &&
 			this.pageModelReady &&
 			this.presentation.renderRefinement(
