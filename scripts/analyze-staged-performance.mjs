@@ -201,6 +201,28 @@ function assessActivation(sample) {
       ? sinceInput(sample.timings.started + sample.observedDomChange) : null };
 }
 
+/** Press/key work is diagnostic only; never merge it into the Click-based gates. */
+function analyzeInputPreparation(sample) {
+  const raw = sample.inputPreparation ?? null;
+  const observation = sample.activationObservation;
+  const expectedStart = sample.activation === 'pointer' ? observation?.pointerDown?.timeStamp
+    : sample.activation === 'enter' ? observation?.keyDown?.timeStamp : null;
+  const range = raw && interval(raw.start, raw.end);
+  const valid = range && finite(expectedStart) && finite(observation?.clickEventTimeStamp) &&
+    Math.abs(range.start - expectedStart) <= roundoff && Math.abs(range.end - observation.clickEventTimeStamp) <= roundoff &&
+    Array.isArray(raw.gpuCalls) && Array.isArray(raw.longFrames);
+  return {
+    acceptanceGate: false,
+    status: raw ? valid ? 'recorded' : 'invalid' : finite(expectedStart) ? 'missing' : 'not-applicable',
+    raw,
+    longFrames: valid ? raw.longFrames.map(entry => ({
+      ...entry, inputOverlapMs: overlap(range, interval(entry.startTime, entry.startTime + entry.duration)),
+      scripts: (entry.scripts ?? []).map(script => ({ ...script,
+        inputOverlapMs: overlap(range, interval(script.startTime, script.startTime + script.duration)) }))
+    })) : null
+  };
+}
+
 /** All timestamps use the document's performance.now() clock; RAF times remain RAF times. */
 export function analyzeSample(sample, index = 0) {
   const t = sample.timings ?? {};
@@ -275,6 +297,7 @@ export function analyzeSample(sample, index = 0) {
   return {
     index, timings: t, firstMotionMs: latency('firstMotion'), firstSubmitMs: latency('firstSubmitted'), observedDomChangeMs: observedDomChange,
     activation: assessActivation(sample),
+    inputPreparation: analyzeInputPreparation(sample),
     motionDurationMs: moving ? moving.end - moving.start : null,
     revealDurationMs: reveal ? reveal.end - reveal.start : null,
     betweenPhasesDurationMs: betweenPhases ? betweenPhases.end - betweenPhases.start : null,
@@ -641,6 +664,22 @@ async function selfTest() {
   }
   assert.equal(cohortReport('enter', { ...enter, activationObservation: { ...enter.activationObservation,
     keyDown: { ...enter.activationObservation.keyDown, key: 'Space' } } }).eligibleForLatencyAcceptance, false);
+  const pressWork = { ...pointer, inputPreparation: { start: 0, end: 1, duration: 1,
+    gpuCalls: [{ method: 'createRenderPipeline', time: 0.4 }],
+    longFrames: [{ startTime: -1, duration: 10, scripts: [
+      { startTime: -1, duration: 1.5 }, { startTime: 1, duration: 5 }
+    ] }] } };
+  const pressReport = cohortReport('pointer', pressWork);
+  assert.deepEqual(pressReport.gates, pointerReport.gates);
+  assert.equal(pressReport.results[0].inputPreparation.status, 'recorded');
+  assert.equal(pressReport.results[0].inputPreparation.raw.gpuCalls.length, 1);
+  assert.equal(pressReport.results[0].gpuCreatesClickThroughMotion.length, 0);
+  assert.equal(pressReport.results[0].inputPreparation.longFrames[0].inputOverlapMs, 1);
+  assert.deepEqual(pressReport.results[0].inputPreparation.longFrames[0].scripts.map(script => script.inputOverlapMs), [0.5, 0]);
+  assert.equal(pointerReport.results[0].inputPreparation.status, 'missing');
+  assert.equal(syntheticReport.results[0].inputPreparation.status, 'not-applicable');
+  assert.equal(cohortReport('pointer', { ...pressWork, inputPreparation: { ...pressWork.inputPreparation, start: -1 } })
+    .results[0].inputPreparation.status, 'invalid');
   process.stdout.write('Staged-performance attribution checks passed.\n');
 }
 
@@ -674,7 +713,8 @@ async function main(args) {
       'DOM observation must exist for every sample. Validation failures and missing validation records cannot establish acceptance.',
       'Nearest-rank percentiles retain every sample. Fewer than 20 or profiled samples cannot establish latency acceptance.',
       'Activation cohorts remain separate: synthetic Cold/Warm, trusted pointer Warm and trusted Enter Warm. Mixed or mismatched report/sample labels are rejected; unlabelled historical files stay legacy-unspecified.',
-      'Trusted input requires recorded trusted input-start and click events, plus pointer-up for mouse. Raw v2 gates remain click-based; input-start latencies are separate diagnostics and never change those thresholds.'
+      'Trusted input requires recorded trusted input-start and click events, plus pointer-up for mouse. Raw v2 gates remain click-based; input-start latencies are separate diagnostics and never change those thresholds.',
+      'inputPreparation retains GPU calls in [trusted input start, Click) and raw overlapping Long Animation Frames, with script overlap attributed separately. This preparation work never enters Click-based gates.'
     ], reports
   }, null, 2);
   if (args[2]) {

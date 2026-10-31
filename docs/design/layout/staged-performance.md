@@ -240,6 +240,12 @@ click, including event timestamps and observation times. The existing latency ga
 anchored to the **click event timestamp**, never to the start of a Playwright command. The
 analyzer separately reports input-start-to-click/movement/submission/DOM-observation
 latencies as diagnostics; those values neither replace nor relax the click-based gates.
+`inputPreparation` separately retains GPU calls in `[pointerDown/keyDown, click)` and
+raw Long Animation Frames overlapping that interval, including their script records.
+The analyzer reports actual frame/script overlap with this interval without attributing
+an entire straddling frame to the press. GPU calls at the click timestamp belong to the
+existing click-based field. This diagnostic exposes normal press preparation without
+mixing it into `gpuCalls`, `longFrames` or any original raw gate.
 Trusted acceptance requires the corresponding trusted events and the same click timestamp
 as the transition clock. Samples with missing or inconsistent evidence remain recorded
 but cannot establish acceptance.

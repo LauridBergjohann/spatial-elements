@@ -167,9 +167,21 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of temp
 					const timings = window.__stageVisualTest!.getNavigationTimings().early!;
 					const probe = (window as unknown as { performanceProbe: { frames: number[]; changed: number; budget: number; sourceBudget: number; stop: boolean; assetsBefore: unknown } }).performanceProbe;
 					const work = (window as unknown as { performanceWork: { adapter: Record<string, string>; longFrames: { startTime: number; duration: number }[]; gpuCalls: { method: string; time: number; phase?: string }[] } }).performanceWork;
+					const input = (window as unknown as { performanceActivation?: ActivationObservation }).performanceActivation;
+					const inputStart = input?.pointerDown?.timeStamp ?? input?.keyDown?.timeStamp;
+					const inputEnd = input?.clickEventTimeStamp;
+					// Press/focus preparation precedes the existing Click-based interval.
+					// Keep its work separate; a GPU call at Click belongs to the old field.
+					const inputPreparation = typeof inputStart === 'number' && typeof inputEnd === 'number' &&
+						Number.isFinite(inputStart) && Number.isFinite(inputEnd) && inputEnd >= inputStart ? {
+							start: inputStart, end: inputEnd, duration: inputEnd - inputStart,
+							gpuCalls: work.gpuCalls.filter(call => call.time >= inputStart && call.time < inputEnd),
+							longFrames: work.longFrames.filter(entry => entry.startTime + entry.duration > inputStart && entry.startTime < inputEnd)
+						} : null;
 					probe.stop = true;
 					return { latency: timings.firstMotion - timings.started, submitted: timings.firstSubmitted - timings.started,
 						observedDomChange: probe.changed - timings.started, budget: probe.budget, sourceBudget: probe.sourceBudget, timings,
+						inputPreparation,
 						assetsBefore: probe.assetsBefore, assetsAfter: window.__stageVisualTest!.getCatalogStats(), adapter: work.adapter,
 						frames: probe.frames, gaps: probe.frames.slice(1).map((time, index) => time - probe.frames[index]),
 						longFrames: work.longFrames.filter(entry => entry.startTime + entry.duration >= timings.started && entry.startTime <= timings.revealed),
