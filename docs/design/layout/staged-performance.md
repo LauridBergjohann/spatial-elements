@@ -445,6 +445,142 @@ complete before staged readiness is published. The owners leave with their shado
 material. Tests against the installed Three pipeline/cache implementation demonstrate
 why changing the same owner twice loses a previous variant, and why retaining separate
 owners prevents that eviction. The tests also cover shared-resource ownership, target
-and visibility restoration, and rejected readiness on failure. **The follow-up browser
-proof of this winding preparation is still pending; this section claims no measured
-latency or pacing improvement from that change.**
+and visibility restoration, and rejected readiness on failure. The subsequent trusted
+Pointer trace on `02dc683`, described above, confirms that these winding pipelines are
+no longer created at activation. It does not establish latency or pacing acceptance.
+
+## Endpoint-cache integration on d92a3b9
+
+Three separately committed changes address the measured work without changing the
+acceptance protocol: [per-shadow Ground reuse](staged-ground-cache.md) (`26d2778`),
+[held Hero scene endpoints](staged-scene-endpoint-cache.md) (`e2970b7`, with conservative
+eligibility limits in `d92a3b9`), and [retained card appearance](staged-card-appearance.md)
+(`9ff92fc`). The card change closes a confirmed hover/focus consistency gap; it is not
+yet a proven explanation or cure for browser raster stalls.
+
+Build 95956 proved Ground pixel parity, 48 independent scene-endpoint comparisons,
+48 comparisons through the actual runtime cache, and real List/Carousel reveal hits.
+Card pointer/keyboard appearance and cancellation passed for both Hero and Dock.
+The linked reports preserve the initial fixture failures, corrected fixture runs,
+storage-rounding limits and separate successful-result recording runs. No failed
+performance sample was removed or relabelled.
+
+The final combined package/Demo build 2616 uses `d92a3b9`, including the subsequent
+conservative Instanced Ground and nonphysical scene-input exclusions. All workspace
+typechecks report zero errors/warnings, and the complete unit run passes 840/840 tests
+in 114 files. Logs: `.artifacts/layout-endpoint-final-{package-build,demo-build,check,units}.log`.
+These are correctness/integration checks; new production navigation and unprofiled
+timing evidence are required before judging latency, frame pacing or general activation.
+
+The subsequent unchanged v2 n=1 diagnostic on this build retained all four complete
+samples (runner 46651: three passed, cold Carousel failed the DOM-start assertion).
+First motion / CPU submission / observed DOM change, in milliseconds:
+
+| Case | Motion | Submission | DOM observation |
+| --- | ---: | ---: | ---: |
+| List cold | 55.3 | 63.9 | 68.5 |
+| List warm | 36.6 | 45.7 | 50.1 |
+| Carousel cold | 86.7 | 98.0 | **100.2** |
+| Carousel warm | 34.3 | 50.2 | 53.9 |
+
+All click-through-motion and reveal resource-creation counts are zero, with no sample
+validation errors. List warm and Carousel cold have stable blank-document calibrations;
+List cold and Carousel warm are unstable, including respective 316.7/283.3 ms initial
+blank-document gaps. Those samples remain recorded and cannot establish frame acceptance.
+The raw gates and original budgets were not adjusted.
+
+Neither List sample contains an internal 50 ms interval (maxima 33.7 ms); raw 33.x ms
+failures still apply. Cold Carousel retains a 50.0 ms moving interval and 49.8 ms reveal
+interval; warm Carousel has a 50.1 ms reveal interval with indeterminate calibrated
+classification. Their reveal gaps end 127.5/170.8 ms before the phase ends, so the final
+reveal callback alone cannot explain them. Cold Carousel also has a 33.1 ms ordinary
+source-render callback before adapter entry, despite an idle source at activation.
+That callback, actual Ground reuse and the independent refinement clock require a
+new trace. No isolated speed gain or p95 acceptance follows from these four samples.
+
+Raw data and the complete calibration/boundary/cleanup analysis are in
+`.artifacts/staged-performance-2616-d92a3b9-v2-hero1440-synthetic-n1/` (`summary.md`,
+`compact.json` and unchanged measurements), with the sibling `-analysis.json` report.
+The full functional run on this build separately found a Ground-only preparation
+readiness race: 19/24 cases passed, five Carousel cases declined early navigation
+before capture. This is a functional regression to fix, not a performance sample to
+discard or a reason to extend the test's pre-click wait.
+
+`ebeed3e` separates the synchronous borrowed-scene readiness blocker from the
+optional Ground-only GPU fence. Mandatory actor preparation still blocks readiness.
+The five declined cases and an additional Escape case passed on build 5312 (6/6);
+the original 19 successes and these five corrected cases provide the 24-case
+functional coverage across runs, not a second complete 24-case run. The focused
+26-unit regression suite includes reentrancy, cancellation and rejected fences.
+
+## Activation and final-paint follow-up
+
+A separate cold Carousel trace on build 5312 / `ebeed3e` confirms actual Ground
+reuse: 21 additional cached shadow draws, no live fallback and no preparation over
+click and movement. Nevertheless the click schedules a 33.235 ms ordinary source
+RAF with 39 GPU submissions before the navigation adapter. The source was idle
+before activation. `8eaf276` coalesces only the selected Carousel's programmatic
+activation-focus invalidation; native DOM focus remains immediate, and Tab,
+pointer press, hover and neighbour selection keep their ordinary scheduling.
+Without navigation, the queued focus request still reaches the regular renderer.
+The [focus contract](catalog-activation-focus.md) records that narrow extra paint
+opportunity and the separate browser proofs.
+
+The trace's internal 50 ms moving interval contains only 4.1 ms controller work.
+The GPU service thread is busy for about 48.7 ms of that interval; WebGPU command
+decoding occupies about 42.7 ms inside it. These are nested CPU service spans,
+not exclusive GPU execution times and not additive. They identify command-service
+load, but do not isolate a particular shader or prove that the focus change removes
+the gap. No new application GPU resources are created during movement or reveal.
+
+High remains loading throughout this cold reveal: the Hero and rail preview stay
+Low, refinement records zero frames, and the scene-endpoint cache is unused. The
+remaining panel/minimap passes are necessary for the actual visible surface; the
+retained Carousel rear contains only the selected fading glass. Consequently this
+trace cannot establish either a cold scene-cache gain or a refinement-related stall.
+
+The final reveal callback lasts about 73 ms, with only about 17 ms before the
+unchanged reveal-end marker. Promise continuations previously performed ownership
+cleanup before that frame could paint. `2218421` adds an abortable paint opportunity
+after the final summary commit and before cleanup. The [paint-order contract](staged-cleanup-paint.md)
+preserves summary identity, cancellation and the original timing markers. It does
+not reduce the final GPU draw or establish physical presentation timing.
+
+All of these timings are diagnostic: tracing, CPU samples and queue fences add
+overhead. Raw evidence is retained in
+`.artifacts/staged-gpu-trace-5312-ebeed3e-carousel-cold/`. Fresh production browser
+proofs and unprofiled measurements on the combined changes remain necessary.
+
+Build 70245 / `8eaf276` subsequently passes all six separate activation-focus
+browser cases and both real-summary final-paint cases. A new diagnostic trace
+shows renderer Paint events after the last reveal draw and before the following
+cleanup RAF. This confirms the intended paint ordering, not physical display
+latency. It also retains 39 source-render submissions before adapter entry: a
+separate microtask requests that frame, while the new focus callback itself is
+lightweight. The redundant environment-ready notification is being investigated
+independently; focus batching alone has not removed the whole pre-adapter frame.
+
+The unchanged, unprofiled v2 n=1 cohort on that build completes with all four
+latency cases passing. Every sample is retained:
+
+| Case | Motion | Submission | DOM observation | Raw Moving / Reveal gates |
+| --- | ---: | ---: | ---: | --- |
+| List cold | 53.2 ms | 62.5 ms | 67.6 ms | fail / fail |
+| List warm | 45.9 ms | 54.1 ms | 58.0 ms | pass / pass |
+| Carousel cold | 62.1 ms | 79.4 ms | 85.1 ms | fail / fail |
+| Carousel warm | 22.4 ms | 31.5 ms | 34.1 ms | fail / fail |
+
+All GPU-resource creation counts remain zero. Calibration is stable for three
+samples; List cold has a 283.3 ms initial blank-document gap and remains unstable.
+Warm Carousel failures are raw 33.x ms threshold crossings, not promoted to
+passes. Cold Carousel still has internal 50.1/48.1 ms moving intervals and a
+49.9 ms reveal interval, plus a boundary interval with 35.1 ms inside reveal.
+Its subsequent 113.7 ms cleanup script is now outside reveal, but remains visible
+as real follow-on main-thread work in the report. General activation and p95
+acceptance remain open; these four samples do not establish an isolated gain.
+
+Artifacts: `.artifacts/staged-performance-70245-8eaf276-v2-hero1440-synthetic-n1/`
+and its sibling `-analysis.json`, plus
+`.artifacts/staged-gpu-trace-70245-8eaf276-carousel-cold/`. The full unit suite on
+this runtime passes 874/874 tests in 115 files; workspace checking is recorded
+separately in `.artifacts/layout-focus-paint-check.log`.
