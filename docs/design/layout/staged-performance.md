@@ -113,6 +113,40 @@ coverage in every sample of the unprofiled twenty-sample run, with no samples di
 Actual Android, iOS and Surface touch/sensor testing remains a separate physical-device
 check. Desktop automation does not establish universal frame pacing or sensor behavior.
 
-Final accepted timing results and their source revision are recorded here after the
-repeated production run. Diagnostic captures remain local in `.artifacts/`; they are not
-substituted for that acceptance run.
+## First repeated run — not accepted yet
+
+On 2026-10-31, the production build containing `c64f3f8` and `f2f12d2` completed all
+80 planned hero samples. The harness includes `2144829`; analysis uses `83d47fd`.
+Environment: Windows `10.0.26300`, Intel Core i7-1065G7, the requested Intel `gen-11`
+WebGPU adapter, Chrome `156.0.8078.79`, 1440 × 1000 CSS pixels, DPR 1. Runs were serial,
+without concurrent builds or other test browsers. No measured sample was discarded.
+
+Each timing cell is **median / p95 / maximum**, in milliseconds:
+
+| Source / route cache | Samples | First source update | CPU submission | Observed DOM position change |
+| --- | ---: | ---: | ---: | ---: |
+| List / cold | 20 | 54.2 / 72.8 / 78.4 | 64.1 / 86.2 / 87.8 | 68.2 / 90.6 / 94.0 |
+| List / warm | 20 | 42.8 / 52.4 / 72.5 | 54.7 / 67.3 / 87.4 | 62.3 / 76.8 / 96.0 |
+| Carousel / cold | 20 | 74.4 / 91.7 / 94.5 | 92.5 / 111.5 / 114.9 | 99.5 / 118.7 / 124.4 |
+| Carousel / warm | 20 | 58.2 / 67.1 / 73.1 | 76.3 / 88.5 / 97.1 | 82.8 / 96.3 / 104.3 |
+
+All 80 samples passed the route-cache and application-error checks and created no GPU
+resources during source movement or content reveal. The cold carousel failed the submission
+and DOM-observation latency gates. **All four groups failed frame-pacing acceptance.**
+In addition to the raw 33.x ms threshold crossings retained by the analyzer, repeated roughly
+50 ms or longer intervals occurred inside reveal in 11/20 cold-list, 18/20 warm-list and
+20/20 samples of each carousel group. These are not dismissed as timestamp rounding.
+
+Several warm-list Long Animation Frames contain 36–44 ms in the reveal controller's actual
+render callback, without reported forced layout. A cold-list outlier records its first DOM
+position change at 94 ms but its containing frame's presentation at about 190 ms. Therefore
+the DOM probe must not be described as a guaranteed displayed-pixel response. CPU/GPU/Viz
+traces investigate both render work and the delay before SvelteKit's navigation callback.
+No general activation is justified by this run.
+
+Raw results and the complete analysis are retained locally in
+`.artifacts/staged-performance-c64f3f8-hero1440/` and
+`.artifacts/staged-performance-c64f3f8-hero1440-analysis.json`. Compact and 3XL repeated
+acceptance runs follow only after the shared render/start causes have been addressed.
+Physical-device checks remain separate. Later accepted results must name their own source
+revision; these measurements must not silently be relabelled as results of a later fix.
