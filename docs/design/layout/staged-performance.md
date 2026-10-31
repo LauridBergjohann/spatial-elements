@@ -102,6 +102,71 @@ captures lacking exact markers are reported as incomplete rather than retroactiv
 a stricter gate. Both an embedded `profiled: true` flag and sibling CPU-profile artifacts
 exclude a run from acceptance, even when its numerical thresholds happen to pass.
 
+## Additional cadence diagnostic, version 1
+
+`cadence-diagnostic-v1` is declared before the next repeated measurement. It supplements
+the original raw frame gates; it does not change their budget, thresholds, acceptance
+eligibility or earlier outcomes. A borderline observation is **not a pass**. This is a
+diagnostic protocol for the declared 60 Hz test environment, not a universal browser rule.
+
+Before loading the application, the harness records **121 consecutive RAF timestamps**
+on the empty document. `budget` remains the median of the first eleven gaps, exactly as
+before. The extra idle samples do not add any source-page settling time or warm target
+route data. The complete timestamps are saved in each sample's `idleCalibration`, with
+`version: "cadence-diagnostic-v1"` and their pre-navigation clock origin. They must not be
+compared numerically with timestamps from the subsequently loaded application's document.
+
+The additional period estimate is `T = (t120 - t0) / 120`. Unlike the median of individual
+quantized intervals, this cancels the inner timestamp errors algebraically. For example,
+*if* each endpoint were known within 0.1 ms, the corresponding period error would be at
+most 0.2/120 ms. That assumption is not a specification guarantee: High Resolution Time
+allows coarser implementation-defined resolution and jitter. Thus the protocol does not
+claim a clock-accuracy bound or a statistical confidence interval.
+[W3C High Resolution Time](https://www.w3.org/TR/hr-time-3/#dfn-coarsen-time).
+
+All of these predeclared conditions must hold for the additional calibration to be stable:
+
+- Exactly 121 finite, strictly increasing timestamps are present with the known version.
+- The full-span period lies in **[16.0, 17.5] ms**.
+- Every individual idle gap lies in **[0.75T, 1.25T]**.
+- The two 60-interval half-span period estimates differ by at most **0.05 ms**.
+
+No idle sample is removed and no automatic retry seeks a favourable calibration. A known
+record outside these stability conditions is `unstable`; missing, malformed or unknown
+versions are `indeterminate`. Both prevent cadence classification. Neither alters the raw
+animation-gate result. In particular, a 30 Hz source or idle cadence cannot become a
+relaxed reference for this 60 Hz protocol. Rendering opportunities are selected by the
+browser and may change with hardware, visibility and workload; RAF timestamps alone do
+not prove a physical display refresh rate or an actual presentation time.
+[HTML rendering opportunities](https://html.spec.whatwg.org/multipage/webappapis.html#rendering-opportunity).
+
+For a stable calibration, complete RAF gaps **inside** movement or reveal receive a
+separate descriptive label:
+
+| Full gap duration | Diagnostic label | Interpretation |
+| --- | --- | --- |
+| Below `2T - 0.5 ms` | `below-two-period-band` | Clearly below the declared boundary band |
+| From `2T - 0.5 ms` through `2T + 0.5 ms` | `two-period-borderline` | Compatible with two nominal periods; unresolved, **not passed** |
+| Above `2T + 0.5 ms` | `above-two-period-band` | Clear excess beyond this bounded diagnostic zone |
+
+The fixed **±0.5 ms** is a deliberately limited protocol zone, not proof that all variation
+inside it came from quantization. Each gap retains its raw duration, raw-gate result,
+`duration/T` and signed `duration - 2T` offset. For a stable 60 Hz baseline, 33.3–33.5 ms
+can therefore be distinguished from an unequivocal roughly three-period 50 ms interval
+without changing a single strict-gate failure. Even the slowest allowed reference has an
+upper band edge of only **35.5 ms**: neither 40 ms nor 50 ms can be rounded away.
+
+Boundary gaps retain their complete raw duration and clipped phase overlap, but receive
+no frame-count classification. Earlier binding work must not become a reveal stutter just
+because a gap crosses the phase boundary. Missing coverage similarly leaves phase-level
+diagnostic status indeterminate. The analyzer reports calibration counts separately from
+all acceptance gates. Old measurements without the new raw calibration remain unknown;
+the first 80-sample run below is not retrospectively relabelled or accepted.
+
+The analyzer self-tests cover quantized calibration, unknown versions, malformed records,
+30 Hz rejection, missed idle intervals, changing cadence, 33.x/40/50 ms separation,
+unclassified phase boundaries and exact preservation of the existing gates.
+
 ## Acceptance scope
 
 The software gates cover source ownership, cancellation, known hero/compact/3XL endpoints,

@@ -21,11 +21,17 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 				const page = await context.newPage();
 				// Measure display cadence before the application can saturate the GPU.
 				// A slow source frame must not silently redefine a 60 Hz budget as 30 Hz.
-				const idleBudget = await page.evaluate(async () => {
+				const { budget: idleBudget, calibration: idleCalibration } = await page.evaluate(async () => {
 					const times: number[] = [];
-					for (let i = 0; i < 12; i++) await new Promise<void>(resolve => requestAnimationFrame(time => { times.push(time); resolve(); }));
-					const gaps = times.slice(1).map((time, index) => time - times[index]).sort((a, b) => a - b);
-					return gaps[Math.floor(gaps.length / 2)];
+					// Extra samples belong to the empty document, never a longer source-page wait.
+					// The acceptance budget still uses exactly the original first eleven gaps.
+					for (let i = 0; i < 121; i++) await new Promise<void>(resolve => requestAnimationFrame(time => { times.push(time); resolve(); }));
+					const gaps = times.slice(1, 12).map((time, index) => time - times[index]).sort((a, b) => a - b);
+					return { budget: gaps[Math.floor(gaps.length / 2)], calibration: {
+						version: 'cadence-diagnostic-v1', timestamps: times,
+						document: 'blank-before-app', clock: 'raf-before-navigation',
+						crossOriginIsolated, visibilityState: document.visibilityState
+					} };
 				});
 				const errors: string[] = [];
 				page.on('pageerror', error => errors.push(error.message));
@@ -118,7 +124,7 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 						gpuCalls: work.gpuCalls.filter(entry => entry.time >= timings.started && entry.time <= timings.revealed),
 						requests: performance.getEntriesByType('resource').filter(entry => entry.name.includes('/__data.json') || entry.name.includes('/nodes/')).map(entry => ({ name: entry.name, start: entry.startTime - timings.started, duration: entry.duration })) };
 				});
-				Object.assign(result, { sourceActivity });
+				Object.assign(result, { sourceActivity, idleCalibration });
 				results.push(result);
 				if (profiler) {
 					const { profile } = await profiler.send('Profiler.stop');

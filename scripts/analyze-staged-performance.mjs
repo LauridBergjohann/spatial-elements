@@ -12,6 +12,79 @@ const containsTime = (range, time) => range && finite(time) && time >= range.sta
 const percentile = (values, fraction) => values.length ? [...values].sort((a, b) => a - b)[Math.ceil(values.length * fraction) - 1] : null;
 const statistics = values => ({ count: values.length, p50: percentile(values, 0.5), p95: percentile(values, 0.95), max: values.length ? Math.max(...values) : null });
 const roundoff = 1e-7; // Only absorb binary floating-point roundoff, not a frame-time tolerance.
+const cadenceProtocol = Object.freeze({
+  version: 'cadence-diagnostic-v1', timestampCount: 121,
+  periodMinMs: 16, periodMaxMs: 17.5,
+  idleGapMinPeriods: 0.75, idleGapMaxPeriods: 1.25,
+  halfPeriodDifferenceMaxMs: 0.05, diagnosticHalfBandMs: 0.5
+});
+
+/** Additional interpretation only: never supplies the budget used by an acceptance gate. */
+export function analyzeIdleCadence(input) {
+  const timestamps = Array.isArray(input?.timestamps) ? [...input.timestamps] : null;
+  const result = {
+    version: cadenceProtocol.version, recordedVersion: input?.version ?? null,
+    status: 'indeterminate', reasons: [], criteria: cadenceProtocol, timestamps,
+    periodMs: null, halfPeriodsMs: null, halfPeriodDifferenceMs: null,
+    idleGapRangeMs: null, diagnosticBandMs: null
+  };
+  if (input?.version !== cadenceProtocol.version) {
+    result.reasons.push(input?.version == null ? 'missing-calibration' : 'unknown-calibration-version');
+    return result;
+  }
+  if (!timestamps || timestamps.length !== cadenceProtocol.timestampCount || !timestamps.every(finite) ||
+    !timestamps.every((time, index) => index === 0 || time > timestamps[index - 1])) {
+    result.reasons.push('expected-121-strictly-increasing-finite-timestamps');
+    return result;
+  }
+  // These times originate in the blank document, not in the application's time origin.
+  const period = (timestamps[120] - timestamps[0]) / 120;
+  const halves = [(timestamps[60] - timestamps[0]) / 60, (timestamps[120] - timestamps[60]) / 60];
+  const gaps = timestamps.slice(1).map((time, index) => time - timestamps[index]);
+  result.periodMs = period;
+  result.halfPeriodsMs = halves;
+  result.halfPeriodDifferenceMs = Math.abs(halves[1] - halves[0]);
+  result.idleGapRangeMs = { min: Math.min(...gaps), max: Math.max(...gaps) };
+  if (period < cadenceProtocol.periodMinMs - roundoff || period > cadenceProtocol.periodMaxMs + roundoff)
+    result.reasons.push('outside-declared-60hz-period-range');
+  if (gaps.some(gap => gap < period * cadenceProtocol.idleGapMinPeriods - roundoff || gap > period * cadenceProtocol.idleGapMaxPeriods + roundoff))
+    result.reasons.push('idle-gap-outside-single-period-envelope');
+  if (result.halfPeriodDifferenceMs > cadenceProtocol.halfPeriodDifferenceMaxMs + roundoff)
+    result.reasons.push('idle-period-not-stable-between-halves');
+  result.status = result.reasons.length ? 'unstable' : 'stable';
+  if (result.status === 'stable') result.diagnosticBandMs = {
+    lower: 2 * period - cadenceProtocol.diagnosticHalfBandMs,
+    center: 2 * period,
+    upper: 2 * period + cadenceProtocol.diagnosticHalfBandMs
+  };
+  return result;
+}
+
+/** Only a full interval within a phase receives a cadence label; clipped edges are not frames. */
+function diagnoseCadenceGap(duration, location, calibration) {
+  const available = calibration.status === 'stable';
+  const band = calibration.diagnosticBandMs;
+  return {
+    classification: location === 'outside' ? 'outside-phase' : location === 'boundary' ? 'phase-boundary-unclassified'
+      : location === 'unknown' || !available ? 'indeterminate'
+      : duration < band.lower - roundoff ? 'below-two-period-band'
+      : duration > band.upper + roundoff ? 'above-two-period-band' : 'two-period-borderline',
+    periods: available ? duration / calibration.periodMs : null,
+    offsetFromTwoPeriodsMs: available ? duration - 2 * calibration.periodMs : null
+  };
+}
+
+function summarizeCadencePhase(phase, calibration) {
+  const gaps = phase.gaps.filter(gap => gap.location !== 'outside' && gap.location !== 'unknown');
+  return {
+    status: calibration.status === 'stable' && phase.status === 'complete' ? 'complete' : 'indeterminate',
+    internalCounts: Object.fromEntries(['below-two-period-band', 'two-period-borderline', 'above-two-period-band', 'indeterminate']
+      .map(label => [label, gaps.filter(gap => gap.cadenceDiagnostic.classification === label).length])),
+    boundaryGapCount: phase.boundaryGaps.length,
+    // A borderline observation is explicitly not a pass, and no diagnostic supplies a gate.
+    borderlineIsPass: false
+  };
+}
 const uniqueDuration = ranges => {
   const sorted = ranges.filter(Boolean).filter(range => range.end > range.start).sort((a, b) => a.start - b.start);
   let total = 0, end = -Infinity;
@@ -20,19 +93,21 @@ const uniqueDuration = ranges => {
 };
 const clipped = (left, right) => overlap(left, right) > 0 ? interval(Math.max(left.start, right.start), Math.min(left.end, right.end)) : null;
 
-function analyzePhaseFrames(phase, phaseRange, frameTimes, ordered, budget, longFrames) {
+function analyzePhaseFrames(phase, phaseRange, frameTimes, ordered, budget, longFrames, calibration) {
   const gaps = frameTimes && ordered ? frameTimes.slice(1).map((end, i) => {
     const range = interval(frameTimes[i], end), duration = end - frameTimes[i];
     const internal = Boolean(phaseRange && range.start >= phaseRange.start && range.end <= phaseRange.end);
     const phaseOverlapMs = phaseRange ? overlap(range, phaseRange) : null;
     const phasePortionExceedsTwoBudgets = budget && phaseRange ? phaseOverlapMs > 2 * budget + roundoff : null;
+    const location = !phaseRange ? 'unknown' : internal ? phase : phaseOverlapMs > 0 ? 'boundary' : 'outside';
     return {
       start: range.start, end, duration, budgets: budget ? duration / budget : null,
-      location: !phaseRange ? 'unknown' : internal ? phase : phaseOverlapMs > 0 ? 'boundary' : 'outside',
+      location,
       phaseOverlapMs, phasePortionExceedsTwoBudgets,
       // Keep existing moving-report consumers compatible.
       ...(phase === 'moving' ? { movingOverlapMs: phaseOverlapMs, movingPortionExceedsTwoBudgets: phasePortionExceedsTwoBudgets } : {}),
       exceedsTwoBudgets: budget ? duration > 2 * budget + roundoff : null,
+      cadenceDiagnostic: diagnoseCadenceGap(duration, location, calibration),
       // A script must intersect both the gap and the exact phase; earlier binding
       // does not become reveal work merely because their LoAF spans both.
       scriptOverlaps: phaseOverlapMs > 0 ? longFrames.flatMap(entry => entry.scripts.flatMap(script => {
@@ -77,6 +152,7 @@ export function analyzeSample(sample, index = 0) {
   if (!holdWindow) warnings.push('Missing/invalid holdStarted: the hold hook cannot be isolated.');
   const budget = finite(sample.budget) && sample.budget > 0 ? sample.budget : null;
   const sourceBudget = finite(sample.sourceBudget) && sample.sourceBudget > 0 ? sample.sourceBudget : null;
+  const calibration = analyzeIdleCadence(sample.idleCalibration);
   const frameTimes = Array.isArray(sample.frames) && sample.frames.every(finite) ? sample.frames : null;
   const ordered = frameTimes?.every((time, i) => i === 0 || time >= frameTimes[i - 1]);
   if (!frameTimes) warnings.push('No absolute RAF timestamps: legacy gaps cannot be located or attributed to scripts.');
@@ -118,8 +194,8 @@ export function analyzeSample(sample, index = 0) {
     };
   });
 
-  const movingRAF = analyzePhaseFrames('moving', moving, frameTimes, ordered, budget, longFrames);
-  const revealRAF = analyzePhaseFrames('reveal', reveal, frameTimes, ordered, budget, longFrames);
+  const movingRAF = analyzePhaseFrames('moving', moving, frameTimes, ordered, budget, longFrames, calibration);
+  const revealRAF = analyzePhaseFrames('reveal', reveal, frameTimes, ordered, budget, longFrames, calibration);
   for (const [name, report] of [['moving', movingRAF], ['reveal', revealRAF]]) {
     if (report.interval && report.status !== 'complete') warnings.push(`Incomplete RAF coverage/budget for ${name}: missing intervals cannot pass frame pacing.`);
   }
@@ -135,6 +211,10 @@ export function analyzeSample(sample, index = 0) {
     revealDurationMs: reveal ? reveal.end - reveal.start : null,
     betweenPhasesDurationMs: betweenPhases ? betweenPhases.end - betweenPhases.start : null,
     measuredBudgetMs: budget, sourceBudgetMs: sourceBudget, sourceBudgetRatio: sourceBudget && budget ? sourceBudget / budget : null, warnings,
+    cadenceDiagnostic: {
+      version: cadenceProtocol.version, acceptanceGate: false, calibration,
+      moving: summarizeCadencePhase(movingRAF, calibration), reveal: summarizeCadencePhase(revealRAF, calibration)
+    },
     movingRAF: {
       ...movingRAF,
       // Do not silently discard long legacy gaps just because precise timestamps were not recorded.
@@ -183,6 +263,13 @@ export function analyzeReport(input, { source = '', profiled = false } = {}) {
     eligibleForResourceAcceptance: fullRun && completeList('gpuCreatesClickThroughMotion') && completeList('gpuCreatesDuringReveal') && validationGate === true,
     latency: { firstMotion: motion, firstSubmit: submit, observedDomChange: dom },
     cadence: { idleBudgetMs: statistics(values('measuredBudgetMs')), sourceBudgetMs: statistics(values('sourceBudgetMs')), sourceToIdleRatio: statistics(values('sourceBudgetRatio')) },
+    cadenceDiagnostic: {
+      version: cadenceProtocol.version, acceptanceGate: false,
+      calibrationCounts: Object.fromEntries(['stable', 'unstable', 'indeterminate'].map(status =>
+        [status, results.filter(result => result.cadenceDiagnostic.calibration.status === status).length])),
+      periodMs: statistics(results.filter(result => result.cadenceDiagnostic.calibration.status === 'stable')
+        .map(result => result.cadenceDiagnostic.calibration.periodMs))
+    },
     gates: {
       firstMotionP95Below100ms: completeClockLatency ? motion.p95 < 100 : null,
       firstSubmitP95Below100ms: completeClockLatency ? submit.p95 < 100 : null,
@@ -318,6 +405,52 @@ async function selfTest() {
   assert.equal(mixedCoverage.gates.noGpuCreatesDuringReveal, false);
   assert.equal(mixedCoverage.gates.noGpuCreatesClickThroughMotion, null);
   assert.equal(analyzeReport({ samples: 1, results: [sample] }).gates.noGpuCreatesDuringReveal, null);
+
+  // Versioned diagnostics never modify the original raw budget, gates or acceptance eligibility.
+  const idleCalibration = { version: 'cadence-diagnostic-v1',
+    timestamps: Array.from({ length: 121 }, (_, index) => Math.floor((1000 + index * 1000 / 60) * 10) / 10) };
+  const calibrated = analyzeIdleCadence(idleCalibration);
+  assert.equal(calibrated.status, 'stable');
+  assert.equal(calibrated.periodMs, 1000 / 60);
+  assert.deepEqual(calibrated.timestamps, idleCalibration.timestamps);
+  assert.equal(analyzeIdleCadence(undefined).status, 'indeterminate');
+  assert.equal(analyzeIdleCadence({ ...idleCalibration, version: 'cadence-diagnostic-v2' }).status, 'indeterminate');
+  assert.equal(analyzeIdleCadence({ ...idleCalibration, timestamps: idleCalibration.timestamps.slice(0, 120) }).status, 'indeterminate');
+  const invalidTimes = [...idleCalibration.timestamps]; invalidTimes[60] = invalidTimes[59];
+  assert.equal(analyzeIdleCadence({ ...idleCalibration, timestamps: invalidTimes }).status, 'indeterminate');
+  invalidTimes[60] = Number.NaN;
+  assert.equal(analyzeIdleCadence({ ...idleCalibration, timestamps: invalidTimes }).status, 'indeterminate');
+  assert.equal(analyzeIdleCadence({ ...idleCalibration, timestamps: idleCalibration.timestamps.map(time => time * 2) }).status, 'unstable');
+  const skipped = [...idleCalibration.timestamps]; skipped[30] += 8;
+  assert.deepEqual(analyzeIdleCadence({ ...idleCalibration, timestamps: skipped }).reasons, ['idle-gap-outside-single-period-envelope']);
+  const drifting = Array.from({ length: 121 }, (_, index) => index <= 60 ? index * 16.6 : 60 * 16.6 + (index - 60) * 16.7);
+  assert.deepEqual(analyzeIdleCadence({ ...idleCalibration, timestamps: drifting }).reasons, ['idle-period-not-stable-between-halves']);
+  const gapSample = { ...smoothReveal, budget: 16.6, idleCalibration,
+    timings: { ...smoothReveal.timings, firstMotion: 20, motionEnded: 189 },
+    frames: [0, 20, 53.3, 86.8, 136.8, 176.8, 192, 704, 720, 736, 752, 768, 784, 800,
+      816, 832, 848, 864, 880, 896, 912, 928, 944, 960, 976, 992, 1008] };
+  const diagnosed = analyzeSample(gapSample);
+  assert.equal(diagnosed.movingRAF.violations.length, 4); // 33.3, 33.5, 50 and 40 still fail the strict 33.2 gate.
+  assert.deepEqual(diagnosed.movingRAF.violations.map(gap => gap.cadenceDiagnostic.classification),
+    ['two-period-borderline', 'two-period-borderline', 'above-two-period-band', 'above-two-period-band']);
+  assert.equal(diagnosed.cadenceDiagnostic.moving.borderlineIsPass, false);
+  assert.equal(diagnosed.movingRAF.boundaryGaps.at(-1).cadenceDiagnostic.classification, 'phase-boundary-unclassified');
+  assert.equal(diagnosed.cadenceDiagnostic.moving.internalCounts['two-period-borderline'], 2);
+  assert.equal(analyzeSample({ ...gapSample, idleCalibration: undefined }).movingRAF.violations[0].cadenceDiagnostic.classification, 'indeterminate');
+  for (const budget of [16.6, 16.7]) {
+    const calibratedReport = analyzeReport({ samples: 20, results: Array(20).fill({ ...gapSample, budget }) });
+    const legacyReport = analyzeReport({ samples: 20, results: Array(20).fill({ ...gapSample, budget, idleCalibration: undefined }) });
+    assert.deepEqual(calibratedReport.gates, legacyReport.gates);
+    assert.equal(calibratedReport.eligibleForFramePacingAcceptance, legacyReport.eligibleForFramePacingAcceptance);
+    assert.equal(calibratedReport.cadenceDiagnostic.acceptanceGate, false);
+    assert.deepEqual(calibratedReport.cadenceDiagnostic.calibrationCounts, { stable: 20, unstable: 0, indeterminate: 0 });
+  }
+  // Even at the slowest permitted reference, a real 50 ms interval cannot enter the borderline band.
+  const slowestValid = analyzeIdleCadence({ ...idleCalibration, timestamps: Array.from({ length: 121 }, (_, index) => index * 17.5) });
+  assert.equal(slowestValid.status, 'stable');
+  assert.equal(slowestValid.diagnosticBandMs.upper, 35.5);
+  assert.equal(diagnoseCadenceGap(50, 'reveal', slowestValid).classification, 'above-two-period-band');
+  assert.equal(summarizeCadencePhase({ ...diagnosed.movingRAF, status: 'incomplete' }, calibrated).status, 'indeterminate');
   process.stdout.write('Staged-performance attribution checks passed.\n');
 }
 
@@ -343,6 +476,8 @@ async function main(args) {
       'Gaps fully inside [firstMotion,motionEnded] and the clipped moving portion of boundary gaps are gated separately against two measured budgets.',
       'Reveal uses only [revealStarted,revealEnded]; earlier binding and later adoption are outside its frame-pacing gate.',
       'Both phase gates use budget, the idle cadence before app startup. sourceBudget is diagnostic and cannot relax the threshold.',
+      'cadence-diagnostic-v1 is additional interpretation only: 121 blank-document timestamps, stable declared 60 Hz calibration and a fixed +/-0.5 ms band around two periods.',
+      'Borderline cadence labels are not passes. Missing, unknown or unstable calibration cannot classify a gap; raw gates and historical outcomes are unchanged.',
       'Absolute RAF samples must cover both boundaries of each phase. Missing markers/coverage produce incomplete gates, not passes.',
       'GPU creation gates cover click-through-motion and the exact reveal interval separately; phase labels cannot override timestamps.',
       'DOM observation must exist for every sample. Validation failures and missing validation records cannot establish acceptance.',
