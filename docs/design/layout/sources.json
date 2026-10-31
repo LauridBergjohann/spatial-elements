@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "sourceDate": "2026-10-31",
+  "priority": "User corrections > canonical contracts > original source annotations",
+  "archiveRepository": "spatial-elements-brand-examples",
+  "archivePath": "docs/design/layout/source",
+  "files": [
+    {
+      "file": "Cards.png",
+      "bytes": 159307,
+      "sha256": "55434b079066c8452dd936d13d495da5936b7ba4b643c18ac776ae1282dfa455"
+    },
+    {
+      "file": "Content Grid.png",
+      "bytes": 502498,
+      "sha256": "8aeef80bad319cda7e0cbab6b407e27841441991861ddf61bf718e99b305bc8d"
+    },
+    {
+      "file": "Layout Erläuterungen.pdf",
+      "bytes": 183981,
+      "sha256": "8bdb72253d56d3316083f384be89b8cc505c67ff41680f0c5a842016fbcdeaf6"
+    },
+    {
+      "file": "Layout.png",
+      "bytes": 21232960,
+      "sha256": "04bc6e8fda0c7a055735dcbe6c6b1209dd52505e69942324b5472642cbf10462"
+    },
+    {
+      "file": "Sections.png",
+      "bytes": 2772814,
+      "sha256": "7e9f5a7c90892b2a6f43e950135edb62e1f74bd341fbf0a767a94a7da5df3fd6"
+    },
+    {
+      "file": "box-details.svg",
+      "bytes": 986,
+      "sha256": "ded79c9d5c3ce95703ff0e06672e4dc1fc4e4361c90ce60223b593bf5d4d19af"
+    },
+    {
+      "file": "box-fullscreen.svg",
+      "bytes": 928,
+      "sha256": "e391266bf435c8bf001ec2a59c0a65941768480c93ce343f7b98ca29b2b8cd8f"
+    },
+    {
+      "file": "box3d-indicator.svg",
+      "bytes": 774,
+      "sha256": "94a9538a79a61036c74a8417cd07bae3b54371920ab35313e3b3a7d25f733fca"
+    },
+    {
+      "file": "detail-overview.svg",
+      "bytes": 388,
+      "sha256": "b3148794412c02149c9b1f6eeacb61d7e2c83a9372d275967d3d79c935c63427"
+    }
+  ]
+}

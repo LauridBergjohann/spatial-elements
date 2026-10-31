@@ -12,3 +12,6 @@
 ## Developing the packages
 
 The [development guide](development.md) covers repository setup, the public demo, checks and cross-repository workflows. It also links to architecture, package boundaries, performance analysis, migration history and release documentation.
+
+- [Layout system implementation plan](layout-system-implementation-plan.md): responsive layout rules, incremental commits and validation, live panels, document-scrolled ultra-wide pages, and illustrated GitHub Wiki documentation.
+- [Staged catalog transitions plan](staged-catalog-transitions-plan.md): the subsequent navigation work, based on the completed layout system, with commit boundaries and validation criteria for immediate forward navigation.
