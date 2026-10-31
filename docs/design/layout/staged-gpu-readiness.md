@@ -26,6 +26,8 @@ The enhanced Carousel therefore declares `will-change: transform` on only its se
 
 `scripts/trace-staged-gpu.mjs` records browser GPU/Viz events, source styles, actual RAF callback times, WebGPU queue submissions and asynchronous queue fences. Fences include driver/IPC delay and delay in dispatching their JavaScript completion callback; their wall-clock duration is not pure GPU execution time. The trace and its fence instrumentation are diagnostic only.
 
+For CPU attribution, `--minimal=true --cpu=true` writes an additional 1 ms `cpu.cpuprofile` while omitting render-pass descriptors, shader-body copies and per-submit timing marks. The normal JavaScript callbacks and GPU/Viz events remain in `trace.json`; `probe.json` records the exact phase boundaries and instrumentation settings. `--fences=false` provides a control without the extra asynchronous queue fences. Profiling results must not replace the uninstrumented latency or frame-pacing measurements.
+
 ## Keep pipeline owners stable
 
 A production WebGPU probe found a pipeline creation in the first moving frame even though the shaders and the complete GPU pipeline descriptor were already prepared. The affected shader was the catalog fade's texture-times-alpha composite.

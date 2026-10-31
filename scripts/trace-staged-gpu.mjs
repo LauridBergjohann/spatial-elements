@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Diagnostic only: queue fences and tracing add overhead; never use this run for latency acceptance.
 // Run against an already running production preview; this script owns and closes only its browser.
+// Low-overhead attribution: --view=list --temperature=warm --minimal=true --cpu=true
+// --fences=false is a control without added queue fences; GPU/Viz tracing remains enabled.
 import { chromium } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
@@ -11,16 +13,21 @@ const args = Object.fromEntries(process.argv.slice(2).map(arg => {
 const baseURL = args.url ?? 'http://127.0.0.1:4202';
 const view = args.view ?? 'carousel', temperature = args.temperature ?? 'cold';
 if (!['list', 'carousel'].includes(view) || !['cold', 'warm'].includes(temperature)) throw Error('Invalid view/temperature');
+const minimal = args.minimal === 'true', sampleCpu = args.cpu === 'true';
+const probeFences = args.fences !== 'false';
+const cpuSamplingInterval = Number(args.cpuInterval ?? 1000);
+if (!Number.isInteger(cpuSamplingInterval) || cpuSamplingInterval < 100) throw Error('Invalid CPU sampling interval in microseconds');
 const output = resolve(args.output ?? `.artifacts/staged-gpu-trace-${view}-${temperature}`);
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ channel: process.env.CI ? undefined : 'chrome', headless: true });
 let tracing = false;
+let profiling = false, pageSession;
 const browserSession = await browser.newBrowserCDPSession();
 try {
   const systemInfo = await browserSession.send('SystemInfo.getInfo');
   const commandLine = await browserSession.send('Browser.getBrowserCommandLine').catch(error => ({ unavailable: error.message }));
   const context = await browser.newContext({ baseURL, viewport: { width: 1440, height: 1000 } });
-  await context.addInitScript(() => {
+  await context.addInitScript(({ minimal, probeFences }) => {
     Error.stackTraceLimit = 40;
     const probe = { active: false, phase: '', submits: [], fences: [], frames: [], longFrames: [], gpuCreates: [], errors: [] };
     Object.assign(window, { gpuProbe: probe });
@@ -28,7 +35,7 @@ try {
     let stage;
     const phase = () => { stage ??= document.querySelector('.stage'); return stage?.dataset.catalogStagedPhase ?? ''; };
     let sequence = 0;
-    if (globalThis.GPUTexture) {
+    if (!minimal && globalThis.GPUTexture) {
       const original = GPUTexture.prototype.createView;
       GPUTexture.prototype.createView = function (...args) {
         const result = original.apply(this, args);
@@ -36,7 +43,7 @@ try {
         return result;
       };
     }
-    if (globalThis.GPUCommandEncoder) {
+    if (!minimal && globalThis.GPUCommandEncoder) {
       const begin = GPUCommandEncoder.prototype.beginRenderPass, finish = GPUCommandEncoder.prototype.finish;
       GPUCommandEncoder.prototype.beginRenderPass = function (descriptor) {
         if (probe.active) {
@@ -60,7 +67,7 @@ try {
         const descriptor = args[0];
         const entry = probe.active ? { method, time: performance.now(), phase: phase() } : undefined;
         if (entry) {
-          if (method === 'createShaderModule') entry.shader = { label: descriptor.label, code: descriptor.code };
+          if (method === 'createShaderModule') entry.shader = { label: descriptor.label, ...(minimal ? {} : { code: descriptor.code }) };
           else if (method.startsWith('createRenderPipeline')) {
             entry.pipeline = { label: descriptor.label, vertex: shaders.get(descriptor.vertex?.module), fragment: shaders.get(descriptor.fragment?.module),
               targets: descriptor.fragment?.targets, depthStencil: descriptor.depthStencil, multisample: descriptor.multisample, primitive: descriptor.primitive };
@@ -73,7 +80,7 @@ try {
           probe.gpuCreates.push(entry);
         }
         const result = original.apply(this, args);
-        if (method === 'createShaderModule') shaders.set(result, { label: descriptor.label, code: descriptor.code });
+        if (!minimal && method === 'createShaderModule') shaders.set(result, { label: descriptor.label, code: descriptor.code });
         if (entry) entry.returned = performance.now();
         return result;
       };
@@ -82,11 +89,12 @@ try {
       const submit = GPUQueue.prototype.submit, done = GPUQueue.prototype.onSubmittedWorkDone;
       GPUQueue.prototype.submit = function (commands) {
         if (!probe.active) return submit.call(this, commands);
-        const list = Array.from(commands), id = ++sequence, start = performance.now();
-        performance.mark(`staged-submit-${id}`);
+        const list = minimal ? commands : Array.from(commands), id = ++sequence, start = performance.now();
+        if (!minimal) performance.mark(`staged-submit-${id}`);
         const result = submit.call(this, list);
-        probe.submits.push({ id, start, returned: performance.now(), phase: phase(), passes: list.flatMap(command => buffers.get(command) ?? []) });
-        if (!pendingFences.has(this)) {
+        probe.submits.push({ id, start, returned: performance.now(), phase: phase(),
+          ...(minimal ? {} : { passes: list.flatMap(command => buffers.get(command) ?? []) }) });
+        if (probeFences && !pendingFences.has(this)) {
           pendingFences.add(this);
           queueMicrotask(() => {
             pendingFences.delete(this);
@@ -117,7 +125,7 @@ try {
       const phase = document.querySelector('.stage')?.dataset.catalogStagedPhase ?? '';
       if (phase !== probe.phase) { probe.phase = phase; if (probe.active) performance.mark(`staged-phase-${phase || 'none'}`); }
     }).observe(document, { attributes: true, subtree: true, attributeFilter: ['data-catalog-staged-phase'] });
-  });
+  }, { minimal, probeFences });
   const page = await context.newPage();
   page.on('pageerror', error => process.stderr.write(`${error.message}\n`));
   await page.goto(`/staged/categories/${view}?stage-test=1&stagedNavigation=1`);
@@ -139,18 +147,24 @@ try {
     await link.hover(); await data; await page.waitForLoadState('networkidle');
   }
   const { categories: available } = await browserSession.send('Tracing.getCategories');
-  const requested = ['toplevel', 'gpu', 'gpu.angle', 'viz', 'cc', 'benchmark', 'blink', 'blink.user_timing', 'renderer.scheduler', 'devtools.timeline',
+  const requested = ['toplevel', 'gpu', 'gpu.angle', 'viz', 'cc', 'benchmark', 'blink', 'blink.user_timing', 'renderer.scheduler', 'devtools.timeline', 'v8.execute',
     'disabled-by-default-gpu.service', 'disabled-by-default-gpu.device', 'disabled-by-default-gpu.dawn',
-    'disabled-by-default-gpu.debug', 'disabled-by-default-viz.debug', 'disabled-by-default-devtools.timeline.frame'];
+    ...(minimal ? [] : ['disabled-by-default-gpu.debug', 'disabled-by-default-viz.debug']),
+    'disabled-by-default-devtools.timeline.frame'];
   const categories = available.length ? requested.filter(name => available.includes(name)) : requested;
-  const pageSession = await context.newCDPSession(page);
+  pageSession = await context.newCDPSession(page);
   await pageSession.send('Performance.enable');
   const clockMetrics = await pageSession.send('Performance.getMetrics');
   const sourceStyles = await page.locator('.interactive.selected .summary, .interactive.selected .spatial-summary-island').evaluateAll(nodes => nodes.map(node => ({
     className: node.className, willChange: getComputedStyle(node).willChange, transform: getComputedStyle(node).transform
   })));
+  if (sampleCpu) {
+    await pageSession.send('Profiler.enable');
+    await pageSession.send('Profiler.setSamplingInterval', { interval: cpuSamplingInterval });
+  }
   await browserSession.send('Tracing.start', { categories: categories.join(','), transferMode: 'ReturnAsStream', options: 'record-as-much-as-possible' });
   tracing = true;
+  if (sampleCpu) { await pageSession.send('Profiler.start'); profiling = true; }
   await page.evaluate(() => { window.gpuProbe.active = true; performance.mark('staged-probe-start'); });
   await link.evaluate(node => { performance.mark('staged-click'); node.click(); });
   await page.waitForFunction(() => (window.__stageVisualTest?.getNavigationTimings().early?.revealed ?? 0) > 0, undefined, { timeout: 60000 });
@@ -173,7 +187,14 @@ try {
     }]));
     return { timings, phases, catalog: window.__stageVisualTest.getCarouselStats(), probe: window.gpuProbe };
   });
-  await writeFile(join(output, 'probe.json'), JSON.stringify({ view, temperature, promotion: args.promote === 'true', prepareDom: args.prepareDom === 'true', sourceStyles, categories, clockMetrics, systemInfo, commandLine, browser: browser.version(), ...report }, null, 2));
+  if (profiling) {
+    const { profile } = await pageSession.send('Profiler.stop'); profiling = false;
+    await writeFile(join(output, 'cpu.cpuprofile'), JSON.stringify(profile));
+  }
+  await writeFile(join(output, 'probe.json'), JSON.stringify({ view, temperature,
+    instrumentation: { minimal, sampleCpu, cpuSamplingInterval: sampleCpu ? cpuSamplingInterval : null, probeFences,
+      latencyAcceptance: false, fencePolicy: probeFences ? 'One additional asynchronous queue fence per synchronous submission batch; never awaited by application code.' : 'No additional queue fences.' },
+    promotion: args.promote === 'true', prepareDom: args.prepareDom === 'true', sourceStyles, categories, clockMetrics, systemInfo, commandLine, browser: browser.version(), ...report }, null, 2));
   const complete = new Promise(resolve => browserSession.once('Tracing.tracingComplete', resolve));
   await browserSession.send('Tracing.end'); tracing = false;
   const { stream } = await complete;
@@ -188,6 +209,7 @@ try {
   process.stdout.write(`Trace saved to ${output}\n`);
   await context.close();
 } finally {
+  if (profiling) await pageSession?.send('Profiler.stop').catch(() => {});
   if (tracing) await browserSession.send('Tracing.end').catch(() => {});
   await browser.close();
 }
