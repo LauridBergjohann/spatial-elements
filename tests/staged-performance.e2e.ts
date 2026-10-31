@@ -11,6 +11,7 @@ const endpoint = process.env.SPATIAL_PERFORMANCE_ENDPOINT === 'dock' ? 'dock' : 
 const width = Number(process.env.SPATIAL_PERFORMANCE_WIDTH ?? 1440);
 if (!Number.isInteger(width) || width < 320) throw new Error('SPATIAL_PERFORMANCE_WIDTH must be an integer >= 320');
 const percentile = (values: number[], fraction: number) => [...values].sort((a, b) => a - b)[Math.ceil(values.length * fraction) - 1];
+const measurementProtocol = 'staged-performance-v2';
 
 for (const view of ['list', 'carousel'] as const) for (const temperature of ['cold', 'warm'] as const) {
 	test(`${width}px ${view} to ${endpoint}: ${samples} ${temperature} data and module navigations`, async ({ browser, baseURL }, testInfo) => {
@@ -23,14 +24,19 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 				// A slow source frame must not silently redefine a 60 Hz budget as 30 Hz.
 				const { budget: idleBudget, calibration: idleCalibration } = await page.evaluate(async () => {
 					const times: number[] = [];
+					let visibleThroughout = document.visibilityState === 'visible';
+					const visibilityChanged = () => { visibleThroughout &&= document.visibilityState === 'visible'; };
+					document.addEventListener('visibilitychange', visibilityChanged);
 					// Extra samples belong to the empty document, never a longer source-page wait.
 					// The acceptance budget still uses exactly the original first eleven gaps.
-					for (let i = 0; i < 121; i++) await new Promise<void>(resolve => requestAnimationFrame(time => { times.push(time); resolve(); }));
+					try {
+						for (let i = 0; i < 121; i++) await new Promise<void>(resolve => requestAnimationFrame(time => { times.push(time); resolve(); }));
+					} finally { document.removeEventListener('visibilitychange', visibilityChanged); }
 					const gaps = times.slice(1, 12).map((time, index) => time - times[index]).sort((a, b) => a - b);
 					return { budget: gaps[Math.floor(gaps.length / 2)], calibration: {
 						version: 'cadence-diagnostic-v1', timestamps: times,
 						document: 'blank-before-app', clock: 'raf-before-navigation',
-						crossOriginIsolated, visibilityState: document.visibilityState
+						crossOriginIsolated, visibilityState: document.visibilityState, visibleThroughout
 					} };
 				});
 				const errors: string[] = [];
@@ -87,9 +93,9 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 					const sample = (time: number) => {
 						if (probe.stop) return;
 						probe.frames.push(time);
-						if (document.querySelector<HTMLElement>('.stage')?.dataset.catalogStagedPhase === 'moving') {
+						if (!probe.changed && document.querySelector<HTMLElement>('.stage')?.dataset.catalogStagedPhase === 'moving') {
 							const current = source.getBoundingClientRect();
-							if (!probe.changed && Math.abs(current.x - rect.x) + Math.abs(current.y - rect.y) > 0.5) probe.changed = performance.now();
+							if (Math.abs(current.x - rect.x) + Math.abs(current.y - rect.y) > 0.5) probe.changed = performance.now();
 						}
 						requestAnimationFrame(sample);
 					};
@@ -124,7 +130,7 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 						gpuCalls: work.gpuCalls.filter(entry => entry.time >= timings.started && entry.time <= timings.revealed),
 						requests: performance.getEntriesByType('resource').filter(entry => entry.name.includes('/__data.json') || entry.name.includes('/nodes/')).map(entry => ({ name: entry.name, start: entry.startTime - timings.started, duration: entry.duration })) };
 				});
-				Object.assign(result, { sourceActivity, idleCalibration });
+				Object.assign(result, { sourceActivity, idleCalibration, measurementProtocol });
 				results.push(result);
 				if (profiler) {
 					const { profile } = await profiler.send('Profiler.stop');
@@ -148,11 +154,11 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 				expect.soft(result.gpuCalls.filter(call => call.time <= result.timings.motionEnded)).toEqual([]);
 				expect.soft(result.gpuCalls.filter(call => call.time >= result.timings.revealStarted && call.time <= result.timings.revealEnded)).toEqual([]);
 				Object.assign(result, { validationErrors: testInfo.errors.slice(previousErrors).map(error => error.message) });
-				await writeFile(testInfo.outputPath('samples.json'), JSON.stringify({ view, endpoint, temperature, samples,
+				await writeFile(testInfo.outputPath('samples.json'), JSON.stringify({ view, endpoint, temperature, samples, measurementProtocol,
 					completedSamples: results.length, profiled: Boolean(process.env.SPATIAL_PERFORMANCE_PROFILE), results }, null, 2));
 			} finally { await context.close(); }
 		}
-		const report = { view, endpoint, temperature, samples, completedSamples: results.length, profiled: Boolean(process.env.SPATIAL_PERFORMANCE_PROFILE), userAgent: browser.version(),
+		const report = { view, endpoint, temperature, samples, measurementProtocol, completedSamples: results.length, profiled: Boolean(process.env.SPATIAL_PERFORMANCE_PROFILE), userAgent: browser.version(),
 			machine: { platform: platform(), release: release(), cpu: cpus()[0]?.model }, viewport: { width, height: 1000, deviceScaleFactor: 1 },
 			firstMotionP95: percentile(results.map(result => result.latency), 0.95),
 			firstSubmitP95: percentile(results.map(result => result.submitted), 0.95),

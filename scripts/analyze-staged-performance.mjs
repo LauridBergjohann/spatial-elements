@@ -12,6 +12,7 @@ const containsTime = (range, time) => range && finite(time) && time >= range.sta
 const percentile = (values, fraction) => values.length ? [...values].sort((a, b) => a - b)[Math.ceil(values.length * fraction) - 1] : null;
 const statistics = values => ({ count: values.length, p50: percentile(values, 0.5), p95: percentile(values, 0.95), max: values.length ? Math.max(...values) : null });
 const roundoff = 1e-7; // Only absorb binary floating-point roundoff, not a frame-time tolerance.
+const measurementProtocolVersion = 'staged-performance-v2';
 const cadenceProtocol = Object.freeze({
   version: 'cadence-diagnostic-v1', timestampCount: 121,
   periodMinMs: 16, periodMaxMs: 17.5,
@@ -58,6 +59,24 @@ export function analyzeIdleCadence(input) {
     upper: 2 * period + cadenceProtocol.diagnosticHalfBandMs
   };
   return result;
+}
+
+/** A usable declared-60-Hz baseline is an eligibility requirement, never a replacement raw budget. */
+function assessFramePacingBaseline(sample, calibration) {
+  const input = sample.idleCalibration;
+  const reasons = [];
+  if (sample.measurementProtocol !== measurementProtocolVersion) reasons.push('missing-or-unknown-measurement-protocol');
+  if (input?.document !== 'blank-before-app' || input?.clock !== 'raf-before-navigation') reasons.push('unknown-baseline-document-or-clock');
+  if (input?.visibilityState !== 'visible' || input?.visibleThroughout !== true) reasons.push('baseline-not-confirmed-visible-throughout');
+  if (calibration.status !== 'stable') reasons.push(`calibration-${calibration.status}`);
+  const times = calibration.timestamps;
+  const firstGaps = times?.length >= 12 && times.slice(0, 12).every(finite)
+    ? times.slice(1, 12).map((time, index) => time - times[index]) : [];
+  const recordedBudget = percentile(firstGaps, 0.5);
+  if (!finite(sample.budget) || !finite(recordedBudget) || Math.abs(sample.budget - recordedBudget) > roundoff)
+    reasons.push('raw-budget-does-not-match-first-eleven-idle-gaps');
+  return { requiredProtocol: measurementProtocolVersion, recordedProtocol: sample.measurementProtocol ?? null,
+    usable: reasons.length === 0, reasons, recordedFirstElevenMedianMs: recordedBudget };
 }
 
 /** Only a full interval within a phase receives a cadence label; clipped edges are not frames. */
@@ -153,6 +172,7 @@ export function analyzeSample(sample, index = 0) {
   const budget = finite(sample.budget) && sample.budget > 0 ? sample.budget : null;
   const sourceBudget = finite(sample.sourceBudget) && sample.sourceBudget > 0 ? sample.sourceBudget : null;
   const calibration = analyzeIdleCadence(sample.idleCalibration);
+  const framePacingBaseline = assessFramePacingBaseline(sample, calibration);
   const frameTimes = Array.isArray(sample.frames) && sample.frames.every(finite) ? sample.frames : null;
   const ordered = frameTimes?.every((time, i) => i === 0 || time >= frameTimes[i - 1]);
   if (!frameTimes) warnings.push('No absolute RAF timestamps: legacy gaps cannot be located or attributed to scripts.');
@@ -211,6 +231,7 @@ export function analyzeSample(sample, index = 0) {
     revealDurationMs: reveal ? reveal.end - reveal.start : null,
     betweenPhasesDurationMs: betweenPhases ? betweenPhases.end - betweenPhases.start : null,
     measuredBudgetMs: budget, sourceBudgetMs: sourceBudget, sourceBudgetRatio: sourceBudget && budget ? sourceBudget / budget : null, warnings,
+    framePacingBaseline,
     cadenceDiagnostic: {
       version: cadenceProtocol.version, acceptanceGate: false, calibration,
       moving: summarizeCadencePhase(movingRAF, calibration), reveal: summarizeCadencePhase(revealRAF, calibration)
@@ -254,15 +275,18 @@ export function analyzeReport(input, { source = '', profiled = false } = {}) {
   const emptyListGate = key => results.some(result => result[key]?.length > 0)
     ? false : completeList(key) ? true : null;
   const validationGate = emptyListGate('validationErrors');
+  const usableBaseline = results.length > 0 && results.every(result => result.framePacingBaseline.usable);
   return {
     source, view: input.view ?? null, endpoint: input.endpoint ?? null, temperature: input.temperature ?? null,
     viewport: input.viewport ?? null, browser: input.userAgent ?? input.browser ?? null, machine: input.machine ?? null,
     expectedSamples: expected, actualSamples: results.length, profiled,
     eligibleForLatencyAcceptance: fullRun && completeClockLatency && completeDomLatency && validationGate === true,
-    eligibleForFramePacingAcceptance: fullRun && phaseComplete('movingRAF') && phaseComplete('revealRAF') && validationGate === true,
+    eligibleForFramePacingAcceptance: fullRun && phaseComplete('movingRAF') && phaseComplete('revealRAF') && validationGate === true && usableBaseline,
     eligibleForResourceAcceptance: fullRun && completeList('gpuCreatesClickThroughMotion') && completeList('gpuCreatesDuringReveal') && validationGate === true,
     latency: { firstMotion: motion, firstSubmit: submit, observedDomChange: dom },
     cadence: { idleBudgetMs: statistics(values('measuredBudgetMs')), sourceBudgetMs: statistics(values('sourceBudgetMs')), sourceToIdleRatio: statistics(values('sourceBudgetRatio')) },
+    framePacingBaseline: { requiredProtocol: measurementProtocolVersion,
+      usableSamples: results.filter(result => result.framePacingBaseline.usable).length, usableForAllSamples: usableBaseline },
     cadenceDiagnostic: {
       version: cadenceProtocol.version, acceptanceGate: false,
       calibrationCounts: Object.fromEntries(['stable', 'unstable', 'indeterminate'].map(status =>
@@ -355,7 +379,7 @@ async function selfTest() {
   assert.equal(revealResult.longFrames[0].scripts[2].forcedLayoutWhollyInReveal, true);
   assert.equal(revealResult.revealScriptCoverageMs, 40);
   const fullRevealReport = analyzeReport({ samples: 20, results: Array(20).fill(revealSample) });
-  assert.equal(fullRevealReport.eligibleForFramePacingAcceptance, true);
+  assert.equal(fullRevealReport.eligibleForFramePacingAcceptance, false); // Legacy samples lack the v2 baseline evidence.
   assert.equal(fullRevealReport.gates.noMovingRafGapAboveTwoBudgets, true);
   assert.equal(fullRevealReport.gates.noRevealRafGapAboveTwoBudgets, false);
   const smoothReveal = { ...revealSample, frames: [...revealSample.frames, 768, 784, 800].sort((a, b) => a - b) };
@@ -451,6 +475,63 @@ async function selfTest() {
   assert.equal(slowestValid.diagnosticBandMs.upper, 35.5);
   assert.equal(diagnoseCadenceGap(50, 'reveal', slowestValid).classification, 'above-two-period-band');
   assert.equal(summarizeCadencePhase({ ...diagnosed.movingRAF, status: 'incomplete' }, calibrated).status, 'indeterminate');
+
+  // Protocol v2 tightens eligibility only; raw thresholds, values and historical gates stay intact.
+  const visibleCalibration = { ...idleCalibration, document: 'blank-before-app', clock: 'raf-before-navigation',
+    visibilityState: 'visible', visibleThroughout: true };
+  const calibratedBudget = percentile(idleCalibration.timestamps.slice(1, 12)
+    .map((time, index) => time - idleCalibration.timestamps[index]), 0.5);
+  const v2Sample = { ...smoothReveal, measurementProtocol: measurementProtocolVersion,
+    budget: calibratedBudget, idleCalibration: visibleCalibration };
+  const full = value => analyzeReport({ samples: 20, results: Array(20).fill(value) });
+  const eligible = full(v2Sample);
+  assert.equal(eligible.eligibleForFramePacingAcceptance, true);
+  assert.deepEqual(eligible.framePacingBaseline, {
+    requiredProtocol: measurementProtocolVersion, usableSamples: 20, usableForAllSamples: true });
+  assert.equal(eligible.gates.noMovingRafGapAboveTwoBudgets, true);
+  assert.equal(eligible.gates.noRevealRafGapAboveTwoBudgets, true);
+  assert.equal(analyzeReport({ samples: 20, profiled: true, results: Array(20).fill(v2Sample) }).eligibleForFramePacingAcceptance, false);
+  assert.equal(analyzeReport({ samples: 20, results: Array(19).fill(v2Sample) }).eligibleForFramePacingAcceptance, false);
+  assert.equal(full({ ...v2Sample, frames: v2Sample.frames.filter(time => time < 1000) }).eligibleForFramePacingAcceptance, false);
+  const unversioned = full({ ...v2Sample, measurementProtocol: undefined });
+  assert.equal(unversioned.eligibleForFramePacingAcceptance, false);
+  assert.deepEqual(unversioned.gates, eligible.gates);
+  assert.equal(full({ ...v2Sample, measurementProtocol: 'staged-performance-v3' }).eligibleForFramePacingAcceptance, false);
+  assert.equal(full({ ...v2Sample, idleCalibration: undefined }).eligibleForFramePacingAcceptance, false);
+  for (const changed of [
+    { visibilityState: 'hidden' }, { visibleThroughout: false }, { visibleThroughout: undefined },
+    { document: 'application' }, { clock: 'unknown' }, { timestamps: skipped },
+    { timestamps: idleCalibration.timestamps.slice(1) }, { version: 'unknown' }
+  ]) {
+    const unusable = full({ ...v2Sample, idleCalibration: { ...visibleCalibration, ...changed } });
+    assert.equal(unusable.eligibleForFramePacingAcceptance, false);
+    assert.deepEqual(unusable.gates, eligible.gates);
+  }
+  assert.equal(full({ ...v2Sample, budget: calibratedBudget + 0.1 }).eligibleForFramePacingAcceptance, false);
+  const mixedBaseline = analyzeReport({ samples: 20, results: [...Array(19).fill(v2Sample),
+    { ...v2Sample, idleCalibration: { ...visibleCalibration, visibleThroughout: false } }] });
+  assert.equal(mixedBaseline.actualSamples, 20);
+  assert.equal(mixedBaseline.framePacingBaseline.usableSamples, 19);
+  assert.equal(mixedBaseline.eligibleForFramePacingAcceptance, false);
+  for (const gap of [50, 133]) {
+    const stalled = { ...v2Sample, timings: { ...v2Sample.timings, firstMotion: 20, motionEnded: 189 },
+      frames: [0, 20, 20 + gap, 189, ...v2Sample.frames.filter(time => time >= 192)] };
+    const report = full(stalled);
+    assert.equal(report.eligibleForFramePacingAcceptance, true); // Valid evidence may establish a failure.
+    assert.equal(report.gates.noMovingRafGapAboveTwoBudgets, false);
+    assert.equal(report.results[0].movingRAF.violations[0].duration, gap);
+  }
+  // A 30-Hz idle budget can numerically admit 50 ms in the legacy gate. It is not
+  // eligible evidence for this declared-60-Hz acceptance, even when all raw gates pass.
+  const slowCalibration = { ...visibleCalibration, timestamps: Array.from({ length: 121 }, (_, index) => index * 1000 / 30) };
+  const slowBudget = percentile(slowCalibration.timestamps.slice(1, 12).map((time, index) => time - slowCalibration.timestamps[index]), 0.5);
+  const fiftyMsSample = { ...v2Sample, budget: slowBudget, idleCalibration: slowCalibration,
+    frames: [0, 20, 70, 100, 704, 720, 770, 800, 850, 900, 950, 1000, 1008] };
+  const slowBaselineReport = full(fiftyMsSample);
+  assert.equal(slowBaselineReport.gates.noMovingRafGapAboveTwoBudgets, true);
+  assert.equal(slowBaselineReport.gates.noRevealRafGapAboveTwoBudgets, true);
+  assert.equal(slowBaselineReport.eligibleForFramePacingAcceptance, false);
+  assert.equal(slowBaselineReport.framePacingBaseline.usableSamples, 0);
   process.stdout.write('Staged-performance attribution checks passed.\n');
 }
 
@@ -478,6 +559,7 @@ async function main(args) {
       'Both phase gates use budget, the idle cadence before app startup. sourceBudget is diagnostic and cannot relax the threshold.',
       'cadence-diagnostic-v1 is additional interpretation only: 121 blank-document timestamps, stable declared 60 Hz calibration and a fixed +/-0.5 ms band around two periods.',
       'Borderline cadence labels are not passes. Missing, unknown or unstable calibration cannot classify a gap; raw gates and historical outcomes are unchanged.',
+      'Frame-pacing acceptance requires staged-performance-v2 evidence: a stable declared-60-Hz calibration visible throughout on the blank document, with budget equal to its original first-eleven-gap median. Missing evidence blocks eligibility, never changes raw gates.',
       'Absolute RAF samples must cover both boundaries of each phase. Missing markers/coverage produce incomplete gates, not passes.',
       'GPU creation gates cover click-through-motion and the exact reveal interval separately; phase labels cannot override timestamps.',
       'DOM observation must exist for every sample. Validation failures and missing validation records cannot establish acceptance.',

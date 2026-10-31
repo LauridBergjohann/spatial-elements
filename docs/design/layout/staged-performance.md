@@ -105,8 +105,9 @@ exclude a run from acceptance, even when its numerical thresholds happen to pass
 ## Additional cadence diagnostic, version 1
 
 `cadence-diagnostic-v1` is declared before the next repeated measurement. It supplements
-the original raw frame gates; it does not change their budget, thresholds, acceptance
-eligibility or earlier outcomes. A borderline observation is **not a pass**. This is a
+the original raw frame gates; its labels do not change their budget, thresholds or earlier
+outcomes. The separate version-2 eligibility requirement below now also requires usable
+calibration evidence. A borderline observation is **not a pass**. This is a
 diagnostic protocol for the declared 60 Hz test environment, not a universal browser rule.
 
 Before loading the application, the harness records **121 consecutive RAF timestamps**
@@ -167,6 +168,49 @@ The analyzer self-tests cover quantized calibration, unknown versions, malformed
 30 Hz rejection, missed idle intervals, changing cadence, 33.x/40/50 ms separation,
 unclassified phase boundaries and exact preservation of the existing gates.
 
+## Measurement protocol revision 2
+
+`staged-performance-v2` is a prospective measurement revision, recorded on every sample
+and complete/partial report. It corrects two measurement issues without changing the
+original raw thresholds or replacing historical data:
+
+1. The DOM-start probe stops querying the source rectangle after its first confirmed
+   position change. Previously, its timestamp stopped changing but its rectangle read
+   continued on every moving RAF. Those unnecessary reads could force style/layout work
+   inside the animation being measured. The first-observation condition and clock remain
+   unchanged; continuous RAF recording still runs through the final reveal frame.
+2. Frame-pacing acceptance requires a usable baseline for the declared 60 Hz environment.
+   Each sample must have the known measurement revision, the existing stable
+   `cadence-diagnostic-v1` calibration, its explicit blank-document/RAF-clock provenance,
+   and visibility confirmed throughout calibration. The recorded raw `budget` must equal
+   the median of that calibration's original first eleven gaps. The 121 timestamps still
+   do not replace that budget or relax either raw gate.
+
+Visibility changes are observed only during blank-document calibration and the listener
+is removed afterward. An unknown revision, missing evidence, hidden calibration, unstable
+cadence or inconsistent recorded budget makes the sample ineligible for frame-pacing
+acceptance. All samples remain in the raw distributions; there is no retry or filtering
+to find a favourable baseline. `framePacingBaseline` exposes per-sample reasons and the
+report's usable-sample count. This requirement is additional to complete phase coverage,
+runtime validation and the unprofiled twenty-sample requirement.
+
+In particular, a 30 Hz idle measurement could make a 50 ms gap numerically pass the
+unchanged raw `2 × budget` gate. Version 2 leaves that raw result visible but refuses it
+as evidence for a 60 Hz acceptance. A report is acceptable only when
+`eligibleForFramePacingAcceptance` is true **and** both raw phase gates pass. Eligibility
+alone can also describe a valid measurement which conclusively fails those gates.
+
+Old files are not rewritten, retroactively assigned a version or accepted under the new
+protocol. Their raw gaps, percentiles and raw gate outcomes remain reproducible; their
+missing version-2 evidence blocks a new frame-pacing acceptance. Prior latency/resource
+statistics keep their recorded meaning. New runs must identify this measurement revision,
+so reduced probe overhead is not confused with a product-code improvement.
+
+Self-tests retain the old raw-gate comparisons and add complete/mixed/missing baseline
+evidence, unknown revisions, hidden and unstable calibration, budget consistency, the
+30 Hz false-acceptance case, and genuine 50/133 ms failures with a valid 60 Hz baseline.
+No tolerance band becomes an acceptance rule: the ±0.5 ms labels remain diagnostic only.
+
 ## Acceptance scope
 
 The software gates cover source ownership, cancellation, known hero/compact/3XL endpoints,
@@ -174,7 +218,8 @@ native history, reduced motion and resource reuse. The timing target is p95 belo
 for first movement, first CPU submission and observed DOM movement. Source movement and content reveal each have
 a separate gate against intervals longer than two idle frame budgets; a fast click response
 does not compensate for later reveal stalls. Frame-pacing acceptance requires complete
-coverage in every sample of the unprofiled twenty-sample run, with no samples discarded.
+coverage and usable version-2 baseline evidence in every sample of the unprofiled
+twenty-sample run, with no samples discarded.
 Actual Android, iOS and Surface touch/sensor testing remains a separate physical-device
 check. Desktop automation does not establish universal frame pacing or sensor behavior.
 
