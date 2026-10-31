@@ -620,6 +620,20 @@ export class StageRenderPipeline {
 			return true;
 		});
 	}
+	/** Borrow the already selected scene output after all warm live passes. */
+	withSceneCapture<T>(draw: () => T): T | undefined {
+		const targets = this._activeRenderTargets;
+		if (this.disposed || !targets) return;
+		return withRendererState(this.ports.renderer, () => {
+			this.ports.renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
+			this.ports.renderer.setRenderTarget(targets.sceneCapture);
+			this.ports.renderer.setScissorTest(false);
+			return draw();
+		});
+	}
+	isSceneCaptureCurrent(target: THREE.RenderTarget, width: number, height: number) {
+		return !this.disposed && this._activeRenderTargets?.sceneCapture === target && target.width === width && target.height === height;
+	}
 	private resizeCanvasTarget(
 		target: THREE.CanvasTarget,
 		width: number,

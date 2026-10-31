@@ -1,5 +1,6 @@
 import { expect, test, vi } from 'vitest';
 import { StageExperience } from './StageExperience.js';
+import * as THREE from 'three/webgpu';
 
 function fixture() {
 	let finish!: () => void;
@@ -12,6 +13,7 @@ function fixture() {
 		pageBinding: { token: 3, isCurrent: (token: number) => token === stage.pageBinding.token },
 		catalogPresentation: presentation,
 		catalogBackgroundReveal: { value: 0 },
+		presentation: { invalidateSceneEndpoints: vi.fn(), readiness: { entry: undefined } },
 		syncPanelLayouts: vi.fn(),
 		updatePanelPointerInteraction: vi.fn((delta: number) => {
 			expect(delta).toBe(0);
@@ -64,6 +66,81 @@ test('a pre-aborted reveal does no work and a failed pass restores state before 
 	expect(stage.catalogBackgroundReveal.value).toBe(0);
 	expect(applied).toEqual([0.5, 0]);
 	expect(stage.renderer.backend.device.queue.onSubmittedWorkDone).not.toHaveBeenCalled();
+	expect(stage.stagedRevealPreparing).toBeUndefined();
+});
+
+function cacheFixture() {
+	const f = fixture(), target = new THREE.RenderTarget(300, 200);
+	const ticket = { commit: vi.fn(() => true), cancel: vi.fn() };
+	Object.assign(f.stage, { catalogHandoff: true, catalogMotionComplete: true, catalogDockTarget: false, detailMedia: 'minimap' });
+	f.stage.renderer.backend.isWebGPUBackend = true;
+	f.stage.renderer.getRenderTarget = () => target;
+	f.stage.pipeline.withSceneCapture = (draw: () => unknown) => draw();
+	f.stage.pipeline.isSceneCaptureCurrent = () => true;
+	f.stage.presentation.prepareSceneEndpoints = vi.fn(() => {
+		expect(f.stage.pipeline.warmRevealFrame).toHaveBeenCalledTimes(2);
+		return ticket;
+	});
+	return { ...f, ticket };
+}
+
+test('scene endpoints are taken after all warm live writes and installed only after the GPU fence', async () => {
+	const { stage, finish, ticket } = cacheFixture();
+	const result = stage.prepareStagedReveal();
+	expect(stage.presentation.prepareSceneEndpoints).toHaveBeenCalledTimes(1);
+	expect(stage.stagedRevealPreparing).toBe(stage.stagedSceneCacheOwner);
+	expect(ticket.commit).not.toHaveBeenCalled();
+	finish(); await expect(result).resolves.toBe(true);
+	expect(ticket.commit).toHaveBeenCalledTimes(1);
+	expect(ticket.cancel).not.toHaveBeenCalled();
+	expect(stage.stagedRevealPreparing).toBeUndefined();
+});
+
+test.each(['abort', 'binding', 'dispose', 'replacement'] as const)('a %s while fencing cancels the cache lease and cannot install pixels', async reason => {
+	const { stage, finish, ticket } = cacheFixture(); const abort = new AbortController();
+	const result = stage.prepareStagedReveal(abort.signal);
+	if (reason === 'abort') abort.abort();
+	if (reason === 'binding') stage.pageBinding.token++;
+	if (reason === 'dispose') stage.disposed = true;
+	if (reason === 'replacement') stage.stagedSceneCacheOwner = {};
+	finish(); await expect(result).resolves.toBe(false);
+	expect(ticket.commit).not.toHaveBeenCalled(); expect(ticket.cancel).toHaveBeenCalledTimes(1);
+	expect(stage.stagedRevealPreparing).toBeUndefined();
+});
+
+test('a rejected GPU fence cancels the pending lease and releases the hidden clock hold', async () => {
+	const { stage, ticket } = cacheFixture();
+	stage.renderer.backend.device.queue.onSubmittedWorkDone.mockRejectedValue(new Error('device lost'));
+	await expect(stage.prepareStagedReveal()).rejects.toThrow('device lost');
+	expect(ticket.commit).not.toHaveBeenCalled(); expect(ticket.cancel).toHaveBeenCalledTimes(1);
+	expect(stage.stagedRevealPreparing).toBeUndefined();
+});
+
+test('a stale pixel ticket keeps the prepared live fallback instead of retrying or rejecting navigation', async () => {
+	const { stage, finish, ticket } = cacheFixture(); ticket.commit.mockReturnValue(false);
+	const result = stage.prepareStagedReveal(); finish(); await expect(result).resolves.toBe(true);
+	expect(stage.presentation.prepareSceneEndpoints).toHaveBeenCalledTimes(1);
+	expect(stage.pipeline.warmRevealFrame).toHaveBeenCalledTimes(2);
+});
+
+test('the held List destination adopts already-ready asynchronous High before warming without waiting for optional work', async () => {
+	const { stage, finish } = cacheFixture();
+	stage.pageModelReady = true;
+	stage.presentation.readiness.entry = { highState: 'ready' };
+	stage.presentation.readiness.mode = 'asynchronous';
+	stage.adoptPreparedHigh = vi.fn();
+	const result = stage.prepareStagedReveal();
+	expect(stage.adoptPreparedHigh).toHaveBeenCalledExactlyOnceWith();
+	expect(stage.adoptPreparedHigh.mock.invocationCallOrder[0]).toBeLessThan(stage.pipeline.warmRevealFrame.mock.invocationCallOrder[0]);
+	finish(); await expect(result).resolves.toBe(true);
+});
+
+test.each(['loading', 'failed', 'unavailable'])('the cache does not force %s High preparation', async highState => {
+	const { stage, finish } = cacheFixture(); stage.pageModelReady = true;
+	stage.presentation.readiness.entry = { highState }; stage.presentation.readiness.mode = 'asynchronous';
+	stage.adoptPreparedHigh = vi.fn();
+	const result = stage.prepareStagedReveal(); expect(stage.adoptPreparedHigh).not.toHaveBeenCalled();
+	finish(); await expect(result).resolves.toBe(true);
 });
 
 test('missing bound render targets fail readiness without waiting on a queue', async () => {

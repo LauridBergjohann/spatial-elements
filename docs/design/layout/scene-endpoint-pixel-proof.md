@@ -1,6 +1,6 @@
 # Isolated four-endpoint pixel proof
 
-Status: the initial native-WebGPU run **refutes bilinear equivalence for the unchanged production renderer**, including opaque materials. A separately labeled single-premultiplication control passes all numerical comparisons, but refutes its alpha=1 assumption for transmission. Protocol v2 then **passes the actual production overlay comparison** with that fixture-only cover correction. No corrected-runtime run or production cache has been evaluated here.
+Status: the initial native-WebGPU run **refutes bilinear equivalence for the original production renderer**, including opaque materials. A separately labeled single-premultiplication control passes the numerical comparisons but refutes its alpha=1 assumption for transmission. Protocol v2 then passes the actual overlay comparison. After the separate cover correction and cache implementation were built, **both independent v2 and actual-API v3 pass without a fixture override**. These are functional pixel/ownership results, not performance acceptance.
 
 The proposed narrow optimization concerns the staged Hero while its camera, pose, materials, lighting and animation inputs are held. It does not apply to arbitrary NodeMaterial/custom shaders, time-dependent effects, framebuffer-dependent blending, changing geometry, or unvalidated scenes. Resize/projection/refit, Low/High asset generation, environment, background/tint, materials and render-quality changes would invalidate all endpoint pixels. Cancel, back navigation and destroy must retain/release the existing presentation owners independently of a pixel cache.
 
@@ -61,3 +61,22 @@ The recorded v2 control ran on the unchanged runtime `02dc683` / build `53025`, 
 | Nested/overlapping transmission | 0.0009765625 | 0.75 | 0.12451171875 |
 
 This establishes bounded equivalence for the tested held scenes with the single-premultiplication correction and the actual overlay blend settings. It does not retroactively pass the original renderer. The production cover correction is a separate change (`ca8e59e`); a newly built runtime must still run this proof **without** the fixture override before serving as corrected-runtime evidence. A scene-cache implementation needs separate ownership, invalidation and performance validation.
+
+## Actual cache API comparison
+
+`SCENE_ENDPOINT_CACHE=runtime` selects protocol `scene-endpoint-half-float-v3-runtime-cache`. Its candidate calls the built `SpatialElementRefinement.prepareSceneEndpoints`, fences/commits the ticket, and calls the real `render` cache path with independent p/q. A live candidate callback throws: silently falling back to a real scene render cannot pass this mode. Counters must show one preparation, ready installation and hit per sample.
+
+This mode allocates **zero fixture endpoint targets**. It inventories the actual API's two additional resolved-only color targets, releases them after each candidate is read, and borrows the existing Low target for display-color readback before reference rendering. Capture clock/state, fixed sample pairs, destination seeds and pixel tolerances remain unchanged. The fixture supplies a static guard for its immutable inputs; production eligibility/owner/fence-race behavior is covered by separate CPU and navigation tests.
+
+After a coherent runtime build, run both the independent v2 mathematical comparison and the v3 actual-API comparison without `SCENE_ENDPOINT_CONTROL`, in distinct artifact directories with accurate runtime metadata. Both are required: one checks scene equivalence, the other checks the implementation.
+
+## Corrected runtime and actual-API results
+
+Build **95956**, labeled **49c5bc7-wip** (the coherent package/Demo snapshot including the separate cover correction and pending SceneCache changes), passed both browser tests with Exit0 and no fixture cover override:
+
+- Independent v2: `.artifacts/scene-endpoint-v2-95956-49c5bc7-wip/`.
+- Actual API v3: `.artifacts/scene-endpoint-v3-95956-49c5bc7-wip/`.
+
+Each run covers 48 samples. Both retain the numerical maxima in the table above: linear error at most 0.0009765625, at most 0.75 of the predeclared tolerance, display error at most 0.12451171875 eight-bit levels, and exact repeat-reference equality. All destination-seed comparisons are **exactly zero** before/after capture/warmup; the candidate is not reseeded. Every v3 case records 12 actual cache preparations, ready installations and hits, exactly two resolved-only additional targets and zero fixture endpoint targets. Capture q/frame/completion/scene-state checks pass. Successful reports are stored as JSON files in the named artifact directories.
+
+Two separate functional production cases also passed on that snapshot: `.artifacts/scene-endpoint-navigation-95956-49c5bc7-wip/`. During revealing, List recorded a ready cache with 20 hits and four pending reads; Carousel recorded a ready cache with 11 hits and no pending reads. Both finished in High. These counts prove that the real navigation path uses the cache; they are not timing or frame-pacing measurements.

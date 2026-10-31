@@ -200,6 +200,8 @@ export class StageExperience {
 	private catalogMotionComplete = false;
 	private stagedDetailTarget?: ReturnType<CatalogSpatialElementLayer['getStagedDetailTarget']>;
 	private stagedAwaitingFirstFrame = false;
+	private stagedSceneCacheOwner?: object;
+	private stagedRevealPreparing?: object;
 	private releaseStagedSensorHold?: () => void;
 	/** Use only already submitted source resources during the pre-route movement. */
 	beginStagedDetailMotion(source: CatalogGeometryEndpoint, fit: LayoutRect, targetOptions?: StagedDockTargetOptions) {
@@ -1119,34 +1121,72 @@ export class StageExperience {
 	async prepareStagedReveal(signal?: AbortSignal): Promise<boolean> {
 		if (this.disposed || signal?.aborted || !this.catalogPresentation.active) return false;
 		const generation = this.pageBinding.token;
+		const owner = {};
+		const pageBackground = this.pageBackground;
+		this.presentation.invalidateSceneEndpoints();
+		this.stagedSceneCacheOwner = this.stagedRevealPreparing = owner;
 		const presentation = this.catalogPresentation;
 		const backgroundReveal = this.catalogBackgroundReveal.value;
 		let prepared = true;
+		let succeeded = false;
+		let ticket: import('./SpatialElementRefinement.js').SceneEndpointTicket | undefined;
 		try {
-			// Programmatic dock restoration may still own the temporary scroll targets.
-			// The reveal uses full quality; do not let its settle timer select cold targets.
-			this.pipeline.setScrollRenderQuality(false);
-			this.syncPanelLayouts();
-			for (const opacity of [0.5, 1]) {
-				this.catalogPresentation = {
-					...presentation, enterOpacity: opacity, sharedOpacity: opacity
-				};
-				this.catalogBackgroundReveal.value = opacity;
+			try {
+				// List/Card does not necessarily flush after binding. Adopt only already-ready
+				// asynchronous High; this starts no loading and advances neither p nor q.
+				if (this.pageModelReady && this.catalogHandoff && this.catalogMotionComplete && !this.catalogDockTarget &&
+					this.catalogMode !== 'synchronous' && this.pagePreparation?.highState === 'ready') this.adoptPreparedHigh();
+				// Programmatic dock restoration may still own the temporary scroll targets.
+				// The reveal uses full quality; do not let its settle timer select cold targets.
+				this.pipeline.setScrollRenderQuality(false);
+				this.syncPanelLayouts();
+				for (const opacity of [0.5, 1]) {
+					this.catalogPresentation = {
+						...presentation, enterOpacity: opacity, sharedOpacity: opacity
+					};
+					this.catalogBackgroundReveal.value = opacity;
+					this.updatePanelPointerInteraction(0);
+					if (!this.pipeline.warmRevealFrame()) { prepared = false; break; }
+				}
+				// Shader/target warm-up is finished. Only now capture final endpoint pixels.
+				if (prepared && this.catalogHandoff && this.catalogMotionComplete && !this.catalogDockTarget &&
+					(this.renderer.backend as unknown as { isWebGPUBackend?: boolean }).isWebGPUBackend) {
+					try {
+						ticket = this.pipeline.withSceneCapture(() => {
+							const target = this.renderer.getRenderTarget()!;
+							const width = target.width, height = target.height;
+							return this.presentation.prepareSceneEndpoints(this.renderer, this.scene, this.camera,
+								this.pagePreparation?.environment.value?.target.texture,
+								(p) => { const previous = this.catalogBackgroundReveal.value; this.catalogBackgroundReveal.value = p;
+									try { this.pipeline.renderStageContents(); } finally { this.catalogBackgroundReveal.value = previous; } },
+								() => !this.disposed && !signal?.aborted && this.stagedSceneCacheOwner === owner && this.pageBinding.isCurrent(generation) &&
+									this.catalogPresentation.active && !this.catalogDockTarget && this.detailMediaActive &&
+									this.pageBackground === pageBackground && this.pipeline.isSceneCaptureCurrent(target, width, height),
+								[this.backgroundScene, this.tintScene], [this.tintCamera]);
+						});
+					} catch (error) { console.warn('Optional staged scene endpoint preparation failed; retaining live rendering', error); }
+				}
+			} finally {
+				this.catalogPresentation = presentation;
+				this.catalogBackgroundReveal.value = backgroundReveal;
 				this.updatePanelPointerInteraction(0);
-				if (!this.pipeline.warmRevealFrame()) { prepared = false; break; }
 			}
+			if (!prepared) return false;
+			const device = (this.renderer.backend as unknown as { device?: GPUDevice }).device;
+			await device?.queue.onSubmittedWorkDone();
+			if (this.disposed || signal?.aborted || !this.pageBinding.isCurrent(generation) || this.stagedSceneCacheOwner !== owner) return false;
+			// A live Low/High write during the fence invalidates its ticket even with the same page generation.
+			ticket?.commit();
+			succeeded = true;
+			return true;
 		} finally {
-			this.catalogPresentation = presentation;
-			this.catalogBackgroundReveal.value = backgroundReveal;
-			this.updatePanelPointerInteraction(0);
+			if (this.stagedRevealPreparing === owner) this.stagedRevealPreparing = undefined;
+			if (!succeeded) ticket?.cancel();
 		}
-		if (!prepared) return false;
-		const device = (this.renderer.backend as unknown as { device?: GPUDevice }).device;
-		await device?.queue.onSubmittedWorkDone();
-		return !this.disposed && !signal?.aborted && this.pageBinding.isCurrent(generation);
 	}
 
 	setCatalogTransitionPresentation(state: CatalogTransitionPresentation) {
+		if (!state.active) { this.stagedSceneCacheOwner = undefined; this.presentation.invalidateSceneEndpoints(); }
 		if (!state.active) this.scheduleZoomPreparation();
 		this.catalogPresentation = normalizeCatalogPresentation(state);
 		for (const entry of this.exitingMinimaps) {
@@ -1260,6 +1300,7 @@ export class StageExperience {
 			backgroundPrepared: this.catalogBackgroundPrepared,
 			handoffPoint: this.getCatalogGeometryPoint(),
 			representations: {
+				sceneEndpointCache: this.presentation.getSceneEndpointStats(),
 				retainedBlendTargets: this.returnBlend?.targetCount ?? 0,
 				state: this.refinementState,
 				hero: this.model ? (this.refinementState === 'high' ? 'high' : 'low') : null,
@@ -1789,6 +1830,8 @@ export class StageExperience {
 	}
 
 	finishCatalogGeometry() {
+		this.stagedSceneCacheOwner = undefined;
+		this.presentation.invalidateSceneEndpoints();
 		this.stagedAwaitingFirstFrame = false;
 		this.stagedDetailTarget = undefined;
 		this.releaseStagedSensorHold?.();
@@ -3214,7 +3257,9 @@ export class StageExperience {
 					this.collectModelPickTargets(model);
 					this.pipeline.createModelOutline(outline);
 				},
-				window.matchMedia('(prefers-reduced-motion: reduce)').matches
+				window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+				{ backgroundReveal: this.catalogBackgroundReveal.value,
+					advanceClock: !(this.stagedRevealPreparing && this.stagedRevealPreparing === this.stagedSceneCacheOwner) }
 			)
 		)
 			return;

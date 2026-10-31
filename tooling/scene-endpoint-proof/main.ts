@@ -8,6 +8,7 @@ import { compareLinearPixels, interiorPairs } from './pixelComparison';
 
 const width = 192, height = 160; // RGBA16F row length is a multiple of WebGPU's 256-byte alignment.
 const singlePremultiplicationControl = new URLSearchParams(location.search).get('coverPremultiplication') === 'single';
+const runtimeCache = new URLSearchParams(location.search).get('cache') === 'runtime';
 export const cases = ['opaque', 'transparent', 'rough-transmission', 'nested-transmission'] as const;
 type MaterialCase = typeof cases[number];
 const output = document.querySelector<HTMLPreElement>('#result')!;
@@ -101,7 +102,9 @@ async function runCase(renderer: THREE.WebGPURenderer, kind: MaterialCase) {
 	const destination = new THREE.RenderTarget(width, height, { type: THREE.HalfFloatType, samples: 4, depthBuffer: true, stencilBuffer: false });
 	destination.texture.colorSpace = THREE.NoColorSpace; destination.texture.generateMipmaps = false;
 	const refinement = new SpatialElementRefinement(true);
-	const extra = [colorTarget(), colorTarget()]; // The ONLY two additional endpoint render targets.
+	const extra = runtimeCache ? [] : [colorTarget(), colorTarget()]; // Runtime mode allocates only the real API's two targets.
+	const describeTargets = (targets: THREE.RenderTarget[]) => targets.map(t => ({ type: t.texture.type, halfFloat: t.texture.type === THREE.HalfFloatType, width: t.width, height: t.height, samples: t.samples, depthBuffer: t.depthBuffer, stencilBuffer: t.stencilBuffer }));
+	let additionalTargets = describeTargets(extra);
 	const pipeline = new StageRenderPipeline({
 		renderer, container: document.body, backgroundCanvas: canvas, backgroundCanvasTarget: renderer.getCanvasTarget(),
 		scene, backgroundScene, tintScene, camera, tintCamera, pageBackground: '#f0e8dc',
@@ -131,23 +134,32 @@ async function runCase(renderer: THREE.WebGPURenderer, kind: MaterialCase) {
 		refinement.render(renderer, drawModel, false, 0.41);
 		const [lowTarget, highTarget] = refinement.getRenderTargets();
 		if (!lowTarget || !highTarget) throw new Error('Refinement targets missing');
-		const sourceTexture = texture(lowTarget.texture); copy = quad(sourceTexture);
+		const sourceTexture = texture(lowTarget.texture);
 		const p = uniform(0), q = uniform(0);
-		candidate = quad(mix(mix(texture(extra[0].texture), texture(lowTarget.texture), p), mix(texture(extra[1].texture), texture(highTarget.texture), p), q), true);
+		if (!runtimeCache) {
+			copy = quad(sourceTexture);
+			candidate = quad(mix(mix(texture(extra[0].texture), texture(lowTarget.texture), p), mix(texture(extra[1].texture), texture(highTarget.texture), p), q), true);
+		}
 		// Same final ACES/exposure/sRGB operations as StageDisplay/CanvasTarget, reported separately.
 		display = quad(vec4(sRGBTransferOETF(acesFilmicToneMapping(texture(destination.texture).rgb, float(STAGE_TONE_MAPPING_EXPOSURE))) as THREE.Node<'vec3'>, 1));
 		const displayPixels = async () => {
 			// Endpoint 0 has already been consumed; reuse it instead of allocating another readback target.
-			renderer.setRenderTarget(extra[0]); display!.render(renderer);
-			const result = await pixels(renderer, extra[0]); renderer.setRenderTarget(destination); return result;
+			const scratch = runtimeCache ? lowTarget : extra[0];
+			renderer.setRenderTarget(scratch); display!.render(renderer);
+			const result = await pixels(renderer, scratch); renderer.setRenderTarget(destination); return result;
 		};
 		const endpointReports: ReturnType<typeof compareLinearPixels>[] = [];
 		let capturesPreservedState = true;
-		const captureEndpoints = () => {
+		const captureEndpoints = async () => {
 			const saved = { p: backgroundReveal, frames: refinement.frames, q: refinement.presentedProgress, complete: refinement.complete,
 				low: low.visible, high: high.visible, environment: scene.environment, target: renderer.getRenderTarget(),
 				projection: camera.projectionMatrix.toArray(), world: camera.matrixWorld.toArray() };
+			let ticket: ReturnType<SpatialElementRefinement['prepareSceneEndpoints']>;
 			try {
+				if (runtimeCache) {
+					ticket = refinement.prepareSceneEndpoints(renderer, (high, p) => { backgroundReveal = p; drawModel(high); }, { isValid: () => true, dispose: () => {} });
+					additionalTargets = describeTargets(refinement.getRenderTargets().slice(2));
+				} else {
 				// Keep the same High-before-Low ordering as the actual refinement renderer.
 				for (const reveal of [0, 1]) for (const useHigh of [true, false]) {
 					backgroundReveal = reveal;
@@ -155,7 +167,12 @@ async function runCase(renderer: THREE.WebGPURenderer, kind: MaterialCase) {
 					renderer.setRenderTarget(target); drawModel(useHigh);
 					if (reveal === 0) { sourceTexture.value = target.texture; renderer.setRenderTarget(extra[useHigh ? 1 : 0]); copy!.render(renderer); }
 				}
+				}
 			} finally { backgroundReveal = saved.p; renderer.setRenderTarget(saved.target); }
+			if (runtimeCache) {
+				await (renderer.backend as unknown as { device: GPUDevice }).device.queue.onSubmittedWorkDone();
+				if (!ticket?.commit()) throw new Error('Runtime endpoint ticket did not commit');
+			}
 			capturesPreservedState &&= saved.frames === refinement.frames && saved.q === refinement.presentedProgress && saved.complete === refinement.complete &&
 				saved.low === low.visible && saved.high === high.visible && saved.environment === scene.environment && saved.p === backgroundReveal &&
 				saved.projection.every((n, i) => n === camera.projectionMatrix.elements[i]) && saved.world.every((n, i) => n === camera.matrixWorld.elements[i]);
@@ -166,9 +183,15 @@ async function runCase(renderer: THREE.WebGPURenderer, kind: MaterialCase) {
 			renderer.setClearColor(0xffffff, 1); // Production Stage clear state for the separate scene passes.
 		};
 		for (const seed of ['#ffffff', '#153044']) for (const pair of [...[{ backgroundReveal: 0, refinementProgress: 0 }, { backgroundReveal: 1, refinementProgress: 1 }], ...interiorPairs]) {
-			captureEndpoints(); p.value = pair.backgroundReveal; q.value = pair.refinementProgress;
-			seedDestination(seed); candidate.render(renderer);
+			seedDestination(seed);
+			const seedBefore = await pixels(renderer, destination);
+			await captureEndpoints(); p.value = pair.backgroundReveal; q.value = pair.refinementProgress;
+			const seedPreservation = compareLinearPixels(await pixels(renderer, destination), seedBefore);
+			// Do not reseed the candidate: an unintended preparation overlay must remain observable.
+			if (runtimeCache) refinement.render(renderer, () => { throw new Error('Expected an actual cache hit, not a live candidate render'); }, false, pair.refinementProgress, { backgroundReveal: pair.backgroundReveal });
+			else candidate!.render(renderer);
 			const proposed = await pixels(renderer, destination);
+			if (runtimeCache) refinement.invalidateSceneEndpoints(); // Display scratch/reference now borrow existing Low, with no stale cache lease.
 			const proposedDisplay = await displayPixels();
 			backgroundReveal = pair.backgroundReveal;
 			seedDestination(seed);
@@ -187,13 +210,14 @@ async function runCase(renderer: THREE.WebGPURenderer, kind: MaterialCase) {
 				return { min, max };
 			};
 			if (pair.backgroundReveal === 0 || pair.backgroundReveal === 1) endpointReports.push(comparison);
-			samples.push({ ...pair, destinationSeed: seed, comparison, repeatedReference: repeat,
+			samples.push({ ...pair, destinationSeed: seed, seedPreservation, comparison, repeatedReference: repeat,
 				finalCompositeAlphaRange: { candidate: alphaRange(proposed), reference: alphaRange(reference) },
 				displayDifference: { maxEncodedError: displayComparison.maxError, maxEightBitLevels: 255 * displayComparison.maxError, rmseEncoded: displayComparison.rmse, maxErrorIndex: displayComparison.maxErrorIndex } });
 		}
 		return { kind, samples, capturesPreservedState, endpointControlsPass: endpointReports.every(r => r.equivalent),
-			additionalTargets: extra.map(t => ({ type: t.texture.type, halfFloat: t.texture.type === THREE.HalfFloatType, width: t.width, height: t.height, samples: t.samples, depthBuffer: t.depthBuffer, stencilBuffer: t.stencilBuffer })),
-			additionalResolvedBytes: extra.length * width * height * 8,
+			additionalTargets, additionalResolvedBytes: additionalTargets.length * width * height * 8,
+			runtimeCacheStats: runtimeCache ? refinement.getSceneEndpointStats() : null,
+			fixtureExtraTargetCount: extra.length,
 			eligibleForStaticStandardMaterialProof: capturesPreservedState && samples.every(s => s.comparison.equivalent && s.repeatedReference.equivalent) };
 	} finally {
 		renderer.setRenderTarget(null);
@@ -215,7 +239,8 @@ async function run() {
 		renderer.setClearColor(0xffffff, 1); renderer.setScissorTest(false);
 		const results = [];
 		for (const kind of cases) { output.textContent = `Running ${kind}…`; results.push(await runCase(renderer, kind)); }
-		const report = { protocol: 'scene-endpoint-half-float-v2-overlay', diagnosticOnly: true, productionCacheEnabled: false,
+		const report = { protocol: runtimeCache ? 'scene-endpoint-half-float-v3-runtime-cache' : 'scene-endpoint-half-float-v2-overlay', diagnosticOnly: true, productionCacheEnabled: false,
+			candidate: runtimeCache ? 'actual-SpatialElementRefinement-prepareSceneEndpoints-render' : 'independent-bilinear-fixture',
 			control: singlePremultiplicationControl ? 'fixture-only-single-background-cover-premultiplication' : 'unmodified-production-renderer',
 			backend: 'webgpu', threeRevision: THREE.REVISION, width, height, maxAdditionalResolvedBytesAtProductionCap: 2 * 512 * 1024 * 8,
 			refinementMode: 'Production NormalBlending/premultiplied overlay; candidate and reference use identical white and dark opaque destination seeds',

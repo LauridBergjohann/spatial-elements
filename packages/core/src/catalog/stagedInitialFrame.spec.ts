@@ -21,7 +21,7 @@ function fixture() {
 		preparationGate: { setPaused: vi.fn() }, detailPreparationGate: { setPaused: vi.fn() },
 		catalogPresentation: { active: true }, releaseSpatialCapture: vi.fn(),
 		backgroundCanvas: { style: { removeProperty: vi.fn() } },
-		presentation: { readiness: { mode: 'asynchronous' }, finishHandoff: vi.fn() }
+		presentation: { readiness: { mode: 'asynchronous' }, finishHandoff: vi.fn(), invalidateSceneEndpoints: vi.fn() }
 	});
 	const begin = () => {
 		const result = stage.beginStagedDetailMotion({ spatialElementId: 'column' }, { x: 0, y: 0, width: 600, height: 600 });
@@ -57,6 +57,8 @@ test.each([0.05, 1])('the first explicit flush submits progress %s, including re
 test('cancelling before the first moved frame releases the pause and schedules the restored source', () => {
 	const f = fixture(); f.begin();
 	f.stage.finishCatalogGeometry();
+	expect(f.stage.presentation.invalidateSceneEndpoints).toHaveBeenCalledTimes(1);
+	expect(f.stage.stagedSceneCacheOwner).toBeUndefined();
 	expect(f.stage.stagedAwaitingFirstFrame).toBe(false);
 	expect(f.stage.stagedDetailTarget).toBeUndefined();
 	expect(f.request).toHaveBeenCalledTimes(1);
