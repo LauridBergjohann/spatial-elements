@@ -50,9 +50,10 @@ for (const surface of ['frosted', 'glass']) test(`carousel ${surface}: model hov
 	const neighbourId = await neighbour.locator('[data-catalog-geometry]').getAttribute('data-spatial-element-id');
 	const initialBlur = await page.evaluate(id => window.__stageVisualTest!.getCarouselStats()!.actors.find(a => a.spatialElementId === id)!.blur, neighbourId);
 	expect(initialBlur).toBeGreaterThan(0);
-	const identity = `${await neighbour.locator('.eyebrow').textContent()} — ${await neighbour.locator('h3').textContent()}`;
-	await expect(neighbour.locator('.spatial-element-target')).toHaveAttribute('title', identity);
-	await expect(neighbour.locator('.spatial-element-target')).toHaveAccessibleName(`Select ${identity}`);
+	// Authoring contract: identify geometry with its complete title, without the eyebrow.
+	const title = (await neighbour.locator('h3').textContent())!;
+	await expect(neighbour.locator('.spatial-element-target')).toHaveAttribute('title', title);
+	await expect(neighbour.locator('.spatial-element-target')).toHaveAccessibleName(`Select ${title}`);
 	await page.evaluate(id => {
 		const samples: number[] = [];
 		Object.assign(window, { carouselHoverBlurSamples: samples });
@@ -77,6 +78,7 @@ for (const surface of ['frosted', 'glass']) test(`carousel ${surface}: model hov
 	await expect(page).toHaveURL(/categories\/carousel/);
 	await expect(neighbour.locator('.summary')).toHaveCSS('filter', 'none');
 	const target = neighbour.locator('.spatial-element-target');
+	await expect(target).toHaveAccessibleName(`More information: ${title}`);
 	const href = await target.getAttribute('href');
 	expect(href).toBe(await neighbour.locator('.information').first().getAttribute('href'));
 	await expect(target).not.toHaveAttribute('role', 'button');
