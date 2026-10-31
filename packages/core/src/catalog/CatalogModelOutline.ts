@@ -19,6 +19,7 @@ export class CatalogModelOutline {
 	private maskMaterial?: THREE.MeshBasicMaterial;
 	private material?: THREE.MeshBasicNodeMaterial;
 	private quad?: THREE.QuadMesh;
+	private offscreenQuad?: THREE.QuadMesh;
 	private captures = 0;
 	private passes = 0;
 	getRenderTargets() { return this.capture ? [this.capture] : []; }
@@ -43,6 +44,7 @@ export class CatalogModelOutline {
 			this.material.colorNode = this.controls.color;
 			this.material.opacityNode = createOutlineOpacity(texture(this.capture.texture), this.controls);
 			this.quad = new THREE.QuadMesh(this.material);
+			this.offscreenQuad = new THREE.QuadMesh(this.material);
 		}
 		let mask = this.masks.get(model);
 		if (!mask) {
@@ -83,6 +85,7 @@ export class CatalogModelOutline {
 		const destination = renderer.getRenderTarget();
 		const viewport = destination ? destination.viewport.clone() : renderer.getViewport(new THREE.Vector4());
 		const clearColor = renderer.getClearColor(new THREE.Color()), clearAlpha = renderer.getClearAlpha();
+		const scissor = renderer.getScissor(new THREE.Vector4());
 		const scissorTest = renderer.getScissorTest();
 		try {
 			renderer.setScissorTest(false);
@@ -97,17 +100,23 @@ export class CatalogModelOutline {
 				this.captures++;
 			}
 			renderer.setRenderTarget(destination);
+			// Only the offscreen mask ignores clipping. The final composite must
+			// respect its caller, including a zero-area idle-preparation scissor.
+			renderer.setScissor(scissor);
+			renderer.setScissorTest(scissorTest);
 			const scaleX = viewport.z / innerWidth, scaleY = viewport.w / innerHeight;
 			const output = new THREE.Vector4(viewport.x + left * scaleX, viewport.y + top * scaleY, width * scaleX, height * scaleY);
 			if (destination) destination.viewport.copy(output);
 			else renderer.setViewport(output);
-			this.quad!.render(renderer);
+			// Keep Canvas and offscreen color-space variants owned independently.
+			(destination ? this.offscreenQuad : this.quad)!.render(renderer);
 			this.passes++;
 		} finally {
 			renderer.setRenderTarget(destination);
 			if (destination) destination.viewport.copy(viewport);
 			else renderer.setViewport(viewport);
 			renderer.setClearColor(clearColor, clearAlpha);
+			renderer.setScissor(scissor);
 			renderer.setScissorTest(scissorTest);
 		}
 	}

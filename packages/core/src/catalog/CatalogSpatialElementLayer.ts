@@ -994,6 +994,8 @@ export class CatalogSpatialElementLayer {
 		this.stagedPreparing = true;
 		const fog = this.scene.fog, environment = this.handoffScene.environment, handoffFog = this.handoffScene.fog;
 		const exitOpacity = this.exitOpacity;
+		const outlines = actors.filter(actor => actor.pose && actor.clip && actor.renderRect);
+		const hover = outlines.map(actor => actor.hover);
 		const handoffCamera = this.handoffCamera.clone();
 		try {
 			try { withRendererState(renderer, () => {
@@ -1006,8 +1008,19 @@ export class CatalogSpatialElementLayer {
 				// use additional resolve passes. A direct scene render misses those
 				// target/pipeline variants despite compiling the same model shaders.
 				this.exitOpacity = 0.5;
+				// Focus fires before Kit's beforeNavigate callback. Prepare its first
+				// outline while idle so that pre-navigation frame cannot compile it.
+				for (const actor of outlines) actor.hover = Math.max(actor.hover, 0.5);
 				if (actors.some(actor => Boolean(actor.pose))) this.renderRear(renderer);
 				this.draw(renderer, 'front');
+				// The fade pass warms offscreen output. The ordinary focused source
+				// needs the Canvas variant too, without submitting visible pixels.
+				for (const actor of outlines) {
+					renderer.setRenderTarget(null);
+					renderer.setScissor(0, 0, 0, 0); renderer.setScissorTest(true);
+					this.outline.render(renderer, this.carouselCamera, actor.model, actor.renderRect!, actor.clip!,
+						0.5, this.interactionTheme());
+				}
 				this.handoffScene.environment = this.scene.environment;
 				for (const actor of actors) {
 					const model = actor.model, parent = model.parent;
@@ -1031,6 +1044,7 @@ export class CatalogSpatialElementLayer {
 				// Restore borrowed scene state before yielding to GPU completion; a
 				// normal render or fallback navigation can run while that wait is pending.
 				this.exitOpacity = exitOpacity;
+				outlines.forEach((actor, index) => { actor.hover = hover[index]; });
 				this.scene.fog = fog; this.handoffScene.environment = environment; this.handoffScene.fog = handoffFog;
 				this.handoffCamera.copy(handoffCamera);
 			}

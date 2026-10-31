@@ -70,6 +70,23 @@ test('carousel warming uses its real glass/backdrop rear pass as well as the fro
 	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer)).toBe(true);
 });
 
+test('idle preparation warms both focused output variants and restores the real hover before yielding', async () => {
+	const f = fixture();
+	Object.assign(f.actor, { pose: {}, hover: 0.12,
+		clip: { left: 0, top: 0, width: 1440, height: 900 }, renderRect: { left: 400, top: 200, width: 200, height: 200 } });
+	const actor = f.actor as typeof f.actor & { hover: number };
+	const outline = { render: vi.fn(() => { expect(actor.hover).toBe(0.5); }) };
+	Object.assign(f.layer, { outline, interactionTheme: () => ({}) });
+	f.front.mockImplementation(() => { expect(actor.hover).toBe(0.5); });
+	const work = f.layer.prepareStagedNavigation(f.renderer);
+	expect(outline.render).toHaveBeenCalledOnce();
+	expect(f.renderer.setScissor).toHaveBeenLastCalledWith(new THREE.Vector4(0, 0, 1440, 900));
+	expect(actor.hover).toBe(0.12);
+	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer)).toBe(false);
+	f.finish(); await work;
+	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer)).toBe(true);
+});
+
 test('viewport or environment changes invalidate a previously warmed actor', async () => {
 	const f = fixture(); const work = f.layer.prepareStagedNavigation(f.renderer); f.finish(); await work;
 	vi.stubGlobal('innerHeight', 700); expect(f.layer.isStagedDetailReady('a', undefined, f.renderer)).toBe(false);
