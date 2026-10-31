@@ -14,12 +14,45 @@ import {
 	getSpatialElementTabsDockDestination,
 	getSpatialElementTabsDockProgress,
 	getSpatialElementTabsDockTarget,
+	resolveSpatialElementDockLayout,
 	type SpatialElementDockRect
 } from './spatialElementDock.js';
 
 const source: SpatialElementDockRect = { left: 40, top: 150, width: 120, height: 120 };
 
 describe('spatialElement dock geometry', () => {
+	it.each([
+		[430, 76, 80, 0], [600, 76, 80, 0], [840, 80, 80, 40],
+		[1200, 86, 80, 44], [1600, 86, 112, 44], [2100, 86, 138, 44]
+	])('uses canonical dock and submenu dimensions at %ipx', (width, height, minimapWidth, tabsHeight) => {
+		const result = resolveSpatialElementDockLayout({ width, height: 900 }, 400)!;
+		expect(result.header.top).toBe(0);
+		expect(result.header.height).toBe(height);
+		expect(result.minimap.width).toBe(minimapWidth);
+		expect(result.minimap.top + result.minimap.height / 2).toBe(height / 2);
+		expect(result.submenu?.height ?? 0).toBe(tabsHeight);
+		if (result.submenu) {
+			expect(result.submenu.width).toBe(400);
+			expect(result.submenu.top).toBe(height);
+		}
+	});
+	it('shares safe area and scrollbar geometry with navigation obstruction insets', () => {
+		const result = resolveSpatialElementDockLayout({ width: 900, height: 900, scrollbarWidth: 15,
+			safeArea: { left: 20, right: 30, top: 24 } }, 3000)!;
+		expect(result.header).toEqual({ left: 20, top: 24, width: 835, height: 80 });
+		expect(result.submenu).toEqual({ left: 28, top: 104, width: 819, height: 40 });
+		expect(result.sectionOffset).toBe(152);
+	});
+	it('leaves the fixed split-pane header to its own composition', () => {
+		expect(resolveSpatialElementDockLayout({ width: 2400, height: 900 })).toBeUndefined();
+		expect(resolveSpatialElementDockLayout({ width: 2400, height: 500 })?.layout).toBe('2xl');
+	});
+	it('fits the rail into the narrow outer band at the lower 2XL boundary', () => {
+		const result = resolveSpatialElementDockLayout({ width: 1809, height: 900 })!;
+		expect(result.minimap).toEqual({ left: 8, top: -9.25, width: 104.5, height: 104.5 });
+		expect(result.header).toEqual({ left: 8, top: 0, width: 1793, height: 86 });
+		expect(result.header.left + result.titleReserve).toBe(136.5);
+	});
 	it('creates a restrained full-width destination', () => {
 		expect(getSpatialElementDockDestination(1000)).toEqual({
 			left: 16,

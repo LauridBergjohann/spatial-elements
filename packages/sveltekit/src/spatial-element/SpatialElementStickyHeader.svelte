@@ -2,15 +2,13 @@
 	import type { ResolvedSpatialElementData as SpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 	import { catalogActionSemantic } from '@spatial-elements/core/catalog/catalogAction';
 	import { ShoppingCart } from 'lucide-svelte';
-	import SpatialElementTabList from './SpatialElementTabList.svelte';
+	import './layout.generated.css';
 	import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
 	const catalogEndpoint = createCatalogEndpointAction();
 	import type { SpatialElementSectionNavigationItem } from '@spatial-elements/core/spatial-element/types';
 
 	let {
-		activeSectionId,
 		spatialElement,
-		sections
 	}: {
 		activeSectionId?: string;
 		spatialElement: SpatialElementData;
@@ -54,6 +52,7 @@
 
 	<div class="sticky-header-layout">
 		<div class="sticky-header-copy">
+			{#if spatialElement.eyebrow}
 			<p
 				class="sticky-header-kicker"
 				use:catalogEndpoint={{
@@ -65,6 +64,7 @@
 			>
 				{spatialElement.eyebrow}
 			</p>
+			{/if}
 			<p
 				class="sticky-header-title"
 				use:catalogEndpoint={{
@@ -82,6 +82,7 @@
 			{#if spatialElement.action.href}
 				<a
 					class="sticky-header-action"
+					data-spatial-element-dock-action
 					use:catalogEndpoint={{
 						brandId: spatialElement.brandId,
 						spatialElementId: spatialElement.id,
@@ -92,7 +93,7 @@
 					data-catalog-semantic={catalogActionSemantic(spatialElement.action)}
 					href={spatialElement.action.href}
 					rel="external"
-					aria-label={spatialElement.action.ariaLabel}
+					aria-label={spatialElement.action.ariaLabel ?? spatialElement.action.label}
 				>
 					<ShoppingCart size={29} strokeWidth={2} aria-hidden="true" />
 				</a>
@@ -107,8 +108,9 @@
 					data-catalog-rich-shared="primary-action"
 					data-catalog-semantic={catalogActionSemantic(spatialElement.action)}
 					class="sticky-header-action"
+						data-spatial-element-dock-action
 					type="button"
-					aria-label={spatialElement.action.ariaLabel}
+						aria-label={spatialElement.action.ariaLabel ?? spatialElement.action.label}
 				>
 					<ShoppingCart size={29} strokeWidth={2} aria-hidden="true" />
 				</button>
@@ -123,7 +125,7 @@
 		aria-hidden="true"
 		inert
 	>
-		<SpatialElementTabList {activeSectionId} {sections} variant="docked" />
+		<!-- The controller moves the existing live tab list here when it docks. -->
 	</div>
 </header>
 
@@ -134,20 +136,15 @@
 		border-radius: inherit;
 		pointer-events: none;
 	}
-	@media (max-width: 1100px) {
-		.sticky-header-summary-surface {
-			right: 66px;
-		}
-	}
 	.spatial-element-sticky-header {
 		position: fixed;
 		/* SpatialElementDockController portals this element outside the translated document. */
-		top: 8px;
-		left: 16px;
+		top: 0;
+		left: 0;
 		z-index: 20;
 		box-sizing: border-box;
-		width: calc(100vw - 32px);
-		height: 86px;
+		width: 100%;
+		height: var(--spatial-detail-dock-height);
 		border: 0;
 		border-radius: var(--spatial-element-panel-radius);
 		visibility: hidden;
@@ -185,7 +182,7 @@
 		position: fixed;
 		z-index: 19;
 		box-sizing: border-box;
-		height: 52px;
+		height: var(--spatial-detail-submenu-height);
 		padding: 0;
 		border: 0;
 		border-radius: var(--spatial-element-tabs-dock-top-radius)
@@ -254,13 +251,13 @@
 		display: grid;
 		position: relative;
 		z-index: 3;
-		grid-template-columns: minmax(0, 1fr) 56px;
+		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
 		gap: 16px;
 		box-sizing: border-box;
 		width: 100%;
 		height: 100%;
-		padding: 14px 16px 14px var(--spatial-element-sticky-minimap-reserve, 150px);
+		padding: 8px 16px 8px var(--spatial-element-sticky-minimap-reserve, 96px);
 		opacity: var(--spatial-element-sticky-header-progress, 0);
 	}
 
@@ -271,7 +268,7 @@
 
 	.sticky-header-copy {
 		display: grid;
-		gap: 4px;
+		gap: 0;
 		min-width: 0;
 	}
 
@@ -282,75 +279,45 @@
 	}
 
 	.sticky-header-kicker {
-		font-size: 18px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 14px;
 		font-weight: 400;
-		line-height: 1.1;
+		line-height: 20px;
 	}
 
 	.sticky-header-title {
 		overflow: hidden;
 		font-size: 24px;
-		font-weight: 520;
-		line-height: 1.15;
+		font-weight: 600;
+		line-height: 32px;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
 	.sticky-header-action {
+		visibility: hidden;
 		display: grid;
 		place-items: center;
-		width: 56px;
-		height: 56px;
+		width: 40px;
+		height: 40px;
 		padding: 0;
 		border: 0;
-		border-radius: 7px;
+		border-radius: var(--spatial-element-control-radius);
 		color: var(--spatial-element-on-accent);
 		background: var(--spatial-element-accent);
 		text-decoration: none;
 		cursor: pointer;
 	}
+	.spatial-element-sticky-header:global([data-action-active]) .sticky-header-action { visibility: visible; }
 
-	@media (max-width: 1100px) {
-		.spatial-element-sticky-header {
-			top: 8px;
-			left: 8px;
-			width: calc(100vw - 16px);
-			height: 72px;
-			border-radius: min(var(--spatial-element-panel-radius), 14px);
-		}
-
+	@media (width < 840px) {
 		.sticky-header-layout {
-			grid-template-columns: minmax(0, 1fr) 48px;
 			gap: 8px;
-			padding: 10px 10px 10px var(--spatial-element-sticky-minimap-reserve, 112px);
+			padding-right: 8px;
 		}
-
-		.sticky-header-copy {
-			gap: 2px;
-		}
-
-		.sticky-header-kicker {
-			font-size: 13px;
-		}
-
-		.sticky-header-title {
-			font-size: 17px;
-			font-weight: 600;
-		}
-
-		.sticky-header-action {
-			width: 48px;
-			height: 48px;
-		}
-	}
-
-	@media (max-width: 460px) {
-		.sticky-header-kicker {
-			font-size: 12px;
-		}
-
-		.sticky-header-title {
-			font-size: 15px;
-		}
+		.sticky-header-title { font-size: 18px; line-height: 24px; }
+		.spatial-element-sticky-tabs { display: none; }
 	}
 </style>

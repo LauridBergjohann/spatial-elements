@@ -26,6 +26,7 @@
 	import type { SpatialElementData, SpatialElementSectionNavigationItem } from '@spatial-elements/core/spatial-element/types';
 	import { resolveSpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 	import { registerSpatialPage } from './spatialPageContext.js';
+	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
 
 	const SPATIAL_ELEMENT_OVERVIEW_SECTION = {
 		id: 'overview',
@@ -48,6 +49,7 @@
 	// Read raw assets here, so the parent stage never evaluates outgoing DOM-derived content.
 	registerSpatialPage(() => element ? { kind: 'detail', element } : { kind: 'content', hdr: '' });
 	const endpoints = getContext<CatalogEndpointRegistry | undefined>(CATALOG_ENDPOINTS);
+	const stageContext = getContext<StageContext | undefined>(STAGE_CONTEXT_KEY);
 	let sections = $state<SpatialElementSectionNavigationItem[]>([]);
 	let activeSectionId = $state<string | undefined>(SPATIAL_ELEMENT_OVERVIEW_SECTION.id);
 	let mainElement: HTMLElement;
@@ -104,7 +106,7 @@
 	}
 
 	onMount(() => {
-		const dock = new SpatialElementDockController(mainElement);
+		const dock = new SpatialElementDockController(mainElement, () => stageContext?.getLayoutMetrics?.('stable'));
 		dock.start();
 		const unregisterPresentation = endpoints?.registerPresentation(
 			{ brandId: brand.id, spatialElementId: spatialElement.id },
@@ -183,11 +185,11 @@
 		/>
 
 		{#key spatialElement.id}<SpatialElementHelp />{/key}
-		<SpatialElementSummaryPanel {spatialElement} />
+		{#key spatialElement.id}<SpatialElementSummaryPanel {spatialElement} />{/key}
 	</section>
 
 	<div class="spatial-element-content">
-		<div class="spatial-element-section-list spatial-content-container" data-catalog-transition-dom="enter">
+		<div class="spatial-element-section-list spatial-content-width spatial-content-container" data-catalog-transition-dom="enter">
 			<SectionSurfaceGroup>{@render children?.()}</SectionSurfaceGroup>
 		</div>
 		<!-- Read after the section snippet has registered its metadata during SSR. -->
@@ -198,35 +200,27 @@
 <style>
 	.spatial-element-main {
 		--spatial-element-section-scroll-offset: 150px;
-		--spatial-element-hero-edge-gap: clamp(32px, 2.2vw, 42px);
-
-		width: min(1550px, calc(100vw - 120px), 100%);
-		margin: 0 auto;
+		width: 100%;
+		margin: 0;
 	}
 
 	.spatial-element-hero {
-		--spatial-element-hero-column-gap: clamp(28px, 4vw, 70px);
 		position: relative;
 		box-sizing: border-box;
-		display: grid;
-		grid-template-columns: minmax(420px, 1fr) minmax(360px, 494px);
-		gap: var(--spatial-element-hero-column-gap);
-		align-items: start;
-		width: calc(100vw - var(--spatial-element-hero-edge-gap) - var(--spatial-element-hero-edge-gap));
-		min-height: clamp(610px, calc(100vh - 230px), 760px);
-		margin-left: calc(50% - 50vw + var(--spatial-element-hero-edge-gap));
-		padding-left: max(0px, calc(50vw - 50% - var(--spatial-element-hero-edge-gap)));
+		display: flex;
+		flex-direction: column;
+		width: 100%;
 	}
 
 	.spatial-element-content {
 		display: flex;
 		flex-direction: column;
-		width: calc(100vw - var(--spatial-element-content-inline-inset) - var(--spatial-element-content-inline-inset));
-		margin-left: calc(50% - 50vw + var(--spatial-element-content-inline-inset));
+		width: 100%;
 	}
 
 	.spatial-element-section-list {
 		order: 2;
+		margin-top: var(--spatial-detail-submenu-after-gap, 0px);
 	}
 
 	.spatial-element-content :global(.spatial-element-tabs-anchor) {
@@ -234,33 +228,29 @@
 	}
 
 	.spatial-element-section-list :global(.content-section:first-child) {
-		margin-top: 8px;
+		margin-top: 0;
 	}
 
 	.spatial-element-hero :global(.spatial-element-visual) {
-		grid-column: 1;
-		grid-row: 1;
-		min-height: clamp(540px, calc(100vh - 300px), 680px);
-		border-radius: 28px;
+		order: -1;
+		flex: none;
+		margin-left: var(--spatial-detail-fit-left);
+		width: calc(100% - var(--spatial-detail-fit-left) - var(--spatial-detail-fit-right));
+		height: var(--spatial-detail-fit-height);
+		min-height: 0;
 		background: transparent;
 		pointer-events: none;
 	}
-
-	@media (max-width: 1100px) {
-		.spatial-element-main {
-			width: min(calc(100vw - 40px), 100%);
-		}
-
-		.spatial-element-content {
-			width: 100%;
-			margin-left: 0;
-		}
-
-		.spatial-element-hero {
-			grid-template-columns: 1fr;
-			width: 100%;
-			margin-left: 0;
-			padding-left: 0;
-		}
+	@media (min-width: 840px) {
+		.spatial-element-hero { height: var(--spatial-detail-fit-height); }
+		.spatial-element-content { padding-top: 8px; }
+		.spatial-element-content :global(.spatial-element-tabs-anchor) { margin-left: 8px; max-width: calc(100% - 16px); }
+	}
+	@media (min-width: 1200px) {
+		.spatial-element-content :global(.spatial-element-tabs-anchor) { max-width: calc(100% - 32px); }
+	}
+	@media (min-width: 1600px) {
+		.spatial-element-content { padding-top: 12px; }
+		.spatial-element-content :global(.spatial-element-tabs-anchor) { margin-left: calc((100% - var(--spatial-detail-content-width)) / 2); max-width: var(--spatial-detail-content-width); }
 	}
 </style>

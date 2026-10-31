@@ -247,8 +247,8 @@
 
 <style>
 	.model-tools {
-		grid-column: 1; grid-row: 1; align-self: start; justify-self: end; position: relative;
-		margin-top: 6px; margin-inline-end: calc(var(--model-tools-gap, 32px) - var(--spatial-element-hero-column-gap));
+		position: absolute; top: 0; right: var(--spatial-detail-fit-right);
+		margin: 0;
 		width: 128px; height: 40px; z-index: 6; visibility: hidden; pointer-events: none;
 	}
 	.model-tools.enhanced { visibility: visible; pointer-events: auto; }
@@ -284,5 +284,4 @@
 	.navigation-hint { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid currentColor; font-size: 12px; }
 	.navigation-hint a { color: var(--spatial-element-accent); text-decoration: underline; text-underline-offset: 2px; }
 	.navigation-hint a:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: 3px; border-radius: 2px; }
-	@media (max-width: 1100px) { .model-tools { margin-inline-end: 0; } }
 </style>

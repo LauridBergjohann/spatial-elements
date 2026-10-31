@@ -13,8 +13,9 @@
  } = $props();
  const catalogEndpoint = createCatalogEndpointAction();
 </script>
-		<div bind:this={element} class="summary-presentation" style:min-height={`${Math.max(504 - contentInset * 2, 0)}px`}>
+		<div bind:this={element} class="summary-presentation">
 			<div class="panel-copy">
+				{#if spatialElement.eyebrow}
 				<p
 					class="panel-kicker"
 					data-shared-role="eyebrow"
@@ -23,6 +24,7 @@
 				>
 					{spatialElement.eyebrow}
 				</p>
+				{/if}
 				<svelte:element this={heading} class="summary-title"
 					id={heading === 'h1' ? 'spatial-element-title' : undefined}
 					tabindex={heading === 'h1' ? -1 : undefined}
@@ -34,7 +36,7 @@
 				</svelte:element>
 			</div>
 
-			<ul
+			{#if spatialElement.features.length}<ul
 				class="feature-list"
 				aria-label="SpatialElement highlights"
 				use:catalogEndpoint={address('features')}
@@ -49,7 +51,7 @@
 						</span>
 					</li>
 				{/each}
-			</ul>
+			</ul>{/if}
 
 			{#if spatialElement.action}
 				{#if spatialElement.action.href}
@@ -100,15 +102,13 @@
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
-		justify-content: space-between;
-		gap: 24px;
+		gap: 20px;
 		pointer-events: auto;
 	}
 
 	.summary-title {
-		max-width: 390px;
 		margin: 10px 0 0;
-		font-size: clamp(30px, 3vw, 40px);
+		font-size: 24px;
 		font-weight: 780;
 		line-height: 1.16;
 	}
@@ -123,11 +123,11 @@
 
 	.feature-list {
 		display: grid;
-		gap: 20px;
+		gap: 12px;
 		margin: 0;
 		padding: 0;
 		color: var(--spatial-element-body);
-		font-size: 18px;
+		font-size: 16px;
 		list-style: none;
 	}
 
@@ -176,7 +176,8 @@
 	}
 
 	.spatial-element-action-label {
-		white-space: nowrap;
+		white-space: normal;
 	}
+	@container spatial-summary (min-width: 420px) { .summary-title { font-size: 32px; } }
 
 </style>

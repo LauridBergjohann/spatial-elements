@@ -176,7 +176,8 @@ export function resolveDetailLayout(input: ResponsiveLayoutInput) {
 	const right = available.x + available.width;
 	const contentLeft = content.x - available.x;
 	const railSize = layout === '2xl'
-		? Math.min(available.width * tokens.hero['2xl'].railWidthRatio, hero.railSize) : hero.railSize;
+		? Math.min(available.width * tokens.hero['2xl'].railWidthRatio, hero.railSize,
+			Math.max(0, contentLeft - hero.railStageGap - tokens.hero['2xl'].railMinInset)) : hero.railSize;
 	const railInset = layout === '2xl' ? contentLeft - hero.railStageGap - railSize : hero.railInset;
 	const top = split ? base.pane.y : base.breadcrumb.y + base.breadcrumb.height;
 	const fitHeight = split ? Math.max(0, available.height - hero.heightOffset)

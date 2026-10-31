@@ -96,8 +96,17 @@
 				data-spatial-element-tab-id={section.id}
 				data-spatial-element-tab-label={section.title}
 				aria-current={currentSectionId === section.id ? 'location' : undefined}
+				aria-label={section.id === 'overview' ? section.title : undefined}
+				class:overview={section.id === 'overview'}
 			>
-				<span>{section.title}</span>
+				{#if section.id === 'overview'}
+					<!-- Author-supplied detail-overview.svg; see layout source manifest. -->
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+						stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M12 10.5 L9 13.5 M12 16.5 L12 10.5 M15 13.5 L12 10.5 M2 6.5 L22 6.5" />
+						<rect x="2" y="3" width="20" height="18" rx="2" />
+					</svg>
+				{:else}<span>{section.title}</span>{/if}
 			</a>
 		{/each}
 	</div>
@@ -219,6 +228,8 @@
 		content: attr(data-spatial-element-tab-label);
 		visibility: hidden;
 	}
+	a.overview { width: 48px; padding: 0 12px; }
+	a.overview::before { content: none; }
 
 	.spatial-element-tab-list:global([data-mouse-hover]) a:hover:not([aria-current='location']) {
 		background: color-mix(in srgb, var(--spatial-element-body) 8%, transparent);

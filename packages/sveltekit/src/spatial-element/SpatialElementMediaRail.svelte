@@ -3,8 +3,9 @@
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 	import type { ResolvedSpatialElementData as SpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
+	import type { SpatialElementMediaItem } from '@spatial-elements/core/spatial-element/types';
 
-	let { spatialElement }: { spatialElement: SpatialElementData } = $props();
+	let { spatialElement, selectedId, onselect }: { spatialElement: SpatialElementData; selectedId?: string; onselect?: (media: SpatialElementMediaItem) => void } = $props();
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
 	const radii = $derived(resolveSpatialThemeRadii(theme));
@@ -34,18 +35,22 @@
 				data-spatial-element-departing-media-content={media.kind === 'minimap' ? undefined : ''}
 			>
 				{#if media.kind === 'minimap'}
-					<button type="button" aria-label={media.label} class="thumb thumb-minimap active">
+					<button type="button" aria-label={media.label} aria-pressed={selectedId ? selectedId === media.id : true} onclick={() => onselect?.(media)} class="thumb thumb-minimap active">
 						{#if spatialElement.fallbackImage}
 							<img class="minimap-poster" src={spatialElement.fallbackImage} alt="" />
 						{/if}
 					</button>
 				{:else if media.kind === 'drawing'}
-					<button type="button" aria-label={media.label} class="thumb thumb-drawing">
+					<button type="button" aria-label={media.label} onclick={() => onselect?.(media)} class="thumb thumb-drawing">
 						<span class="drawing-sheet" aria-hidden="true"></span>
 					</button>
-				{:else}
-					<button type="button" aria-label={media.label} class="thumb thumb-image">
+				{:else if media.kind === 'image'}
+					<button type="button" aria-label={media.label} aria-pressed={selectedId === media.id} onclick={() => onselect?.(media)} class="thumb thumb-image">
 						<img src={media.src} alt={media.alt} />
+					</button>
+				{:else}
+					<button type="button" aria-label={media.label} aria-pressed={selectedId === media.id} onclick={() => onselect?.(media)} class="thumb thumb-image">
+						{#if media.poster}<img src={media.poster} alt="" />{:else}<span aria-hidden="true">▶</span>{/if}
 					</button>
 				{/if}
 			</Panel>
@@ -55,18 +60,27 @@
 
 <style>
 	.spatial-element-rail {
-		position: absolute;
-		top: 0;
-		left: 0;
+		position: relative;
+		flex: none;
+		width: calc(100% - var(--spatial-detail-media-left) * 2);
+		height: var(--spatial-detail-media-size);
+		margin-top: var(--spatial-detail-media-stage-gap);
+		margin-left: var(--spatial-detail-media-left);
 		display: grid;
-		gap: 14px;
+		grid-auto-flow: column;
+		grid-auto-columns: var(--spatial-detail-media-size);
+		gap: var(--spatial-detail-media-gap);
+		justify-content: start;
 		justify-items: start;
+		overflow-x: auto;
+		overflow-y: hidden;
+		overscroll-behavior: contain;
 		pointer-events: auto;
 	}
 
 	.spatial-element-media-anchor {
-		width: 120px;
-		height: 120px;
+		width: 100%;
+		aspect-ratio: 1;
 	}
 
 	:global(.thumbnail-panel) {
@@ -154,12 +168,20 @@
 		content: '100 mm';
 	}
 
-	@media (max-width: 1100px) {
+	@media (min-width: 840px) {
 		.spatial-element-rail {
-			position: relative;
-			left: 0;
-			grid-auto-flow: column;
-			justify-content: start;
+			position: absolute;
+			top: 0;
+			left: var(--spatial-detail-media-left);
+			width: var(--spatial-detail-media-size);
+			height: var(--spatial-detail-fit-height);
+			margin: 0;
+			grid-auto-flow: row;
+			grid-auto-columns: 100%;
+			grid-auto-rows: max-content;
+			align-content: start;
+			overflow-x: hidden;
+			overflow-y: auto;
 		}
 	}
 </style>

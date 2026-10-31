@@ -2,6 +2,7 @@
 	import type { SpatialElementLodPair } from '@spatial-elements/core/catalog/spatialElementLodPair';
 	import { DEFAULT_BACKGROUND } from '@spatial-elements/core/stage/stageConstants';
 	import { onMount, setContext, tick } from 'svelte';
+	import { ResponsiveViewportMetrics } from '@spatial-elements/core/spatial-element/ResponsiveViewportMetrics';
 	import type { Snippet } from 'svelte';
 	import type {
 		BackgroundSettings,
@@ -149,6 +150,7 @@
 	let domLayerHidden = $state(false);
 	let domLayerOpacity = $state(1);
 	let experience = $state<StageExperience | null>(null);
+	let layoutMetrics: ResponsiveViewportMetrics | undefined;
 	let stageState = $state<'loading' | 'enhanced' | 'fallback'>('loading');
 	let zoomFocusState = $state<StageZoomFocusState>({
 		focus: 0,
@@ -188,6 +190,7 @@
 	};
 
 	setContext<StageContext>(STAGE_CONTEXT_KEY, {
+		getLayoutMetrics: (mode) => layoutMetrics?.read(mode),
 		isEnhanced: () => isEnhanced,
 		updatePanelAppearance: scheduleAppearanceUpdate,
 		prefetchSpatialElement: (config) => experience?.prefetchSpatialElement(config),
@@ -215,6 +218,8 @@
 	});
 
 	onMount(() => {
+		layoutMetrics = new ResponsiveViewportMetrics(stage);
+		layoutMetrics.start();
 		// The semantic page is already usable. Only announce unusually slow enhancement.
 		const statusTimer = window.setTimeout(() => {
 			if (stageState === 'loading') showStatus = true;
@@ -277,6 +282,7 @@
 			const panels = getPanelTargets();
 			const viewport = getViewportTarget();
 			const instance = new StageExperience(stage, {
+				readLayoutMetrics: (mode) => layoutMetrics?.read(mode),
 				deviceOrientation,
 				renderSettings,
 				dracoDecoderPath,
@@ -360,6 +366,8 @@
 
 		return () => {
 			window.clearTimeout(statusTimer);
+			layoutMetrics?.destroy();
+			layoutMetrics = undefined;
 			fullscreenController?.dispose();
 			fullscreenController = undefined;
 			virtualScroll?.destroy();

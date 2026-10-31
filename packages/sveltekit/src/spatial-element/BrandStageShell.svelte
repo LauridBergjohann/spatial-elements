@@ -4,6 +4,8 @@
 	import Stage from '../stage/Stage.svelte';
 	import PointerHint from './PointerHint.svelte';
 	import SpatialNavigationShell from './SpatialNavigationShell.svelte';
+	import SpatialSummaryHost from './SpatialSummaryHost.svelte';
+	import type { SpatialSummarySnippet } from './spatialSummary.js';
 	import type { StageRenderSettings } from '@spatial-elements/core';
 	import { getSpatialThemeStyle } from './spatialThemeStyle.js';
 	import { provideSpatialTheme } from './brandContext.js';
@@ -28,12 +30,14 @@
 		children?: Snippet;
 		/** Persistent main-menu content. The shell owns its box and surface. */
 		menu?: Snippet;
+		/** Persistent, synchronous summary content. Receives element data and the presentation mode. */
+		summary?: SpatialSummarySnippet;
 		/** Optional 80x40 satellite contents, visible from XL. Expose their actions in menu on smaller layouts. */
 		left?: Snippet;
 		right?: Snippet;
 	}
 
-	let { theme, colorScheme, messages, renderSettings, dracoDecoderPath, children, menu, left, right, deviceOrientation = false }: Props = $props();
+	let { theme, colorScheme, messages, renderSettings, dracoDecoderPath, children, menu, summary, left, right, deviceOrientation = false }: Props = $props();
 	$effect(() => {
 		if (deviceOrientation) return retainDeviceOrientationPermission();
 	});
@@ -56,7 +60,7 @@
 		ariaLabel={`${theme.name} spatialElement stage`}
 	>
 		{#if menu || left || right}<SpatialNavigationShell {menu} {left} {right} />{/if}
-		{@render children?.()}
+		<SpatialSummaryHost {summary}>{@render children?.()}</SpatialSummaryHost>
 	</Stage>
 	<PointerHint />
 </div>

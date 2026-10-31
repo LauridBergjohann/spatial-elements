@@ -5,8 +5,33 @@ import type { StagePanelRuntime } from './StagePanelRuntime.js';
 import type { StageMinimapState } from './minimap/MinimapState.js';
 import { resolveLiquidGlassPanelOptions } from './LiquidGlassPanel.js';
 import { getPanelFocusOpacity, getSequencedMinimapFocus, getStageUiFocus } from './stageMath.js';
+import { resolveZoomLayout } from '../spatial-element/responsiveLayout.js';
 
 afterEach(() => vi.unstubAllGlobals());
+
+test.each([[320, 112, 8], [600, 112, 8], [840, 168, 8], [1200, 178, 8], [1600, 220, 12], [1809, 242, 16], [2300, 242, 28]])(
+	'catalog zoom projects the canonical minimap box at width %i', (width, size, inset) => {
+		vi.stubGlobal('window', { innerWidth: width, innerHeight: 900, location: { search: '' } });
+		const camera = new THREE.PerspectiveCamera(); camera.position.z = 1400;
+		let focus = 0;
+		const minimap = { baseWidth: 80, baseHeight: 80, options: { expandedHeight: 244 } } as StageMinimapState;
+		const panel = { options: resolveLiquidGlassPanelOptions({ width: 80, height: 80,
+			position: { x: 48 - width / 2, y: 450 - 190 } }) } as StagePanelRuntime;
+		const controller = new PanelPresentationController({
+			camera, minimaps: () => new Map([[0, minimap]]), registrations: () => [], visible: () => true,
+			zoomLayout: () => resolveZoomLayout({ width, height: 900 }),
+			frame: () => ({ minimapFocus: focus })
+		} as unknown as PanelPresentationPorts);
+		const start = controller.getPanelPointerLayout(panel, 0, width, 900, 0);
+		expect(start.centerX).toBe(48); expect(start.centerY).toBe(190);
+		expect(start.focusOffset).toEqual({ x: 0, y: 0, z: 0 });
+		focus = 1;
+		const end = controller.getPanelPointerLayout(panel, 0, width, 900, 1);
+		expect(end.focusOffset.z).toBe(0);
+		expect(end.visualWidth).toBe(size); expect(end.visualHeight).toBe(size);
+		expect(end.centerX - size / 2).toBe(inset);
+		expect(end.centerY - size / 2).toBe(width < 840 ? 900 - inset - size : inset);
+	});
 
 test('unzoomed corner controls follow the document offscreen instead of pinning their summary', () => {
 	vi.stubGlobal('window', { innerWidth: 1440, innerHeight: 900, location: { search: '' } });

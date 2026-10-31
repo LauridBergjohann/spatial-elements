@@ -180,6 +180,8 @@ export interface StageRenderSettings {
 
 /** Construction options for a {@link StageExperience}. */
 export interface StageExperienceOptions {
+	/** Shared browser metrics supplied by the adapter; read without DOM measurements per frame. */
+	readLayoutMetrics?: (mode?: 'stable' | 'visible') => import('../spatial-element/responsiveLayout.js').ResponsiveLayoutInput | undefined;
 	deviceOrientation?: boolean;
 	/** Stage-wide output quality; native DOM content remains at the device pixel ratio. */
 	renderSettings?: StageRenderSettings;

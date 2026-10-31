@@ -63,6 +63,8 @@ function getFlatCss3DTransform(matrix: THREE.Matrix4) {
 }
 
 export interface PanelPresentationPorts {
+	/** Catalog layout; standalone panels retain their explicitly authored geometry. */
+	zoomLayout?(): ReturnType<typeof import('../spatial-element/responsiveLayout.js').resolveZoomLayout> | undefined;
 	camera: THREE.PerspectiveCamera;
 	contentScene: THREE.Scene;
 	flatLayer: HTMLElement;
@@ -330,10 +332,13 @@ export class PanelPresentationController {
 		const progress = getPanelFocusProgress(uiFocus);
 		// At rest the offset is exactly zero: no DOM measurement is needed.
 		if (progress === 0) return { x: 0, y: 0, z: 0 };
-		const inset = MINIMAP_FOCUSED_VIEWPORT_INSET;
+		const zoom = this.ports.zoomLayout?.();
+		const inset = zoom
+			? zoom.base.layoutWidth - zoom.controls.viewSelector.x - zoom.controls.viewSelector.width
+			: MINIMAP_FOCUSED_VIEWPORT_INSET;
 		// The render camera spans innerWidth, but classic scrollbars consume part
 		// of it. Express the usable viewport edge in that same camera coordinate system.
-		const usableWidth = typeof document === 'undefined' ? width : document.documentElement.clientWidth;
+		const usableWidth = zoom?.base.layoutWidth ?? (typeof document === 'undefined' ? width : document.documentElement.clientWidth);
 		const rightEdge = Math.max(...this.panelRuntimes
 			.filter((control) => control.focusReactive === 'top-right')
 			.map((control) => control.options.position.x + control.options.width / 2));
@@ -343,7 +348,7 @@ export class PanelPresentationController {
 			.filter((control) => control.focusReactive === 'top-right')
 			.map((control) => control.options.position.x - control.options.width / 2));
 		const groupLeft = usableWidth - inset - (rightEdge - leftEdge);
-		let topInset = inset;
+		let topInset = zoom?.controls.viewSelector.y ?? inset;
 		// On narrow phones retain the full close-up minimap size and place the
 		// complete control row just below it when the two corners would overlap.
 		if (this.minimapFocus > 0) for (const [index] of this.minimaps) {
@@ -351,7 +356,9 @@ export class PanelPresentationController {
 			if (!minimapPanel || minimapPanel.focusReactive === 'top-right' || !this.isPanelTargetVisible(index)) continue;
 			const layout = this.getPanelPointerLayout(minimapPanel, index, width, height, uiFocus);
 			const scale = this.panelCamera.position.z / Math.max(this.panelCamera.position.z - layout.focusOffset.z, 1);
-			if (groupLeft < layout.centerX + layout.visualWidth * scale / 2 + 8)
+			if (groupLeft < layout.centerX + layout.visualWidth * scale / 2 + 8 &&
+				topInset + panel.options.height + 8 > layout.centerY - layout.visualHeight * scale / 2 &&
+				topInset < layout.centerY + layout.visualHeight * scale / 2 + 8)
 				topInset = Math.max(topInset, layout.centerY + layout.visualHeight * scale / 2 + 8);
 		}
 		const endY = height / 2 - topInset - panel.options.height / 2;
@@ -389,9 +396,10 @@ export class PanelPresentationController {
 		const baseWidth = minimap ? minimap.baseWidth : panel.options.width;
 		const baseHeight = minimap ? minimap.baseHeight : panel.options.height;
 		const minimapFocus = minimap ? this.minimapFocus : 0;
+		const zoom = minimap ? this.ports.zoomLayout?.() : undefined;
 		const expansion =
 			minimap && !this.fixedMinimapSize
-				? THREE.MathUtils.lerp(1, minimap.options.expandedHeight / minimap.baseHeight, minimapFocus)
+				? THREE.MathUtils.lerp(1, (zoom?.minimap.height ?? minimap.options.expandedHeight) / minimap.baseHeight, minimapFocus)
 				: 1;
 		const visualWidth = baseWidth * expansion;
 		const visualHeight = baseHeight * expansion;
@@ -407,7 +415,7 @@ export class PanelPresentationController {
 			viewportWidth,
 			viewportHeight
 		);
-		const focusDepth = minimap ? rawFocusOffset.z * 0.12 : rawFocusOffset.z;
+		const focusDepth = minimap ? (zoom ? 0 : rawFocusOffset.z * 0.12) : rawFocusOffset.z;
 		const cornerControl = !minimap && panel.focusReactive !== false ? this.getAnchoredCornerControl(panel, index) : undefined;
 		if (cornerControl) {
 			const controlOffset = this.getCornerControlOffset(cornerControl, viewportWidth, viewportHeight, uiFocus);
@@ -426,7 +434,12 @@ export class PanelPresentationController {
 		const minimapProjectionScale = minimap
 			? this.panelCamera.position.z / Math.max(this.panelCamera.position.z - focusDepth, 1)
 			: 1;
-		const minimapPositionOffset = minimap
+		const minimapPositionOffset = minimap && zoom
+			? {
+					x: THREE.MathUtils.lerp(viewportWidth / 2 + baseX - baseWidth / 2, zoom.minimap.x, minimapFocus) + visualWidth / 2 - (viewportWidth / 2 + baseX),
+					y: viewportHeight / 2 - baseY - (THREE.MathUtils.lerp(viewportHeight / 2 - baseY - baseHeight / 2, zoom.minimap.y, minimapFocus) + visualHeight / 2)
+				}
+			: minimap
 			? getMinimapFocusPositionOffset(
 					{ x: baseX, y: baseY },
 					{ width: minimap.baseWidth, height: minimap.baseHeight },

@@ -62,9 +62,11 @@ Let `T` be the rail thumbnail size, `R` the rail left edge, `P` the summary widt
 | M | 96 | `clamp(300,H-180,500)` | 80 | 8 | 12 | `span(3)` | `W-8` | 96 | `PR-P-8` |
 | L | 106 | `clamp(340,H-194,600)` | 80 | 8 | 16 | `span(4)` | `W-24` | 96 | `PR-P-8` |
 | XL | 120 | `clamp(400,H-236,700)` | 112 | 12 | 16 | `span(4)` | `W-12` | 136 | `PR-P-8` |
-| 2XL | 120 | `clamp(400,H-216,800)` | `min(0.07W,138)` | `L-24-T` | 24 | 480 | `W-R` | `L` | `PR-P-24` |
+| 2XL | 120 | `clamp(400,H-216,800)` | `min(0.07W,138,max(0,L-32))` | `L-24-T` | 24 | 480 | `W-R` | `L` | `PR-P-24` |
 
 The min/max/offset numbers are the explicit green/blue height annotations. Do not recompute them from the content height. In L, calculate `span(4)` from the corrected capped container even when `W>1536`. In XL, calculate it from `W-272`, not from `W`. At 2XL the **original unscaled rail annotation is 138px**, not 136px; 136px is the different XL outer band. The corresponding large-grid summary width is exactly `(1536-13*24)/12*4+3*24 = 480`.
+
+**Engineering normalization at the lower 2XL boundary:** the outer band is too narrow for the original rail-size formula at 1809px. Limit `T` additionally to `max(0,L-24-8)`, then keep `R=L-24-T`. This preserves the 24px rail-to-stage gap, an 8px minimum outer inset and all content/stage anchors. At 1809px the thumbnail is 104.5px; it grows to the ordinary 7%-of-width/138px limit as space becomes available. Clamping only `R` would push the rail into the stage gap.
 
 | Region | Vertical formula | Overflow | Owner |
 | --- | --- | --- | --- |

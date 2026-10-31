@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { onMount } from 'svelte';
-	import SpatialElementSummaryContent from './SpatialElementSummaryContent.svelte';
+	import SpatialSummarySlot from './SpatialSummarySlot.svelte';
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 	import type { ResolvedSpatialElementData as SpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 
-	let { spatialElement }: { spatialElement: SpatialElementData } = $props();
+	let { spatialElement, nativeContent = false }: { spatialElement: SpatialElementData; nativeContent?: boolean } = $props();
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
 	const radii = $derived(resolveSpatialThemeRadii(theme));
@@ -17,18 +17,19 @@
 	onMount(() => {
 		// The stage reparents the rendered content. Keep its layout placeholder in
 		// sync using untransformed content size, including wrapping and font loads.
-		panelHeight = Math.max(504, presentation.offsetHeight + contentInset * 2);
+		panelHeight = presentation.offsetHeight + contentInset * 2;
 		const observer = new ResizeObserver(([entry]) => {
 			const height = entry.borderBoxSize?.[0]?.blockSize ?? presentation.offsetHeight;
-			panelHeight = Math.max(504, Math.ceil(height + contentInset * 2));
+			panelHeight = Math.ceil(height + contentInset * 2);
 		});
 		observer.observe(presentation);
 		return () => observer.disconnect();
 	});
 </script>
 
-<div class="spatial-element-aside" style:--summary-panel-height={panelHeight === undefined ? undefined : `${panelHeight}px`}>
+<div class="spatial-element-aside" data-spatial-summary-aside style:--summary-panel-height={panelHeight === undefined ? undefined : `${panelHeight}px`}>
 	<Panel
+		{nativeContent}
 		catalogEndpoint={{
 			brandId: theme.id,
 			spatialElementId: spatialElement.id,
@@ -46,23 +47,27 @@
 		data-shared-role="summary-surface"
 		data-spatial-element-id={spatialElement.id}
 	>
-        <SpatialElementSummaryContent {spatialElement} {contentInset} heading="h1" bind:element={presentation}
-            address={(role) => ({ brandId: theme.id, spatialElementId: spatialElement.id, slot: 'detail.summary', role })} />
+		<SpatialSummarySlot instanceKey={`detail:${theme.id}:${spatialElement.id}`} bind:element={presentation}
+			context={{ spatialElement, contentInset, heading: 'h1', mode: 'detail',
+				address: (role) => ({ brandId: theme.id, spatialElementId: spatialElement.id, slot: 'detail.summary', role }) }} />
 	</Panel>
 </div>
 
 <style>
 	.spatial-element-aside {
 		position: relative;
-		min-height: inherit;
+		min-width: 0;
+		width: var(--spatial-detail-summary-width);
+		margin-top: var(--spatial-detail-summary-gap);
+		margin-inline: auto;
 	}
 
 	:global(.spatial-element-panel) {
-		position: sticky;
-		top: var(--spatial-element-summary-sticky-top, 104px);
-		width: min(494px, 100%);
+		position: relative;
+		width: 100%;
 		height: var(--summary-panel-height, auto);
-		min-height: 504px;
+		max-height: var(--spatial-detail-summary-max-height);
+		min-height: 0;
 		pointer-events: auto;
 	}
 
@@ -74,11 +79,7 @@
 	}
 
 
-	@media (max-width: 1100px) {
-		.spatial-element-aside { min-height: 0; }
-		:global(.spatial-element-panel) {
-			position: relative;
-			top: auto;
-		}
+	@media (min-width: 840px) {
+		.spatial-element-aside { position: absolute; top: 0; right: var(--spatial-detail-summary-right); margin: 0; }
 	}
 </style>

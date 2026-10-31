@@ -11,6 +11,28 @@ const MIN_CONFIGURED_DOCKED_MINIMAP_MODEL_SCALE = 0.2;
 const MAX_CONFIGURED_DOCKED_MINIMAP_MODEL_SCALE = 2;
 export const SPATIAL_ELEMENT_TABS_DOCK_SEAM_OVERLAP = 1;
 
+/** Shared endpoint geometry. Intrinsic submenu width is bounded, never stretched. */
+export function resolveSpatialElementDockLayout(input: ResponsiveLayoutInput, submenuWidth = 0) {
+	const detail = resolveDetailLayout(input);
+	if (!detail.dock) return undefined;
+	const asRect = ({ x, y, width, height }: { x: number; y: number; width: number; height: number }): SpatialElementDockRect =>
+		({ left: x, top: y, width, height });
+	const header = asRect(detail.dock.surface);
+	const minimap = asRect(detail.dock.minimap);
+	const submenu = detail.submenu && {
+		left: detail.submenu.x,
+		top: header.top + header.height,
+		width: Math.min(Math.max(Number.isFinite(submenuWidth) ? submenuWidth : 0, 0), detail.submenu.maxWidth),
+		height: detail.submenu.height
+	};
+	const gap = submenu ? spatialLayoutTokens.hero[detail.layout].submenuAfterGap : 8;
+	return {
+		layout: detail.layout, header, minimap, submenu,
+		titleReserve: detail.dock.titleLeft - header.left,
+		sectionOffset: header.top + header.height + (submenu?.height ?? 0) + gap
+	};
+}
+
 /** Resolves the fixed spatial-element-header rectangle for a viewport. */
 export function getSpatialElementDockDestination(
 	viewportWidth: number,
@@ -198,3 +220,4 @@ export function getSpatialElementDockTarget(
 		? scrollY >= Math.max(breakpoint - releaseOffset, 0)
 		: scrollY >= breakpoint;
 }
+import { resolveDetailLayout, spatialLayoutTokens, type ResponsiveLayoutInput } from './responsiveLayout.js';

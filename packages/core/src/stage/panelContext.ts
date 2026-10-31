@@ -82,6 +82,8 @@ export interface StageViewportRegistration {
 }
 
 export interface StageContext {
+	/** Cached browser layout metrics; unavailable during SSR. */
+	getLayoutMetrics?(mode?: 'stable' | 'visible'): import('../spatial-element/responsiveLayout.js').ResponsiveLayoutInput | undefined;
 	/** Reactive in framework adapters; false during SSR and until the GPU has painted. */
 	isEnhanced?(): boolean;
 	prefetchSpatialElement?(stage: import('../spatial-element/spatialElementScene.js').SpatialElementScene): void;

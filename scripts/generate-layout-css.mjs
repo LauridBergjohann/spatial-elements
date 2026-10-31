@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs';
+import { detailRules } from './layout-detail-css.mjs';
 
 const source = new URL('../packages/core/src/spatial-element/layoutTokens.json', import.meta.url);
 const destination = new URL('../packages/sveltekit/src/spatial-element/layout.generated.css', import.meta.url);
@@ -15,12 +16,20 @@ function gridRules(name, grid) {
 		`\n\t--spatial-card-large-span: ${name === 's' ? tokens.cards.l.gridSSpan : tokens.cards.l.span};\n}` +
 		`\n.spatial-content-block { --spatial-content-block-span: var(--spatial-content-block-span-${name}); }`;
 }
+function dockRules() {
+	return Object.entries(tokens.hero).filter(([name]) => name !== '3xl').map(([name, hero]) => {
+		const rules = `.stage { --spatial-detail-dock-height: ${hero.dockHeight}px; --spatial-detail-submenu-height: ${hero.submenuHeight}px; --spatial-detail-submenu-after-gap: ${hero.submenuAfterGap}px; }`;
+		return tokens.layoutMinWidths[name] === 0 ? rules : `@media (min-width: ${tokens.layoutMinWidths[name]}px) {\n\t${rules}\n}`;
+	});
+}
 const css = [
 	'/* Generated from core/spatial-element/layoutTokens.json. Run npm run layout:generate. */',
 	`.spatial-content-width { width: min(100%, ${tokens.contentMax}px); margin-inline: auto; }`,
 	`.spatial-content-container { container: spatial-content / inline-size; min-width: 0; }`,
 	`@media (min-width: ${tokens.layoutMinWidths.xl}px) {\n\t.spatial-content-width { width: min(${tokens.contentMax}px, max(0px, calc(100% - ${tokens.xlContentInset * 2}px))); }\n}`,
 	`@media (min-width: ${tokens.layoutMinWidths['2xl']}px) {\n\t.spatial-content-width { width: min(100%, ${tokens.contentMax}px); }\n}`,
+	...dockRules(),
+	...detailRules(tokens),
 	...Object.entries(tokens.grid).map(([name, grid]) => grid.minWidth === 0 ? gridRules(name, grid)
 		: `@container spatial-content (min-width: ${grid.minWidth}px) {\n${gridRules(name, grid).split('\n').map(line => '\t' + line).join('\n')}\n}`),
 	`@media (min-width: ${tokens.layoutMinWidths.xl}px) {\n\t.spatial-section-surface { border-radius: var(--spatial-section-top-radius, 0px) var(--spatial-section-top-radius, 0px) var(--spatial-section-bottom-radius, 0px) var(--spatial-section-bottom-radius, 0px); }\n}`,

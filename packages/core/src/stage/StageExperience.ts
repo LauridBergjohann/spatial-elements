@@ -88,6 +88,7 @@ import { type CssProjectionQuad } from './minimap/MinimapProjection.js';
 import type { StageMinimapState } from './minimap/MinimapState.js';
 import { disposeMaterialOnly, getMeshBounds, getMeshMaterials, isMesh } from './stageSceneUtils.js';
 import { isOutlineMesh } from './interactionOutline.js';
+import { resolveZoomLayout } from '../spatial-element/responsiveLayout.js';
 import type {
 	BackgroundSettings,
 	StageCameraSettings,
@@ -381,6 +382,7 @@ export class StageExperience {
 	private panelMeasurementsDirty = true;
 	private viewportMeasurementDirty = true;
 	private stageViewportVisible = true;
+	private readonly readLayoutMetrics?: StageExperienceOptions['readLayoutMetrics'];
 	private fullscreen = false;
 	setFullscreen(fullscreen: boolean) {
 		if (this.fullscreen === fullscreen) return;
@@ -446,6 +448,7 @@ export class StageExperience {
 		private readonly container: HTMLElement,
 		options: StageExperienceOptions = {}
 	) {
+		this.readLayoutMetrics = options.readLayoutMetrics;
 		if (options.dracoDecoderPath) this.assets.setDracoDecoderPath(options.dracoDecoderPath);
 		this.deviceOrientationEnabled = options.deviceOrientation ?? false;
 		if (this.deviceOrientationEnabled) this.unsubscribeDeviceOrientation = subscribeListDeviceYaw(() => {
@@ -501,6 +504,10 @@ export class StageExperience {
 			includeMesh: (mesh) => this.isSpatialElementMesh(mesh)
 		});
 		this.panels = new PanelPresentationController({
+			zoomLayout: () => {
+				const input = this.catalog ? this.readLayoutMetrics?.('visible') : undefined;
+				return input ? resolveZoomLayout(input) : undefined;
+			},
 			camera: this.panelCamera,
 			contentScene: this.panelContentScene,
 			flatLayer: this.flatPanelLayer,

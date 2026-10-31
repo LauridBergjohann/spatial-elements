@@ -149,8 +149,15 @@ export interface SpatialElementBreadcrumb {
 /** Media entries rendered in the element rail. */
 export type SpatialElementMediaItem =
 	| { id: string; kind: 'minimap'; label: string }
+	/** @deprecated A drawing needs a real source. Use kind: 'image' instead. */
 	| { id: string; kind: 'drawing'; label: string }
-	| { id: string; kind: 'image'; label: string; src: string; alt: string };
+	| { id: string; kind: 'image'; label: string; src: string; alt: string }
+	| {
+		id: string; kind: 'video'; label: string; src: string; poster?: string;
+		/** Optional WebVTT caption tracks. Native controls remain available. */
+		captions?: { src: string; language: string; label: string; default?: boolean }[];
+	}
+	| { id: string; kind: 'youtube'; label: string; videoId: string; poster?: string };
 
 /** Optional CSS presentation for a regular HTML element section. */
 export interface SpatialElementSectionStyle {
