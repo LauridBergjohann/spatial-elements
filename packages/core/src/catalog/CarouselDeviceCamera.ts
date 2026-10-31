@@ -14,7 +14,14 @@ export class CarouselDeviceCamera {
 			pivot: this.pivot.toArray(), angles: this.angles.toArray() };
 	}
 	orbit(camera: PerspectiveCamera, pivot: Vector3, delta = 1, smooth = false) {
-		if (this.pivotReady && (smooth || this.pivotSettling)) {
+		const rotation = camera.quaternion;
+		if (rotation.x === 0 && rotation.y === 0 && rotation.z === 0 && Math.abs(rotation.w) === 1) {
+			// P + I(C - P) = C: changing the pivot cannot change the neutral camera.
+			// Keep the current selection for the next sensor input without scheduling
+			// invisible settling frames. Non-neutral camera damping is unchanged.
+			this.pivot.copy(pivot);
+			this.pivotSettling = false;
+		} else if (this.pivotReady && (smooth || this.pivotSettling)) {
 			this.pivot.lerp(pivot, 1 - Math.exp(-12 * delta));
 			this.pivotSettling = this.pivot.distanceTo(pivot) > 0.01;
 			if (!this.pivotSettling) this.pivot.copy(pivot);

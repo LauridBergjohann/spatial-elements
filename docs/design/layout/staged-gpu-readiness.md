@@ -30,6 +30,8 @@ For CPU attribution, `--minimal=true --cpu=true` writes an additional 1 ms `cpu.
 
 The query-gated `getRenderActivity()` control reads existing Stage animation/dirty/pending-frame flags, queued preparation state, the Carousel camera's current pivot settling state, and current actor/panel transforms. It does not advance a clock, measure layout, schedule work or keep a frame history. The performance harness and trace save this snapshot immediately before the existing click. They add no idle wait: GPU readiness and a settled source remain separate conditions, and early-click samples are not silently removed.
 
+A neutral Carousel camera does not need to animate a changed selection pivot: with identity rotation, `P + I(C - P)` is always `C`. It now stores the new pivot immediately and ends pivot settling when the actual camera quaternion is exactly identity (including its equivalent negative representation). Non-neutral rotation keeps the existing damping, and later sensor movement orbits the newly selected centre. Projection tests cover both paths. This removes mathematically invisible work; it is not yet evidence that pivot settling caused a particular recorded latency outlier.
+
 ## Keep pipeline owners stable
 
 A production WebGPU probe found a pipeline creation in the first moving frame even though the shaders and the complete GPU pipeline descriptor were already prepared. The affected shader was the catalog fade's texture-times-alpha composite.
