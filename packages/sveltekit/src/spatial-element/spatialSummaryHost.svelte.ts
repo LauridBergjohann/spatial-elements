@@ -1,6 +1,7 @@
 import { hydrate, mount, unmount, untrack } from 'svelte';
 import { PresentationLease } from '@spatial-elements/core/catalog/PresentationLease';
 import SpatialSummaryRoot from './SpatialSummaryRoot.svelte';
+import { freezePresentationBox } from './presentationBoxFreeze.js';
 import type { SpatialCardContext, SpatialPresentationModel, SpatialSummaryContext, SpatialSummarySnippet } from './spatialSummary.js';
 
 export const SPATIAL_SUMMARY_HOST = Symbol('spatial-summary-host');
@@ -126,34 +127,13 @@ export class SpatialSummaryHostController {
   const freeze = () => {
    if (record.frozen) return record.frozen.box;
    const root = record.root;
-   const box = root.getBoundingClientRect();
-   const computed = getComputedStyle(root);
-   const borderBox = (axis: 'width' | 'height') => {
-    const value = parseFloat(computed[axis]);
-    if (!Number.isFinite(value)) return axis === 'width' ? root.offsetWidth : root.offsetHeight;
-    if (computed.boxSizing === 'border-box') return value;
-    const edges = axis === 'width' ? ['Left', 'Right'] : ['Top', 'Bottom'];
-    return value + edges.reduce((sum, edge) => sum
-     + parseFloat(computed.getPropertyValue(`padding-${edge.toLowerCase()}`) || '0')
-     + parseFloat(computed.getPropertyValue(`border-${edge.toLowerCase()}-width`) || '0'), 0);
-   };
-   // The projected DOMRect can be skewed/scaled. CSS must retain its untransformed local box.
-   const width = borderBox('width'), height = borderBox('height');
-   record.frozen = { css: root.style.cssText, box, width, height, inert: root.inert };
-   // Preserve only inherited presentation values, not route positioning or arbitrary author CSS.
-   const properties = ['font-family', 'font-size', 'font-weight', 'line-height', 'letter-spacing', 'color'];
-   for (let index = 0; index < computed.length; index++) {
-    const name = computed[index];
-    if (/^--(spatial|card|catalog|carousel|summary)-/.test(name)) properties.push(name);
-   }
-   for (const name of properties) root.style.setProperty(name, computed.getPropertyValue(name));
-   Object.assign(root.style, { width: `${width}px`, minWidth: `${width}px`, maxWidth: `${width}px`, height: `${height}px`, minHeight: `${height}px`, maxHeight: `${height}px`, boxSizing: 'border-box' });
+   record.frozen = freezePresentationBox(root);
    root.dataset.spatialPresentationFrozen = '';
    if (root.closest('[data-carousel-glass-ready]')) root.dataset.spatialPresentationGlass = '';
    // Catalog disposal clears the original card's ready marker. Its captured GPU
    // geometry still owns the image while this complete source island is held.
    if (root.querySelector('[data-catalog-card][data-catalog-model-ready]')) root.dataset.spatialPresentationModelReady = '';
-   return box;
+   return record.frozen.box;
   };
   return {
    record, freeze,
