@@ -42,6 +42,8 @@ Natural height is represented as natural height plus an optional maximum, never 
 
 Safe areas are non-negative CSS insets applied once. Layout selection uses the CSS viewport width; content geometry uses the available inset rectangle. The stable layout height is an input supplied by the existing viewport owner. Physical screen size and DPR do not select layout classes. Real orientation changes invalidate that input; mobile address-bar animation must not repeatedly resize the 3D stage.
 
+Classic scrollbars need a separate input: media queries use `window.innerWidth`, while percentage-based content can have less available space. Pass the reserved scrollbar/gutter width separately; do not substitute `documentElement.clientWidth` for both quantities. Centered geometry and the pane midpoint use the layout width after this reserved strip, then apply safe-area insets. For example, a 1600px viewport with a 15px reserved gutter still selects XL, with a 1313px content container at x=136.
+
 For unusually short windows, preserve control sizes and let flow content scroll. Clamp fit-area dimensions to non-negative available sizes; never generate inverted rectangles. A fixed 3XL shell must leave a usable content window or use the normal document-flow fallback for insufficient height. The fallback is a height constraint, not another width breakpoint.
 
 ## Ownership and API migration

@@ -12,6 +12,8 @@ export interface LayoutRect { x: number; y: number; width: number; height: numbe
 export interface LayoutInsets { top: number; right: number; bottom: number; left: number }
 export interface ResponsiveLayoutInput {
 	width: number;
+	/** Reserved classic scrollbar/gutter width. Media-query width remains `width`. */
+	scrollbarWidth?: number;
 	/** Stable CSS layout height, supplied by the viewport owner; never physical screen height. */
 	height: number;
 	safeArea?: Partial<LayoutInsets>;
@@ -99,16 +101,17 @@ export function resolveCardLayout(containerWidth: number, cardSize: SpatialCardS
 
 export function resolveResponsiveLayout(input: ResponsiveLayoutInput) {
 	const width = size(input.width);
+	const layoutWidth = Math.max(0, width - size(input.scrollbarWidth));
 	const height = size(input.height);
 	const safeArea: LayoutInsets = {
 		top: Math.min(height, size(input.safeArea?.top)),
-		right: Math.min(width, size(input.safeArea?.right)),
+		right: Math.min(layoutWidth, size(input.safeArea?.right)),
 		bottom: Math.min(height, size(input.safeArea?.bottom)),
-		left: Math.min(width, size(input.safeArea?.left))
+		left: Math.min(layoutWidth, size(input.safeArea?.left))
 	};
 	const available = {
 		x: safeArea.left, y: safeArea.top,
-		width: Math.max(0, width - safeArea.left - safeArea.right),
+		width: Math.max(0, layoutWidth - safeArea.left - safeArea.right),
 		height: Math.max(0, height - safeArea.top - safeArea.bottom)
 	};
 	const layout = resolveViewportLayout(width);
@@ -128,10 +131,10 @@ export function resolveResponsiveLayout(input: ResponsiveLayoutInput) {
 		height: tokens.breadcrumb[layout].height,
 		fontSize: tokens.breadcrumb[layout].fontSize
 	};
-	const paneLeft = Math.min(width, width / 2 + tokens.pane.centerGap);
+	const paneLeft = Math.min(layoutWidth, layoutWidth / 2 + tokens.pane.centerGap);
 	const pane = {
 		x: paneLeft, y: available.y + tokens.pane.top,
-		width: Math.min(tokens.contentMax, Math.max(0, width - safeArea.right - tokens.pane.rightInset - paneLeft)),
+		width: Math.min(tokens.contentMax, Math.max(0, layoutWidth - safeArea.right - tokens.pane.rightInset - paneLeft)),
 		height: Math.max(0, available.height - tokens.pane.top - tokens.pane.bottom - tokens.pane.submenuHeight)
 	};
 	const paneGrid = resolveContentGrid(pane.width);
@@ -148,7 +151,7 @@ export function resolveResponsiveLayout(input: ResponsiveLayoutInput) {
 		right: { x: available.x + available.width - tokens.satellite.inset - tokens.satellite.width,
 			y: available.y + tokens.satellite.top, width: tokens.satellite.width, height: tokens.satellite.height }
 	} : undefined;
-	return { layout, viewport: { width, height }, safeArea, available, content, grid, menu, breadcrumb,
+	return { layout, viewport: { width, height }, layoutWidth, safeArea, available, content, grid, menu, breadcrumb,
 		satellites, pane, paneGrid, paneHeader, paneBody, paneSubmenu };
 }
 

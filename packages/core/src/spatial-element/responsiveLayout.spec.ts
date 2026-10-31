@@ -6,6 +6,13 @@ import {
 } from './responsiveLayout.js';
 
 describe('responsive layout contract', () => {
+	it('distinguishes media-query width from space reserved for a classic scrollbar', () => {
+		const result = resolveResponsiveLayout({ width: 1600, height: 900, scrollbarWidth: 15 });
+		expect(result.layout).toBe('xl');
+		expect(result.layoutWidth).toBe(1585);
+		expect(result.content).toEqual({ x: 136, width: 1313 });
+		expect(resolveResponsiveLayout({ width: 2400, height: 900, scrollbarWidth: 15 }).pane.x).toBe(1200.5);
+	});
 	it.each([[600, 'xs', 's'], [840, 's', 'm'], [1200, 'm', 'l'], [1600, 'l', 'xl'],
 		[1809, 'xl', '2xl'], [2300, '2xl', '3xl']] as const)('uses CSS width at %i', (boundary, before, after) => {
 		expect(resolveViewportLayout(boundary - 0.1)).toBe(before);
