@@ -283,6 +283,10 @@
 	.spatial-element-card:focus-visible .spatial-element-card-surface::after {
 		opacity: 1;
 	}
+	.spatial-element-card-surface:global([data-spatial-card-appearance-frozen])::after {
+		opacity: var(--spatial-card-frozen-after-opacity) !important;
+		transition-property: none !important;
+	}
 
 	.spatial-element-card-geometry {
 		position: relative;

@@ -18,6 +18,7 @@ import { getStageVisualScrollPosition } from '@spatial-elements/core/stage/scrol
 import { finishInterruptedPresentation, type InterruptedCatalogPresentation } from './interruptedPresentation.js';
 import { releasePresentationResources } from './presentationCleanup.js';
 import { createStagedDomReveal } from './stagedDomReveal.js';
+import { freezeCardAppearance } from '../spatial-element/cardAppearanceFreeze.js';
 export type { InterruptedCatalogPresentation } from './interruptedPresentation.js';
 
 /** Leave a real paint opportunity between destination raster preparation and fade. */
@@ -118,6 +119,7 @@ export function startStagedCatalogNavigation(options: {
 	let retainInterruptedSummary = false;
 	let domReveal: ReturnType<typeof createStagedDomReveal> | undefined;
 	let restoreClipping: (() => void) | undefined;
+	let restoreCardAppearance: (() => void) | undefined;
 	const savedShells: HTMLElement[] = [];
 	const exiting: HTMLElement[] = [];
 	// Fade disjoint sibling branches without flattening the live source's ancestors.
@@ -145,9 +147,13 @@ export function startStagedCatalogNavigation(options: {
 		if (cleaned) return;
 		cleaned = true;
 		const clipping = restoreClipping; restoreClipping = undefined;
+		const appearance = restoreCardAppearance; restoreCardAppearance = undefined;
 		const held = holdingHost; holdingHost = undefined;
 		releasePresentationResources('Unable to release staged catalog presentation', [
 			...holdingMotions.splice(0).map(motion => () => motion?.restore()),
+			// Both moving and held Dock actors save the pinned appearance transform.
+			// Release their motion before restoring the original authored values.
+			() => appearance?.(),
 			() => clipping?.(),
 			() => {
 				if (retainInterruptedSummary) return;
@@ -176,6 +182,7 @@ export function startStagedCatalogNavigation(options: {
 			begin() {
 				if (!experience.beginStagedDetailMotion({ ...intent.identity, slot, occurrence, role: 'geometry' }, layout.mediaFit,
 					declaredDock ? { kind: 'dock', layout: options.metrics, minimap: item?.minimap } : undefined)) { decline('geometry-not-ready'); return false; }
+				if (slot === 'catalog.card') restoreCardAppearance = freezeCardAppearance(container);
 				retained.freeze();
 				if (declaredDock) {
 					retained.record.root.inert = true;
