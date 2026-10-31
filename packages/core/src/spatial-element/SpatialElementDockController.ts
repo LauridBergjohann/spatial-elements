@@ -557,17 +557,22 @@ export class SpatialElementDockController {
 
 	private moveTabsTo(parent: HTMLElement, next: ChildNode | null = null) {
 		const list = this.sourceTabsList;
-		if (!list || list.parentElement === parent) return;
+		if (!list || list.parentElement === parent || list.contains(parent)) return;
 		const focused = document.activeElement instanceof HTMLElement && list.contains(document.activeElement)
 			? document.activeElement : undefined;
 		const links = list.querySelector<HTMLElement>(TABS_LINKS);
 		const scrollLeft = links?.scrollLeft ?? 0;
 		// Reuse the live Svelte-owned navigation, including focus and horizontal
 		// scroll. There is never a second active list or a cloned control.
-		if (typeof parent.moveBefore === 'function') parent.moveBefore(list, next);
-		else parent.insertBefore(list, next);
+		// Svelte can disconnect the original slot before this controller's cleanup.
+		// Atomic moves require matching connected states; an ordinary DOM move is
+		// necessary when returning a live portal to that detached owner.
+		const reference = next?.parentNode === parent ? next : null;
+		if (typeof parent.moveBefore === 'function' && parent.ownerDocument === list.ownerDocument &&
+			parent.isConnected === list.isConnected) parent.moveBefore(list, reference);
+		else parent.insertBefore(list, reference);
 		if (links) links.scrollLeft = scrollLeft;
-		if (focused && document.activeElement !== focused) focused.focus({ preventScroll: true });
+		if (focused?.isConnected && document.activeElement !== focused) focused.focus({ preventScroll: true });
 	}
 
 	private restoreTabsList() {

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
+import { resolveZoomLayout } from '../packages/core/src/spatial-element/responsiveLayout';
 
 // Exercise the same viewport gutter as desktop Chrome, including the help corner control.
 test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } });
@@ -20,6 +21,27 @@ async function open(page: Page) {
 		return { x: rect.x + rect.width * 0.6, y: rect.y + rect.height * 0.5 };
 	});
 }
+
+test('corner controls preserve their gap to the sibling summary surface throughout zoom', async ({ page }) => {
+	await page.setViewportSize({ width: 1916, height: 907 });
+	await open(page);
+	await page.mouse.move(1915, 906);
+	await page.evaluate(() => window.__stageVisualTest!.settle(30));
+	const measure = async () => {
+		const control = (await button(page).boundingBox())!;
+		const surface = await page.locator('.spatial-element-panel').evaluate(node =>
+			window.__stageVisualTest!.getPanelRect(node as HTMLElement)!);
+		return { x: surface.x - control.x - control.width, y: control.y - surface.y };
+	};
+	const initial = await measure();
+	for (const zoom of [0.1, 0.2, 0.3, 0.4, 0.5, 0.3, 0]) {
+		await page.evaluate(zoom => window.__stageVisualTest!.setView({ zoom }), zoom);
+		if ((await page.evaluate(() => window.__stageVisualTest!.getState())).uiOpacity <= 0.01) continue;
+		const gap = await measure();
+		expect(Math.abs(gap.x - initial.x)).toBeLessThan(1);
+		expect(Math.abs(gap.y - initial.y)).toBeLessThan(1);
+	}
+});
 
 test('hover help repeats until interaction, delays hiding and supports persistent manual help', async ({ page }, info) => {
 	const point = await open(page);
@@ -189,10 +211,10 @@ test('help surfaces match their DOM in each zoom frame and stay clear of the scr
 		});
 		expect(metrics.gutter).toBeGreaterThan(0);
 		expect(metrics.maxError).toBeLessThan(0.6);
-		expect(metrics.minRightInset).toBeGreaterThanOrEqual(9.5);
-		expect(metrics.minTopInset).toBeGreaterThanOrEqual(9.5);
-		// The view switch now occupies 80px plus an 8px gap to the right of help.
-		expect(metrics.finalInset).toBeCloseTo(98, 0);
+		const zoom = resolveZoomLayout({ width, height: 900, scrollbarWidth: metrics.gutter });
+		expect(metrics.minRightInset).toBeGreaterThanOrEqual(zoom.base.available.width - zoom.controls.help.x - zoom.controls.help.width - 0.5);
+		expect(metrics.minTopInset).toBeGreaterThanOrEqual(zoom.controls.help.y - 0.5);
+		expect(metrics.finalInset).toBeCloseTo(zoom.base.available.width - zoom.controls.help.x - zoom.controls.help.width, 0);
 		await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.5 }, 1));
 		await page.screenshot({ path: info.outputPath(`aligned-help-${width}.png`) });
 	}

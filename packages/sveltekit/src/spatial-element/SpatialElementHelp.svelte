@@ -123,7 +123,9 @@
 			if (state.interacted) close();
 		});
 		const stage = root.closest<HTMLElement>('.stage')!;
-		focusAnchor = root.closest('.spatial-element-hero')?.querySelector<HTMLElement>('.spatial-element-panel') ?? undefined;
+		// The summary shares the detail page with the media but lives in the
+		// neighbouring pane body, including the regular single-column layout.
+		focusAnchor = root.closest('[data-spatial-element-root]')?.querySelector<HTMLElement>('.spatial-element-panel') ?? undefined;
 		// Keep the non-modal help accessible when close-up hides the ordinary DOM layer.
 		stage.appendChild(popover);
 		// Measure the nearest wide panel above the hero, without relying on a host CSS class.

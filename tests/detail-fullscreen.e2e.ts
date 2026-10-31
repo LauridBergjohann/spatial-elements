@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
+import { resolveResponsiveLayout, resolveZoomLayout } from '../packages/core/src/spatial-element/responsiveLayout';
 
 const fullscreen = (page: Page) => page.getByRole('button', { name: 'Fullscreen', exact: true });
 const detail = (page: Page) => page.getByRole('button', { name: 'Detail view', exact: true });
@@ -128,14 +129,15 @@ for (const width of [1440, 375]) {
 	test(`demo header and breadcrumb do not overlap at ${width}px`, async ({ page }, info) => {
 		await page.setViewportSize({ width, height: 900 });
 		await open(page);
-		const frame = page.locator('.demo-header');
-		const header = await page.evaluate(() => window.__stageVisualTest!.getPanelRect(document.querySelector('.demo-header')!)!);
+		const frame = page.locator('.spatial-shell-menu');
+		const header = await page.evaluate(() => window.__stageVisualTest!.getPanelRect(document.querySelector('.spatial-shell-menu')!)!);
+		const layout = resolveResponsiveLayout({ width, height: 900 });
 		const nav = page.getByRole('navigation', { name: 'Main navigation' });
 		await expect(nav).toBeVisible();
 		const breadcrumb = page.getByRole('navigation', { name: 'Breadcrumb' });
 		await expect(breadcrumb).toBeVisible();
 		const crumb = (await breadcrumb.boundingBox())!;
-		expect(crumb.y).toBeGreaterThanOrEqual(header.y + header.height + 5);
+		expect(crumb.y).toBeCloseTo(layout.breadcrumb.y, 0);
 		for (const link of await nav.getByRole('link').all()) {
 			const rect = (await link.boundingBox())!;
 			expect(rect.y).toBeGreaterThanOrEqual(header.y);
@@ -143,7 +145,7 @@ for (const width of [1440, 375]) {
 			expect(rect.x).toBeGreaterThanOrEqual(header.x);
 			expect(rect.x + rect.width).toBeLessThanOrEqual(header.x + header.width);
 		}
-		await expect(frame).toHaveCSS('height', width < 480 ? '88px' : '66px');
+		await expect(frame).toHaveCSS('height', `${layout.menu.height}px`);
 		await page.screenshot({ path: info.outputPath('demo-header.png') });
 	});
 }
@@ -176,6 +178,9 @@ for (const failure of ['missing', 'denied'] as const) {
 		await expect(detail(page)).toHaveAttribute('aria-pressed', 'true');
 		expect(await page.evaluate(() => scrollY)).toBe(100);
 		await expect(page.locator('.stage-webgpu-background')).toHaveCSS('touch-action', 'manipulation');
+		// The new rail occupies the former empty left edge. Verify native page
+		// scrolling over document content, not over an interactive media control.
+		await page.mouse.move(1400, 850);
 		await page.mouse.wheel(0, 350);
 		await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(100);
 	});
@@ -191,7 +196,11 @@ test.describe('touch fullscreen', () => {
 		await page.evaluate(() => window.__stageVisualTest!.settle(60));
 		const map = await page.evaluate(() => window.__stageVisualTest!.getMinimapRect()!);
 		const help = (await page.getByRole('button', { name: '3D controls', exact: true }).boundingBox())!;
-		expect(help.y).toBeGreaterThanOrEqual(map.y + map.height + 7);
+		const layout = resolveZoomLayout({ width: 375, height: 812 });
+		for (const key of ['x', 'y', 'width', 'height'] as const) {
+			expect(map[key]).toBeCloseTo(layout.minimap[key], 0);
+			expect(help[key]).toBeCloseTo(layout.controls.help[key], 0);
+		}
 		const cdp = await page.context().newCDPSession(page);
 		const before = await orientation(page);
 		await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 8, y: 650, id: 1 }] });

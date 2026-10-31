@@ -70,7 +70,9 @@
 	let splitPane = $state(false);
 	let paneController = $state.raw<SpatialElementPaneController>();
 	const paneTint = $derived(typeof brand.panelTheme.tint === 'number'
-		? `#${brand.panelTheme.tint.toString(16).padStart(6, '0')}` : brand.panelTheme.tint ?? '#ffffff');
+		? `#${brand.panelTheme.tint.toString(16).padStart(6, '0')}`
+		: typeof brand.panelTheme.tint === 'object' ? brand.panelTheme.tint.getStyle()
+			: brand.panelTheme.tint ?? '#ffffff');
 	let navigationTargetId: string | undefined;
 	let scrollSpyFrame = 0;
 	const navigationSections = $derived([SPATIAL_ELEMENT_OVERVIEW_SECTION, ...sections]);
