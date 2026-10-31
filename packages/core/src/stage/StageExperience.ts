@@ -1515,19 +1515,19 @@ export class StageExperience {
 		return true;
 	}
 
-	getDockProjection() {
+	getDockProjection(allowViewportClipping = false) {
 		const candidates = [...this.minimaps.values()].filter((minimap) => minimap.viewportVisible);
 		if (candidates.length !== 1) return;
 		const minimap = candidates[0];
 		const rect = this.getProjectedMinimapModelRect(minimap);
-		if (
-			!rect ||
-			rect.x < 0 ||
-			rect.y < 0 ||
-			rect.x + rect.width > innerWidth ||
-			rect.y + rect.height > innerHeight
-		)
-			return;
+		if (!rect) return;
+		// Canonical dock fits can extend above the viewport (XS/S centers an 80px
+		// fit in a 76px header). A known destination may be partially clipped;
+		// reverse capture retains its stricter, wholly visible source requirement.
+		if (allowViewportClipping
+			? rect.width <= 0 || rect.height <= 0 || rect.x >= innerWidth || rect.y >= innerHeight ||
+				rect.x + rect.width <= 0 || rect.y + rect.height <= 0
+			: rect.x < 0 || rect.y < 0 || rect.x + rect.width > innerWidth || rect.y + rect.height > innerHeight) return;
 		return {
 			...captureSpatialElementProjection(minimap.spatialElementRoot, minimap.screenCamera),
 			environmentIntensity: this.minimapScene.environmentIntensity
@@ -1578,7 +1578,7 @@ export class StageExperience {
 		this.catalogDockTarget = dock;
 		if (this.adoptedForward) {
 			this.returnProjection = dock
-				? this.getDockProjection()
+				? this.getDockProjection(true)
 				: this.model
 					? {
 							...captureSpatialElementProjection(this.model, this.camera),
@@ -1587,7 +1587,7 @@ export class StageExperience {
 					: undefined;
 			return Boolean(this.returnProjection);
 		}
-		return !dock || Boolean(this.getDockProjection());
+		return !dock || Boolean(this.getDockProjection(true));
 	}
 
 	private prepareReturnDestination() {
