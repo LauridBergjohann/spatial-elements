@@ -1,6 +1,6 @@
 # Configuration and component reference
 
-For a runnable category/detail setup, begin with [Getting started](getting-started.md). This reference describes the current source API; see [migration](configuration-migration.md) when updating an older beta.
+For a runnable category/detail setup, begin with [Getting started](getting-started.md). This reference describes the current source API; see [configuration migration](configuration-migration.md) and [layout migration](layout-migration.md) when updating an older beta.
 
 ## Ownership: which setting belongs where?
 
@@ -11,7 +11,7 @@ For a runnable category/detail setup, begin with [Getting started](getting-start
 | BrandStageShell | Renderer lifetime, interface translations, GPU budget and decoder infrastructure | Persistent +layout.svelte |
 | ContentPageData | Category title, introduction and breadcrumbs | Category +page.svelte or its load data |
 | SpatialListItem | Derived link, summary and assets for an element occurrence | getSpatialListItems(elements, basePath) |
-| Section definition | Anchor, heading and optional local CSS overrides | Content/detail page |
+| Section definition | Anchor/navigation label, optional visible headline, background and local CSS overrides | Content/detail page |
 
 There is no separate SpatialStageConfig document. The adapter derives its internal renderer scene from the active page. You do not need a layout-level catalog, an active element ID, or a duplicate list of models.
 
@@ -71,13 +71,19 @@ Use createSpatialTheme({ id, name, ...overrides }). Only id and name are require
 | sceneBackground | Optional partial overrides for the element's HDR backdrop: blurriness, tint, tintIntensity. Leaves model lighting unchanged. |
 | colors | ink #173047, body #263c4d, accent #285c89, onAccent #ffffff, tabBackground #e4ebf1. |
 | panelShape | radius 16 and contentInset 26, both in CSS pixels. |
+| radii | control 12px for cards/small controls; panel 16px for panels/detached section groups. An explicitly authored panelShape.radius is the compatibility fallback for both roles; explicit radii fields win. |
+| sectionBackgrounds | standard #ffffff and muted #f5f7f9, independent of glass/frosted panel material colors. |
 | panelTheme | surface frosted, tint #ffffff, tintOpacity 0.65, backdropBlur 8px, shadowIntensity 0.2, opacity 1. Further glass controls use runtime defaults. |
 | dockedPanelTheme | Compact header/tabs: tint #ffffff, tintOpacity 0.92, backdropBlur 5px, shadowIntensity 0.2. |
-| sectionTheme | Ordinary HTML sections: tint #ffffff, tintOpacity 0.8, backdropBlur 8px. |
+| sectionTheme | Legacy section material: tint #ffffff, tintOpacity 0.8, backdropBlur 8px. New section.background roles use sectionBackgrounds instead. |
 | minimapTheme | expandedHeight 240px, overlayColor #000000, overlayOpacity 0.35, overlayBlur 5px, contextOpacity 0, viewportColor from accent. |
 | interactionTheme | outlineColor from accent; other picking/outline controls use runtime defaults. |
 
 Color overrides do not modify GLB materials. Use element.model.materialOverrides for that. Opacity and tint strengths use 0..1. Panel surfaces are solid (CSS), frosted (CSS backdrop blur) and glass (GPU refraction). Glass can cost more GPU work; the helper chooses frosted.
+
+`radii` and `sectionBackgrounds` are optional on older manually constructed SpatialTheme objects;
+the factory resolves both groups. Radius values are finite, nonnegative CSS pixels: negative values
+clamp to zero and nonfinite values use the resolved fallback. A radius does not change contentInset.
 
 See [createSpatialTheme](../packages/core/src/spatial-element/spatialTheme.ts), [theme types](../packages/core/src/spatial-element/types.ts), [panel controls](../packages/core/src/stage/panelContext.ts) and [renderer controls](../packages/core/src/stage/stageTypes.ts) for all fields.
 
@@ -89,14 +95,70 @@ Interface language is independent of the theme. Pass `messages: SpatialMessagesI
 | --- | --- |
 | BrandStageShell | Required reactive theme; optional colorScheme (light/dark), messages, renderSettings, dracoDecoderPath and children. Persistent layout and renderer owner. No stage/catalog props. |
 | ButtonGroup | Required items, label and shape; controlled value/onchange, optional theme, iconOnly and content snippet. Generic panel-backed choices owned by the host. |
-| ContentPage | Required hdr: environment URL and page: ContentPageData; optional children. Registers a category/content page. page.title is required; pageTitle defaults to title, eyebrow/intro/breadcrumbs are optional. |
-| ListSection | Required section: {id,title,style?}, list: SpatialListItem[]. Registers its own element occurrences. |
+| ContentPage | Required hdr: environment URL and page: ContentPageData; optional background: CSS color and children. background overrides the flat page color for this page in DOM and enhanced rendering, without changing HDR lighting or the shared theme. page.title is required; pageTitle defaults to title, eyebrow/intro/breadcrumbs are optional. |
+| ListSection | Required section: {id,title,headline?,background?,style?}, list: SpatialListItem[]. Optional cardSize: s/m/l (default m), textAlign: start/center (default start). Registers its own element occurrences. |
 | CarouselSection | Same section/list; optional presentation: {radius?,depth?}, initialItemKey, onselectionchange({itemKey,spatialElementId}). Radius controls model spacing, normalized around 0.48 (clamped 0.2..0.7); depth defaults to 700 CSS-world pixels (clamped 0..1200). Visibility follows the viewport, including space outside a centered section. |
 | SpatialListPage | Convenience wrapper: ContentPageData fields directly as props, required hdr and spatialElements, optional sectionLink: {href,label}. For new composable pages prefer ContentPage with sections. |
 | SpatialElementPage | Required spatialElement: SpatialElementData; optional children. Owns detail content, model selection and generated section navigation. |
-| Section | Required section: {id,title,style?}; optional children and HTML attributes/class. The presentation prop is used by spatial list/carousel wrappers. Detail sections automatically populate tabs. |
+| Section | Required section: {id,title,headline?,background?,style?}; optional children and HTML attributes/class. The presentation prop is used by spatial list/carousel wrappers. Detail sections automatically populate tabs. |
+| ContentGrid | Optional children and HTML attributes/class. Places explicit ContentBlock children on the enclosing section's content grid; adds no outer padding. |
+| ContentBlock | Optional span: number or {xs?,s?,m?,l?}, children and HTML attributes/class. Fills the row by default; responsive spans inherit mobile-first. |
 
-Mount one active ContentPage or SpatialElementPage under each shell. Sections are children of that page; they are not independent pages. Section IDs must be stable, unique and start with a lowercase letter, followed by lowercase letters, digits or hyphens. Section style accepts tint, tintOpacity, backdropBlur, textColor and CSS width (for example 72rem).
+Mount one active ContentPage or SpatialElementPage under each shell. Sections are children of that page; they are not independent pages. Section IDs must be stable, unique and start with a lowercase letter, followed by lowercase letters, digits or hyphens.
+
+### Section headings and surfaces
+
+`section.title` names the section in generated navigation and for accessibility. Only optional
+`section.headline` renders a visible heading. Omitting it also removes its heading gap; the section
+keeps an accessible label. Set `headline: title` explicitly when retaining an old visible heading.
+
+`section.background` is `{ color, size? }`; omitted backgrounds resolve to transparent/standard.
+Color values are `transparent`, `standard`, `muted`, `transparentToStandard`, `transparentToMuted`,
+`standardToTransparent`, `standardToMuted`, `mutedToTransparent` and `mutedToStandard`.
+Size is `standard` (default, the padded grid width) or `full` (viewport-width background with the
+same content grid). Gradients run from top to bottom and require effective `full` size. Detail pages
+constrain every background to `standard`. A gradient that is not effectively full becomes its end
+color and emits a development diagnostic once per offending configuration/context.
+
+Detached, adjacent opaque standard-width sections share outer panel-radius corners on wide layouts;
+transparent and full-width sections break the group. Different standard/muted colors do not break it.
+The 3XL detail ContentPane owns its outer corners instead of rounding its individual sections.
+
+Legacy `section.style` still accepts tint, tintOpacity, backdropBlur, textColor and CSS width. Keep
+explicit legacy material settings when migrating a custom surface; do not add a new background role
+on top of them and expect both material systems to apply. Prefer the new grid/container contract to
+independent section widths, and retain textColor only as an orthogonal text override.
+
+### Content grid and cards
+
+Grid classification uses the content container width before section padding, capped at 1536px.
+It is independent of viewport classification. Section owns one outer padding on each side;
+ContentGrid uses the same token for its inter-block gap.
+
+| Container width | Grid | Columns | Padding/gap | Headline size/line height | Body size/line height |
+| --- | --- | --- | --- | --- | --- |
+| Below 600px | xs | 4 | 12px | 18px/28px | 14px/20px |
+| 600px to below 840px | s | 6 | 16px | 18px/28px | 14px/20px |
+| 840px to below 1200px | m | 8 | 16px | 20px/32px | 14px/20px |
+| 1200px to 1536px | l | 12 | 24px | 24px/40px | 16px/24px |
+
+ContentBlock span values are positive integers. A single number applies at every grid size.
+Responsive values inherit the last supplied smaller size; before the first supplied value they fill
+the row. Invalid values fall back to the full row and excessive spans clamp to available columns,
+with development diagnostics. Placement follows DOM order without dense backfilling. Ordinary
+Section children remain ordinary content unless wrapped in ContentGrid/ContentBlock.
+
+| Card size | Column span | Title size/line height | Eyebrow size | Title rows without/with eyebrow |
+| --- | --- | --- | --- | --- |
+| s | 1 | 9px/18px | Hidden | 1 / n/a |
+| m | 2 | 12px/20px | 10px | 2 / 1 |
+| l | 4; 3 in grid s | 18px/24px | 14px | 3 / 2 |
+
+Titles use weight 500; eyebrows use weight 400 and share the title line height. Empty eyebrows
+consume no line. Cards are square; posters and models fit the same 4:3 slot, shrinking the slot
+on narrow cards to retain the text budget. Full title text remains accessible through the real
+detail link and tooltip. See [authoring](authoring.md) for examples and [layout migration](layout-migration.md)
+for appearance and sizing changes.
 
 getSpatialListItems(elements, basePath) derives links and includes summary and flat assets automatically. List entries can customize summary.sectionLink to point at an authored detail section. Use itemKey to distinguish repeated copies of the same element within one section; internal pose/occurrence fields are assigned by the adapter. findSpatialElement(elements, id) returns the matching document or undefined; the host decides how to render a 404.
 

@@ -14,11 +14,11 @@ not need stage or catalog props. Asset identity remains element identity.
   let { data } = $props();
 </script>
 <ContentPage hdr="/assets/category.hdr" page={{ title: 'Collection', breadcrumbs: [{ label: 'Elements' }] }}>
-  <Section section={{ id: 'introduction', title: 'Discover the collection' }}>
+  <Section section={{ id: 'introduction', title: 'Discover the collection', headline: 'Discover the collection', background: { color: 'standard' } }}>
     <p>Your own text, images and links.</p>
   </Section>
-  <ListSection section={{ id: 'elements', title: 'Elements' }} list={data.spatialElements} />
-  <CarouselSection section={{ id: 'featured', title: 'Featured' }} list={data.spatialElements} />
+  <ListSection section={{ id: 'elements', title: 'Elements', headline: 'Elements' }} list={data.spatialElements} />
+  <CarouselSection section={{ id: 'featured', title: 'Featured', headline: 'Featured' }} list={data.spatialElements} />
 </ContentPage>
 ~~~
 
@@ -39,6 +39,66 @@ the compatibility default is /assets/draco/gltf/. Meshopt uses the Three.js deco
 
 Asset URLs, base-path resolution, content fetching and deployment are application responsibilities.
 Inspect apps/sveltekit-demo/src/lib/catalog.ts and its routes for a complete working example.
+
+## Layout, headings and section backgrounds
+
+Keep `section.title` as the short navigation and accessibility label. Set `section.headline`
+when the section should display a heading; omitting it leaves no heading or reserved heading
+gap. To preserve an existing heading during migration, set `headline` to its previous `title`.
+The section's anchor and generated detail navigation continue to use `id` and `title`.
+
+Sections are transparent by default. Choose `background: { color: 'standard' }` or
+`{ color: 'muted' }` for a solid section surface. The theme supplies those two colors through
+`sectionBackgrounds`. On ContentPages, `size: 'full'` extends only the background to the
+viewport edges; text and cards keep the same grid. A gradient such as
+`{ color: 'transparentToMuted', size: 'full' }` runs from top to bottom. Gradients require
+an effective full-width background. Detail sections always use standard width, so an invalid
+gradient becomes its end color and produces a development diagnostic.
+
+Use `ContentGrid` and `ContentBlock` for explicit content columns. Section owns the outer
+padding; a grid adds only the gaps between blocks. Grid size follows the content container,
+not the viewport: 4 columns below 600px, 6 from 600px, 8 from 840px and 12 from 1200px,
+with a maximum container width of 1536px. Responsive spans inherit the last smaller size;
+before the first specified size, or when `span` is omitted, a block fills the row. DOM order
+remains reading and keyboard order.
+
+~~~svelte
+<script lang="ts">
+  import { Section, ContentGrid, ContentBlock } from '@spatial-elements/sveltekit';
+</script>
+
+<Section section={{
+  id: 'materials', title: 'Materials', headline: 'Built for everyday use',
+  background: { color: 'muted' }
+}}>
+  <ContentGrid>
+    <ContentBlock span={{ xs: 4, s: 6, m: 4 }}>
+      <p>Material and finish information.</p>
+    </ContentBlock>
+    <ContentBlock span={{ xs: 4, s: 6, m: 4, l: 8 }}>
+      <p>Care instructions and other independently authored content.</p>
+    </ContentBlock>
+  </ContentGrid>
+</Section>
+~~~
+
+Ordinary Section children still work without a grid. Do not add another fixed margin around
+every block or repeat the section padding. Grid gutters and typography change together at
+the container boundaries. Theme `radii.control` styles cards and small controls;
+`radii.panel` styles panels and detached section groups. The defaults are 12px and 16px.
+An explicitly authored legacy `panelShape.radius` remains a fallback for both roles.
+Set `ContentPage background="#f7f5f0"` for a page-specific flat color; this updates native and
+enhanced backgrounds without changing the shared theme or HDR lighting.
+
+Choose one `cardSize="s"`, `"m"` (default) or `"l"` per ListSection. Cards are square and
+span 1, 2 or 4 grid columns respectively; large cards span 3 in the six-column grid.
+`textAlign="start"` (default) or `"center"` aligns the eyebrow and title together.
+Small cards show one title line and no eyebrow. Medium and large cards share a total budget
+of two and three lines: a nonempty eyebrow uses one line, leaving the rest for the title.
+Images and geometry fit the same 4:3 media slot without stretching. At narrow widths this
+slot shrinks to preserve the specified text line heights inside the square card.
+
+See the [layout migration guide](layout-migration.md) when updating existing pages and themes.
 
 ## Touch and pointer interaction
 
@@ -74,7 +134,7 @@ The detection delay does not erase that velocity. A single sample has no measura
 and snaps normally. Wheel travel has no two-seat cap. Panels remain withdrawn during the gesture. Vertical wheel
 input and control-wheel zoom retain browser behavior. Reduced motion removes selection animation.
 
-Cards reserve one eyebrow line and two title lines. Truncated titles expose their complete text through a native card tooltip; full text remains available on the detail page. Mouse hover and keyboard focus raise card text, enlarge the model and highlight the card outline in the accent color. Carousel models use the detail interaction theme's silhouette glow, including the selected model. Hover or keyboard focus smoothly removes their defocus, and a native tooltip identifies the element using its complete title. Carousel indicators follow movement immediately, and dot selections animate across intermediate elements (except under reduced motion). Defocus increases with distance from the center, and summary panels soften as they fade.
+Cards clamp text to the selected size's line budget. Truncated titles expose their complete text through a native card tooltip; full text remains available on the detail page. Mouse hover and keyboard focus raise card text, enlarge the model and highlight the card outline in the accent color. Carousel models use the detail interaction theme's silhouette glow, including the selected model. Hover or keyboard focus smoothly removes their defocus, and a native tooltip identifies the element using its complete title. Carousel indicators follow movement immediately, and dot selections animate across intermediate elements (except under reduced motion). Defocus increases with distance from the center, and summary panels soften as they fade.
 
 Before WebGPU is ready, carousels are native horizontal scroll-snap rails with visible native scrollbars, keyboard scrolling and working detail links, including without JavaScript. Pagination dots and previous/next arrows beside the model appear only after enhancement; arrows are hidden at their respective endpoints. Their shared CSS grid reserves the same content height and selected panel frame as the spatial presentation. Selections made while loading are retained when enhancement succeeds. GPU failure keeps the native presentation available. Keep fallback images representative of the initial model view; posters disappear immediately when their GPU model is ready, avoiding a duplicate silhouette during return transitions.
 

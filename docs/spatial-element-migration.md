@@ -29,7 +29,7 @@ Other product-prefixed controllers, contracts, helpers, tests and file names now
   let { data } = $props();
 </script>
 <SpatialElementPage spatialElement={data.spatialElement}>
-  <Section section={{ id: 'features', title: 'Features' }}>
+  <Section section={{ id: 'features', title: 'Features', headline: 'Features', background: { color: 'standard' } }}>
     <p>Describe any object, artwork or item here.</p>
   </Section>
 </SpatialElementPage>

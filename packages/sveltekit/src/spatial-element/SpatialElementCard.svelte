@@ -4,6 +4,7 @@
 	import { truncatedTitle } from './truncatedTitle.js';
 	import { useSpatialTheme } from './brandContext.js';
 	import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
+	import { spatialLayoutTokens, type SpatialCardSize } from '@spatial-elements/core/spatial-element/responsiveLayout';
 	import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
 	import {
 		CATALOG_ENDPOINTS,
@@ -15,8 +16,18 @@
 	let {
 		spatialElement,
 		occurrence,
-		order = 0
-	}: { spatialElement: SpatialListItem; occurrence: string; order?: number } = $props();
+		order = 0,
+		cardSize = 'm',
+		textAlign = 'start'
+	}: {
+		spatialElement: SpatialListItem;
+		occurrence: string;
+		order?: number;
+		cardSize?: SpatialCardSize;
+		textAlign?: 'start' | 'center';
+	} = $props();
+	const card = $derived(spatialLayoutTokens.cards[cardSize]);
+	const hasEyebrow = $derived(cardSize !== 's' && Boolean(spatialElement.eyebrow?.trim()));
 	const readTheme = useSpatialTheme();
 	const brand = $derived(readTheme());
 	const catalogEndpoint = createCatalogEndpointAction();
@@ -46,6 +57,18 @@
 		role: 'container'
 	}}
 	class="spatial-element-card"
+	style:--card-grid-span={cardSize === 'l' ? `var(--spatial-card-large-span, ${card.span})` : card.span}
+	style:--card-title-size={`${card.titleSize}px`}
+	style:--card-title-weight={card.titleWeight}
+	style:--card-eyebrow-size={`${card.eyebrowSize}px`}
+	style:--card-eyebrow-weight={card.eyebrowWeight}
+	style:--card-line-height={`${card.lineHeight}px`}
+	style:--card-text-rows={card.rows}
+	style:--card-title-rows={card.rows - (hasEyebrow ? 1 : 0)}
+	style:--card-text-inset-inline={`${spatialLayoutTokens.cardTextInset.inline}px`}
+	style:--card-text-inset-block={`${spatialLayoutTokens.cardTextInset.block}px`}
+	style:--card-text-align={textAlign}
+	data-card-size={cardSize}
 	href={resolve(spatialElement.href)}
 	onpointerenter={() => prepare(spatialElement)}
 	onfocus={(event) => {
@@ -124,6 +147,7 @@
 		{/if}
 	</div>
 	<div class="spatial-element-card-copy">
+		{#if hasEyebrow}
 		<p
 			class="spatial-element-card-eyebrow"
 			data-shared-role="eyebrow"
@@ -138,6 +162,7 @@
 		>
 			{spatialElement.eyebrow}
 		</p>
+		{/if}
 		<h3
 			use:truncatedTitle={spatialElement.title}
 			use:catalogEndpoint={{
@@ -161,12 +186,11 @@
 	.spatial-element-card-eyebrow {
 		margin: 0;
 		color: var(--spatial-element-accent);
-		font-size: 13px;
-		font-weight: 720;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		line-height: 1.4;
-		height: 1lh;
+		font-size: var(--card-eyebrow-size);
+		font-weight: var(--card-eyebrow-weight);
+		line-height: var(--card-line-height);
+		flex: 0 0 var(--card-line-height);
+		min-width: 0;
 		overflow: hidden;
 		white-space: nowrap;
 		text-overflow: ellipsis;
@@ -198,11 +222,15 @@
 
 	.spatial-element-card {
 		position: relative;
-		display: block;
+		display: grid;
+		grid-column: span var(--card-grid-span);
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr) min(100%, max(25%, calc(var(--card-text-rows) * var(--card-line-height) + 2 * var(--card-text-inset-block))));
+		aspect-ratio: 1;
 		box-sizing: border-box;
 		min-width: 0;
-		max-width: 360px;
-		border-radius: var(--spatial-element-panel-radius, 12px);
+		min-height: 0;
+		border-radius: var(--spatial-element-control-radius, var(--spatial-element-panel-radius));
 		color: var(--spatial-element-ink);
 		text-decoration: none;
 		transform-origin: center;
@@ -252,9 +280,15 @@
 
 	.spatial-element-card-geometry {
 		position: relative;
+		grid-area: 1 / 1;
+		justify-self: center;
+		align-self: center;
 		transform-style: preserve-3d;
-		height: 228px;
-		margin: 12px 12px 0;
+		height: 100%;
+		width: auto;
+		max-width: 100%;
+		min-height: 0;
+		aspect-ratio: 4 / 3;
 		pointer-events: none;
 	}
 
@@ -273,7 +307,15 @@
 
 	.spatial-element-card-copy {
 		position: relative;
-		padding: 14px 22px 24px;
+		grid-area: 2 / 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		min-width: 0;
+		min-height: 0;
+		box-sizing: border-box;
+		padding: var(--card-text-inset-block) var(--card-text-inset-inline);
+		text-align: var(--card-text-align);
 		transform-style: preserve-3d;
 	}
 
@@ -296,16 +338,17 @@
 	h3 {
 		display: -webkit-box;
 		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 2;
-		line-clamp: 2;
-		height: 2lh;
+		-webkit-line-clamp: var(--card-title-rows);
+		line-clamp: var(--card-title-rows);
+		max-height: calc(var(--card-title-rows) * var(--card-line-height));
+		flex-shrink: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		overflow-wrap: anywhere;
-		margin: 8px 0 0;
-		font-size: 21px;
-		font-weight: 720;
-		line-height: 1.24;
+		margin: 0;
+		font-size: var(--card-title-size);
+		font-weight: var(--card-title-weight);
+		line-height: var(--card-line-height);
 		transform: translateZ(var(--card-title-depth, 0px));
 	}
 
