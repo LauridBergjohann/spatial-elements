@@ -30,6 +30,7 @@
 <div class="spatial-element-aside" data-spatial-summary-aside style:--summary-panel-height={panelHeight === undefined ? undefined : `${panelHeight}px`}>
 	<Panel
 		{nativeContent}
+		surface={nativeContent ? 'frosted' : undefined}
 		catalogEndpoint={{
 			brandId: theme.id,
 			spatialElementId: spatialElement.id,

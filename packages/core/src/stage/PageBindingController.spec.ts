@@ -54,6 +54,25 @@ test('native popover surfaces retain viewport coordinates when the document scro
 	expect(owner.resolve(measured, 0, 500)).toMatchObject({ left: 120, top: 80, width: 300, height: 250 });
 });
 
+test('fixed media descendants and their GPU rectangles share viewport coordinates across remeasurement', () => {
+	vi.stubGlobal('window', { getComputedStyle: () => ({ position: 'relative', top: 'auto' }) });
+	const region = {} as HTMLElement;
+	const frame = {
+		closest: (selector: string) => selector === '[data-stage-fixed-region]' ? region : null,
+		getBoundingClientRect: () => ({ left: 178, top: 96, width: 1042, height: 788 })
+	} as unknown as HTMLElement;
+	const owner = new PageBindingController();
+	for (const measuredAt of [0, 125.5, 900, 125.5, 0]) {
+		const cached = owner.measure(frame, 0, measuredAt);
+		expect(cached.fixed).toBe(true);
+		for (const scroll of [0, 125.5, 900]) {
+			expect(owner.resolve(cached, 0, scroll)).toEqual({
+				left: 178, top: 96, right: 1220, bottom: 884, width: 1042, height: 788
+			});
+		}
+	}
+});
+
 test('invalidates queued resize callbacks before replacing hosts', () => {
 	const callbacks: ResizeObserverCallback[] = [];
 	const disconnect = vi.fn();

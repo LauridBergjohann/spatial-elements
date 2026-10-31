@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { detailRules } from './layout-detail-css.mjs';
+import { paneRules } from './layout-pane-css.mjs';
 
 const source = new URL('../packages/core/src/spatial-element/layoutTokens.json', import.meta.url);
 const destination = new URL('../packages/sveltekit/src/spatial-element/layout.generated.css', import.meta.url);
@@ -30,6 +31,7 @@ const css = [
 	`@media (min-width: ${tokens.layoutMinWidths['2xl']}px) {\n\t.spatial-content-width { width: min(100%, ${tokens.contentMax}px); }\n}`,
 	...dockRules(),
 	...detailRules(tokens),
+	paneRules(tokens),
 	...Object.entries(tokens.grid).map(([name, grid]) => grid.minWidth === 0 ? gridRules(name, grid)
 		: `@container spatial-content (min-width: ${grid.minWidth}px) {\n${gridRules(name, grid).split('\n').map(line => '\t' + line).join('\n')}\n}`),
 	`@media (min-width: ${tokens.layoutMinWidths.xl}px) {\n\t.spatial-section-surface { border-radius: var(--spatial-section-top-radius, 0px) var(--spatial-section-top-radius, 0px) var(--spatial-section-bottom-radius, 0px) var(--spatial-section-bottom-radius, 0px); }\n}`,

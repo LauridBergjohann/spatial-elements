@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { getContext, onMount, setContext } from 'svelte';
+	import { ShoppingCart } from 'lucide-svelte';
+	import { SpatialElementPaneController } from '@spatial-elements/core/spatial-element/SpatialElementPaneController';
 	import {
 		CATALOG_ENDPOINTS,
 		type CatalogEndpointRegistry
@@ -53,6 +55,10 @@
 	let sections = $state<SpatialElementSectionNavigationItem[]>([]);
 	let activeSectionId = $state<string | undefined>(SPATIAL_ELEMENT_OVERVIEW_SECTION.id);
 	let mainElement: HTMLElement;
+	let splitPane = $state(false);
+	let paneController = $state.raw<SpatialElementPaneController>();
+	const paneTint = $derived(typeof brand.panelTheme.tint === 'number'
+		? `#${brand.panelTheme.tint.toString(16).padStart(6, '0')}` : brand.panelTheme.tint ?? '#ffffff');
 	let navigationTargetId: string | undefined;
 	let scrollSpyFrame = 0;
 	const navigationSections = $derived([SPATIAL_ELEMENT_OVERVIEW_SECTION, ...sections]);
@@ -67,6 +73,12 @@
 			activeSectionId = SPATIAL_ELEMENT_OVERVIEW_SECTION.id;
 		}
 	});
+	$effect(() => {
+		paneController?.setHidden(Boolean(stageContext?.isFullscreen?.()) || (stageContext?.getZoomFocus?.() ?? 0) >= 0.999);
+	});
+	function invokePaneAction() {
+		mainElement.querySelector<HTMLElement>('[data-spatial-detail-pane-body] [data-catalog-rich-shared="primary-action"]')?.click();
+	}
 
 	function updateActiveSection() {
 		if (navigationTargetId || !mainElement?.isConnected) return;
@@ -106,6 +118,9 @@
 	}
 
 	onMount(() => {
+		paneController = new SpatialElementPaneController(mainElement,
+			() => stageContext?.getLayoutMetrics?.('stable'), (split) => { splitPane = split; });
+		paneController.start();
 		const dock = new SpatialElementDockController(mainElement, () => stageContext?.getLayoutMetrics?.('stable'));
 		dock.start();
 		const unregisterPresentation = endpoints?.registerPresentation(
@@ -132,6 +147,7 @@
 		scheduleScrollSpy();
 
 		return () => {
+			paneController?.destroy();
 			cancelAnimationFrame(scrollSpyFrame);
 			window.removeEventListener(STAGE_ANCHOR_NAVIGATION_EVENT, handleAnchorNavigation);
 			window.removeEventListener(STAGE_ANCHOR_NAVIGATION_END_EVENT, handleAnchorNavigationEnd);
@@ -153,18 +169,36 @@
 	data-spatial-element-root
 	data-spatial-element-id={spatialElement.id}
 	data-brand-id={spatialElement.brandId}
+	style:--spatial-pane-tint={paneTint}
+	style:--spatial-pane-tint-opacity={`${Math.min(1, Math.max(0, brand.panelTheme.tintOpacity ?? 0.28)) * 100}%`}
+	style:--spatial-pane-blur={`${Math.min(100, Math.max(0, brand.panelTheme.backdropBlur ?? 5))}px`}
 >
-	<SpatialElementBreadcrumbs
-		items={spatialElement.breadcrumbs}
-	/>
+	<div class="spatial-element-pane-heading" data-spatial-detail-pane-header data-spatial-detail-fixed>
+		<SpatialElementBreadcrumbs items={spatialElement.breadcrumbs} />
+		<div class="spatial-element-pane-title-row">
+			<p class="spatial-element-pane-title">{spatialElement.title}</p>
+			{#if spatialElement.eyebrow}<p class="spatial-element-pane-eyebrow">{spatialElement.eyebrow}</p>{/if}
+			{#if spatialElement.action}
+				<button type="button" class="spatial-element-pane-action" onclick={invokePaneAction}
+					aria-label={spatialElement.action.ariaLabel ?? spatialElement.action.label}>
+					<ShoppingCart size={24} aria-hidden="true" />
+				</button>
+			{/if}
+		</div>
+	</div>
 	<SpatialElementStickyHeader {activeSectionId} {spatialElement} sections={navigationSections} />
-
+	<div class="spatial-element-pane-surface" data-spatial-detail-pane-surface data-spatial-detail-fixed aria-hidden="true"></div>
+	<div class="spatial-element-pane-cover spatial-element-pane-cover-top" data-spatial-detail-fixed aria-hidden="true"></div>
+	<div class="spatial-element-pane-cover spatial-element-pane-cover-bottom" data-spatial-detail-fixed aria-hidden="true"></div>
+	<div class="spatial-element-presentation">
 	<section
 		id={SPATIAL_ELEMENT_OVERVIEW_SECTION.id}
 		class="spatial-element-hero"
 		data-spatial-element-tab-target
 		data-stage-scroll-top
 		aria-labelledby="spatial-element-title"
+		data-spatial-detail-media-region
+		data-spatial-detail-fixed
 	>
 		<SpatialElementMediaRail {spatialElement} />
 
@@ -185,15 +219,20 @@
 		/>
 
 		{#key spatialElement.id}<SpatialElementHelp />{/key}
-		{#key spatialElement.id}<SpatialElementSummaryPanel {spatialElement} />{/key}
 	</section>
-
+	<div class="spatial-element-pane-body" data-spatial-detail-pane-body data-stage-scroll-viewport>
+		{#key spatialElement.id}<SpatialElementSummaryPanel {spatialElement} nativeContent={splitPane} />{/key}
 	<div class="spatial-element-content">
 		<div class="spatial-element-section-list spatial-content-width spatial-content-container" data-catalog-transition-dom="enter">
 			<SectionSurfaceGroup>{@render children?.()}</SectionSurfaceGroup>
 		</div>
 		<!-- Read after the section snippet has registered its metadata during SSR. -->
 		<SpatialElementTabs {activeSectionId} sections={[SPATIAL_ELEMENT_OVERVIEW_SECTION, ...sections]} />
+	</div>
+	</div>
+	</div>
+	<div class="spatial-element-pane-submenu-shell" data-spatial-detail-pane-submenu-shell data-spatial-detail-fixed>
+		<div class="spatial-element-pane-submenu" data-spatial-detail-pane-submenu aria-hidden="true" inert></div>
 	</div>
 </main>
 
@@ -203,6 +242,10 @@
 		width: 100%;
 		margin: 0;
 	}
+	.spatial-element-presentation { position: relative; }
+	.spatial-element-pane-heading { display: contents; }
+	.spatial-element-pane-title-row, .spatial-element-pane-surface,
+	.spatial-element-pane-cover, .spatial-element-pane-submenu-shell { display: none; }
 
 	.spatial-element-hero {
 		position: relative;

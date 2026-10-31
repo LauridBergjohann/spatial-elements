@@ -919,10 +919,10 @@ export class StageExperience {
 			const target = this.panelTargets[index];
 			if (!target) continue; // Navigation owns newly registered panels.
 			const appearance = (panel: StagePanelTarget) => JSON.stringify([
-				panel.options, panel.minimap, panel.surface, panel.contentInset
+				panel.options, panel.minimap, panel.surface, panel.contentInset, panel.nativeContent
 			]);
 			if (appearance(target) === appearance(next)) continue;
-			surfaceChanged ||= target.surface !== next.surface;
+			surfaceChanged ||= target.surface !== next.surface || target.nativeContent !== next.nativeContent;
 			Object.assign(target, next);
 			changed.push(index);
 		}
@@ -931,7 +931,7 @@ export class StageExperience {
 				.filter((target) => target.surface === 'glass' || target.minimap).map((target) => target.options);
 			this.pipeline.syncPanelBlurCaptures();
 			if (surfaceChanged) {
-				// A backend change only replaces panel presentation, never the element scene.
+				// Surface/DOM ownership changes move the entire live root, never its children or scene.
 				this.minimapController.dispose();
 				this.panels.release();
 				this.createPanels();
@@ -2528,7 +2528,9 @@ export class StageExperience {
 		this.panelTargets.forEach((target, index) => {
 			if (!target.nativeContent || target.getVisible?.() === false) return;
 			target.updateNativeLayout?.();
-			this.syncPanelLayout(target, index, true);
+			// Only an actively positioned native popover needs a fresh DOM measurement.
+			// Pane summaries use the same resize/scroll-invalidated cache as other panels.
+			this.syncPanelLayout(target, index, Boolean(target.updateNativeLayout));
 			const runtime = this.panelRuntimes[index];
 			if (runtime) runtime.group.visible = this.isPanelTargetVisible(index);
 		});

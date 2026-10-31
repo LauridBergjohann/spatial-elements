@@ -90,8 +90,12 @@ export class PageBindingController {
 	measure(element: HTMLElement, scrollX: number, scrollY: number): CachedStageRect {
 		const rect = element.getBoundingClientRect();
 		const popover = element.closest?.<HTMLElement>('[popover]');
+		// A projected child can be relatively positioned inside a region which the
+		// document owner keeps fixed. Cache its visible rectangle once; subtracting
+		// the document scroll again would move the GPU surface away from that DOM.
+		const fixedRegion = element.closest?.<HTMLElement>('[data-stage-fixed-region]');
 		const style = window.getComputedStyle(element);
-		const fixed = style.position === 'fixed' ||
+		const fixed = Boolean(fixedRegion) || style.position === 'fixed' ||
 			Boolean(popover && window.getComputedStyle(popover).position === 'fixed');
 		const shell = !fixed ? element.closest?.<HTMLElement>('[data-stage-scroll-shell]') : undefined;
 		const compensation = shell ? Number(shell.dataset.stageScrollCompensation) || 0 : 0;

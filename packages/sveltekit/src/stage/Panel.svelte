@@ -103,6 +103,7 @@
 		getContentInset();
 		Object.values(getMinimapOptions() ?? {});
 		void resolvedSurface;
+		void nativeContent;
 		stage.updatePanelAppearance?.();
 	});
 	$effect(() => {

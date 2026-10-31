@@ -290,10 +290,13 @@ export class VirtualScrollController {
 		// Corner controls are already clamped into the viewport. Their 10px inset
 		// must not trigger document scrolling when focused before a fullscreen click.
 		if (event.target.closest('[data-stage-corner-control]')) return;
+		// Fixed media and pane chrome cannot be revealed by document scrolling.
+		if (event.target.closest('[data-stage-fixed-region]')) return;
 		const rect = event.target.getBoundingClientRect();
+		const viewport = this.getScrollViewport(event.target);
 		if (
-			rect.top >= FOCUS_VIEWPORT_MARGIN &&
-			rect.bottom <= window.innerHeight - FOCUS_VIEWPORT_MARGIN
+			rect.top >= viewport.top + FOCUS_VIEWPORT_MARGIN &&
+			rect.bottom <= viewport.bottom - FOCUS_VIEWPORT_MARGIN
 		)
 			return;
 
@@ -305,14 +308,25 @@ export class VirtualScrollController {
 		const style = window.getComputedStyle(element);
 		const scrollMarginTop = Number.parseFloat(style.scrollMarginTop) || 0;
 		const documentTop = rect.top + this.scrollY;
+		const viewport = this.getScrollViewport(element);
 		return Math.max(
 			element.hasAttribute('data-stage-scroll-top')
 				? 0
 				: center
-					? documentTop - (window.innerHeight - rect.height) * 0.5
-					: documentTop - scrollMarginTop,
+					? documentTop - viewport.top - (viewport.bottom - viewport.top - rect.height) * 0.5
+					: documentTop - viewport.top - scrollMarginTop,
 			0
 		);
+	}
+
+	/** Paint clipping never changes document coordinates. A pane only declares
+	 * the fixed obstructions which anchors and focused content must clear. */
+	private getScrollViewport(element: HTMLElement) {
+		const region = element.closest<HTMLElement>('[data-stage-scroll-viewport]');
+		const style = region ? window.getComputedStyle(region) : undefined;
+		const top = Math.min(window.innerHeight, Math.max(0, Number.parseFloat(style?.scrollPaddingTop ?? '') || 0));
+		const bottomInset = Math.max(0, Number.parseFloat(style?.scrollPaddingBottom ?? '') || 0);
+		return { top, bottom: Math.max(top, window.innerHeight - bottomInset) };
 	}
 
 	private scrollElementIntoView(element: HTMLElement, center = false, animated = false) {
