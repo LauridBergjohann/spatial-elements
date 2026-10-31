@@ -1,4 +1,5 @@
 import { gaussianTargets } from '../stage/renderTargetInventory.js';
+import { clearFullTarget } from '../stage/rendererState.js';
 import * as THREE from 'three/webgpu';
 import { texture } from 'three/tsl';
 import { gaussianBlur } from 'three/addons/tsl/display/GaussianBlurNode.js';
@@ -169,7 +170,8 @@ export class CarouselGlassCompositor {
 			if (!rearEmpty || !this.emptyCaptureValid) {
 				renderer.setRenderTarget(this.capture);
 				renderer.setClearColor(0x000000, 0);
-				renderer.clear();
+				if (rearEmpty) clearFullTarget(renderer);
+				else renderer.clear();
 				if (rearEmpty) this.emptyCaptureValid = true;
 				else drawRear();
 			}
@@ -184,10 +186,11 @@ export class CarouselGlassCompositor {
 				renderer.setRenderTarget(blur.target);
 				// For transparent black, filtered.rgb + (1 - filtered.a) is exactly
 				// opaque white at every blur radius (including zero). An attachment
-				// clear fills the entire texture even during zero-scissor preparation;
-				// a clipped Gaussian/Quad draw must never count as a valid empty seed.
+				// clear with scissor disabled fills the entire texture on either backend;
+				// a clipped draw/clear must never count as a valid empty seed.
 				renderer.setClearColor(rearEmpty ? 0xffffff : 0x000000, rearEmpty ? 1 : 0);
-				renderer.clear();
+				if (rearEmpty) clearFullTarget(renderer);
+				else renderer.clear();
 				if (rearEmpty) this.emptyBlurKeys.add(key);
 				else blur.quad.render(renderer);
 			}

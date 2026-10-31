@@ -270,5 +270,8 @@ opaque-white blur result for each radius/size, while continuing to draw the actu
 matrix and opacity. Live captures invalidate all blur keys, including inactive keys;
 resize and failed writes cannot reuse stale results. Once no geometry or retained glass
 contributes, the separate rear canvas is cleared once and then paused until output or
-size changes. CPU regression tests cover these invariants. **The performance effect of
+size changes. These cached clears explicitly disable and restore scissor: the Stage's
+`navigator.gpu` check does not prohibit Three's WebGL backend fallback after initialization
+failure, and its clear is scissor-dependent. CPU regression tests cover these invariants.
+**The performance effect of
 this cache is not measured in the 362b98a results above and is not yet an accepted gain.**

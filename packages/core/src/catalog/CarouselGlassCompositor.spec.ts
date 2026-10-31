@@ -13,6 +13,7 @@ function fixture() {
 	let target: THREE.RenderTarget | null = original;
 	const color = new THREE.Color('red');
 	let alpha = 0.25;
+	let scissorTest = true;
 	const clears: { target: THREE.RenderTarget | null; color: number; alpha: number }[] = [];
 	const quads: (THREE.RenderTarget | null)[] = [];
 	const frames: { matrix: number[]; opacity: number[] }[] = [];
@@ -22,9 +23,9 @@ function fixture() {
 		getClearColor: (value: THREE.Color) => value.copy(color),
 		getClearAlpha: () => alpha,
 		setClearColor: (next: THREE.ColorRepresentation, opacity = 1) => { color.set(next); alpha = opacity; },
-		getScissorTest: () => true,
+		getScissorTest: () => scissorTest,
 		getScissor: (value: THREE.Vector4) => value.set(0, 0, 0, 0),
-		setScissorTest: vi.fn(),
+		setScissorTest: vi.fn((value: boolean) => { scissorTest = value; }),
 		clear: vi.fn(() => { clears.push({ target, color: color.getHex(), alpha }); }),
 		clearDepth: vi.fn(),
 		render: vi.fn((scene: THREE.Scene) => {
@@ -53,7 +54,7 @@ function fixture() {
 	const restored = () => {
 		expect(target).toBe(original); expect(color.getHex()).toBe(0xff0000); expect(alpha).toBe(0.25);
 		expect(renderer.getScissor(new THREE.Vector4()).toArray()).toEqual([0, 0, 0, 0]);
-		expect(renderer.setScissorTest).not.toHaveBeenCalled();
+		expect(renderer.getScissorTest()).toBe(true);
 	};
 	return { glass, renderer, camera, depthBlur, draw, quad, clears, quads, frames, card, activate, render, reset, restored,
 		dispose: () => { glass.dispose(); original.dispose(); } };
@@ -116,7 +117,10 @@ test.each([0, 1])('a failed empty clear (%s) restores state and retries the fail
 	const f = fixture(); f.activate(f.card(5));
 	const clear = f.renderer.clear.getMockImplementation()!;
 	let call = 0;
-	f.renderer.clear.mockImplementation(() => { if (call++ === failedClear) throw new Error('clear failed'); clear(); });
+	f.renderer.clear.mockImplementation(() => {
+		expect(f.renderer.getScissorTest()).toBe(false);
+		if (call++ === failedClear) throw new Error('clear failed'); clear();
+	});
 	expect(() => f.render(true)).toThrow('clear failed'); f.restored();
 	f.renderer.clear.mockImplementation(clear); f.reset(); f.render(true);
 	expect(f.clears).toHaveLength(failedClear === 0 ? 2 : 1);
@@ -124,6 +128,21 @@ test.each([0, 1])('a failed empty clear (%s) restores state and retries the fail
 	expect(f.quads).toHaveLength(0);
 	f.reset(); f.render(true); expect(f.clears).toHaveLength(0);
 	f.restored(); f.dispose();
+});
+
+test('empty seeds fill both complete targets under a scissor-dependent fallback clear', () => {
+	const f = fixture(); f.activate(f.card(5));
+	const filled = new Map<THREE.RenderTarget | null, number>();
+	const clear = f.renderer.clear.getMockImplementation()!;
+	f.renderer.clear.mockImplementation(() => {
+		// A zero-area WebGL scissor would leave all pixels untouched.
+		if (!f.renderer.getScissorTest()) filled.set(f.renderer.getRenderTarget(), f.renderer.getClearAlpha());
+		clear();
+	});
+	f.render(true);
+	expect([...filled.values()]).toEqual([0, 1]);
+	expect(f.clears).toHaveLength(2); f.restored();
+	f.reset(); f.render(true); expect(f.clears).toHaveLength(0); f.restored(); f.dispose();
 });
 
 test('a failed live blur cannot reuse any older empty result', () => {

@@ -376,11 +376,27 @@ test('a failed rear draw or empty clear restores borrowed renderer state and ret
 	expect(() => f.pipeline.renderCarouselRear()).toThrow('rear draw failed'); f.restored();
 	f.pipeline.renderCarouselRear();
 	f.setActive(false); f.reset();
-	f.renderer.clear.mockImplementationOnce(() => { throw new Error('clear failed'); });
+	f.renderer.clear.mockImplementationOnce(() => {
+		expect(f.renderer.getScissorTest()).toBe(false);
+		throw new Error('clear failed');
+	});
 	expect(() => f.pipeline.renderCarouselRear()).toThrow('clear failed'); f.restored();
 	f.reset(); f.pipeline.renderCarouselRear(); expect(f.renderer.clear).toHaveBeenCalledOnce();
 	f.reset(); f.pipeline.renderCarouselRear(); expect(f.canvasSwitch).not.toHaveBeenCalled();
 	f.restored(); f.originalTarget.dispose();
+});
+
+test('the one-time inactive canvas clear ignores a zero-area scissor even on a scissor-dependent backend', () => {
+	const f = carouselRearFixture(); f.pipeline.renderCarouselRear();
+	f.setActive(false); f.reset(); f.scissor.set(0, 0, 0, 0);
+	let fullyCleared = false;
+	f.renderer.clear.mockImplementation(() => { fullyCleared = !f.renderer.getScissorTest(); });
+	f.pipeline.renderCarouselRear();
+	expect(fullyCleared).toBe(true);
+	expect(f.renderer.getScissorTest()).toBe(true);
+	expect(f.scissor.toArray()).toEqual([0, 0, 0, 0]);
+	f.reset(); f.pipeline.renderCarouselRear(); expect(f.canvasSwitch).not.toHaveBeenCalled();
+	f.originalTarget.dispose();
 });
 
 test('a page with no rear output never creates or switches to a carousel canvas', () => {

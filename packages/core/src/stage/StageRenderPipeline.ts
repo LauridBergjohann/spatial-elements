@@ -4,7 +4,7 @@ import { getMinimapMeasurementMode } from './minimapMeasurement.js';
 import { parseRenderMeasurement } from './renderMeasurement.js';
 import type { PreparedHigh } from '../catalog/CatalogPreparation.js';
 import { gaussianTargets } from './renderTargetInventory.js';
-import { withRendererState, withVisibility } from './rendererState.js';
+import { clearFullTarget, withRendererState, withVisibility } from './rendererState.js';
 
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
 
@@ -309,7 +309,8 @@ export class StageRenderPipeline {
 			this.ports.renderer.setCanvasTarget(target);
 			this.ports.renderer.setRenderTarget(null);
 			this.ports.renderer.setClearColor(0x000000, 0);
-			this.ports.renderer.clear();
+			if (active) this.ports.renderer.clear();
+			else clearFullTarget(this.ports.renderer);
 			if (active) layer!.renderRear(this.ports.renderer);
 			else this.carouselRearClear = true;
 		});
