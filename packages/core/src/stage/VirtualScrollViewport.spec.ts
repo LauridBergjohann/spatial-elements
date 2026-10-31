@@ -25,8 +25,9 @@ class TestElement {
 	constructor(public top = 0, public height = 40) {}
 	getBoundingClientRect() { return { top: this.top, bottom: this.top + this.height, left: 0, width: 100, height: this.height }; }
 	closest(selector: string) {
-		return selector === '[data-stage-scroll-viewport]' ? this.region
-			: selector === '[data-stage-fixed-region]' && this.fixed ? this : null;
+		const selectors = selector.split(',').map((entry) => entry.trim());
+		return selectors.includes('[data-stage-scroll-viewport]') ? this.region
+			: selectors.includes('[data-stage-fixed-region]') && this.fixed ? this : null;
 	}
 	hasAttribute(name: string) { return this.attributes.has(name); }
 	querySelector(selector: string) { return this.children.get(selector); }
