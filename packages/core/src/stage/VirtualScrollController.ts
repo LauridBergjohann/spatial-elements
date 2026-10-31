@@ -328,8 +328,9 @@ export class VirtualScrollController {
 		// Corner controls are already clamped into the viewport. Their 10px inset
 		// must not trigger document scrolling when focused before a fullscreen click.
 		if (event.target.closest('[data-stage-corner-control]')) return;
-		// Fixed media and pane chrome cannot be revealed by document scrolling.
-		if (event.target.closest('[data-stage-fixed-region]')) return;
+		// Fixed media, pane chrome and portaled docks cannot be revealed by
+		// document scrolling, even if an authored hit area crosses a viewport edge.
+		if (event.target.closest('[data-stage-fixed-region], [data-stage-fixed-overlay]')) return;
 		const rect = event.target.getBoundingClientRect();
 		const viewport = this.getScrollViewport(event.target);
 		if (

@@ -29,7 +29,7 @@ test.each(['mouse', 'touch', 'pen'])('pointer %s activation preserves document p
 		addEventListener = add;
 		removeEventListener = remove;
 		contains(other: MockElement): boolean { return other === this || Boolean(other.parent && this.contains(other.parent)); }
-		closest() { return null; }
+		closest(_selector: string): MockElement | null { return null; }
 		hasAttribute() { return false; }
 		getBoundingClientRect() { return { top: 502.6, bottom: 976.05, left: 0, right: 439, width: 439, height: 473.45 }; }
 	}
@@ -67,6 +67,15 @@ test.each(['mouse', 'touch', 'pen'])('pointer %s activation preserves document p
 	emit('keydown', { key: 'Tab', target });
 	emit('focusin', { target });
 	expect(scrollTo).toHaveBeenCalledTimes(1);
+	// A scaled dock minimap intentionally has a hit area extending above the
+	// viewport. Focusing its fixed action must not scroll away its own dock.
+	target.getBoundingClientRect = () => ({ top: -13, bottom: 99, left: -8, right: 104, width: 112, height: 112 });
+	for (const fixedRegion of ['[data-stage-fixed-region]', '[data-stage-fixed-overlay]']) {
+		scrollTo.mockClear();
+		target.closest = selector => selector.includes(fixedRegion) ? container : null;
+		emit('focusin', { target });
+		expect(scrollTo, `keyboard focus inside ${fixedRegion}`).not.toHaveBeenCalled();
+	}
 	controller.destroy();
 	expect([...listeners.values()].every(group => group.size === 0)).toBe(true);
 });
