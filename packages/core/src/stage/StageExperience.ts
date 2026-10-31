@@ -4,7 +4,7 @@ import type {
 } from '../catalog/catalogGeometryRequest.js';
 import { describeRenderTargets } from './renderTargetInventory.js';
 import { DeviceGeometryMotion } from './DeviceGeometryMotion.js';
-import { isDeviceOrientationPaused, getListDeviceYaw, getListDevicePitch, getListDeviceRoll, retainListDeviceOrientation, subscribeListDeviceYaw, pauseDeviceOrientationForScroll } from '../catalog/listDeviceOrientation.js';
+import { isDeviceOrientationPaused, getListDeviceYaw, getListDevicePitch, getListDeviceRoll, retainListDeviceOrientation, subscribeListDeviceYaw, pauseDeviceOrientationForScroll, holdDeviceOrientationForTransition } from '../catalog/listDeviceOrientation.js';
 import { StageRenderPipeline } from './StageRenderPipeline.js';
 import { PanelPresentationController } from './PanelPresentationController.js';
 import { MinimapController } from './MinimapController.js';
@@ -89,6 +89,9 @@ import type { StageMinimapState } from './minimap/MinimapState.js';
 import { disposeMaterialOnly, getMeshBounds, getMeshMaterials, isMesh } from './stageSceneUtils.js';
 import { isOutlineMesh } from './interactionOutline.js';
 import { resolveDetailLayout, resolveZoomLayout } from '../spatial-element/responsiveLayout.js';
+import type { LayoutRect } from '../spatial-element/responsiveLayout.js';
+import { detailCameraFit } from '../catalog/stagedDetailGeometry.js';
+import type { StagedDockTargetOptions } from '../catalog/stagedDockGeometry.js';
 import type { SpatialElementMediaItem } from '../spatial-element/types.js';
 import type {
 	BackgroundSettings,
@@ -195,9 +198,54 @@ export class StageExperience {
 	private catalogLayer?: CatalogSpatialElementLayer;
 	private catalogHandoff = false;
 	private catalogMotionComplete = false;
+	private stagedDetailTarget?: ReturnType<CatalogSpatialElementLayer['getStagedDetailTarget']>;
+	private stagedAwaitingFirstFrame = false;
+	private releaseStagedSensorHold?: () => void;
+	/** Use only already submitted source resources during the pre-route movement. */
+	beginStagedDetailMotion(source: CatalogGeometryEndpoint, fit: LayoutRect, targetOptions?: StagedDockTargetOptions) {
+		if (!this.catalogLayer || this.spatialCapture || this.catalogHandoff) return false;
+		if (!this.catalogLayer.isStagedDetailReady(source.spatialElementId, source.occurrence, this.renderer)) return false;
+		const target = this.catalogLayer.getStagedDetailTarget(source.spatialElementId, source.occurrence, fit,
+			{ width: window.innerWidth, height: window.innerHeight }, targetOptions, this.renderer.coordinateSystem);
+		if (!target || !this.catalogLayer.capture(source.spatialElementId, source.occurrence)) return false;
+		this.stagedDetailTarget = target;
+		// Progress zero preserves the currently displayed source. The transition's
+		// clock submits the first changed pose; an intervening Stage RAF would draw
+		// that same source again and delay the first visible acknowledgement.
+		this.stagedAwaitingFirstFrame = true;
+		cancelAnimationFrame(this.renderRequestId);
+		this.renderRequestId = 0;
+		this.catalogLayer.freezeStagedSource();
+		this.releaseStagedSensorHold = holdDeviceOrientationForTransition();
+		this.deviceMotion.update(0, 0, 0, 1);
+		this.catalogHandoff = true; this.catalogMotionComplete = false;
+		this.preparationGate.setPaused(true); this.detailPreparationGate.setPaused(true);
+		this.setStagedDetailProgress(0);
+		return true;
+	}
+	setStagedDetailProgress(progress: number) {
+		if (!this.stagedDetailTarget) return;
+		this.catalogLayer?.setHandoffTarget({ ...this.stagedDetailTarget, progress, environmentIntensity: 0.5 });
+		this.requestRender();
+	}
+	setStagedDetailPanel(card: HTMLElement, corners: CssProjectionQuad, width: number, height: number) {
+		return this.catalogLayer?.setStagedPanel(card, corners, width, height) ?? false;
+	}
+	setStagedPanelOpacity(opacity: number) { this.catalogLayer?.setStagedPanelOpacity(opacity); }
+	/** Called only after the final moving frame: route teardown may now replace its source. */
+	holdStagedDetail(spatialElementId: string, kind: 'hero' | 'dock' = 'hero') {
+		if (!this.stagedDetailTarget) return false;
+		this.setStagedDetailProgress(1); this.flushCatalogFrame();
+		const held = this.adoptCatalogPresentation({ spatialElementId, kind }, true);
+		this.stagedDetailTarget = undefined;
+		return held;
+	}
 	private deferredZoomPreparation = false;
 	private zoomPreparationFrame = 0;
 	private catalogLayerAnimating = false;
+	private stagedPreparationIdle = 0;
+	private stagedPreparationFallback = false;
+	private readonly stagedPreparationAbort = new AbortController();
 	private catalogPresentation: CatalogTransitionPresentation = { ...RESTING_CATALOG_PRESENTATION };
 	private pageModelReady = false;
 	private readonly preparationGate = new PreparationGate();
@@ -723,8 +771,15 @@ export class StageExperience {
 	dispose() {
 		if (this.disposed) return;
 		this.disposed = true;
+		this.stagedPreparationAbort.abort();
+		if (this.stagedPreparationIdle) {
+			if (this.stagedPreparationFallback) clearTimeout(this.stagedPreparationIdle);
+			else window.cancelIdleCallback(this.stagedPreparationIdle);
+		}
 		this.releaseDeviceOrientation?.();
 		this.unsubscribeDeviceOrientation?.();
+		this.releaseStagedSensorHold?.();
+		this.releaseStagedSensorHold = undefined;
 		this.releaseSpatialCapture();
 		this.container.removeAttribute('data-stage-scroll-rendering');
 
@@ -1117,6 +1172,28 @@ export class StageExperience {
 		});
 	}
 
+	private scheduleStagedPreparation() {
+		if (this.disposed || this.stagedPreparationIdle || this.catalogHandoff || this.scrollActive ||
+			this.catalogPresentation.active || !this.catalogLayer?.needsStagedPreparation(this.renderer)) return;
+		const prepare = () => {
+			this.stagedPreparationIdle = 0;
+			if (this.disposed || this.catalogHandoff || this.scrollActive || this.catalogPresentation.active) return;
+			void this.preparationGate.run(() => {
+				if (this.disposed || this.catalogHandoff || this.scrollActive || this.catalogPresentation.active) return;
+				return this.catalogLayer?.prepareStagedNavigation(this.renderer);
+			}, this.stagedPreparationAbort.signal).catch(() => {
+				// Early navigation remains unavailable; ordinary routing still works.
+			}).finally(() => {
+				// Models can finish their first render while another actor's GPU work
+				// is pending. Recheck once idle instead of waiting for a new input frame.
+				this.scheduleStagedPreparation();
+			});
+		};
+		this.stagedPreparationFallback = !window.requestIdleCallback;
+		this.stagedPreparationIdle = window.requestIdleCallback
+			? window.requestIdleCallback(prepare, { timeout: 1000 }) : window.setTimeout(prepare, 50);
+	}
+
 	/** Reports actual applied GPU alpha for browser verification without layout or style reads. */
 	getCatalogPresentation() {
 		const triangles = (root?: Object3D) => {
@@ -1306,7 +1383,7 @@ export class StageExperience {
 	}
 
 	/** Lease the last submitted element frame before another page binding can release it. */
-	adoptCatalogPresentation(destination: CatalogGeometryDestination) {
+	adoptCatalogPresentation(destination: CatalogGeometryDestination, restoreSourceOnCancel = false) {
 		const { spatialElementId } = destination;
 		const reverse = destination.kind === 'content';
 		if (!this.spatialCapture) {
@@ -1343,7 +1420,8 @@ export class StageExperience {
 						highPose?.removeFromParent();
 						transferredHigh?.overrides.forEach(disposeMaterialOnly);
 						high?.dispose();
-						moving.release();
+						if (restoreSourceOnCancel && !this.disposed && this.pageBinding.token === generation) moving.restore();
+						else moving.release();
 					}
 				});
 			} else if (
@@ -1648,6 +1726,7 @@ export class StageExperience {
 
 	/** Commit GPU and DOM motion in the same browser frame, not on consecutive RAFs. */
 	flushCatalogFrame() {
+		this.stagedAwaitingFirstFrame = false;
 		cancelAnimationFrame(this.renderRequestId);
 		this.renderRequestId = 0;
 		this.renderFrame(true);
@@ -1657,6 +1736,11 @@ export class StageExperience {
 	}
 
 	finishCatalogGeometry() {
+		this.stagedAwaitingFirstFrame = false;
+		this.stagedDetailTarget = undefined;
+		this.releaseStagedSensorHold?.();
+		this.releaseStagedSensorHold = undefined;
+		this.catalogLayer?.finishStagedPanel();
 		this.releaseSpatialCapture();
 		this.adoptedForward = false;
 		this.returnSpatialElement = undefined;
@@ -1937,7 +2021,7 @@ export class StageExperience {
 
 	/** Returns Low-band and glass-compositor counters without scheduling rendering. */
 	getCarouselStats() {
-		return this.catalogLayer?.getStats() ?? null;
+		return this.catalogLayer?.getStats(this.renderer) ?? null;
 	}
 
 	/** Returns render-target lifecycle counters for query-gated performance tests. */
@@ -2046,7 +2130,7 @@ export class StageExperience {
 	}
 
 	private scheduleRender() {
-		if (this.disposed || document.hidden || this.renderRequestId) return;
+		if (this.disposed || document.hidden || this.renderRequestId || this.stagedAwaitingFirstFrame) return;
 		this.renderRequestId = requestAnimationFrame(this.render);
 	}
 
@@ -2290,29 +2374,25 @@ export class StageExperience {
 		}
 		if (this.referenceBounds) bounds.copy(this.referenceBounds);
 		this.modelBounds.copy(bounds);
-		const sphere = bounds.getBoundingSphere(new THREE.Sphere());
-		const radius = Math.max(sphere.radius, 1);
-		this.modelRadius = radius;
-		const orbitDirection = getCameraOrbitDirection(
-			this.cameraSettings.azimuth,
-			this.cameraSettings.elevation
-		);
 		this.updateViewportFrame();
 		this.camera.aspect = window.innerWidth / window.innerHeight;
 		this.camera.updateProjectionMatrix();
-		const fitDistance = this.getSpatialElementCameraFitDistance(bounds, orbitDirection);
-		const maxDistance = Math.max(fitDistance, radius * 0.6);
+		const fit = detailCameraFit(bounds, this.camera, this.cameraSettings,
+			{ width: window.innerWidth, height: window.innerHeight },
+			{ width: this.viewportLayoutSize.x, height: this.viewportLayoutSize.y });
+		const { radius, center, distance: maxDistance } = fit;
+		this.modelRadius = radius;
 		this.rememberFittedViewportMetrics();
 
-		this.camera.position.copy(sphere.center).addScaledVector(orbitDirection, maxDistance);
-		this.camera.near = Math.max(maxDistance / 100, 0.01);
-		this.camera.far = Math.max(maxDistance * 100, radius * 20);
+		this.camera.position.copy(center).addScaledVector(fit.direction, maxDistance);
+		this.camera.near = fit.near;
+		this.camera.far = fit.far;
 		this.camera.updateProjectionMatrix();
 
 		const focusRange = getZoomFocusDistanceRange(maxDistance, radius);
 		this.interaction.setFocusRange(focusRange.restDistance, focusRange.closeDistance);
 
-		this.controls?.target.copy(sphere.center);
+		this.controls?.target.copy(center);
 		if (this.controls) {
 			this.controls.minDistance = this.focusCloseDistance * 0.64;
 			this.controls.maxDistance = maxDistance;
@@ -2943,6 +3023,7 @@ export class StageExperience {
 
 	private renderFrame(force = false) {
 		if (this.disposed) return;
+		if (!force && this.stagedAwaitingFirstFrame) return;
 		if (!this.disposed && (this.rendererSize.x !== window.innerWidth || this.rendererSize.y !== window.innerHeight))
 			this.resizeRenderer(false);
 		const renderTargets = this.pipeline.activeRenderTargets;
@@ -2980,6 +3061,7 @@ export class StageExperience {
 			const domAnimating = this.updatePanelDomRenderModes();
 			this.renderPanelContents();
 			this.pipeline.renderFrame(true, false);
+			this.scheduleStagedPreparation();
 			this.animationActive = this.catalogLayerAnimating || panelsAnimating || domAnimating;
 			if (!force && (this.animationActive || this.renderInvalidated)) this.scheduleRender();
 			return;
@@ -3013,6 +3095,7 @@ export class StageExperience {
 
 		this.renderPanelContents();
 		this.pipeline.renderFrame(false, !this.scrollActive && !this.catalogHandoff);
+		this.scheduleStagedPreparation();
 
 		this.animationActive =
 			deviceAnimating ||

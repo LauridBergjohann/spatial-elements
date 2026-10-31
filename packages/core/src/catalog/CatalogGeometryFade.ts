@@ -10,6 +10,7 @@ export class CatalogGeometryFade {
 	private capture?: THREE.RenderTarget;
 	private material?: THREE.NodeMaterial;
 	private quad?: THREE.QuadMesh;
+	private offscreenQuad?: THREE.QuadMesh;
 	private readonly alpha = uniform(1);
 
 	render(renderer: THREE.WebGPURenderer, opacity: number, draw: () => void) {
@@ -36,6 +37,10 @@ export class CatalogGeometryFade {
 			this.material.depthWrite = false;
 			this.material.toneMapped = false;
 			this.quad = new THREE.QuadMesh(this.material);
+			// Canvas output and High preparation can share a render-context format
+			// while using different color spaces. Keep both render-object owners alive:
+			// otherwise preparing High evicts the already warmed Canvas pipeline.
+			this.offscreenQuad = new THREE.QuadMesh(this.material);
 		}
 		this.capture.setSize(width, height);
 		const color = renderer.getClearColor(new THREE.Color());
@@ -52,7 +57,7 @@ export class CatalogGeometryFade {
 			renderer.setScissor(scissor);
 			renderer.setScissorTest(scissorTest);
 			this.alpha.value = opacity;
-			this.quad!.render(renderer);
+			(destination ? this.offscreenQuad : this.quad)!.render(renderer);
 		} finally {
 			renderer.setRenderTarget(destination);
 			renderer.setClearColor(color, clearAlpha);
@@ -66,5 +71,6 @@ export class CatalogGeometryFade {
 		this.capture = undefined;
 		this.material = undefined;
 		this.quad = undefined;
+		this.offscreenQuad = undefined;
 	}
 }

@@ -25,10 +25,20 @@ describe('resolved catalog geometry fade', () => {
 		const fade = new CatalogGeometryFade();
 		try {
 			fade.render(renderer, 0.5, () => {});
+			const offscreenQuad = quad.mock.contexts.at(-1);
 			const capture = fade.getRenderTargets()[0];
 			const dispose = vi.spyOn(capture, 'dispose');
 			target = null;
 			fade.render(renderer, 0.5, () => {});
+			const canvasQuad = quad.mock.contexts.at(-1);
+			expect(canvasQuad).not.toBe(offscreenQuad);
+			expect(canvasQuad!.material).toBe(offscreenQuad!.material);
+			// A later speculative High pass must not replace the live Canvas
+			// render-object owner and evict its warmed pipeline before a click.
+			target = warm; fade.render(renderer, 0.5, () => {});
+			expect(quad.mock.contexts.at(-1)).toBe(offscreenQuad);
+			target = null; fade.render(renderer, 0.5, () => {});
+			expect(quad.mock.contexts.at(-1)).toBe(canvasQuad);
 			expect(fade.getRenderTargets()).toEqual([capture]);
 			expect(capture.width * capture.height).toBeLessThanOrEqual(512 * 1024);
 			expect(capture.width / capture.height).toBeCloseTo(3000 / 1800, 2);

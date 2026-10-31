@@ -29,7 +29,24 @@ let scrollPaused = false;
 let recoverUntil = 0;
 const touchPointers = new Set<number>();
 let touches = 0;
-export const isDeviceOrientationPaused = () => touches > 0 || touchPointers.size > 0 || performance.now() < scrollUntil;
+let transitionHolds = 0;
+export const isDeviceOrientationPaused = () => transitionHolds > 0 || touches > 0 || touchPointers.size > 0 || performance.now() < scrollUntil;
+
+/** A captured staged source owns its pose; its destination binds to a neutral sensor baseline. */
+export function holdDeviceOrientationForTransition() {
+	transitionHolds += 1;
+	reset();
+	let released = false;
+	return () => {
+		if (released) return;
+		released = true;
+		transitionHolds = Math.max(transitionHolds - 1, 0);
+		if (!transitionHolds) {
+			reset();
+			pauseDeviceOrientationForScroll();
+		}
+	};
+}
 function pointerStart(event: PointerEvent) {
 	if (event.pointerType !== 'touch') return;
 	touchPointers.add(event.pointerId);

@@ -37,7 +37,6 @@ import {
 	MINIMAP_DEFAULT_HOVER_MODEL_SCALE,
 	MINIMAP_DEFAULT_OVERLAY_BLUR,
 	MINIMAP_MIN_BLUR_GUARD,
-	MINIMAP_MODEL_FILL,
 	MINIMAP_MODEL_RENDER_ORDER,
 	MINIMAP_OVERLAY_Z,
 	MINIMAP_PANEL_Z,
@@ -46,11 +45,13 @@ import {
 	PANEL_CAMERA_FOV
 } from './stageConstants.js';
 import {
-	getCameraOrbitQuaternion,
 	getMinimapHoverScale,
 	resolveMinimapModelScale,
 	smoothstep
 } from './stageMath.js';
+import {
+	getMinimapDockedQuaternion, getMinimapModelFitScale, getMinimapModelRadius, getMinimapRestQuaternion
+} from './minimap/MinimapModelGeometry.js';
 import {
 	addMinimapBlurLights,
 	disposeMinimapModelMaterials,
@@ -196,15 +197,12 @@ export class MinimapController {
 		const modelRoot = (this.lowModel ?? this.model).clone(true);
 		this.hideExcludedMeshes(modelRoot);
 		const bounds = getMeshBounds(modelRoot, (mesh) => this.isSpatialElementMesh(mesh));
-		const sphere = bounds.getBoundingSphere(new THREE.Sphere());
 		// Low-LOD bounds can have a different center from the shared model frame.
 		// Use the same pivot as the main view so orbiting cannot move its footprint.
 		const center = this.ports.spatialElement().center;
-		sphere.radius += sphere.center.distanceTo(center);
-		sphere.center.copy(center);
 		const modelCenter = new THREE.Group();
 		modelCenter.add(modelRoot);
-		modelCenter.position.copy(sphere.center).multiplyScalar(-1);
+		modelCenter.position.copy(center).multiplyScalar(-1);
 		const model = new THREE.Group();
 		model.add(modelCenter);
 		prepareMinimapModel(model);
@@ -218,7 +216,7 @@ export class MinimapController {
 		const captureExtentHeight = baseHeight * maximumPanelScale + blurGuard * 2;
 		const maximumSourcePixelsPerCssPixel = this.getFullPixelRatio();
 		const aspect = baseWidth / Math.max(baseHeight, 1);
-		const modelRadius = Math.max(sphere.radius, 0.001);
+		const modelRadius = getMinimapModelRadius(bounds, center);
 		const panelDistance = Math.max(
 			this.panelCamera.position.z - panel.group.position.z,
 			modelRadius * 2
@@ -337,21 +335,8 @@ export class MinimapController {
 		displayModel.add(displayCenter);
 		const displayMaterials = prepareMinimapModel(displayModel);
 		displayModel.renderOrder = MINIMAP_MODEL_RENDER_ORDER;
-		const restQuaternion = this.initialCameraWorldQuaternion
-			.clone()
-			.invert()
-			.multiply(this.initialModelWorldQuaternion);
-		const hasDockedOrientation =
-			Number.isFinite(options.dockedView?.azimuth) ||
-			Number.isFinite(options.dockedView?.elevation);
-		const dockedQuaternion = hasDockedOrientation
-			? getCameraOrbitQuaternion(
-					options.dockedView?.azimuth ?? this.cameraSettings.azimuth,
-					options.dockedView?.elevation ?? this.cameraSettings.elevation
-				)
-					.invert()
-					.multiply(this.initialModelWorldQuaternion)
-			: undefined;
+		const restQuaternion = getMinimapRestQuaternion(this.initialCameraWorldQuaternion, this.initialModelWorldQuaternion);
+		const dockedQuaternion = getMinimapDockedQuaternion(options.dockedView, this.cameraSettings, this.initialModelWorldQuaternion);
 
 		const overlayVisibility = uniform(0);
 		const overlayPanelSize = uniform(new THREE.Vector2(baseWidth, baseHeight));
@@ -717,17 +702,13 @@ export class MinimapController {
 		panelHeight: number,
 		focus: number
 	) {
-		const contentWidth = Math.max(panelWidth - minimap.options.inset * 2, 8);
-		const contentHeight = Math.max(panelHeight - minimap.options.inset * 2, 8);
-		const availableDiameter = Math.min(contentWidth, contentHeight) * MINIMAP_MODEL_FILL;
 		const presentationScale = THREE.MathUtils.clamp(
 			this.ports.frame().fullscreen ? 1 : (this.ports.target(minimap.panelIndex)?.getMinimapModelScale?.() ?? 1),
 			0.2,
 			2
 		);
-		const baseScale =
-			(availableDiameter * minimap.options.modelScale * presentationScale) /
-			Math.max(minimap.modelRadius * 2, 0.001);
+		const baseScale = getMinimapModelFitScale(panelWidth, panelHeight, minimap.modelRadius,
+			minimap.options, presentationScale);
 		const hoverModelScale = THREE.MathUtils.lerp(
 			minimap.options.hoverModelScale,
 			minimap.options.expandedHoverModelScale,

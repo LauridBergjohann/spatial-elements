@@ -29,7 +29,7 @@ export class CarouselGlassCompositor {
 	>();
 	private panels = new Map<
 		HTMLElement,
-		{ glass: LiquidGlassPanel; blur: number; focusBlur: number; width: number; height: number; active: boolean; seen: boolean }
+		{ glass: LiquidGlassPanel; blur: number; focusBlur: number; width: number; height: number; opacity: number; active: boolean; seen: boolean }
 	>();
 	private size = new THREE.Vector2();
 	private passes = 0;
@@ -51,6 +51,21 @@ export class CarouselGlassCompositor {
 			entry.glass.group.visible = false;
 		}
 	}
+
+	/** Reuse the already painted surfaces while their source route remains mounted. */
+	retainFrame(selected: HTMLElement, matrix: THREE.Matrix4, exitOpacity: number, selectedOpacity = 1) {
+		for (const [card, entry] of this.panels) {
+			const opacity = entry.opacity * (card === selected ? selectedOpacity : exitOpacity);
+			entry.seen = true; entry.active = opacity > 0.001;
+			entry.glass.setVisibilityAlpha(opacity);
+			if (card === selected) {
+				entry.focusBlur = 0;
+				entry.glass.group.matrix.copy(matrix);
+				entry.glass.group.matrixWorldNeedsUpdate = true;
+			}
+		}
+	}
+	hasPanel(card: HTMLElement) { return this.panels.has(card); }
 
 	panel(card: HTMLElement, matrix: THREE.Matrix4, width: number, height: number, opacity: number, focusBlur = 0) {
 		if (card.dataset.carouselSurface !== 'glass') return;
@@ -93,10 +108,11 @@ export class CarouselGlassCompositor {
 			});
 			glass.group.matrixAutoUpdate = false;
 			this.scene.add(glass.group);
-			entry = { glass, blur, focusBlur, width, height, active: false, seen: false };
+			entry = { glass, blur, focusBlur, width, height, opacity, active: false, seen: false };
 			this.panels.set(card, entry);
 		}
 		entry.seen = true;
+		entry.opacity = opacity;
 		entry.focusBlur = focusBlur;
 		entry.width = width;
 		entry.height = height;
@@ -107,10 +123,10 @@ export class CarouselGlassCompositor {
 		entry.glass.group.matrixWorldNeedsUpdate = true;
 	}
 
-	endFrame() {
+	endFrame(retained?: HTMLElement) {
 		for (const [card, entry] of this.panels) {
 			if (!entry.active) card.removeAttribute('data-carousel-glass-ready');
-			if (!entry.seen || !card.isConnected || card.hidden) {
+			if (!entry.seen || (card !== retained && (!card.isConnected || card.hidden))) {
 				this.scene.remove(entry.glass.group);
 				entry.glass.dispose();
 				this.panels.delete(card);
