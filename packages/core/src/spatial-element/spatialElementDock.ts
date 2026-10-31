@@ -172,7 +172,7 @@ export function getDockedMinimapCopyReserve(
 /** Covers the complete scaled model overhang with a viewport-aligned interaction target. */
 export function getDockedMinimapInteractionRect(
 	minimap: SpatialElementDockRect,
-	header: SpatialElementDockRect,
+	_header: SpatialElementDockRect,
 	modelScale: number
 ): SpatialElementDockRect {
 	const safeScale = Number.isFinite(modelScale) ? Math.max(modelScale, 1) : 1;
@@ -181,7 +181,7 @@ export function getDockedMinimapInteractionRect(
 
 	return {
 		left: minimap.left - (width - minimap.width) * 0.5,
-		top: header.top,
+		top: minimap.top - (height - minimap.height) * 0.5,
 		width,
 		height
 	};
