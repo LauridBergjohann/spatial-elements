@@ -519,13 +519,12 @@ function createRoundedGridGeometry(
 		roundedGridVertices.set(geometry, vertexIndex);
 		geometry.setAttribute(
 			'position',
-			new THREE.BufferAttribute(new Float32Array(capacity * 3), 3).setUsage(THREE.DynamicDrawUsage)
+			new THREE.BufferAttribute(new Float32Array(capacity * 3), 3)
 		);
-		geometry.setIndex(
-			new THREE.BufferAttribute(new Uint16Array(columns * rows * 6), 1).setUsage(
-				THREE.DynamicDrawUsage
-			)
-		);
+		geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(columns * rows * 6), 1));
+		// Three's WebGPU attribute manager uploads DynamicDrawUsage on every render,
+		// even without a version change. Keep uploads version-driven: actual shape
+		// changes below mark these retained buffers with needsUpdate.
 	}
 	vertexIndex.fill(-1);
 	const position = geometry.getAttribute('position') as THREE.BufferAttribute;

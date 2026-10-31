@@ -56,6 +56,12 @@ The fit distance uses the intrinsic resolved media rectangle. The camera offset 
 
 Before route commit, cancellation restores the same catalog actor and its canonical local model matrix. After the route binding changes, cleanup releases the outgoing actor rather than reviving a detached source. Retained carousel glass uses the source's existing resources, receives the same projected quad as the DOM in each frame, and fades out during content reveal.
 
+## Avoid unchanged geometry uploads during reveal
+
+A warm List trace of build `c64f3f8` found no new GPU resources or shader compilation during reveal, but approximately 27 ms of sampled CPU time across that phase was spent writing panel vertex/index attributes. The installed Three WebGPU attribute manager uploads `DynamicDrawUsage` buffers on every render, even when their version is unchanged. The panel's dense backdrop grid therefore caused repeated uploads while only its opacity changed.
+
+Backdrop position/index buffers now use the default, version-driven usage. The existing `needsUpdate` assignments still upload every real size/radius change, preserving geometry, topology, buffer identity and visual quality. Tests exercise the actual Three attribute manager: unchanged frames cause no updates after initial creation, a real resize updates each retained buffer once, and subsequent unchanged frames again cause none. The focused seven-test suite passes; a fresh production benchmark remains necessary to measure the effect on frame pacing.
+
 ## Verification
 
 Core tests cover short-viewport projection parity, projective glass/DOM agreement, capture ownership on cancellation, preparation failures and stale completion, and stable Canvas/offscreen fade owners. `tests/staged-production.e2e.ts` observes real DOM identity, target mount timing, source query width, moving-phase child mutations, and GPU creation calls. `tests/staged-pipeline-diagnostic.e2e.ts` additionally records shader fingerprints and full pipeline descriptors to distinguish missing variants from cache-owner replacement. First-motion and held/reveal timestamps come from the production controller, rather than an independent animation substitute.
