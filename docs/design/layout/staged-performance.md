@@ -211,6 +211,45 @@ evidence, unknown revisions, hidden and unstable calibration, budget consistency
 30 Hz false-acceptance case, and genuine 50/133 ms failures with a valid 60 Hz baseline.
 No tolerance band becomes an acceptance rule: the ±0.5 ms labels remain diagnostic only.
 
+## Separate trusted warm-input cohorts
+
+`SPATIAL_PERFORMANCE_ACTIVATION` adds an explicit input dimension while preserving
+`staged-performance-v2` and every existing raw gate:
+
+| Value | Cohorts | Activation |
+| --- | --- | --- |
+| `synthetic` (default) | List/Carousel, Cold/Warm | Existing `node.click()` path, unchanged |
+| `pointer` | List/Carousel, Warm only | Playwright mouse down/up at the normally hovered link |
+| `enter` | List/Carousel, Warm only | Focus the real link, then Playwright `Enter` |
+
+The trusted modes retain normal hover/focus preload and press/release behavior. They do
+not disable application listeners, add source settling waits, or replace the synthetic
+Cold/Warm measurements. Each report and sample records `activation`; test titles also
+distinguish trusted cohorts. Run each mode into a separate artifact directory, for example:
+
+```powershell
+$env:SPATIAL_PERFORMANCE_ACTIVATION='pointer'
+npx playwright test --config playwright.staged-performance.config.ts --output=.artifacts/staged-performance-pointer
+$env:SPATIAL_PERFORMANCE_ACTIVATION='enter'
+npx playwright test --config playwright.staged-performance.config.ts --output=.artifacts/staged-performance-enter
+Remove-Item Env:SPATIAL_PERFORMANCE_ACTIVATION
+```
+
+Capture listeners record actual trusted pointer-down/up or Enter keydown and the resulting
+click, including event timestamps and observation times. The existing latency gates remain
+anchored to the **click event timestamp**, never to the start of a Playwright command. The
+analyzer separately reports input-start-to-click/movement/submission/DOM-observation
+latencies as diagnostics; those values neither replace nor relax the click-based gates.
+Trusted acceptance requires the corresponding trusted events and the same click timestamp
+as the transition clock. Samples with missing or inconsistent evidence remain recorded
+but cannot establish acceptance.
+
+The analyzer rejects mixed activation types, report/sample label mismatches and trusted
+Cold cohorts before pooling statistics. Historical files lacking activation metadata remain
+`legacy-unspecified`; they are not silently relabelled as trusted or merged into a new
+explicitly labelled cohort. Their original raw measurements and gates remain unchanged.
+The analyzer self-tests cover these separation rules and the unchanged v2 raw outcomes.
+
 ## Acceptance scope
 
 The software gates cover source ownership, cancellation, known hero/compact/3XL endpoints,

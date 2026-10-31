@@ -12,9 +12,19 @@ const width = Number(process.env.SPATIAL_PERFORMANCE_WIDTH ?? 1440);
 if (!Number.isInteger(width) || width < 320) throw new Error('SPATIAL_PERFORMANCE_WIDTH must be an integer >= 320');
 const percentile = (values: number[], fraction: number) => [...values].sort((a, b) => a - b)[Math.ceil(values.length * fraction) - 1];
 const measurementProtocol = 'staged-performance-v2';
+type Activation = 'synthetic' | 'pointer' | 'enter';
+const activation = (process.env.SPATIAL_PERFORMANCE_ACTIVATION ?? 'synthetic') as Activation;
+if (!['synthetic', 'pointer', 'enter'].includes(activation)) throw new Error('SPATIAL_PERFORMANCE_ACTIVATION must be synthetic, pointer or enter');
+const temperatures = activation === 'synthetic' ? ['cold', 'warm'] as const : ['warm'] as const;
+type InputObservation = { observedAt: number; timeStamp: number; isTrusted: boolean; pointerType?: string; key?: string };
+type ActivationObservation = {
+	preActivationActivity: unknown; clickActivity?: unknown;
+	clickObservedAt?: number; clickEventTimeStamp?: number; isTrusted?: boolean; clickDetail?: number;
+	pointerDown?: InputObservation; pointerUp?: InputObservation; keyDown?: InputObservation;
+};
 
-for (const view of ['list', 'carousel'] as const) for (const temperature of ['cold', 'warm'] as const) {
-	test(`${width}px ${view} to ${endpoint}: ${samples} ${temperature} data and module navigations`, async ({ browser, baseURL }, testInfo) => {
+for (const view of ['list', 'carousel'] as const) for (const temperature of temperatures) {
+	test(`${width}px ${view} to ${endpoint}: ${samples} ${temperature} data and module navigations${activation === 'synthetic' ? '' : ` [trusted ${activation}]`}`, async ({ browser, baseURL }, testInfo) => {
 		const results: { latency: number; submitted: number; observedDomChange: number; budget: number; gaps: number[]; timings: unknown; requests: { name: string; start: number; duration: number }[] }[] = [];
 		for (let sample = 0; sample < samples; sample++) {
 			const context = await browser.newContext({ baseURL, viewport: { width, height: 1000 } });
@@ -77,6 +87,8 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 					await data;
 					await page.waitForLoadState('networkidle');
 				}
+				// Preserve normal focus/preload behavior; no extra settling wait is added.
+				if (activation === 'enter') await link.focus();
 				const profiler = process.env.SPATIAL_PERFORMANCE_PROFILE ? await context.newCDPSession(page) : undefined;
 				if (profiler) { await profiler.send('Performance.enable'); await profiler.send('Profiler.enable'); await profiler.send('Profiler.start'); }
 				const clockMetrics = profiler ? await profiler.send('Performance.getMetrics') : undefined;
@@ -101,13 +113,47 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 					};
 					Object.assign(window, { performanceProbe: probe }); requestAnimationFrame(sample);
 				}, { view, idleBudget });
-				// DOM activation avoids hover warming the cold case. The original Click
-				// event timestamp is still the start, including Kit's scheduling latency.
-				const sourceActivity = await link.evaluate((node: HTMLAnchorElement) => {
-					const snapshot = window.__stageVisualTest?.getRenderActivity?.() ?? null;
-					node.click();
-					return snapshot;
-				});
+				let sourceActivity: unknown, activationObservation: ActivationObservation | null = null;
+				if (activation === 'synthetic') {
+					// Unchanged baseline: DOM activation avoids hover warming the cold case.
+					// The original Click timestamp includes Kit's scheduling latency.
+					sourceActivity = await link.evaluate((node: HTMLAnchorElement) => {
+						const snapshot = window.__stageVisualTest?.getRenderActivity?.() ?? null;
+						node.click();
+						return snapshot;
+					});
+				} else {
+					await link.evaluate((node: HTMLAnchorElement) => {
+						const observation: ActivationObservation = { preActivationActivity: window.__stageVisualTest?.getRenderActivity?.() ?? null };
+						Object.assign(window, { performanceActivation: observation });
+						const record = (event: Event) => {
+							if (!event.composedPath().includes(node)) return;
+							const input = { observedAt: performance.now(), timeStamp: event.timeStamp, isTrusted: event.isTrusted };
+							if (event instanceof PointerEvent) {
+								const key = event.type === 'pointerdown' ? 'pointerDown' : 'pointerUp';
+								observation[key] = { ...input, pointerType: event.pointerType };
+							} else if (event instanceof KeyboardEvent && event.key === 'Enter') observation.keyDown = { ...input, key: event.key };
+						};
+						const clicked = (event: MouseEvent) => {
+							if (!event.composedPath().includes(node)) return;
+							observation.clickObservedAt = performance.now();
+							observation.clickEventTimeStamp = event.timeStamp;
+							observation.isTrusted = event.isTrusted;
+							observation.clickDetail = event.detail;
+							observation.clickActivity = window.__stageVisualTest?.getRenderActivity?.() ?? null;
+							for (const type of ['pointerdown', 'pointerup', 'keydown']) window.removeEventListener(type, record, true);
+							window.removeEventListener('click', clicked, true);
+						};
+						for (const type of ['pointerdown', 'pointerup', 'keydown']) window.addEventListener(type, record, true);
+						window.addEventListener('click', clicked, true);
+					});
+					// Warm hover already positioned the mouse on the real link. Keep the
+					// application's pointer press/release effects and preload listeners active.
+					if (activation === 'pointer') { await page.mouse.down(); await page.mouse.up(); }
+					else await page.keyboard.press('Enter');
+					activationObservation = await page.evaluate(() => (window as unknown as { performanceActivation: ActivationObservation }).performanceActivation);
+					sourceActivity = activationObservation.clickActivity;
+				}
 				await expect(page).toHaveURL(endpoint === 'dock' ? /\/staged\/elements\/column#reading$/ : /\/staged\/elements\/column$/);
 				await expect.poll(() => page.evaluate(() => window.__stageVisualTest?.getNavigationTimings().early?.revealed ?? 0)).toBeGreaterThan(0);
 				// Capture the frame after the last reveal submission and let the
@@ -130,13 +176,22 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 						gpuCalls: work.gpuCalls.filter(entry => entry.time >= timings.started && entry.time <= timings.revealed),
 						requests: performance.getEntriesByType('resource').filter(entry => entry.name.includes('/__data.json') || entry.name.includes('/nodes/')).map(entry => ({ name: entry.name, start: entry.startTime - timings.started, duration: entry.duration })) };
 				});
-				Object.assign(result, { sourceActivity, idleCalibration, measurementProtocol });
+				Object.assign(result, { sourceActivity, idleCalibration, measurementProtocol, activation, activationObservation });
 				results.push(result);
 				if (profiler) {
 					const { profile } = await profiler.send('Profiler.stop');
 					await writeFile(testInfo.outputPath(`cpu-${sample}.json`), JSON.stringify({ profileStart, clockMetrics, timings: result.timings, profile }));
 				}
 				const previousErrors = testInfo.errors.length;
+				if (activation !== 'synthetic') {
+					expect.soft(activationObservation?.isTrusted).toBe(true);
+					expect.soft(Number.isFinite(activationObservation?.clickObservedAt)).toBe(true);
+					expect.soft(activationObservation?.clickEventTimeStamp).toBe(result.timings.started);
+					if (activation === 'pointer') {
+						expect.soft(activationObservation?.pointerDown).toMatchObject({ isTrusted: true, pointerType: 'mouse' });
+						expect.soft(activationObservation?.pointerUp).toMatchObject({ isTrusted: true, pointerType: 'mouse' });
+					} else expect.soft(activationObservation?.keyDown).toMatchObject({ isTrusted: true, key: 'Enter' });
+				}
 				const dataRequests = result.requests.filter(entry => entry.name.includes('/staged/elements/column/__data.json'));
 				// Keep the complete planned sample set even when a measured gate fails.
 				// Navigation/readiness errors above remain hard failures: there is then
@@ -154,11 +209,11 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 				expect.soft(result.gpuCalls.filter(call => call.time <= result.timings.motionEnded)).toEqual([]);
 				expect.soft(result.gpuCalls.filter(call => call.time >= result.timings.revealStarted && call.time <= result.timings.revealEnded)).toEqual([]);
 				Object.assign(result, { validationErrors: testInfo.errors.slice(previousErrors).map(error => error.message) });
-				await writeFile(testInfo.outputPath('samples.json'), JSON.stringify({ view, endpoint, temperature, samples, measurementProtocol,
+				await writeFile(testInfo.outputPath('samples.json'), JSON.stringify({ view, endpoint, temperature, samples, measurementProtocol, activation,
 					completedSamples: results.length, profiled: Boolean(process.env.SPATIAL_PERFORMANCE_PROFILE), results }, null, 2));
 			} finally { await context.close(); }
 		}
-		const report = { view, endpoint, temperature, samples, measurementProtocol, completedSamples: results.length, profiled: Boolean(process.env.SPATIAL_PERFORMANCE_PROFILE), userAgent: browser.version(),
+		const report = { view, endpoint, temperature, samples, measurementProtocol, activation, completedSamples: results.length, profiled: Boolean(process.env.SPATIAL_PERFORMANCE_PROFILE), userAgent: browser.version(),
 			machine: { platform: platform(), release: release(), cpu: cpus()[0]?.model }, viewport: { width, height: 1000, deviceScaleFactor: 1 },
 			firstMotionP95: percentile(results.map(result => result.latency), 0.95),
 			firstSubmitP95: percentile(results.map(result => result.submitted), 0.95),

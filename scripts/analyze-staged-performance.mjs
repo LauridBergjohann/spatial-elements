@@ -13,6 +13,7 @@ const percentile = (values, fraction) => values.length ? [...values].sort((a, b)
 const statistics = values => ({ count: values.length, p50: percentile(values, 0.5), p95: percentile(values, 0.95), max: values.length ? Math.max(...values) : null });
 const roundoff = 1e-7; // Only absorb binary floating-point roundoff, not a frame-time tolerance.
 const measurementProtocolVersion = 'staged-performance-v2';
+const activationKinds = new Set(['synthetic', 'pointer', 'enter']);
 const cadenceProtocol = Object.freeze({
   version: 'cadence-diagnostic-v1', timestampCount: 121,
   periodMinMs: 16, periodMaxMs: 17.5,
@@ -154,6 +155,52 @@ function analyzePhaseFrames(phase, phaseRange, frameTimes, ordered, budget, long
   };
 }
 
+/** Never pool trusted input with synthetic or historically unlabelled samples. */
+function activationCohort(input, samples) {
+  const declared = input.activation ?? null;
+  const kinds = new Set(samples.map(sample => sample.activation ?? null));
+  if (declared !== null && !activationKinds.has(declared)) throw new Error('Unknown activation cohort.');
+  if ([...kinds].some(kind => kind !== null && !activationKinds.has(kind))) throw new Error('Unknown sample activation.');
+  if (kinds.size > 1) throw new Error('Mixed activation samples cannot form one performance cohort.');
+  if (samples.some(sample => (sample.activation ?? null) !== declared)) throw new Error('Report and sample activation must match; missing labels cannot be inferred.');
+  if (declared === null && samples.some(sample => sample.activationObservation != null)) throw new Error('Unlabelled activation evidence cannot be treated as a legacy cohort.');
+  if ((declared === 'pointer' || declared === 'enter') && input.temperature !== 'warm') throw new Error('Trusted activation cohorts require temperature=warm.');
+  return { kind: declared ?? 'legacy-unspecified', temperature: input.temperature ?? null,
+    latencyClock: 'click-event-timestamp', inputLatencyDiagnosticOnly: true };
+}
+
+function assessActivation(sample) {
+  const kind = sample.activation ?? 'legacy-unspecified';
+  const observation = sample.activationObservation ?? null;
+  const reasons = [];
+  const trusted = kind === 'pointer' || kind === 'enter';
+  let inputStart = null;
+  if (trusted) {
+    if (observation?.isTrusted !== true || !finite(observation?.clickObservedAt) || !finite(observation?.clickEventTimeStamp))
+      reasons.push('missing-trusted-click');
+    if (!finite(sample.timings?.started) || !finite(observation?.clickEventTimeStamp) ||
+      Math.abs(sample.timings.started - observation.clickEventTimeStamp) > roundoff) reasons.push('click-clock-mismatch');
+    const initial = kind === 'pointer' ? observation?.pointerDown : observation?.keyDown;
+    if (initial?.isTrusted !== true || !finite(initial?.timeStamp) || !finite(initial?.observedAt) ||
+      (kind === 'pointer' ? initial?.pointerType !== 'mouse' : initial?.key !== 'Enter')) reasons.push('missing-trusted-input-start');
+    else inputStart = initial.timeStamp;
+    if (kind === 'pointer') {
+      const up = observation?.pointerUp;
+      if (up?.isTrusted !== true || up?.pointerType !== 'mouse' || !finite(up?.timeStamp) || !finite(up?.observedAt)) reasons.push('missing-trusted-pointer-up');
+      if (finite(inputStart) && finite(up?.timeStamp) && up.timeStamp < inputStart - roundoff) reasons.push('pointer-up-precedes-down');
+      if (finite(up?.timeStamp) && finite(observation?.clickEventTimeStamp) && up.timeStamp > observation.clickEventTimeStamp + roundoff) reasons.push('click-precedes-pointer-up');
+    }
+    if (finite(inputStart) && finite(observation?.clickEventTimeStamp) && inputStart > observation.clickEventTimeStamp + roundoff) reasons.push('click-precedes-input-start');
+  } else if (observation !== null) reasons.push('unexpected-input-evidence-for-nontrusted-cohort');
+  const sinceInput = time => finite(inputStart) && finite(time) && time >= inputStart ? time - inputStart : null;
+  return { kind, valid: reasons.length === 0, reasons, observation,
+    inputToClickMs: sinceInput(observation?.clickEventTimeStamp),
+    inputToFirstMotionMs: sinceInput(sample.timings?.firstMotion),
+    inputToFirstSubmitMs: sinceInput(sample.timings?.firstSubmitted),
+    inputToObservedDomChangeMs: finite(sample.observedDomChange) && finite(sample.timings?.started)
+      ? sinceInput(sample.timings.started + sample.observedDomChange) : null };
+}
+
 /** All timestamps use the document's performance.now() clock; RAF times remain RAF times. */
 export function analyzeSample(sample, index = 0) {
   const t = sample.timings ?? {};
@@ -227,6 +274,7 @@ export function analyzeSample(sample, index = 0) {
   if (observedDomChange === null) warnings.push('Missing/nonpositive observed DOM change: do not omit this sample from latency acceptance.');
   return {
     index, timings: t, firstMotionMs: latency('firstMotion'), firstSubmitMs: latency('firstSubmitted'), observedDomChangeMs: observedDomChange,
+    activation: assessActivation(sample),
     motionDurationMs: moving ? moving.end - moving.start : null,
     revealDurationMs: reveal ? reveal.end - reveal.start : null,
     betweenPhasesDurationMs: betweenPhases ? betweenPhases.end - betweenPhases.start : null,
@@ -256,6 +304,7 @@ export function analyzeReport(input, { source = '', profiled = false } = {}) {
   profiled ||= input.profiled === true;
   const samples = Array.isArray(input) ? input : input.results;
   if (!Array.isArray(samples)) throw new Error(`${source}: expected samples[] or a measurements report with results[].`);
+  const cohort = activationCohort(input, samples);
   const results = samples.map(analyzeSample);
   const expected = Number.isInteger(input.samples) ? input.samples : null;
   const values = key => results.map(result => result[key]).filter(finite);
@@ -276,14 +325,22 @@ export function analyzeReport(input, { source = '', profiled = false } = {}) {
     ? false : completeList(key) ? true : null;
   const validationGate = emptyListGate('validationErrors');
   const usableBaseline = results.length > 0 && results.every(result => result.framePacingBaseline.usable);
+  const validActivation = results.length > 0 && results.every(result => result.activation.valid);
   return {
     source, view: input.view ?? null, endpoint: input.endpoint ?? null, temperature: input.temperature ?? null,
+    activation: cohort.kind, activationCohort: cohort,
+    activationEvidence: { validSamples: results.filter(result => result.activation.valid).length, validForAllSamples: validActivation },
     viewport: input.viewport ?? null, browser: input.userAgent ?? input.browser ?? null, machine: input.machine ?? null,
     expectedSamples: expected, actualSamples: results.length, profiled,
-    eligibleForLatencyAcceptance: fullRun && completeClockLatency && completeDomLatency && validationGate === true,
-    eligibleForFramePacingAcceptance: fullRun && phaseComplete('movingRAF') && phaseComplete('revealRAF') && validationGate === true && usableBaseline,
-    eligibleForResourceAcceptance: fullRun && completeList('gpuCreatesClickThroughMotion') && completeList('gpuCreatesDuringReveal') && validationGate === true,
+    eligibleForLatencyAcceptance: fullRun && completeClockLatency && completeDomLatency && validationGate === true && validActivation,
+    eligibleForFramePacingAcceptance: fullRun && phaseComplete('movingRAF') && phaseComplete('revealRAF') && validationGate === true && usableBaseline && validActivation,
+    eligibleForResourceAcceptance: fullRun && completeList('gpuCreatesClickThroughMotion') && completeList('gpuCreatesDuringReveal') && validationGate === true && validActivation,
     latency: { firstMotion: motion, firstSubmit: submit, observedDomChange: dom },
+    inputLatencyDiagnostic: { acceptanceGate: false,
+      inputToClick: statistics(results.map(result => result.activation.inputToClickMs).filter(finite)),
+      firstMotion: statistics(results.map(result => result.activation.inputToFirstMotionMs).filter(finite)),
+      firstSubmit: statistics(results.map(result => result.activation.inputToFirstSubmitMs).filter(finite)),
+      observedDomChange: statistics(results.map(result => result.activation.inputToObservedDomChangeMs).filter(finite)) },
     cadence: { idleBudgetMs: statistics(values('measuredBudgetMs')), sourceBudgetMs: statistics(values('sourceBudgetMs')), sourceToIdleRatio: statistics(values('sourceBudgetRatio')) },
     framePacingBaseline: { requiredProtocol: measurementProtocolVersion,
       usableSamples: results.filter(result => result.framePacingBaseline.usable).length, usableForAllSamples: usableBaseline },
@@ -532,6 +589,58 @@ async function selfTest() {
   assert.equal(slowBaselineReport.gates.noRevealRafGapAboveTwoBudgets, true);
   assert.equal(slowBaselineReport.eligibleForFramePacingAcceptance, false);
   assert.equal(slowBaselineReport.framePacingBaseline.usableSamples, 0);
+
+  // Additional input cohorts cannot change or pool the existing synthetic v2 gates.
+  const synthetic = { ...v2Sample, activation: 'synthetic', activationObservation: null };
+  const cohortReport = (activation, value, temperature = 'warm') => analyzeReport({
+    activation, temperature, samples: 20, results: Array(20).fill(value) });
+  const syntheticReport = cohortReport('synthetic', synthetic);
+  assert.equal(eligible.activation, 'legacy-unspecified');
+  assert.equal(syntheticReport.activation, 'synthetic');
+  assert.deepEqual(syntheticReport.gates, eligible.gates);
+  assert.equal(syntheticReport.eligibleForFramePacingAcceptance, eligible.eligibleForFramePacingAcceptance);
+  assert.equal(syntheticReport.inputLatencyDiagnostic.firstMotion.count, 0);
+  const click = { clickObservedAt: 1.5, clickEventTimeStamp: v2Sample.timings.started, isTrusted: true };
+  const pointer = { ...v2Sample, activation: 'pointer', activationObservation: { ...click,
+    pointerDown: { timeStamp: 0, observedAt: 0.2, isTrusted: true, pointerType: 'mouse' },
+    pointerUp: { timeStamp: 0.8, observedAt: 0.9, isTrusted: true, pointerType: 'mouse' } } };
+  const pointerReport = cohortReport('pointer', pointer);
+  assert.equal(pointerReport.eligibleForLatencyAcceptance, true);
+  assert.equal(pointerReport.eligibleForFramePacingAcceptance, true);
+  assert.deepEqual(pointerReport.gates, eligible.gates);
+  assert.equal(pointerReport.latency.firstMotion.p95, 19);
+  assert.equal(pointerReport.inputLatencyDiagnostic.firstMotion.p95, 20);
+  assert.equal(pointerReport.inputLatencyDiagnostic.inputToClick.p95, 1);
+  const enter = { ...v2Sample, activation: 'enter', activationObservation: { ...click,
+    keyDown: { timeStamp: 0.25, observedAt: 0.3, isTrusted: true, key: 'Enter' } } };
+  assert.equal(cohortReport('enter', enter).eligibleForResourceAcceptance, true);
+  assert.deepEqual(cohortReport('enter', enter).gates, eligible.gates);
+  assert.equal(cohortReport('enter', enter).inputLatencyDiagnostic.firstMotion.p95, 19.75);
+  assert.throws(() => analyzeReport({ activation: 'pointer', temperature: 'warm', samples: 2,
+    results: [pointer, synthetic] }), /Mixed activation/);
+  assert.throws(() => analyzeReport({ activation: 'pointer', temperature: 'warm', samples: 2,
+    results: [pointer, enter] }), /Mixed activation/);
+  assert.throws(() => analyzeReport({ activation: 'synthetic', samples: 2,
+    results: [synthetic, v2Sample] }), /Mixed activation/);
+  assert.throws(() => cohortReport('pointer', synthetic), /must match/);
+  assert.throws(() => cohortReport(undefined, pointer), /must match/);
+  assert.throws(() => cohortReport('unknown', synthetic), /Unknown activation/);
+  assert.throws(() => cohortReport('pointer', pointer, 'cold'), /temperature=warm/);
+  assert.throws(() => full({ ...v2Sample, activationObservation: click }), /Unlabelled activation/);
+  for (const observation of [null, { ...pointer.activationObservation, isTrusted: false },
+    { ...pointer.activationObservation, clickEventTimeStamp: 2 },
+    { ...pointer.activationObservation, pointerDown: undefined },
+    { ...pointer.activationObservation, pointerUp: undefined },
+    { ...pointer.activationObservation, pointerUp: { ...pointer.activationObservation.pointerUp, timeStamp: -1 } },
+    { ...pointer.activationObservation, pointerUp: { ...pointer.activationObservation.pointerUp, timeStamp: 2 } }]) {
+    const invalid = cohortReport('pointer', { ...pointer, activationObservation: observation });
+    assert.equal(invalid.eligibleForLatencyAcceptance, false);
+    assert.equal(invalid.eligibleForFramePacingAcceptance, false);
+    assert.equal(invalid.eligibleForResourceAcceptance, false);
+    assert.deepEqual(invalid.gates, eligible.gates); // Evidence eligibility never alters raw measurements.
+  }
+  assert.equal(cohortReport('enter', { ...enter, activationObservation: { ...enter.activationObservation,
+    keyDown: { ...enter.activationObservation.keyDown, key: 'Space' } } }).eligibleForLatencyAcceptance, false);
   process.stdout.write('Staged-performance attribution checks passed.\n');
 }
 
@@ -563,7 +672,9 @@ async function main(args) {
       'Absolute RAF samples must cover both boundaries of each phase. Missing markers/coverage produce incomplete gates, not passes.',
       'GPU creation gates cover click-through-motion and the exact reveal interval separately; phase labels cannot override timestamps.',
       'DOM observation must exist for every sample. Validation failures and missing validation records cannot establish acceptance.',
-      'Nearest-rank percentiles retain every sample. Fewer than 20 or profiled samples cannot establish latency acceptance.'
+      'Nearest-rank percentiles retain every sample. Fewer than 20 or profiled samples cannot establish latency acceptance.',
+      'Activation cohorts remain separate: synthetic Cold/Warm, trusted pointer Warm and trusted Enter Warm. Mixed or mismatched report/sample labels are rejected; unlabelled historical files stay legacy-unspecified.',
+      'Trusted input requires recorded trusted input-start and click events, plus pointer-up for mouse. Raw v2 gates remain click-based; input-start latencies are separate diagnostics and never change those thresholds.'
     ], reports
   }, null, 2);
   if (args[2]) {
