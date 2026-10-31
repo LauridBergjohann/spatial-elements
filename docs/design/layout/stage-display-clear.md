@@ -39,9 +39,16 @@ panel blur, scene contents, or generic depth helpers.
   panel, and clipped/nonstandard-depth fallbacks. Nonuniform pixels and the
   visible panel contribution prevent a blank-output false positive. Submission
   counts are recorded for the isolated display call; no timing is inferred.
-- The browser proof and a new production trace remain pending. Successful proof
-  data must be persisted as `stage-display-clear-pixels.json`; unit mocks alone
-  do not establish pixel equivalence or user-visible performance.
+- The corrected browser proof passes on build `10039`, runtime `8873f41`, fixture
+  `6a2ed1f` (run `42770`, exit 0). Its persisted `stage-display-clear-pixels.json`
+  is under `.artifacts/stage-display-clear-10039-6a2ed1f`. All 24 comparisons have
+  maximum linear error 0 and maximum Canvas error 0, no GPU validation errors,
+  and restored caller flags. The linear readback is confirmed as
+  `RGBA/HalfFloat/Uint16Array`.
+- All 12 standard-path comparisons submit 2 commands instead of the control's
+  4; all 12 fallback comparisons retain 4 versus 4. These are isolated display
+  submission counts, not measurements of frame time or input latency. A new
+  production trace and production functional checks remain separate gates.
 
 ### Initial resize-fixture failure
 
@@ -66,4 +73,5 @@ call `renderer.setPixelRatio()` and `renderer.setSize()`. No runtime change was
 needed. Additional labeled validation scopes distinguish control/candidate,
 poison clear/draw, StageDisplay and following panel without yielding between draw
 and Canvas snapshot. The original exact-pixel and empty-validation assertions
-remain unchanged; the corrected GPU run is still pending.
+remain unchanged. The successful corrected run above validates the same runtime
+and follows this failed fixture run; it does not replace or erase its evidence.
