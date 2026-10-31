@@ -259,6 +259,7 @@ export class CatalogSpatialElementLayer {
 	private readonly motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 	private readonly unsubscribeDeviceYaw: () => void;
 	private readonly pointer = { x: 0, y: 0, active: false, pressed: false };
+	private readonly focusVisible = new WeakMap<HTMLElement, boolean>();
 	private handoff?: Handoff;
 	private stagedPanel?: { card: HTMLElement; matrix: THREE.Matrix4 };
 	private stagedPanelOpacity = 1;
@@ -297,10 +298,12 @@ export class CatalogSpatialElementLayer {
 	};
 	private readonly pointerDown = (event: PointerEvent) => {
 		if (event.pointerType !== 'mouse') this.pointerLeave();
+		if (this.pointer.pressed) return;
 		this.pointer.pressed = true;
 		this.invalidate();
 	};
 	private readonly pointerUp = () => {
+		if (!this.pointer.pressed) return;
 		this.pointer.pressed = false;
 		this.invalidate();
 	};
@@ -314,6 +317,28 @@ export class CatalogSpatialElementLayer {
 		this.stagedWarmRevision++;
 		this.layoutDirty = true;
 		this.queueDirty = true;
+		this.invalidate();
+	};
+	private readFocusVisible(target?: HTMLElement) {
+		if (!target) return false;
+		const visible = target.matches?.(':focus-visible') ?? false;
+		this.focusVisible.set(target, visible);
+		return visible;
+	}
+	private readonly focusChange = (event: FocusEvent) => {
+		const actor = [...this.actors.values()].find(actor =>
+			(actor.pose ? actor.hitTarget : actor.card) === event.target);
+		const target = actor && (actor.pose ? actor.hitTarget : actor.card);
+		if (!actor || !target) return;
+		// focusout has already lost :focus-visible. Remember the state actually
+		// consumed by the last frame (or preceding focusin), including autofocus.
+		const before = this.focusVisible.get(target) ?? false;
+		const after = event.type === 'focusin' && (target.matches?.(':focus-visible') ?? false);
+		this.focusVisible.set(target, after);
+		if (before === after || this.transitionActive || (actor.pose && this.pointer.pressed)) return;
+		// A carousel pointer outline already has the same target value of one.
+		// Keep keyboard and genuine hover changes synchronous, without a timer.
+		if (actor.pose && this.pointer.active && target.hasAttribute('data-mouse-hover')) return;
 		this.invalidate();
 	};
 	private readonly motionChange = () => this.invalidate();
@@ -345,8 +370,8 @@ export class CatalogSpatialElementLayer {
 		window.addEventListener('pointerdown', this.pointerDown, { capture: true, passive: true });
 		window.addEventListener('pointerup', this.pointerUp, { passive: true });
 		window.addEventListener('pointercancel', this.pointerUp, { passive: true });
-		window.addEventListener('focusin', this.motionChange);
-		window.addEventListener('focusout', this.motionChange);
+		window.addEventListener('focusin', this.focusChange);
+		window.addEventListener('focusout', this.focusChange);
 		window.addEventListener('pointerleave', this.pointerLeave);
 		window.addEventListener('blur', this.pointerLeave);
 		window.addEventListener('resize', this.resize);
@@ -559,7 +584,7 @@ export class CatalogSpatialElementLayer {
 				}
 				const hoverTarget = !this.transitionActive && !this.pointer.pressed &&
 					((this.pointer.active && actor.hitTarget?.hasAttribute('data-mouse-hover')) ||
-						actor.hitTarget?.matches(':focus-visible')) ? 1 : 0;
+						this.readFocusVisible(actor.hitTarget)) ? 1 : 0;
 				actor.hover = this.motion.matches ? hoverTarget : THREE.MathUtils.damp(actor.hover, hoverTarget, 18, delta);
 				if (Math.abs(actor.hover - hoverTarget) < 0.01) actor.hover = hoverTarget;
 				animating ||= actor.hover !== hoverTarget;
@@ -739,7 +764,7 @@ export class CatalogSpatialElementLayer {
 				THREE.MathUtils.radToDeg(rotation.y),
 				-influence * 8,
 				!this.motion.matches && !this.transitionActive &&
-					((this.pointer.active && distance === 0) || actor.card.matches?.(':focus-visible')) ? 1 : 0
+					((this.pointer.active && distance === 0) || this.readFocusVisible(actor.card)) ? 1 : 0
 			];
 			const previous = [actor.rotationX, actor.rotationY, actor.lift, actor.hover];
 			const values = previous.map((value, index) => {
@@ -1278,8 +1303,8 @@ export class CatalogSpatialElementLayer {
 		window.removeEventListener('pointerdown', this.pointerDown, true);
 		window.removeEventListener('pointerup', this.pointerUp);
 		window.removeEventListener('pointercancel', this.pointerUp);
-		window.removeEventListener('focusin', this.motionChange);
-		window.removeEventListener('focusout', this.motionChange);
+		window.removeEventListener('focusin', this.focusChange);
+		window.removeEventListener('focusout', this.focusChange);
 		window.removeEventListener('pointerleave', this.pointerLeave);
 		window.removeEventListener('blur', this.pointerLeave);
 		window.removeEventListener('resize', this.resize);
