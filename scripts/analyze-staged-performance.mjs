@@ -126,6 +126,9 @@ export function analyzeSample(sample, index = 0) {
   const latency = key => finite(t.started) && finite(t[key]) && t[key] >= t.started && t[key] > 0 ? t[key] - t.started : null;
   const gpuCalls = Array.isArray(sample.gpuCalls) ? sample.gpuCalls : null;
   const observedDomChange = finite(sample.observedDomChange) && sample.observedDomChange > 0 ? sample.observedDomChange : null;
+  const validationErrors = Array.isArray(sample.validationErrors) ? sample.validationErrors.map(String) : null;
+  if (validationErrors === null) warnings.push('No per-sample validation record: route-temperature and runtime checks cannot be certified.');
+  if (observedDomChange === null) warnings.push('Missing/nonpositive observed DOM change: do not omit this sample from latency acceptance.');
   return {
     index, timings: t, firstMotionMs: latency('firstMotion'), firstSubmitMs: latency('firstSubmitted'), observedDomChangeMs: observedDomChange,
     motionDurationMs: moving ? moving.end - moving.start : null,
@@ -140,6 +143,8 @@ export function analyzeSample(sample, index = 0) {
     },
     revealRAF,
     gpuCreatesClickThroughMotion: clickThroughMotion && gpuCalls ? gpuCalls.filter(call => containsTime(clickThroughMotion, call.time)) : null,
+    gpuCreatesDuringReveal: reveal && gpuCalls ? gpuCalls.filter(call => containsTime(reveal, call.time)) : null,
+    validationErrors,
     longFrames,
     movingScriptCoverageMs: moving ? uniqueDuration(longFrames.flatMap(entry => entry.scripts.map(script => clipped(interval(script.start, script.end), moving)))) : null,
     revealScriptCoverageMs: reveal ? uniqueDuration(longFrames.flatMap(entry => entry.scripts.map(script => clipped(interval(script.start, script.end), reveal)))) : null
@@ -154,7 +159,9 @@ export function analyzeReport(input, { source = '', profiled = false } = {}) {
   const expected = Number.isInteger(input.samples) ? input.samples : null;
   const values = key => results.map(result => result[key]).filter(finite);
   const motion = statistics(values('firstMotionMs')), submit = statistics(values('firstSubmitMs'));
-  const completeLatency = results.length > 0 && motion.count === results.length && submit.count === results.length;
+  const dom = statistics(values('observedDomChangeMs'));
+  const completeClockLatency = results.length > 0 && motion.count === results.length && submit.count === results.length;
+  const completeDomLatency = results.length > 0 && dom.count === results.length;
   const phaseComplete = key => results.length > 0 && results.every(result => result[key].status === 'complete');
   const phaseGate = key => {
     // A recorded violation is conclusive even if a later boundary is missing.
@@ -163,20 +170,28 @@ export function analyzeReport(input, { source = '', profiled = false } = {}) {
     return phaseComplete(key) ? true : null;
   };
   const fullRun = !profiled && expected !== null && expected === results.length && expected >= 20;
-  const completeGpu = results.length > 0 && results.every(result => result.gpuCreatesClickThroughMotion !== null);
+  const completeList = key => results.length > 0 && results.every(result => result[key] !== null);
+  const emptyListGate = key => results.some(result => result[key]?.length > 0)
+    ? false : completeList(key) ? true : null;
+  const validationGate = emptyListGate('validationErrors');
   return {
     source, view: input.view ?? null, endpoint: input.endpoint ?? null, temperature: input.temperature ?? null,
+    viewport: input.viewport ?? null, browser: input.userAgent ?? input.browser ?? null, machine: input.machine ?? null,
     expectedSamples: expected, actualSamples: results.length, profiled,
-    eligibleForLatencyAcceptance: fullRun && completeLatency,
-    eligibleForFramePacingAcceptance: fullRun && phaseComplete('movingRAF') && phaseComplete('revealRAF'),
-    latency: { firstMotion: motion, firstSubmit: submit, observedDomChange: statistics(values('observedDomChangeMs')) },
+    eligibleForLatencyAcceptance: fullRun && completeClockLatency && completeDomLatency && validationGate === true,
+    eligibleForFramePacingAcceptance: fullRun && phaseComplete('movingRAF') && phaseComplete('revealRAF') && validationGate === true,
+    eligibleForResourceAcceptance: fullRun && completeList('gpuCreatesClickThroughMotion') && completeList('gpuCreatesDuringReveal') && validationGate === true,
+    latency: { firstMotion: motion, firstSubmit: submit, observedDomChange: dom },
     cadence: { idleBudgetMs: statistics(values('measuredBudgetMs')), sourceBudgetMs: statistics(values('sourceBudgetMs')), sourceToIdleRatio: statistics(values('sourceBudgetRatio')) },
     gates: {
-      firstMotionP95Below100ms: completeLatency ? motion.p95 < 100 : null,
-      firstSubmitP95Below100ms: completeLatency ? submit.p95 < 100 : null,
+      firstMotionP95Below100ms: completeClockLatency ? motion.p95 < 100 : null,
+      firstSubmitP95Below100ms: completeClockLatency ? submit.p95 < 100 : null,
+      observedDomChangeP95Below100ms: completeDomLatency ? dom.p95 < 100 : null,
       noMovingRafGapAboveTwoBudgets: phaseGate('movingRAF'),
       noRevealRafGapAboveTwoBudgets: phaseGate('revealRAF'),
-      noGpuCreatesClickThroughMotion: completeGpu ? results.every(result => result.gpuCreatesClickThroughMotion.length === 0) : null
+      noGpuCreatesClickThroughMotion: emptyListGate('gpuCreatesClickThroughMotion'),
+      noGpuCreatesDuringReveal: emptyListGate('gpuCreatesDuringReveal'),
+      noSampleValidationErrors: validationGate
     },
     results
   };
@@ -195,7 +210,7 @@ async function selfTest() {
   const { strict: assert } = await import('node:assert');
   const sample = {
     timings: { started: 1, firstMotion: 20, firstSubmitted: 22, motionEnded: 100, holdStarted: 116, held: 700 },
-    observedDomChange: 24, budget: 16, frames: [16, 32, 48, 96, 112, 128], gpuCalls: [],
+    observedDomChange: 24, budget: 16, frames: [16, 32, 48, 96, 112, 128], gpuCalls: [], validationErrors: [],
     longFrames: [{ startTime: 90, duration: 600, scripts: [
       { startTime: 116, duration: 550, sourceFunctionName: 'hold', forcedStyleAndLayoutDuration: 80 },
       { startTime: 90, duration: 50, sourceFunctionName: 'straddling', forcedStyleAndLayoutDuration: 10 }
@@ -267,6 +282,42 @@ async function selfTest() {
   assert.equal(analyzeReport({ samples: 1, results: [{ ...revealSample, frames: revealSample.frames.filter(time => time < 1000) }] }).gates.noRevealRafGapAboveTwoBudgets, false);
   assert.equal(analyzeReport({ samples: 1, results: [sample] }).gates.noRevealRafGapAboveTwoBudgets, null);
   assert.equal(analyzeReport({ samples: 20, results: Array(20).fill(revealSample), profiled: true }).eligibleForFramePacingAcceptance, false);
+  const accepted = analyzeReport({ samples: 20, results: Array(20).fill(smoothReveal), viewport: { width: 1440, height: 1000 } });
+  assert.equal(accepted.eligibleForLatencyAcceptance, true);
+  assert.equal(accepted.eligibleForResourceAcceptance, true);
+  assert.equal(accepted.gates.observedDomChangeP95Below100ms, true);
+  assert.equal(accepted.gates.noSampleValidationErrors, true);
+  assert.equal(accepted.gates.noGpuCreatesDuringReveal, true);
+  assert.deepEqual(accepted.viewport, { width: 1440, height: 1000 });
+  const slowDom = analyzeReport({ samples: 20, results: [...Array(18).fill(smoothReveal),
+    { ...smoothReveal, observedDomChange: 100 }, { ...smoothReveal, observedDomChange: 140 }] });
+  assert.equal(slowDom.latency.observedDomChange.p95, 100);
+  assert.equal(slowDom.gates.observedDomChangeP95Below100ms, false);
+  const missingDom = analyzeReport({ samples: 20, results: [...Array(19).fill(smoothReveal), { ...smoothReveal, observedDomChange: 0 }] });
+  assert.equal(missingDom.actualSamples, 20);
+  assert.equal(missingDom.eligibleForLatencyAcceptance, false);
+  assert.equal(missingDom.gates.observedDomChangeP95Below100ms, null);
+  const rejected = analyzeReport({ samples: 20, results: [...Array(19).fill(smoothReveal),
+    { ...smoothReveal, validationErrors: ['Expected cold route data, observed preloaded data.'] }] });
+  assert.equal(rejected.actualSamples, 20);
+  assert.equal(rejected.latency.firstMotion.count, 20);
+  assert.equal(rejected.gates.noSampleValidationErrors, false);
+  assert.equal(rejected.eligibleForLatencyAcceptance, false);
+  assert.equal(rejected.eligibleForFramePacingAcceptance, false);
+  assert.equal(rejected.eligibleForResourceAcceptance, false);
+  const legacyValidation = analyzeReport({ samples: 20, results: Array(20).fill({ ...smoothReveal, validationErrors: undefined }) });
+  assert.equal(legacyValidation.gates.noSampleValidationErrors, null);
+  assert.equal(legacyValidation.eligibleForLatencyAcceptance, false);
+  const allocated = { ...smoothReveal, gpuCalls: [
+    { method: 'createTexture', time: 719, phase: 'revealing' }, // The exact timestamp wins over a phase label.
+    { method: 'createTexture', time: 720 }, { method: 'createBuffer', time: 1000 },
+    { method: 'createTexture', time: 1001 }
+  ] };
+  assert.deepEqual(analyzeSample(allocated).gpuCreatesDuringReveal.map(call => call.time), [720, 1000]);
+  const mixedCoverage = analyzeReport({ samples: 2, results: [allocated, { ...smoothReveal, gpuCalls: undefined }] });
+  assert.equal(mixedCoverage.gates.noGpuCreatesDuringReveal, false);
+  assert.equal(mixedCoverage.gates.noGpuCreatesClickThroughMotion, null);
+  assert.equal(analyzeReport({ samples: 1, results: [sample] }).gates.noGpuCreatesDuringReveal, null);
   process.stdout.write('Staged-performance attribution checks passed.\n');
 }
 
@@ -293,6 +344,8 @@ async function main(args) {
       'Reveal uses only [revealStarted,revealEnded]; earlier binding and later adoption are outside its frame-pacing gate.',
       'Both phase gates use budget, the idle cadence before app startup. sourceBudget is diagnostic and cannot relax the threshold.',
       'Absolute RAF samples must cover both boundaries of each phase. Missing markers/coverage produce incomplete gates, not passes.',
+      'GPU creation gates cover click-through-motion and the exact reveal interval separately; phase labels cannot override timestamps.',
+      'DOM observation must exist for every sample. Validation failures and missing validation records cannot establish acceptance.',
       'Nearest-rank percentiles retain every sample. Fewer than 20 or profiled samples cannot establish latency acceptance.'
     ], reports
   }, null, 2);

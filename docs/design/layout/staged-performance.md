@@ -45,9 +45,16 @@ during the timing run; visual correctness has a separate production suite.
 - No sample is removed. Reports include the median, nearest-rank p95 and maximum. Partial
   reports remain available when an assertion fails; the analyzer cannot certify them as
   a completed twenty-sample run.
+- Per-sample resource, route-temperature and runtime assertions are soft so their failure
+  does not discard the remaining planned samples. Each sample retains `validationErrors`;
+  `noSampleValidationErrors` must pass before the run is eligible for acceptance. A missing
+  validation record is unknown, never an implicit pass. Failed samples remain in all raw
+  distributions. Missing/nonpositive DOM observations similarly prevent latency acceptance.
 - GPU creation calls are forbidden from activation through the final moving submission,
   including preparation before the controller's `moving` phase. The functional suite also
   verifies no destination mount, source replacement or child-list mutation during movement.
+  `noGpuCreatesDuringReveal` checks the separate exact reveal interval, including its
+  endpoints. Neither waiting/binding allocations nor later refinement are attributed to it.
 
 ## Frame attribution
 
@@ -99,7 +106,7 @@ exclude a run from acceptance, even when its numerical thresholds happen to pass
 
 The software gates cover source ownership, cancellation, known hero/compact/3XL endpoints,
 native history, reduced motion and resource reuse. The timing target is p95 below 100 ms
-for first movement and first CPU submission. Source movement and content reveal each have
+for first movement, first CPU submission and observed DOM movement. Source movement and content reveal each have
 a separate gate against intervals longer than two idle frame budgets; a fast click response
 does not compensate for later reveal stalls. Frame-pacing acceptance requires complete
 coverage in every sample of the unprofiled twenty-sample run, with no samples discarded.
