@@ -517,9 +517,11 @@ export class CatalogTransition {
 		const bounds =
 			paint?.bounds ?? (role === 'summary-surface' ? this.hooks.resolveSurface(source) : source);
 		const from = bounds.getBoundingClientRect();
+		const carouselSurface = role === 'summary-surface' && source.closest('[data-carousel-spatial-element]')
+			? source.querySelector<HTMLElement>('.spatial-summary-surface') : undefined;
 		const style = getComputedStyle(
-			role === 'summary-surface' && reverse ? bounds : source,
-			role === 'summary-surface' && source.closest('[data-carousel-spatial-element]') ? '::before' : null
+			carouselSurface ?? (role === 'summary-surface' && reverse ? bounds : source),
+			!carouselSurface && role === 'summary-surface' && source.closest('[data-carousel-spatial-element]') ? '::before' : null
 		);
 		const element = document.createElement('div');
 		element.dataset.catalogSharedKey = catalogSharedKey(identity, role);

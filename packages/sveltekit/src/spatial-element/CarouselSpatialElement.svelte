@@ -202,30 +202,11 @@
 		style:--carousel-panel-radius={radii.panel + 'px'}
 		use:catalogEndpoint={address('summary-surface')}
 	>
-		<div class="compact-copy">
-			{#if spatialElement.eyebrow}<p use:catalogEndpoint={compact ? address('eyebrow') : undefined}>{spatialElement.eyebrow}</p>{/if}
-			<h3 use:catalogEndpoint={compact ? address('title') : undefined}>{spatialElement.title}</h3>
-		</div>
-		<div class="full-summary">
-			<SpatialSummarySlot instanceKey={`carousel:${brand.id}:${occurrence}`}
-				context={{ spatialElement: { id: spatialElement.id, brandId: brand.id, eyebrow: spatialElement.eyebrow, title: spatialElement.title,
-					features: spatialElement.summary?.features ?? spatialElement.features.map((label) => ({ label })), action: spatialElement.summary?.action },
-					contentInset, heading: 'h3', mode: 'carousel', address: (role) => compact ? undefined : address(role) }} />
-			{#if spatialElement.summary?.sectionLink}<a class="section-information" href={href(spatialElement.summary.sectionLink.href)} onclick={activate}
-				data-catalog-focus-key={`catalog-section:${occurrence}`}>{spatialElement.summary.sectionLink.label}</a>{/if}
-		</div>
-		<a
-			data-catalog-focus-key={`catalog:${JSON.stringify([brand.id, spatialElement.id, occurrence, 'carousel.front'])}`}
-			aria-busy={busy || undefined}
-			onclick={activate}
-			class="information"
-			aria-label={`More information: ${spatialElement.title}`}
-			href={href(spatialElement.href)}
-			onpointerenter={() => prepare(spatialElement)}
-			onfocus={() => prepare(spatialElement)}
-			onpointerdown={() => prepare(spatialElement)}
-			><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></a
-		>
+		<SpatialSummarySlot instanceKey={`carousel:${brand.id}:${occurrence}`}
+   context={{ spatialElement: { id: spatialElement.id, brandId: brand.id, eyebrow: spatialElement.eyebrow, title: spatialElement.title,
+    features: spatialElement.summary?.features ?? spatialElement.features.map((label) => ({ label })), action: spatialElement.summary?.action },
+    contentInset, heading: 'h3', mode: 'carousel', address,
+    carousel: { item: spatialElement, occurrence, compact } }} />
 	</div>
 </article>
 
@@ -336,61 +317,15 @@
 		color: color-mix(in srgb, var(--spatial-element-ink) 92%, transparent);
 		pointer-events: auto;
 	}
-	.summary::before {
-		content: '';
-		position: absolute;
-		inset: 0;
-		border-radius: inherit;
-		background: color-mix(
-			in srgb,
-			var(--carousel-panel-tint, white) var(--carousel-panel-tint-opacity, 65%),
-			transparent
-		);
-		border: 1px solid color-mix(in srgb, var(--spatial-element-accent) 12%, transparent);
-		backdrop-filter: blur(var(--carousel-panel-blur, 5px));
-		box-shadow: var(--carousel-panel-shadow);
-		opacity: var(--carousel-panel-opacity, 1);
-		pointer-events: none;
-	}
-	.summary > :global(*) {
-		position: relative;
-		opacity: var(--carousel-panel-opacity, 1);
-	}
-	:global([data-carousel-glass-ready]) .summary::before {
-		visibility: hidden;
-	}
 	.summary[hidden] {
 		display: block;
 		visibility: hidden;
 	}
-	.information {
-		position: absolute !important;
-		top: 0;
-		right: 0;
-		display: grid;
-		place-items: center;
-		width: 40px;
-		height: 40px;
-		margin: 0;
-		color: var(--spatial-element-accent);
-	}
-	.information svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-	.section-information { display: block; height: 32px; line-height: 32px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--spatial-element-accent); }
 	.has-eyebrow { --spatial-carousel-compact-height: 66px; }
-	.compact-copy { padding-right: 44px; }
-	.compact-copy p { height: 26px; margin: 0; font-size: 12px; line-height: 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.compact-copy h3 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; height: 40px; margin: 0; overflow: hidden; font-size: 18px; line-height: 20px; }
-	.full-summary { display: none; }
 	[data-carousel-fit-anchor] { position: absolute; left: var(--spatial-carousel-fit-left); top: var(--spatial-carousel-title-reserve); width: var(--spatial-carousel-fit-width); height: var(--spatial-carousel-fit-height); pointer-events: none; }
-	.information[aria-busy='true'] {
-		opacity: 0.55;
-		cursor: progress;
-	}
 	@media (min-width: 840px) {
-		.summary { top: calc(var(--spatial-carousel-fit-height) / 2); height: auto; max-height: var(--spatial-carousel-fit-height); padding: var(--summary-content-inset); transform: translateY(-50%); }
+		.summary { top: calc(var(--spatial-carousel-fit-height) / 2); height: auto; max-height: var(--spatial-carousel-fit-height); padding: 0; transform: translateY(-50%); }
 		.summary.has-section-link { --spatial-summary-height-reserve: 32px; }
-		.compact-copy { display: none; }
-		.full-summary { display: block; }
 	}
 	@media (prefers-reduced-motion: reduce) {
 		img { transition: none; }

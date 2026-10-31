@@ -18,12 +18,12 @@
 		render: () => {
 			if (browser) return '<div data-spatial-summary-slot></div>';
 			const output = render(SpatialSummaryRoot, {
-				props: { content: host.content(), model: { current: context } }, context: host.contexts,
+				props: { content: host.content(), model: { kind: 'summary', current: context, active: true } }, context: host.contexts,
 				idPrefix: `summary-${encodeURIComponent(key).replaceAll('-', '%2D')}`
 			});
 			const body = output.body;
 			if (output.head) throw new Error('A persistent summary must render synchronous content without svelte:head');
-			return `<div data-spatial-summary-slot><div data-spatial-summary-root class="spatial-summary-query" style="--spatial-summary-content-inset:${context.contentInset}px">${body}</div></div>`;
+			return `<div data-spatial-summary-slot><div data-spatial-presentation-root class="spatial-summary-island" data-presentation-mode="${context.mode}" style="--spatial-summary-content-inset:${context.contentInset}px">${body}</div></div>`;
 		},
 		setup: (slot) => {
 			element = slot as HTMLDivElement;
@@ -36,13 +36,4 @@
 {@render raw()}
 <style>
 	:global([data-spatial-summary-slot]) { min-width: 0; }
-	:global(.spatial-summary-query) {
-		container: spatial-summary / inline-size;
-		width: 100%;
-		min-width: 0;
-		pointer-events: auto;
-		max-height: max(0px, calc(var(--spatial-detail-summary-max-height, 100000px) - var(--spatial-summary-content-inset, 0px) * 2 - var(--spatial-summary-height-reserve, 0px)));
-		overflow: auto;
-		overscroll-behavior: contain;
-	}
 </style>

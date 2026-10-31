@@ -817,8 +817,12 @@ export class StageExperience {
 	}
 
 	capturePanelSurface(element: HTMLElement) {
-		if (element.closest('[data-carousel-spatial-element]'))
-			return captureCssSurface(element, element, '::before');
+		if (element.closest('[data-carousel-spatial-element]')) {
+			const bounds = element.matches('.summary') ? element :
+				(element.closest<HTMLElement>('[data-spatial-presentation-root]') ?? element);
+			const surface = bounds.querySelector<HTMLElement>('.spatial-summary-surface');
+			return captureCssSurface(bounds, surface ?? bounds, surface ? undefined : '::before');
+		}
 		if (element.hasAttribute('data-catalog-dock-surface')) {
 			const header = element.closest<HTMLElement>('[data-spatial-element-sticky-header]');
 			if (header) return captureCssSurface(element, header, '::before');
