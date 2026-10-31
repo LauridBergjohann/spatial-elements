@@ -1,5 +1,6 @@
 import { CatalogGeometryFade } from './CatalogGeometryFade.js';
 import { CarouselDeviceCamera } from './CarouselDeviceCamera.js';
+import { isCatalogActivationFocus } from './catalogActivationFocus.js';
 import { isDeviceOrientationPaused, getListDeviceYaw, getListDevicePitch, getListDeviceRoll, subscribeListDeviceYaw } from './listDeviceOrientation.js';
 import { cardModelFit } from './cardModelFit.js';
 import { createStagedDetailGeometry } from './stagedDetailGeometry.js';
@@ -260,6 +261,8 @@ export class CatalogSpatialElementLayer {
 	private readonly unsubscribeDeviceYaw: () => void;
 	private readonly pointer = { x: 0, y: 0, active: false, pressed: false };
 	private readonly focusVisible = new WeakMap<HTMLElement, boolean>();
+	private activationFocusFrame = 0;
+	private activationFocusRequest?: object;
 	private handoff?: Handoff;
 	private stagedPanel?: { card: HTMLElement; matrix: THREE.Matrix4 };
 	private stagedPanelOpacity = 1;
@@ -327,6 +330,21 @@ export class CatalogSpatialElementLayer {
 		this.focusVisible.set(target, visible);
 		return visible;
 	}
+	private cancelActivationFocusRequest() {
+		if (this.activationFocusFrame) cancelAnimationFrame(this.activationFocusFrame);
+		this.activationFocusFrame = 0;
+		this.activationFocusRequest = undefined;
+	}
+	private deferActivationFocusRequest() {
+		if (this.activationFocusRequest) return;
+		const request = this.activationFocusRequest = {};
+		this.activationFocusFrame = requestAnimationFrame(() => {
+			if (this.activationFocusRequest !== request) return;
+			this.activationFocusRequest = undefined;
+			this.activationFocusFrame = 0;
+			if (!this.disposed && !this.transitionActive) this.invalidate();
+		});
+	}
 	private readonly focusChange = (event: FocusEvent) => {
 		const actor = [...this.actors.values()].find(actor =>
 			(actor.pose ? actor.hitTarget : actor.card) === event.target);
@@ -341,6 +359,14 @@ export class CatalogSpatialElementLayer {
 		// A carousel pointer outline already has the same target value of one.
 		// Keep keyboard and genuine hover changes synchronous, without a timer.
 		if (actor.pose && this.pointer.active && target.hasAttribute('data-mouse-hover')) return;
+		// This is only our own programmatic link focus, never Tab/hover/press work.
+		// Let Kit's first repaint opportunity stay light; an accepted transition can
+		// consume the focus in its first frame. Otherwise request the ordinary next
+		// Stage frame, even when the click was vetoed or no router is installed.
+		if (isCatalogActivationFocus(event) && actor.pose?.read().front) {
+			this.deferActivationFocusRequest();
+			return;
+		}
 		this.invalidate();
 	};
 	private readonly motionChange = () => this.invalidate();
@@ -383,6 +409,7 @@ export class CatalogSpatialElementLayer {
 
 	async setSpatialElements(brandId: string, spatialElements: SpatialListItem[]) {
 		if (this.disposed) return;
+		this.cancelActivationFocusRequest();
 		const generation = ++this.generation;
 		this.layoutObserver.disconnect();
 		const page = document.querySelector('[data-catalog-list]');
@@ -945,6 +972,7 @@ export class CatalogSpatialElementLayer {
 	setExitOpacity(opacity: number, active = false) {
 		this.exitOpacity = Number.isFinite(opacity) ? Math.min(1, Math.max(0, opacity)) : 0;
 		this.transitionActive = active;
+		if (active) this.cancelActivationFocusRequest();
 		this.invalidate();
 	}
 
@@ -1309,6 +1337,7 @@ export class CatalogSpatialElementLayer {
 	}
 
 	dispose() {
+		this.cancelActivationFocusRequest();
 		this.ground.dispose();
 		this.glass.dispose();
 		this.depthBlur.dispose();

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { catalogViewLink } from '@spatial-elements/core/catalog/catalogViewLink';
+	import { focusCatalogLink } from '@spatial-elements/core/catalog/catalogActivationFocus';
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import SpatialSummarySlot from './SpatialSummarySlot.svelte';
 	import { getContext } from 'svelte';
@@ -96,7 +97,7 @@
 			occurrence,
 			slot: 'carousel.front'
 		});
-		(event.currentTarget as HTMLElement).focus({ preventScroll: true });
+		focusCatalogLink(event.currentTarget as HTMLAnchorElement, event);
 	}
 	$effect(() => {
 		if (!interactive || !resident) return;

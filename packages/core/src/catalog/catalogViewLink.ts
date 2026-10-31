@@ -1,11 +1,12 @@
 import type { CatalogViewContext } from './catalogJourney.js';
+import { focusCatalogLink } from './catalogActivationFocus.js';
 
 /** Native anchor enhancement. No routing interception and no GPU state in the URL. */
 export function catalogViewLink(node: HTMLAnchorElement, context: CatalogViewContext = {}) {
 	const update = (value: CatalogViewContext) => {
 		node.dataset.catalogView = JSON.stringify(value);
 	};
-	const activate = () => node.focus({ preventScroll: true });
+	const activate = (event: MouseEvent) => focusCatalogLink(node, event);
 	update(context);
 	node.addEventListener('click', activate);
 	return {
