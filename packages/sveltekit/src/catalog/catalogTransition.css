@@ -1,4 +1,12 @@
 /* Loaded by the persistent stage before any destination page can mount. */
+/* No initial-value: outside a staged reveal the guaranteed-invalid value keeps
+   the existing transition formula as the var() fallback. Do not inherit this
+   channel through text/content subtrees or another custom-property alias. */
+@property --catalog-reveal-opacity {
+	syntax: '*';
+	inherits: false;
+}
+
 .stage-navigation-feedback {
 	position: fixed;
 	inset: 0 0 auto;
@@ -27,7 +35,7 @@
 
 .stage [data-catalog-transition-dom='enter'] {
 	--catalog-content-opacity: var(--catalog-enter-opacity, 1);
-	opacity: var(--catalog-content-opacity);
+	opacity: var(--catalog-reveal-opacity, var(--catalog-content-opacity));
 }
 
 .stage [data-catalog-transition-dom='exit'] {
@@ -59,7 +67,7 @@
 }
 
 .stage[data-catalog-transition] [data-catalog-transition-dom][data-stage-dom-content] {
-	opacity: calc(var(--stage-dom-opacity, 1) * var(--catalog-content-opacity, 1));
+	opacity: calc(var(--stage-dom-opacity, 1) * var(--catalog-reveal-opacity, var(--catalog-content-opacity, 1)));
 }
 
 /* Gate the initial paint before panel registration and renderer binding. */

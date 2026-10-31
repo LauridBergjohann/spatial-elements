@@ -17,6 +17,7 @@ import type { SpatialListItem } from '@spatial-elements/core/spatial-element/typ
 import { getStageVisualScrollPosition } from '@spatial-elements/core/stage/scrollFrame';
 import { finishInterruptedPresentation, type InterruptedCatalogPresentation } from './interruptedPresentation.js';
 import { releasePresentationResources } from './presentationCleanup.js';
+import { createStagedDomReveal } from './stagedDomReveal.js';
 export type { InterruptedCatalogPresentation } from './interruptedPresentation.js';
 
 /** Leave a real paint opportunity between destination raster preparation and fade. */
@@ -115,6 +116,7 @@ export function startStagedCatalogNavigation(options: {
 	const holdingMotions: ReturnType<typeof createSourceDomMotion>[] = [];
 	let adopted = false, committed = false, cleaned = false;
 	let retainInterruptedSummary = false;
+	let domReveal: ReturnType<typeof createStagedDomReveal> | undefined;
 	let restoreClipping: (() => void) | undefined;
 	const savedShells: HTMLElement[] = [];
 	const exiting: HTMLElement[] = [];
@@ -159,6 +161,7 @@ export function startStagedCatalogNavigation(options: {
 				for (const name of ['enter', 'shared', 'exit']) root.style.removeProperty(`--catalog-${name}-opacity`);
 				for (const shell of savedShells) shell.removeAttribute('data-catalog-shell-continuous');
 			},
+			() => { domReveal?.restore(); domReveal = undefined; },
 			() => experience.finishCatalogGeometry(),
 			() => experience.setCatalogTransitionPresentation({ active: false, enterOpacity: 1, exitOpacity: 1, sharedOpacity: 1 }),
 			() => experience.flushCatalogFrame(),
@@ -229,10 +232,12 @@ export function startStagedCatalogNavigation(options: {
 			},
 			reveal(progress) {
 				if (diagnostics && !revealStarted) revealStarted = now();
-				root.dataset.catalogStagedPhase = 'revealing';
-				root.removeAttribute('data-catalog-enter-hidden'); root.removeAttribute('data-catalog-shared-hidden');
-				root.style.setProperty('--catalog-enter-opacity', String(progress));
-				root.style.setProperty('--catalog-shared-opacity', String(progress));
+				domReveal ??= createStagedDomReveal(root);
+				domReveal.setProgress(progress);
+				if (root.dataset.catalogStagedPhase !== 'revealing') {
+					root.dataset.catalogStagedPhase = 'revealing';
+					root.removeAttribute('data-catalog-enter-hidden'); root.removeAttribute('data-catalog-shared-hidden');
+				}
 				if (!adopted) retained.record.root.style.opacity = String(1 - progress);
 				experience.setStagedPanelOpacity(1 - progress);
 				presentation(0, progress);
