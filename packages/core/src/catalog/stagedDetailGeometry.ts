@@ -27,10 +27,11 @@ export function detailCameraFit(
 /** Pure CPU camera/model descriptors; this creates no scene, material, buffer or GPU pipeline. */
 export function createStagedDetailGeometry(
 	bounds: THREE.Box3, modelMatrix: THREE.Matrix4, settings: StageCameraSettings,
-	viewport: { width: number; height: number }, fit: LayoutRect
+	viewport: { width: number; height: number }, fit: LayoutRect,
+	coordinateSystem: THREE.PerspectiveCamera['coordinateSystem'] = THREE.WebGPUCoordinateSystem
 ) {
 	const camera = new THREE.PerspectiveCamera(45, viewport.width / viewport.height, 0.01, 100);
-	camera.coordinateSystem = THREE.WebGPUCoordinateSystem;
+	camera.coordinateSystem = coordinateSystem;
 	const framing = detailCameraFit(bounds, camera, settings, viewport, fit);
 	camera.position.copy(framing.center).addScaledVector(framing.direction, framing.distance);
 	camera.near = framing.near; camera.far = framing.far;

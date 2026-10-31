@@ -33,3 +33,18 @@ test('authored pose, padding and fit scale remain independent of source interact
 	expect(first.framing.distance / second.framing.distance).toBeCloseTo(2);
 	expect(first.camera.position.distanceTo(first.framing.center)).toBeCloseTo(first.framing.distance);
 });
+
+test.each([THREE.WebGPUCoordinateSystem, THREE.WebGLCoordinateSystem])('hero endpoint uses renderer depth convention %s without changing the screen fit', coordinateSystem => {
+	const viewport = { width: 1440, height: 900 }, fit = resolveDetailLayout(viewport).mediaFit;
+	const bounds = new THREE.Box3(new THREE.Vector3(-1, -1, -1), new THREE.Vector3(1, 1, 1));
+	const target = createStagedDetailGeometry(bounds, new THREE.Matrix4(), { azimuth: 20 }, viewport, fit, coordinateSystem);
+	const { camera } = target;
+	expect(camera.coordinateSystem).toBe(coordinateSystem);
+	const near = new THREE.Vector3(0, 0, -camera.near).applyMatrix4(camera.projectionMatrix);
+	const far = new THREE.Vector3(0, 0, -camera.far).applyMatrix4(camera.projectionMatrix);
+	expect(near.z).toBeCloseTo(coordinateSystem === THREE.WebGPUCoordinateSystem ? 0 : -1, 10);
+	expect(far.z).toBeCloseTo(1, 10);
+	const center = target.framing.center.clone().project(camera);
+	expect((center.x + 1) * viewport.width / 2).toBeCloseTo(fit.x + fit.width / 2, 7);
+	expect((1 - center.y) * viewport.height / 2).toBeCloseTo(fit.y + fit.height / 2, 7);
+});

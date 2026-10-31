@@ -957,7 +957,7 @@ export class CatalogSpatialElementLayer {
 				center: actor.detailBounds.getCenter(new THREE.Vector3()),
 				camera: actor.stage.camera ?? {}, minimap: target.minimap, coordinateSystem });
 		}
-		return createStagedDetailGeometry(actor.detailBounds, actor.detailFrame, actor.stage.camera ?? {}, viewport, fit);
+		return createStagedDetailGeometry(actor.detailBounds, actor.detailFrame, actor.stage.camera ?? {}, viewport, fit, coordinateSystem);
 	}
 
 	private stagedSignature(renderer: THREE.WebGPURenderer) {

@@ -57,6 +57,13 @@ test('an unclaimed or unrendered occurrence never supplies a Dock endpoint', () 
 	expect(layer.getStagedDetailTarget('one', 'card:first', fit, layout, { kind: 'dock', layout })).toBeUndefined();
 });
 
+test.each([THREE.WebGPUCoordinateSystem, THREE.WebGLCoordinateSystem])('catalog Hero target propagates renderer convention %s', coordinateSystem => {
+	const { layer } = fixture(), layout = { width: 1440, height: 900 };
+	const target = layer.getStagedDetailTarget('one', 'card:first', resolveDetailLayout(layout).mediaFit,
+		layout, undefined, coordinateSystem)!;
+	expect(target.camera.coordinateSystem).toBe(coordinateSystem);
+});
+
 test('actor initialization stores actual excluded-mesh-aware Low bounds separately from declared shared LOD bounds', () => {
 	const source = new THREE.Group();
 	const mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 0.4), new THREE.MeshBasicMaterial());
