@@ -565,7 +565,7 @@ latency cases passing. Every sample is retained:
 
 | Case | Motion | Submission | DOM observation | Raw Moving / Reveal gates |
 | --- | ---: | ---: | ---: | --- |
-| List cold | 53.2 ms | 62.5 ms | 67.6 ms | fail / fail |
+| List cold | 53.2 ms | 62.5 ms | 67.6 ms | pass / fail |
 | List warm | 45.9 ms | 54.1 ms | 58.0 ms | pass / pass |
 | Carousel cold | 62.1 ms | 79.4 ms | 85.1 ms | fail / fail |
 | Carousel warm | 22.4 ms | 31.5 ms | 34.1 ms | fail / fail |
