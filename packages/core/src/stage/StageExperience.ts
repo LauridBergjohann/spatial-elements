@@ -1576,6 +1576,15 @@ export class StageExperience {
 
 	private prepareCatalogDestination(dock: boolean) {
 		this.catalogDockTarget = dock;
+		if (dock) {
+			// Scroll restoration can dock the DOM after updatePage's submitted frame.
+			// Its layout event invalidates the cache, but the next Stage RAF need not
+			// have run before this binding handshake. Resolve the live destination
+			// and its visibility/projection together, without drawing a GPU frame or
+			// advancing hover animation while the retained source is held onscreen.
+			this.syncPanelLayouts(true);
+			this.updatePanelPointerInteraction(0);
+		}
 		if (this.adoptedForward) {
 			this.returnProjection = dock
 				? this.getDockProjection(true)
