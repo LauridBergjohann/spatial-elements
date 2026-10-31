@@ -5,6 +5,38 @@ This report accompanies the [source-readiness contract](staged-gpu-readiness.md)
 GPU resource reuse and input latency are separate gates. A successful resource probe does
 not establish smooth animation or a latency percentile.
 
+## Current verified boundary
+
+Runtime `8873f41`, demo build `10039` (pixel-proof fixture `6a2ed1f`), passes
+**914/914 unit tests in 116 files**, all workspace checks with **0 errors / 0 warnings**,
+and the complete **24/24 public production navigation matrix** (run `27302`, exit 0).
+The [StageDisplay proof](stage-display-clear.md), recorded in `13be2b4`, has 24
+exact linear HalfFloat and final Canvas comparisons with no GPU validation errors.
+Its twelve standard cases use 2 submissions instead of 4; twelve fallback cases
+remain 4 versus 4. These counts isolate one display call. **The actual pacing
+impact of StageDisplay has not yet been measured.**
+
+Evidence: `.artifacts/layout-display-clear-units.log`,
+`.artifacts/layout-display-clear-check.log`,
+`.artifacts/layout-display-clear-package-build.log`,
+`.artifacts/layout-display-clear-resize-demo-build.log`,
+`.artifacts/staged-production-10039-8873f41`, and
+`.artifacts/stage-display-clear-10039-6a2ed1f`.
+Examples `6938b45` also built successfully with framework `8873f41` in build
+`44157`. Private run `6701` completed with **4/6 passed, exit 1**. One failure
+is an ambiguous selected-h3 selector caused by a tooltip. The other is a real
+rapid-Back regression: the Carousel URL retains detail DOM, with
+`Cannot read properties of undefined (reading 'entries')` in
+`CarouselSection.orderedItems`. List-prop/snippet lifetime is under investigation;
+this is not classified as mere focus loss. No successful new private overall
+verification is claimed.
+
+The latest unprofiled cohort remains the four diagnostic samples on build
+`36109` / `be72259` below. Neither n=1, profiled traces, pixel equivalence nor
+functional passes satisfy the repeated performance gate. General activation
+(step 14f) remains open and the feature stays opt-in through `?stagedNavigation=1`.
+Historical raw data and failed results remain unchanged.
+
 ## Reproduce
 
 Build the packages and public demo once. Stop other builds and browser benchmarks before
@@ -83,7 +115,8 @@ remain in the report.
 The interval between `motionEnded` and `revealStarted` includes static holding, waiting and
 destination binding. It is reported separately; its entire duration is not claimed as CPU
 binding time. Final adoption after `revealEnded` is also outside the reveal animation. The
-later `revealed` completion marker must not substitute for its last visual submission.
+later `revealed` finish-hook marker must not substitute for its last visual submission;
+it is recorded before ownership cleanup and does not measure that work's completion.
 
 Long Animation Frame entries can begin during movement and finish after a long binding
 operation. Attribute their scripts by actual time overlap; do not assign the entire entry
@@ -557,8 +590,9 @@ shows renderer Paint events after the last reveal draw and before the following
 cleanup RAF. This confirms the intended paint ordering, not physical display
 latency. It also retains 39 source-render submissions before adapter entry: a
 separate microtask requests that frame, while the new focus callback itself is
-lightweight. The redundant environment-ready notification is being investigated
-independently; focus batching alone has not removed the whole pre-adapter frame.
+lightweight. At that revision the redundant environment-ready notification was still under
+investigation; focus batching alone had not removed the whole pre-adapter frame.
+The subsequent isolated fix and matching trace are recorded below.
 
 The unchanged, unprofiled v2 n=1 cohort on that build completes with all four
 latency cases passing. Every sample is retained:
@@ -584,3 +618,97 @@ and its sibling `-analysis.json`, plus
 `.artifacts/staged-gpu-trace-70245-8eaf276-carousel-cold/`. The full unit suite on
 this runtime passes 874/874 tests in 115 files; workspace checking is recorded
 separately in `.artifacts/layout-focus-paint-check.log`.
+
+## Readiness-notification follow-up: build 36109 / be72259
+
+The isolated [readiness-notification fix](catalog-preparation-notifications.md)
+removes the duplicate notification for an already-ready environment. In the
+matching profiled cold Carousel trace, there are **zero GPU submissions and zero
+GPU resource creations before adapter entry**. The deferred activation-focus
+request is cancelled by transition takeover before its Stage RAF fires. The
+previous build `70245` had an independently registered microtask-driven source
+RAF with 39 submissions. This before/after trace supports the scheduling cause;
+it is not an unprofiled latency sample or percentile result. Its application
+markers are adapter 24.5 ms, first motion 46.7 ms and first submission 70.1 ms.
+Evidence: `.artifacts/staged-gpu-trace-36109-be72259-carousel-cold` and the
+preserved older trace; profiling and asynchronous diagnostic fences add overhead.
+
+Separately, the unchanged, **unprofiled** v2 synthetic cohort at 1440 × 1000,
+DPR 1, Chrome 156.0.8078.79 / Intel Gen-11 completes all four latency cases
+(run `74227`, exit 0). There is one sample per source/temperature group, no
+retry and no discarded sample. All acceptance-eligibility fields remain false.
+
+| Case | Motion | Submission | DOM observation | Click to adapter | Raw Moving / Reveal |
+| --- | ---: | ---: | ---: | ---: | --- |
+| List cold | 80.0 ms | 90.0 ms | 95.7 ms | 54.5 ms | pass / fail |
+| List warm | 43.2 ms | 50.4 ms | 60.1 ms | 32.1 ms | pass / fail |
+| Carousel cold | 49.8 ms | 61.4 ms | 65.3 ms | 33.3 ms | fail / fail |
+| Carousel warm | 29.7 ms | 48.5 ms | 55.2 ms | 13.8 ms | fail / pass |
+
+All twelve start gates pass. Every sample has zero GPU creation calls from click
+through movement and during reveal, and empty validation-error lists. **No case
+passes all raw frame gates.** List cold has an unstable visible-document baseline
+(183.3 ms initial gap, full-span period 18.0550 ms), so its supplementary cadence
+classification is indeterminate. The other three calibrations satisfy the
+predeclared criteria. Warm Carousel's source budget is 33.3 ms; it does not raise
+the idle-baseline threshold.
+
+There is no internal moving gap near 50 ms in this cohort, but cold Carousel has
+an internal **36.1 ms moving gap** and **two 50.0 ms reveal gaps**. The latter are
+wholly inside reveal, ending about 115.8 and 15.8 ms before its endpoint; they
+cannot be reassigned to cleanup. Cold List also has an internal 50.0 ms reveal
+gap and a reveal-end boundary gap with 36.8 ms inside the phase. Its unstable
+calibration does not erase either raw failure. Other 33.x ms raw failures remain
+failures, including borderline classifications; the thresholds are unchanged.
+LoAF records no script overlap for the moving/reveal intervals in these samples.
+That does not prove CPU absence or identify a GPU cause.
+
+The separate profiled Carousel finding must not be generalized to all four
+unprofiled inputs: cold List retains a 12 ms ordinary render script before its
+adapter, and warm List still has hover/lift and a pending RAF at activation.
+The hold/preparation intervals are 3176.5 / 1503.2 / 1391.2 / 1773.9 ms for
+List cold/warm and Carousel cold/warm. They remain visible waiting time outside
+the animation gates, not evidence of an entirely delay-free navigation.
+
+Full evidence, including all raw gates, calibration timestamps, exact gaps and
+retained samples: [n1 summary](../../../.artifacts/staged-performance-36109-be72259-v2-hero1440-synthetic-n1/summary.md),
+[compact data](../../../.artifacts/staged-performance-36109-be72259-v2-hero1440-synthetic-n1/compact.json),
+and [complete analyzer output](../../../.artifacts/staged-performance-36109-be72259-v2-hero1440-synthetic-n1-analysis.json).
+These four samples establish neither p95 acceptance nor an isolated speedup.
+
+## Cleanup and deferred work remain separate costs
+
+The same unprofiled cohort retains post-reveal scripts of 63.5 ms (List cold),
+52.5 ms (Carousel cold), and 40.2 ms (Carousel warm), with about 11–12 ms forced
+style/layout each. The warm List sample has no later recorded LongFrame. These
+scripts lie after reveal and must remain visible in the report. The completion
+marker denotes entry into the finish hook, not the end of all cleanup work.
+
+A separate offline audit of the profiled `36109` Carousel trace identifies:
+
+- Cleanup RAF339: **69.006 ms**, starting 14.673 ms after `revealEnded`.
+  Disjoint sampled-stack groups are completion 31.299 ms, focus 13.913 ms,
+  optional High warmup 20.157 ms and other work 3.637 ms. The single final
+  `flushCatalogFrame` is 27.082 ms **inside** completion, not an extra cost.
+  Focus contains an 11.814 ms style recalculation. High is still loading / Hero
+  Low at cleanup; resumed warming is not High adoption.
+- Later optional zoom RAF347: **173.503 ms**, starting 108.384 ms after
+  `revealEnded`. Inclusive `warmRenderTargetSets` is 54.942 ms and
+  `prepareZoomEffects` is 116.965 ms; `renderMinimapBlur` 107.754 ms is nested
+  inside the latter and must not be added again. This is neither cleanup nor
+  High adoption.
+
+The [audit report](../../../.artifacts/staged-gpu-trace-36109-be72259-carousel-cold/cleanup-zoom-audit.md)
+and [JSON](../../../.artifacts/staged-gpu-trace-36109-be72259-carousel-cold/cleanup-zoom-audit.json)
+define the exact timing windows and sampling rules. Monotonic weighting prevents
+a recorded negative 39 μs CPU-profile delta from double-counting sample time;
+the raw profile is unchanged. These profiled durations are not interchangeable
+with the unprofiled script timings above.
+
+No cleanup or zoom scheduling change follows from this audit. Separating optional
+warmup from cleanup could redistribute work, not remove it. The already-deferred
+zoom block would need smaller real work units or proven redundant-pass removal.
+Reveal gates remain independent; shifted follow-on work is not relabelled as
+eliminated animation cost. Pixelproof and the public functional matrix pass on the
+new StageDisplay runtime. The private Back regression, pacing measurement, repeated acceptance,
+physical-device checks and general activation remain open.
