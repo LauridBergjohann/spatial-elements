@@ -2,6 +2,8 @@
 	import { getContext, onMount, setContext } from 'svelte';
 	import { ShoppingCart } from 'lucide-svelte';
 	import { SpatialElementPaneController } from '@spatial-elements/core/spatial-element/SpatialElementPaneController';
+	import { resolveActiveDetailSection } from '@spatial-elements/core/spatial-element/activeDetailSection';
+	import { resolveDetailLayout } from '@spatial-elements/core/spatial-element/responsiveLayout';
 	import {
 		CATALOG_ENDPOINTS,
 		type CatalogEndpointRegistry
@@ -13,7 +15,7 @@
 		STAGE_ANCHOR_NAVIGATION_EVENT,
 		type StageAnchorNavigationDetail
 	} from '@spatial-elements/core/stage/scrollAnimation';
-	import { STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
+	import { getStageVisualScrollPosition, STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
 	import SpatialElementBreadcrumbs from './SpatialElementBreadcrumbs.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 	import SpatialElementMediaRail from './SpatialElementMediaRail.svelte';
@@ -36,8 +38,6 @@
 		id: 'overview',
 		title: 'Übersicht'
 	} satisfies SpatialElementSectionNavigationItem;
-	// Switch while the next panel enters the upper reading area, before it reaches the sticky tabs.
-	const SPATIAL_ELEMENT_SECTION_ACTIVATION_VIEWPORT_RATIO = 0.25;
 
 	interface Props {
 		/** Complete element document from this page's load function. Registers assets with the enclosing shell. */
@@ -96,20 +96,22 @@
 
 	function updateActiveSection() {
 		if (navigationTargetId || !mainElement?.isConnected) return;
-		const offset =
+		const metrics = stageContext?.getLayoutMetrics?.('stable');
+		const pane = metrics ? resolveDetailLayout(metrics).pane : undefined;
+		const offset = pane?.body.y ?? (
 			Number.parseFloat(
 				getComputedStyle(mainElement).getPropertyValue('--spatial-element-section-scroll-offset')
-			) || 24;
-		const readingAreaHeight = Math.max(window.innerHeight - offset, 0);
-		const activationLine = offset + readingAreaHeight * SPATIAL_ELEMENT_SECTION_ACTIVATION_VIEWPORT_RATIO;
-		let nextActiveId = SPATIAL_ELEMENT_OVERVIEW_SECTION.id;
-
-		for (const section of sections) {
-			const element = document.getElementById(section.id);
-			if (!element || element.getBoundingClientRect().top > activationLine + 1) break;
-			nextActiveId = section.id;
-		}
-
+			) || 24);
+		const readingBottom = pane ? pane.body.y + pane.body.height : window.innerHeight;
+		const bounds = sections.flatMap(section => {
+			const rect = document.getElementById(section.id)?.getBoundingClientRect();
+			return rect ? [{ id: section.id, top: rect.top, bottom: rect.bottom }] : [];
+		});
+		const scrollOwner = document.scrollingElement ?? document.documentElement;
+		const nextActiveId = resolveActiveDetailSection(bounds, offset, readingBottom,
+			getStageVisualScrollPosition().scrollY,
+			Math.max(0, scrollOwner.scrollHeight - scrollOwner.clientHeight),
+			SPATIAL_ELEMENT_OVERVIEW_SECTION.id);
 		if (nextActiveId !== activeSectionId) activeSectionId = nextActiveId;
 	}
 

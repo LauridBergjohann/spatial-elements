@@ -127,5 +127,7 @@
 	}
 	@media (width < 840px) {
 		.spatial-element-tabs-anchor { display: none; }
+		/* The live list can leave this anchor for native/CSS3D presentation. */
+		:global([data-spatial-element-tab-list]) { display: none; }
 	}
 </style>

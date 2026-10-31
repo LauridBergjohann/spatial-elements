@@ -36,6 +36,10 @@ The document remains the scroll owner. Under enhanced scrolling, only the minima
 
 The shared obstruction is header bottom plus the available submenu height and the layout's reading gap. The controller publishes it as `--spatial-element-section-scroll-offset`; Sections and the existing scrollspy use the same value. XS/S reserve only their header and reading gap because there is no submenu. In split composition the flow override is removed and the pane supplies its body-top obstruction. Existing hash links and section identifiers remain native links.
 
+The scrollspy normally selects the section entering the upper quarter of the visible reading region. At the actual document end it selects a visible final section even when that short section cannot reach the activation line. This exception requires a nonzero scroll range; a short page must not initially jump to its final section. The 3XL reading region comes from the resolved pane body, including its lower submenu reservation.
+
+A source frame with zero width or height is not renderable, including inside the culling preload margin. Projection's internal 1px minimum must not resurrect hidden XS/S submenus or compact-shell satellites. The live submenu also carries its XS/S visibility rule after native/CSS3D reparenting, while its source anchor continues to provide the same SSR layout rule.
+
 The source panel reserves its full height while its list is in the overlay. Content therefore does not shift during the surface change. Font completion, content changes and resize trigger an intrinsic-width update; regular scroll frames use cached geometry. Sensor evaluation, camera poses and the navigation transition machinery remain owned by their existing controllers.
 
 ## Verification

@@ -117,3 +117,46 @@ test('direct hashes and long-label keyboard navigation leave the section below t
 	await expect(page).toHaveURL(/#docking-section-4$/);
 	await expect.poll(async () => (await page.locator('#docking-section-4').boundingBox())!.y).toBeGreaterThanOrEqual(120);
 });
+
+test('hidden XS/S submenus and satellites have no DOM or GPU surface after portaling', async ({ page }) => {
+	await page.setViewportSize({ width: 390, height: 900 });
+	await page.goto('/demo/layout-docking?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
+	const list = page.locator('[data-spatial-element-tab-list]');
+	const identity = await list.elementHandle();
+	if (!identity) throw new Error('Missing submenu');
+	for (const width of [390, 840, 700]) {
+		await page.setViewportSize({ width, height: 900 });
+		await page.evaluate(() => window.__stageVisualTest!.settle(24));
+		expect(await identity.evaluate(node => node === document.querySelector('[data-spatial-element-tab-list]'))).toBe(true);
+		if (width < 840) await expect(list).toBeHidden();
+		else await expect(list).toBeVisible();
+		const surfaces = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-stage-panel-fallback]')]
+			.filter(frame => { const rect = frame.getBoundingClientRect(); return !rect.width || !rect.height; })
+			.map(frame => ({ name: frame.className, gpu: window.__stageVisualTest!.getPanelRect(frame) })));
+		for (const surface of surfaces) expect(surface.gpu, surface.name).toBeNull();
+	}
+	await identity.dispose();
+});
+
+for (const gpu of [false, true]) {
+	test(`a short final section becomes active at the document end in flow and 3XL with ${gpu ? 'WebGPU' : 'native fallback'}`, async ({ page }) => {
+		if (!gpu) await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
+		for (const width of [1440, 2456]) {
+			await page.setViewportSize({ width, height: 1000 });
+			await page.goto('/demo/layout-docking?stage-test=1');
+			await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', gpu ? 'enhanced' : 'fallback');
+			await page.addStyleTag({ content: '.docking-fixture-section { min-height: 0 !important; }' });
+			await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+			const last = page.locator('[data-spatial-element-tab-id="docking-section-8"]');
+			await expect(last).toHaveAttribute('aria-current', 'location');
+			const state = await page.evaluate(() => ({ scrollY,
+				maxScroll: document.documentElement.scrollHeight - document.documentElement.clientHeight,
+				last: document.getElementById('docking-section-8')!.getBoundingClientRect().toJSON() }));
+			expect(state.maxScroll).toBeGreaterThan(1);
+			expect(state.scrollY).toBeCloseTo(state.maxScroll, 0);
+			expect(state.last.top).toBeGreaterThan(500);
+			expect(state.last.bottom).toBeLessThanOrEqual(1001);
+		}
+	});
+}

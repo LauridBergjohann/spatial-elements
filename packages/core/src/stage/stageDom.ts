@@ -25,6 +25,10 @@ export function isViewportRectVisible(
 ) {
 	const safeMargin = Math.max(Number.isFinite(margin) ? margin : 0, 0);
 	return (
+		// Hidden source frames have no area. Their runtime surfaces are at least
+		// 1px for projection arithmetic, but that must not make them renderable.
+		rect.right > rect.left &&
+		rect.bottom > rect.top &&
 		rect.right >= -safeMargin &&
 		rect.left <= viewportWidth + safeMargin &&
 		rect.bottom >= -safeMargin &&
