@@ -366,6 +366,57 @@ failure, and its clear is scissor-dependent. CPU regression tests cover these in
 **The performance effect of
 this cache is not measured in the 362b98a results above and is not yet an accepted gain.**
 
+## Version-2 diagnostic on 02dc683 — not accepted
+
+Production build 53025, runtime `02dc683`, and harness `fe30604` completed all four
+synthetic Hero1440 **n = 1** cases, serially without profiling or concurrent test/build
+load. All four version-2 blank-document calibrations were stable and usable. Every
+sample retained zero application GPU resource creations during movement and reveal,
+and no application/cache validation error. No sample was retried or discarded.
+
+| Source / cache | First source update | CPU submission | Observed DOM change | Raw Moving / Reveal gates |
+| --- | ---: | ---: | ---: | --- |
+| List / cold | 53.6 ms | 66.9 ms | 73.7 ms | fail / fail |
+| List / warm | 44.4 ms | 54.0 ms | 60.8 ms | fail / fail |
+| Carousel / cold | 102.1 ms | 121.4 ms | 125.7 ms | fail / fail |
+| Carousel / warm | 27.9 ms | 47.6 ms | 52.6 ms | pass / fail |
+
+The runner completed with three passing cases and the cold Carousel latency failure;
+all four complete reports were saved. Clear approximately 50 ms internal gaps remain
+in every reveal and in all movements except warm Carousel. The original raw 33.x ms
+threshold crossings remain failures too. These are diagnostic values, not p95 results.
+Raw files, calibration details and complete gap lists are retained in
+`.artifacts/staged-performance-53025-02dc683-v2-hero1440-synthetic-n1/`.
+
+Three separate profiled traces on this runtime distinguish the remaining work:
+
+- A trusted warm Pointer trace confirms the specific Ground winding fix in `02dc683`:
+  no new GPU resources from click through first submission, movement or reveal. Its
+  positive-opacity rear draws still cost about 26–37 ms with 49 submissions, falling
+  to mostly 9–14 ms and 14 submissions after the rear fade. Actual glass stays live.
+- A cold Carousel trace starts from an idle source. A newly requested source RAF
+  before Kit's navigation callback lasts about 44 ms with 51 submissions and no GPU
+  creation; Ground/depth-blur work contributes materially. Adapter entry is +87.5 ms
+  in this profiled trace. An idle snapshot alone does not eliminate click-induced work.
+- A warm List trace has mostly 4–10 ms moving callbacks. One roughly 50 ms gap overlaps
+  browser raster/Skia work and two approximately 9 ms ANGLE shader compile/link waits.
+  This is separate from the application's WebGPU hooks. The trace does not identify
+  a particular CSS declaration as the cause. The card's unfrozen child hover/focus
+  transitions are a separately confirmed presentation gap, not a proven explanation
+  for those raster stalls.
+
+Raw traces and interpretation are local under
+`.artifacts/staged-gpu-trace-53025-02dc683-{carousel-warm-pointer,carousel-cold,list-warm}`
+and `.artifacts/staged-gpu-trace-53025-02dc683-followup.md`. Instrumented durations must
+not be promoted to unprofiled acceptance measurements.
+
+The subsequent [scene endpoint pixel proof](scene-endpoint-pixel-proof.md) uncovered a
+separate double-premultiplication error in the background cover, corrected by
+`ca8e59e`. Its fixture-only corrected overlay control supports investigating bounded
+endpoint reuse; it does not validate a production cache or establish a speed gain.
+Neither that correction nor the new Ground/scene pixel-cache work was present in the
+measurements above. New runtime evidence is required before general activation.
+
 ## Trusted activation and ground readiness follow-up on 1b1aadd
 
 Two serial diagnostic traces on Demo build 57415 used a real pointer click and Enter
