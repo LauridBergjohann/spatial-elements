@@ -55,6 +55,56 @@ test('source motion starts synchronously; hold waits for a frame after the final
 	expect(f.hooks.finish).not.toHaveBeenCalled();
 });
 
+test('the first submission includes actual begin and DOM preparation time without another RAF', () => {
+	const f = fixture();
+	vi.mocked(f.hooks.begin).mockImplementation(() => { now += 9; return true; });
+	vi.mocked(createSourceDomMotion).mockImplementation(() => { now += 4; return f.motion; });
+	vi.stubGlobal('getComputedStyle', () => { now += 2; return { opacity: '0.8' }; });
+	f.transition.start();
+	expect(now).toBe(15);
+	expect(f.hooks.frame).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+		progress: 1 - (1 - 15 / MOTION_DURATION) ** 2,
+		exit: (1 - 15 / 140) ** 2
+	}));
+	expect(f.motion.update).toHaveBeenCalledTimes(1);
+	expect(createSourceDomMotion).toHaveBeenCalledTimes(1);
+	expect(frames.size).toBe(1);
+	expect(f.hooks.hold).not.toHaveBeenCalled();
+});
+
+test.each([100, 800])('a %i ms preparation contributes at most one frame and shifts the remaining clock', async preparation => {
+	const f = fixture();
+	vi.mocked(f.hooks.begin).mockImplementation(() => { now = preparation; return true; });
+	const handle = f.transition.start()!;
+	const initial = 1000 / 60;
+	const progress = () => vi.mocked(f.hooks.frame).mock.lastCall![0].progress;
+	expect(progress()).toBeCloseTo(1 - (1 - initial / MOTION_DURATION) ** 2, 12);
+	expect(f.transition.phase).toBe('moving');
+	await frame(preparation + 20);
+	expect(progress()).toBeCloseTo(1 - (1 - (initial + 20) / MOTION_DURATION) ** 2, 12);
+	const endpoint = Math.ceil(preparation + MOTION_DURATION - initial);
+	await frame(endpoint - 1);
+	expect(progress()).toBeLessThan(1);
+	expect(f.hooks.hold).not.toHaveBeenCalled();
+	await frame(endpoint);
+	expect(progress()).toBe(1);
+	expect(f.hooks.hold).not.toHaveBeenCalled();
+	await frame(endpoint + 16);
+	expect(await handle.finished).toBe(true);
+});
+
+test('an earlier RAF timestamp cannot reverse the synchronous first movement', async () => {
+	const f = fixture();
+	vi.mocked(f.hooks.begin).mockImplementation(() => { now = 15; return true; });
+	f.transition.start();
+	await frame(12);
+	await frame(20);
+	await frame(30);
+	const progress = vi.mocked(f.hooks.frame).mock.calls.map(([value]) => value.progress);
+	expect(progress).toEqual([15, 15, 20, 30].map(elapsed => 1 - (1 - elapsed / MOTION_DURATION) ** 2));
+	expect(frames.size).toBe(1);
+});
+
 test('binding and content reflow occur only in reveal; source and incoming styles are restored after completion', async () => {
 	const f = fixture(); f.exiting.style.setProperty('opacity', '.4', 'important');
 	const handle = f.transition.start()!; await frame(MOTION_DURATION); await frame(MOTION_DURATION + 16); await handle.finished;
@@ -101,10 +151,28 @@ test('the hold hook can release old-parent CSS before moving the retained node, 
 
 test('Reduced Motion uses no duration wait but retains the final-frame-before-hold ordering', async () => {
 	const f = fixture(true), handle = f.transition.start()!;
-	await frame(16); expect(f.hooks.hold).not.toHaveBeenCalled();
+	expect(f.hooks.frame).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ progress: 1, exit: 0 }));
+	expect(f.transition.phase).toBe('holding');
+	expect(f.hooks.hold).not.toHaveBeenCalled();
+	await frame(16);
+	expect(f.hooks.hold).not.toHaveBeenCalled();
+	expect(f.hooks.frame).toHaveBeenCalledTimes(1);
 	await frame(32); expect(await handle.finished).toBe(true);
+	expect(f.hooks.frame).toHaveBeenCalledTimes(1);
 	const reveal = f.transition.reveal(); await flush(); await frame(48); await reveal;
 	expect(f.transition.phase).toBe('complete');
+});
+
+test.each([false, true])('Reduced Motion cancellation after paint barrier=%s cannot start ownership preparation', async afterBarrier => {
+	const f = fixture(true), handle = f.transition.start()!;
+	if (afterBarrier) await frame(16);
+	f.transition.cancel('superseded');
+	expect(await handle.finished).toBe(false);
+	expect(f.hooks.frame).toHaveBeenCalledTimes(1);
+	expect(f.hooks.hold).not.toHaveBeenCalled();
+	expect(f.motion.restore).toHaveBeenCalledTimes(1);
+	expect(f.actor.inert).toBe(false);
+	expect(frames.size).toBe(0);
 });
 
 test('a failed begin rolls back and declines before navigation interception', () => {

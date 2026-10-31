@@ -16,6 +16,8 @@ Readiness also includes the first keyboard/focus outline. Focusing the activated
 
 Progress zero preserves the already displayed source pixels. After capture, Stage cancels its pending independent render callback and keeps subsequent invalidations dirty without scheduling a replacement. The source-motion clock submits the first changed DOM/GPU pose together through `flushCatalogFrame()`, which releases this initial pause. Cancellation also releases it and schedules the restored source. This avoids an unchanged full render before the first visible reaction; it does not skip any moving frame or reduce rendering quality.
 
+The motion clock starts before synchronous source preparation. Immediately after preparation, the controller submits the actual elapsed progress instead of waiting for another animation frame. The first time contribution is capped at one nominal 60 Hz frame; if preparation took longer, the clock shifts so the remaining motion still plays continuously. An earlier RAF timestamp cannot reverse the first submitted pose. Reduced Motion submits the endpoint immediately, then leaves a RAF paint barrier before the following RAF may prepare destination ownership. Neither barrier draws an additional frame.
+
 ## Keep pipeline owners stable
 
 A production WebGPU probe found a pipeline creation in the first moving frame even though the shaders and the complete GPU pipeline descriptor were already prepared. The affected shader was the catalog fade's texture-times-alpha composite.

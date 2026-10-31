@@ -55,6 +55,7 @@ export class StagedCatalogTransition {
 
 	start(): EarlyNavigationHandle | undefined {
 		if (this.state !== 'idle') return;
+		const preparationStarted = performance.now();
 		try {
 			if (!this.options.hooks.begin()) { this.cancel('error'); return; }
 			for (const actor of this.options.actors) {
@@ -74,22 +75,37 @@ export class StagedCatalogTransition {
 			void finished.catch(() => {});
 			this.state = 'moving';
 			const generation = ++this.generation;
-			const started = performance.now();
-			this.move(0);
-			const animate = (time: number) => {
+			const prepared = performance.now();
+			// Use the preparation time for the first visible movement instead of
+			// waiting for another RAF. A slow preparation contributes at most one
+			// nominal frame; shifting the clock retains the remaining motion.
+			const started = prepared - Math.min(1000 / 60, Math.max(0, prepared - preparationStarted));
+			let fraction = 0;
+			const advance = (time: number, synchronous = false) => {
 				if (generation !== this.generation || this.state !== 'moving') return;
-				try {
-					const fraction = this.options.reducedMotion ? 1 : Math.min(1, Math.max(0, (time - started) / MOTION_DURATION));
-					this.move(fraction);
-					if (fraction < 1) this.frame = requestAnimationFrame(animate);
-					else {
-						this.state = 'holding';
-						// DOM/GPU preparation is allowed only after the endpoint frame.
+				// RAF timestamps refer to the beginning of a frame and can precede
+				// the synchronous first submission. Never move that submission back.
+				fraction = this.options.reducedMotion ? 1 : Math.min(1, Math.max(fraction, (time - started) / MOTION_DURATION));
+				this.move(fraction);
+				if (generation !== this.generation || this.state !== 'moving') return;
+				if (fraction < 1) this.frame = requestAnimationFrame(animate);
+				else {
+					this.state = 'holding';
+					const afterPaint = () => {
+						if (generation !== this.generation || this.state !== 'holding') return;
 						this.frame = requestAnimationFrame(() => { void this.hold(generation); });
-					}
-				} catch (error) { this.fail(error); }
+					};
+					// A synchronous Reduced Motion endpoint needs a RAF paint barrier
+					// before the following RAF may prepare DOM/GPU ownership. An
+					// endpoint drawn inside RAF already has that paint opportunity.
+					if (synchronous) this.frame = requestAnimationFrame(afterPaint);
+					else afterPaint();
+				}
 			};
-			this.frame = requestAnimationFrame(animate);
+			const animate = (time: number) => {
+				try { advance(time); } catch (error) { this.fail(error); }
+			};
+			advance(prepared, true);
 			return { finished, cancel: reason => this.cancel(reason) };
 		} catch (error) { this.fail(error); return; }
 	}
