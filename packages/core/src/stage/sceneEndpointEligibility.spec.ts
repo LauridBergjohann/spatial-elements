@@ -136,3 +136,54 @@ test('additional background and tint scenes and orthographic projection are guar
 		expect(guard!.isValid()).toBe(false); guard!.dispose(); target.dispose();
 	}
 });
+
+const invalidRadiometry: [string, (f: ReturnType<typeof fixture>) => void][] = [
+	['negative diffuse RGB', f => { f.low.material.color.r = -0.01; }],
+	['nonfinite emissive RGB', f => { f.low.material.emissive.g = Infinity; }],
+	['NaN light RGB', f => { f.light.color.b = NaN; }],
+	['negative light intensity', f => { f.light.intensity = -1; }],
+	['infinite background intensity', f => { f.scene.backgroundIntensity = Infinity; }],
+	['negative environment intensity', f => { f.scene.environmentIntensity = -0.5; }],
+	['negative emissive intensity', f => { f.low.material.emissiveIntensity = -1; }],
+	['nonfinite environment-map intensity', f => { f.high.material.envMapIntensity = Infinity; }],
+	['negative light-map intensity', f => { f.low.material.lightMapIntensity = -1; }],
+	['AO weight above one', f => { f.low.material.aoMapIntensity = 1.1; }],
+	['opacity above one', f => { f.low.material.opacity = 1.1; }],
+	['negative transmission', f => { f.high.material.transmission = -0.01; }],
+	['negative metalness', f => { f.low.material.metalness = -0.1; }],
+	['roughness above one', f => { f.low.material.roughness = 1.1; }],
+	['clearcoat above one', f => { f.high.material.clearcoat = 1.1; }],
+	['negative clearcoat roughness', f => { f.high.material.clearcoatRoughness = -0.1; }],
+	['sheen above one', f => { f.high.material.sheen = 1.1; }],
+	['negative sheen roughness', f => { f.high.material.sheenRoughness = -0.1; }],
+	['iridescence above one', f => { f.high.material.iridescence = 1.1; }],
+	['specular intensity above one', f => { f.high.material.specularIntensity = 1.1; }],
+	['arbitrary float material map', f => { f.map.type = THREE.FloatType; }],
+	['arbitrary half-float material map', f => { f.map.type = THREE.HalfFloatType; }],
+	['signed material map', f => { f.map.type = THREE.ByteType; }],
+	['unvalidated vertex colors', f => { f.low.material.vertexColors = true; }]
+];
+for (const [name, change] of invalidRadiometry) test(`keeps ${name} on the live path`, () => {
+	const f = fixture(); change(f); expect(f.make()).toBeUndefined();
+});
+
+test('nonnegative HDR values, physical endpoints and negative poses remain eligible', () => {
+	const f = fixture();
+	f.low.material.color.setRGB(4, 2, 0);
+	f.low.material.emissiveIntensity = 4; f.light.intensity = 8;
+	f.scene.environmentIntensity = 2; f.scene.backgroundIntensity = 0;
+	f.high.material.transmission = 1; f.low.material.opacity = 0;
+	f.low.material.roughness = 0; f.high.material.roughness = 1;
+	f.model.position.x = -100; f.model.rotation.y = -0.5; f.model.scale.x = -1;
+	f.camera.position.z = -10;
+	f.scene.updateMatrixWorld(true); f.camera.updateMatrixWorld(true);
+	const guard = f.make(); expect(guard).toBeDefined(); expect(guard!.isValid()).toBe(true); guard!.dispose();
+});
+
+test('prepared runtime floating environment targets stay separately eligible without reading pixels', () => {
+	const f = fixture(), target = new THREE.RenderTarget(1, 1, { type: THREE.HalfFloatType });
+	f.scene.environment = target.texture;
+	const guard = f.make(); expect(guard).toBeDefined(); expect(guard!.isValid()).toBe(true);
+	target.texture.needsUpdate = true; expect(guard!.isValid()).toBe(false);
+	guard!.dispose(); target.dispose();
+});

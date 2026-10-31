@@ -25,6 +25,9 @@ export function createSceneEndpointGuard(options: {
 	while (lowRoot.parent && lowRoot.parent !== options.model) lowRoot = lowRoot.parent;
 	let eligible = true, invalid = false, disposed = false;
 	const reject = () => { eligible = false; };
+	const physicalRange = (value: unknown, maximum = Infinity) => {
+		if (value !== undefined && (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > maximum)) reject();
+	};
 	const invalidate = () => { invalid = true; };
 	const dispose = () => {
 		if (disposed) return;
@@ -73,6 +76,9 @@ export function createSceneEndpointGuard(options: {
 		checks.push(() => read() === original);
 		if (original instanceof THREE.Texture) { texture(original, environmentTexture); return; }
 		if (original instanceof THREE.Color) {
+			// Negative radiance can cross NodeMaterial's outgoing-light clamp as
+			// the background changes; static values alone do not prove affinity.
+			physicalRange(original.r); physicalRange(original.g); physicalRange(original.b);
 			const copy = original.clone(); checks.push(() => original.equals(copy)); return;
 		}
 		if (original instanceof THREE.Vector2 || original instanceof THREE.Vector3 || original instanceof THREE.Vector4 ||
@@ -94,6 +100,10 @@ export function createSceneEndpointGuard(options: {
 		const dynamic = resource as THREE.Texture & { isVideoTexture?: boolean; isVideoFrameTexture?: boolean;
 			isCanvasTexture?: boolean; isFramebufferTexture?: boolean; isDepthTexture?: boolean; isRenderTargetTexture?: boolean };
 		const image = resource.source?.data;
+		// Arbitrary floating/signed material maps have no nonnegative-radiance
+		// contract. Do not scan their pixel arrays on the Hold path. Prepared
+		// runtime environment/background resources are a separate owner contract.
+		if (!environment && [THREE.FloatType, THREE.HalfFloatType, THREE.ByteType, THREE.ShortType, THREE.IntType].some(type => type === resource.type)) reject();
 		const changingImage = (data: unknown): boolean => Boolean(data && typeof data === 'object' &&
 			('getContext' in data || 'requestVideoFrameCallback' in data ||
 			('tagName' in data && /^(VIDEO|CANVAS)$/i.test(String(data.tagName)))));
@@ -124,6 +134,12 @@ export function createSceneEndpointGuard(options: {
 		resources.add(resource); watch(resource);
 		scalar(() => resource.constructor);
 		const record = resource as unknown as Record<string, unknown>;
+		for (const name of ['emissiveIntensity', 'envMapIntensity', 'lightMapIntensity']) physicalRange(record[name]);
+		for (const name of ['opacity', 'aoMapIntensity', 'transmission', 'metalness', 'roughness', 'clearcoat',
+			'clearcoatRoughness', 'sheen', 'sheenRoughness', 'iridescence', 'specularIntensity', 'reflectivity']) physicalRange(record[name], 1);
+		// Authored vertex colors can contain negative floats. Keep those uncommon
+		// scenes live instead of introducing a large vertex-array validation pass.
+		if (resource.vertexColors) reject();
 		for (const name of keys(record, new Set(['_listeners', 'userData']))) value(() => record[name]);
 		checks.push(() => resource.onBeforeRender === THREE.Material.prototype.onBeforeRender &&
 			resource.onBeforeCompile === THREE.Material.prototype.onBeforeCompile &&
@@ -183,6 +199,7 @@ export function createSceneEndpointGuard(options: {
 		}
 		if (object instanceof THREE.Light) {
 			const light = object as unknown as Record<string, unknown>;
+			physicalRange(object.intensity);
 			for (const name of ['color', 'groundColor', 'intensity', 'distance', 'decay', 'angle', 'penumbra', 'width', 'height']) value(() => light[name]);
 			if ('target' in object) { scalar(() => object.target); node(object.target as THREE.Object3D); }
 		}
@@ -200,6 +217,7 @@ export function createSceneEndpointGuard(options: {
 	function sceneSnapshot(scene: THREE.Scene, allowHigh = false) {
 		node(scene);
 		if (scene.overrideMaterial !== null) reject();
+		physicalRange(scene.backgroundIntensity); physicalRange(scene.environmentIntensity);
 		const lowEnvironment = scene.environment, highEnvironment = allowHigh ? options.highEnvironment : undefined;
 		checks.push(() => scene.environment === lowEnvironment || Boolean(highEnvironment && scene.environment === highEnvironment));
 		if (lowEnvironment) texture(lowEnvironment, true);
