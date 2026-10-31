@@ -49,6 +49,13 @@ DOM/canvas content. Fixed detail 3XL may use the authored panel material because
 above the content pane. A route change does not key/recreate the shell or mark it as entering page
 content. Native open popovers and disclosure menus close on navigation.
 
+Native ownership does not remove the existing close-up exit. The shell surface and its content
+follow the same focus offset, perspective scale, fade and text blur as the GPU panel. Only the
+surface is transformed; the registered frame and scroll rack remain unchanged, so measuring a
+zoomed shell cannot feed its visual offset back into the layout cache. Hidden navigation is inert,
+and leaving close-up or releasing the renderer restores its original interaction state. The
+native-summary pane and independently positioned help popover do not use this shell-only path.
+
 ## Breadcrumb contract
 
 Breadcrumb font size and reserved height come from viewport layout tokens, not content grid
