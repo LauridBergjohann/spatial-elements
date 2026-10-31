@@ -1,0 +1,75 @@
+/* Generated from core/spatial-element/layoutTokens.json. Run npm run layout:generate. */
+
+.spatial-content-width { width: min(100%, 1536px); margin-inline: auto; }
+
+.spatial-content-container { container: spatial-content / inline-size; min-width: 0; }
+
+@media (min-width: 1600px) {
+	.spatial-content-width { width: min(1536px, max(0px, calc(100% - 272px))); }
+}
+
+@media (min-width: 1809px) {
+	.spatial-content-width { width: min(100%, 1536px); }
+}
+
+.spatial-grid-scope {
+	--spatial-grid-columns: 4;
+	--spatial-grid-gap: 12px;
+	--spatial-grid-headline-size: 18px;
+	--spatial-grid-headline-line-height: 28px;
+	--spatial-grid-body-size: 14px;
+	--spatial-grid-body-line-height: 20px;
+	--spatial-grid-headline-gap: 8px;
+	--spatial-card-large-span: 4;
+}
+.spatial-content-block { --spatial-content-block-span: var(--spatial-content-block-span-xs); }
+
+@container spatial-content (min-width: 600px) {
+	.spatial-grid-scope {
+		--spatial-grid-columns: 6;
+		--spatial-grid-gap: 16px;
+		--spatial-grid-headline-size: 18px;
+		--spatial-grid-headline-line-height: 28px;
+		--spatial-grid-body-size: 14px;
+		--spatial-grid-body-line-height: 20px;
+		--spatial-grid-headline-gap: 8px;
+		--spatial-card-large-span: 3;
+	}
+	.spatial-content-block { --spatial-content-block-span: var(--spatial-content-block-span-s); }
+}
+
+@container spatial-content (min-width: 840px) {
+	.spatial-grid-scope {
+		--spatial-grid-columns: 8;
+		--spatial-grid-gap: 16px;
+		--spatial-grid-headline-size: 20px;
+		--spatial-grid-headline-line-height: 32px;
+		--spatial-grid-body-size: 14px;
+		--spatial-grid-body-line-height: 20px;
+		--spatial-grid-headline-gap: 12px;
+		--spatial-card-large-span: 4;
+	}
+	.spatial-content-block { --spatial-content-block-span: var(--spatial-content-block-span-m); }
+}
+
+@container spatial-content (min-width: 1200px) {
+	.spatial-grid-scope {
+		--spatial-grid-columns: 12;
+		--spatial-grid-gap: 24px;
+		--spatial-grid-headline-size: 24px;
+		--spatial-grid-headline-line-height: 40px;
+		--spatial-grid-body-size: 16px;
+		--spatial-grid-body-line-height: 24px;
+		--spatial-grid-headline-gap: 16px;
+		--spatial-card-large-span: 4;
+	}
+	.spatial-content-block { --spatial-content-block-span: var(--spatial-content-block-span-l); }
+}
+
+@media (min-width: 1600px) {
+	.spatial-section-surface { border-radius: var(--spatial-section-top-radius, 0px) var(--spatial-section-top-radius, 0px) var(--spatial-section-bottom-radius, 0px) var(--spatial-section-bottom-radius, 0px); }
+}
+
+@media (min-width: 2300px) {
+	[data-spatial-detail-pane] .spatial-section-surface { border-radius: 0; }
+}

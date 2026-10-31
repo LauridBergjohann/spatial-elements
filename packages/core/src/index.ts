@@ -12,3 +12,4 @@ export * from './catalog/spatialElementLodPair.js';
 export type { StageExperienceOptions, StageRenderSettings } from './stage/stageTypes.js';
 
 export { geometryFromLodPair, type SpatialElementGeometry } from './spatial-element/spatialElementGeometry.js';
+export * from './spatial-element/responsiveLayout.js';

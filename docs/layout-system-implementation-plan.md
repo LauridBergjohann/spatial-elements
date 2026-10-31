@@ -366,9 +366,9 @@ Ein Schritt gilt erst als fertig, wenn seine Abnahme erfüllt ist. Eintragen: Fr
 
 | Schritt | Status | Framework / Examples / Nachweise |
 | --- | --- | --- |
-| 01 Spezifikation | abgeschlossen | [Kanonische Verträge und Entscheidungen](design/layout/README.md), [Prüffälle](design/layout/validation.md); Examples `af85ecd` archiviert 9 Originale und 7 verlustfreie Referenzblätter. Alle SHA-256 geprüft; öffentliche Dokumentlinks geprüft. Baseline: 71 Dateien / 369 Unit-Tests bestanden. |
-| 02 Resolver | in Arbeit | Gemeinsame JSON-Tokens, reine Raster-/Breitenberechnung und generiertes CSS; bisher 26 gezielte Tests bestanden. Detail-/Carousel-Rechtecke werden ergänzt. |
-| 03 Grid/ContentPage | offen | — |
+| 01 Spezifikation | abgeschlossen | Framework `159b006`: [Verträge und Entscheidungen](design/layout/README.md), [Prüffälle](design/layout/validation.md); Examples `af85ecd` archiviert 9 Originale und 7 verlustfreie Referenzblätter. Alle SHA-256 und öffentliche Dokumentlinks geprüft. Baseline: 71 Dateien / 369 Unit-Tests bestanden. |
+| 02 Resolver | abgeschlossen | Gemeinsame JSON-Tokens, reine Raster-/Detail-/Carousel-/Zoom-Berechnung, natürliche Panel-Constraints und generiertes CSS. 56 gezielte Tests und Core-Typecheck bestanden; CSS-/TS-Tokens per `check:layout` abgesichert. |
+| 03 Grid/ContentPage | in Arbeit | Komponenten, SSR-Fixtures und Browserprüfungen vorbereitet. |
 | 04 Sections/Theme | offen | — |
 | 05 Liste/Karten | offen | — |
 | 06 Lebende Panels | offen | — |

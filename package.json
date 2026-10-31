@@ -14,7 +14,9 @@
   ],
   "scripts": {
     "build": "npm run build -w @spatial-elements/core && npm run build -w @spatial-elements/sveltekit",
-    "check": "npm run build && npm run check --workspaces",
+    "check": "npm run check:layout && npm run build && npm run check --workspaces",
+    "layout:generate": "node scripts/generate-layout-css.mjs",
+    "check:layout": "node scripts/generate-layout-css.mjs --check",
     "dev": "npm run build && concurrently -k -n core,sveltekit \"npm run dev -w @spatial-elements/core\" \"npm run dev -w @spatial-elements/sveltekit\"",
     "verify": "npm run check:release && npm run test:release && npm run check:boundaries && npm run check && npm test && npm run verify:packages",
     "verify:packages": "node scripts/verify-packages.mjs",
