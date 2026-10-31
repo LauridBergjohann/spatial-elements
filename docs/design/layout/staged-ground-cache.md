@@ -99,5 +99,39 @@ from eligibility. Fifteen focused CPU tests, including both new live-fallback ca
 the earlier broader Ground/preparation suite passed 39 tests. This final exclusion does
 not claim a separate GPU instancing proof. The next coherent build must include it.
 
-**Production navigation regression and unprofiled performance effect remain unverified
-for this cache. Pixel correctness does not establish a frame-time improvement.**
+## Normal Carousel regression, build 2616 / runtime d92a3b9
+
+The five existing `catalog-hover.e2e.ts` / `carousel-focus.e2e.ts` cases were run on the
+normal, non-staged route, covering frosted/glass surfaces, pointer hover and drag, depth
+changes, distant selection, keyboard Space/Enter, detail navigation, Back and focus.
+Their exact 300 ms stillness assertions remain unchanged.
+
+The original run in `.artifacts/ground-normal-carousel-2616-d92a3b9/` passed glass drag
+and keyboard navigation. Three cases failed their old premature baseline: frosted drag
+counted 422 then 424 catalog passes; frosted/glass hover counted additional outline passes
+after `hover === 1`. The trace showed that proximity tilt was still changing despite the
+hover scalar already being one. `settle(60)` also does not drain scheduled idle jobs or
+their GPU fences. Catalog warmup draws rear and front once each; two catalog passes do
+not imply two ordinary Stage RAFs.
+
+The separate `-idle` run archived `getRenderActivity()` and the counters while waiting
+for the actual owners to finish. For example, glass hover first reported animation and
+a pending RAF, then no animation but preparation in flight, then completed preparation
+with unchanged counters. Frosted drag likewise had no animation/RAF but was still waiting
+for preparation. The helper now requires no animation, queued render/scroll work, catalog
+layout/queue dirtiness, actor/asset loading or queued/in-flight preparation before taking
+the stillness baseline. It only observes; it does not drive or disable renderer work and
+does not change the performance harness. The exact counters then remain constant across
+the original 300 ms interval.
+
+That run passed frosted drag and both hover stillness assertions, then exposed an older
+ambiguous `h3` locator: compact and full summaries now both contain headings. The test
+uses the full summary's exact `[data-shared-role="title"]` and retains exact full-title
+tooltip/accessibility assertions. The final `-hover` run passed both complete hover cases.
+Thus all five behaviors pass on the same runtime across the original and targeted runs;
+the original failures and all follow-up artifacts remain preserved. This is not a claim
+that the original unmodified five-case run passed.
+
+**Staged production navigation regression and unprofiled performance effect remain
+separate gates. Pixel correctness and normal interaction checks do not establish a
+frame-time improvement.**

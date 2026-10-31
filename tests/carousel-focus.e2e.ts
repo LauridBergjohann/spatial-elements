@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
+import { waitForCatalogIdle } from './helpers/catalogIdle';
 
 for (const surface of ['frosted', 'glass']) test(`carousel ${surface}: dots follow dragging, blur follows depth, and distant selections animate`, async ({ page }, info) => {
 	const errors: string[] = [];
@@ -55,6 +56,7 @@ for (const surface of ['frosted', 'glass']) test(`carousel ${surface}: dots foll
 	expect(stats.actors.some(actor => actor.blur > 0)).toBe(true);
 	await page.mouse.move(1, 1);
 	await page.evaluate(() => window.__stageVisualTest!.settle(60));
+	await waitForCatalogIdle(page, info);
 	const passes = await page.evaluate(() => window.__stageVisualTest!.getCarouselStats()!.passes);
 	await page.waitForTimeout(300);
 	expect(await page.evaluate(() => window.__stageVisualTest!.getCarouselStats()!.passes)).toBe(passes);
