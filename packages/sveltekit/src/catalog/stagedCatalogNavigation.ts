@@ -16,6 +16,7 @@ import type { SpatialSummaryHostController } from '../spatial-element/spatialSum
 import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
 import { getStageVisualScrollPosition } from '@spatial-elements/core/stage/scrollFrame';
 import { finishInterruptedPresentation, type InterruptedCatalogPresentation } from './interruptedPresentation.js';
+import { releasePresentationResources } from './presentationCleanup.js';
 export type { InterruptedCatalogPresentation } from './interruptedPresentation.js';
 
 /** Leave a real paint opportunity between destination raster preparation and fade. */
@@ -141,20 +142,29 @@ export function startStagedCatalogNavigation(options: {
 	const clear = (cancelled: boolean) => {
 		if (cleaned) return;
 		cleaned = true;
-		for (const motion of holdingMotions.splice(0)) motion?.restore();
-		restoreClipping?.(); restoreClipping = undefined;
-		if (!retainInterruptedSummary) {
-			if (cancelled && !adopted) retained.restore() || retained.release();
-			else retained.release();
-		}
-		holdingHost?.remove(); holdingHost = undefined;
-		for (const name of ['catalog-transition', 'catalog-direction', 'catalog-recipe', 'catalog-enter-hidden', 'catalog-shared-hidden', 'catalog-staged-phase']) root.removeAttribute(`data-${name}`);
-		for (const name of ['enter', 'shared', 'exit']) root.style.removeProperty(`--catalog-${name}-opacity`);
-		for (const shell of savedShells) shell.removeAttribute('data-catalog-shell-continuous');
-		experience.finishCatalogGeometry();
-		experience.setCatalogTransitionPresentation({ active: false, enterOpacity: 1, exitOpacity: 1, sharedOpacity: 1 });
-		experience.flushCatalogFrame();
-		options.onFinish();
+		const clipping = restoreClipping; restoreClipping = undefined;
+		const held = holdingHost; holdingHost = undefined;
+		releasePresentationResources('Unable to release staged catalog presentation', [
+			...holdingMotions.splice(0).map(motion => () => motion?.restore()),
+			() => clipping?.(),
+			() => {
+				if (retainInterruptedSummary) return;
+				let restored = false;
+				try { if (cancelled && !adopted) restored = retained.restore(); }
+				finally { if (!restored) retained.release(); }
+			},
+			() => held?.remove(),
+			() => {
+				for (const name of ['catalog-transition', 'catalog-direction', 'catalog-recipe', 'catalog-enter-hidden', 'catalog-shared-hidden', 'catalog-staged-phase']) root.removeAttribute(`data-${name}`);
+				for (const name of ['enter', 'shared', 'exit']) root.style.removeProperty(`--catalog-${name}-opacity`);
+				for (const shell of savedShells) shell.removeAttribute('data-catalog-shell-continuous');
+			},
+			() => experience.finishCatalogGeometry(),
+			() => experience.setCatalogTransitionPresentation({ active: false, enterOpacity: 1, exitOpacity: 1, sharedOpacity: 1 }),
+			() => experience.flushCatalogFrame(),
+			// Never leave Stage pointing at a terminal owner because GPU cleanup failed.
+			() => options.onFinish()
+		]);
 	};
 	const transition = new StagedCatalogTransition({
 		actors, exiting,

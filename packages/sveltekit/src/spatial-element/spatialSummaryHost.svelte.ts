@@ -2,6 +2,7 @@ import { hydrate, mount, unmount, untrack } from 'svelte';
 import { PresentationLease } from '@spatial-elements/core/catalog/PresentationLease';
 import SpatialSummaryRoot from './SpatialSummaryRoot.svelte';
 import { freezePresentationBox } from './presentationBoxFreeze.js';
+import { releasePresentationResources } from '../catalog/presentationCleanup.js';
 import type { SpatialCardContext, SpatialPresentationModel, SpatialSummaryContext, SpatialSummarySnippet } from './spatialSummary.js';
 
 export const SPATIAL_SUMMARY_HOST = Symbol('spatial-summary-host');
@@ -71,10 +72,14 @@ export class SpatialSummaryHostController {
    const options = { target: root, props: { content: this.content(), model }, context: this.contexts };
    const component = serverRoot ? hydrate(SpatialSummaryRoot, { ...options, recover: false }) : mount(SpatialSummaryRoot, options);
    const lease = new PresentationLease(root, () => {
-    void unmount(component);
-    root.remove();
-    if (this.records.get(record.key) === record) this.records.delete(record.key);
-    this.roots.delete(record);
+    releasePresentationResources('Unable to unmount spatial presentation', [
+     () => unmount(component),
+     () => root.remove(),
+     () => {
+      if (this.records.get(record.key) === record) this.records.delete(record.key);
+      this.roots.delete(record);
+     }
+    ]);
    });
    const owner = lease.claim();
    const record: SummaryRecord = { key, kind: model.kind, root, slot, model, component, lease, owner, held: false };
