@@ -93,7 +93,7 @@ test('the virtual document uses one shell compensation and keeps menu content al
 
 for (const source of ['list', 'carousel']) {
 	test(`${source} to detail keeps the top menu visible throughout the transition`, async ({ page }) => {
-		await page.setViewportSize({ width: 1700, height: 900 });
+		await page.setViewportSize({ width: 1700, height: 1200 });
 		await page.goto(`/demo/categories/${source}?stage-test=1`);
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', /enhanced|fallback|unsupported/, { timeout: 45_000 });
 		test.skip(!(await page.locator('.stage').evaluate(node => node.classList.contains('stage-virtual-scroll-active'))), 'WebGPU enhancement unavailable');
@@ -125,14 +125,12 @@ for (const source of ['list', 'carousel']) {
 		});
 		const link = source === 'list' ? page.locator('.spatial-element-card').first()
 			: page.locator('.carousel-spatial-element.selected .spatial-element-target').first();
-		// A locator click scrolls the complete 3D hit rectangle into view. Click its
-		// visible region directly so this exercises the intended top-to-top case.
-		const box = (await link.boundingBox())!;
-		const point = { x: box.x + box.width / 2, y: Math.min(box.y + box.height / 2, 800) };
-		await page.mouse.move(point.x, point.y);
+		// A tall viewport keeps the complete 3D hit rectangle visible while the
+		// pointer and source geometry settle before the intended top-to-top click.
+		await link.hover();
 		await page.evaluate(() => window.__stageVisualTest!.settle(30));
 		expect(await page.evaluate(() => scrollY)).toBe(0);
-		await page.mouse.click(point.x, point.y);
+		await link.click();
 		await expect(page).toHaveURL(/\/demo\/elements\//);
 		await expect(page.locator('.stage')).not.toHaveAttribute('data-catalog-transition', /.+/);
 		const samples = await page.evaluate(() => (window as typeof window & {
