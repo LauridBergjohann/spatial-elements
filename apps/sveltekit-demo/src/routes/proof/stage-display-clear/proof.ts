@@ -46,7 +46,17 @@ export async function runStageDisplayClearProof(container: HTMLElement) {
 	let proofDevice: GPUDevice | undefined;
 	let validationScope = false;
 	const gpuErrors: string[] = [];
+	const validationReports: Promise<void>[] = [];
 	const onGpuError = (event: GPUUncapturedErrorEvent) => { gpuErrors.push(event.error.message); };
+	const validate = <T>(phase: string, action: () => T): T => {
+		proofDevice!.pushErrorScope('validation');
+		try { return action(); }
+		finally {
+			validationReports.push(proofDevice!.popErrorScope().then(error => {
+				if (error) gpuErrors.push(`[${phase}] ${error.message}`);
+			}));
+		}
+	};
 	const difference = (a: ArrayLike<number>, b: ArrayLike<number>) => {
 		let max = 0; for (let i = 0; i < a.length; i++) max = Math.max(max, Math.abs(a[i] - b[i])); return max;
 	};
@@ -74,7 +84,12 @@ export async function runStageDisplayClearProof(container: HTMLElement) {
 			const height = mode === 'first' || mode === 'repeat' ? 64 : 80;
 			const ratio = mode === 'first' || mode === 'repeat' ? 1 : 1.5;
 			for (const output of outputs) {
-				output.setDrawingBufferSize(width, height, ratio);
+				// Match StageRenderPipeline.resizeCanvasTarget: the selected target owns
+				// Renderer's resize listener, which invalidates its backend descriptor.
+				// Resizing an inactive CanvasTarget directly leaves that descriptor stale.
+				renderer.setCanvasTarget(output);
+				renderer.setPixelRatio(ratio);
+				renderer.setSize(width, height, false);
 				output.setScissorTest(mode === 'scissor');
 				output.setScissor(3, 5, width - 12, height - 14);
 				if (mode === 'partial-viewport') output.setViewport(4, 6, width - 10, height - 16);
@@ -91,27 +106,31 @@ export async function runStageDisplayClearProof(container: HTMLElement) {
 				let withoutPanel: Uint8ClampedArray | undefined;
 				for (const withPanel of [false, true]) {
 					const capture = async (candidate: boolean) => {
+						const phase = `${mode}/halo-${halo}/panel-${withPanel}/${candidate ? 'candidate' : 'control'}`;
 						const output = outputs[candidate ? 1 : 0];
 						ports.backgroundCanvasTarget = output;
 						renderer.setRenderTarget(null); renderer.setCanvasTarget(output);
 						renderer.autoClear = false; renderer.autoClearColor = false;
 						renderer.autoClearDepth = false; renderer.autoClearStencil = true;
 						if (!(mode === 'first' && !halo && !withPanel)) {
-							renderer.setClearDepth(1); renderer.setClearColor(0xff0099, 1); renderer.clear();
+							renderer.setClearDepth(1); renderer.setClearColor(0xff0099, 1);
+							validate(`${phase}/poison-clear`, () => renderer.clear());
 							// Poison previous depth: a later, farther panel must survive the display clear.
-							renderer.render(seedScene, panelCamera);
+							validate(`${phase}/poison-draw`, () => renderer.render(seedScene, panelCamera));
 						}
 						renderer.setClearDepth(mode === 'clear-depth' ? 0.8 : 1);
 						const before = submits;
-						if (candidate) pipeline.renderStageDisplay();
-						else {
-							// Exact previous production path, including its Canvas output-color transform.
-							renderer.setRenderTarget(null); renderer.setCanvasTarget(output);
-							renderer.setClearColor(0xffffff, 1); renderer.clear(); pipeline.stageDisplayQuad!.render(renderer);
-						}
+						validate(`${phase}/display`, () => {
+							if (candidate) pipeline.renderStageDisplay();
+							else {
+								// Exact previous production path, including its Canvas output-color transform.
+								renderer.setRenderTarget(null); renderer.setCanvasTarget(output);
+								renderer.setClearColor(0xffffff, 1); renderer.clear(); pipeline.stageDisplayQuad!.render(renderer);
+							}
+						});
 						const drawSubmits = submits - before;
 						const restored = !renderer.autoClear && !renderer.autoClearColor && !renderer.autoClearDepth && renderer.autoClearStencil;
-						if (withPanel) renderer.render(panelScene, panelCamera);
+						if (withPanel) validate(`${phase}/panel`, () => renderer.render(panelScene, panelCamera));
 						// Copy the actual ACES/sRGB canvas before yielding to another browser frame.
 						const canvas = canvases[candidate ? 1 : 0];
 						snapshot.width = canvas.width; snapshot.height = canvas.height;
@@ -141,6 +160,7 @@ export async function runStageDisplayClearProof(container: HTMLElement) {
 			}
 		}
 		await proofDevice.queue.onSubmittedWorkDone();
+		await Promise.all(validationReports);
 		const validationError = await proofDevice.popErrorScope(); validationScope = false;
 		if (validationError) gpuErrors.push(validationError.message);
 		return { rows, gpuErrors, linearReadback: 'RGBA/HalfFloat/Uint16Array' };

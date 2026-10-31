@@ -42,3 +42,28 @@ panel blur, scene contents, or generic depth helpers.
 - The browser proof and a new production trace remain pending. Successful proof
   data must be persisted as `stage-display-clear-pixels.json`; unit mocks alone
   do not establish pixel equivalence or user-visible performance.
+
+### Initial resize-fixture failure
+
+The first GPU run on build `1782` / `8873f41` failed validation. Its unchanged
+artifact directory is `.artifacts/stage-display-clear-1782-8873f41`. Before resize,
+the eight comparisons were exact; all linear comparisons stayed exact. From the
+resize onward the Canvas comparison differed by 255 and validation reported a
+96×64 depth attachment beside a 171×120 color attachment. This failed run does not
+establish successful pixel equivalence after resize.
+
+The fixture resized both `CanvasTarget`s directly while only the candidate was
+selected. Three's `Renderer.setCanvasTarget()` attaches its resize listener only
+to the selected target; `_onCanvasTargetResize()` invalidates that target's cached
+WebGPU descriptor through `backend.updateSize()`. The inactive control therefore
+retained its old depth view. Its poison `renderer.clear()` was the first Canvas
+output after resize, before the StageDisplay call being compared. The candidate
+received the resize event, matching the asymmetric output in the artifact.
+
+The corrected fixture follows the existing production
+`StageRenderPipeline.resizeCanvasTarget()` sequence: select each target, then
+call `renderer.setPixelRatio()` and `renderer.setSize()`. No runtime change was
+needed. Additional labeled validation scopes distinguish control/candidate,
+poison clear/draw, StageDisplay and following panel without yielding between draw
+and Canvas snapshot. The original exact-pixel and empty-validation assertions
+remain unchanged; the corrected GPU run is still pending.
