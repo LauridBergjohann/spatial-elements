@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import './layout.generated.css';
 	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import type { SpatialElementBreadcrumb } from '@spatial-elements/core/spatial-element/types';
 
@@ -11,7 +12,7 @@
 
 <nav
 	use:mouseHover
-	class="breadcrumbs"
+	class="breadcrumbs spatial-grid-scope"
 	data-stage-dom-content
 	aria-label="Breadcrumb"
 	data-catalog-transition-dom={transition}
@@ -31,21 +32,35 @@
 
 <style>
 	.breadcrumbs {
-		width: calc(100vw - var(--spatial-element-content-inline-inset) - var(--spatial-element-content-inline-inset));
-		margin: 8px 0 12px calc(50% - 50vw + var(--spatial-element-content-inline-inset));
+		box-sizing: border-box;
+		width: 100%;
+		height: var(--spatial-breadcrumb-height);
+		margin: 0;
+		padding-inline: var(--spatial-grid-gap, 12px);
+		overflow-x: auto;
+		overflow-y: hidden;
+		/* Start at the trailing end even before hydration; the list keeps its reading order. */
+		direction: rtl;
+		scrollbar-width: none;
 		color: color-mix(in srgb, var(--spatial-element-body) 72%, transparent);
-		font-size: 13px;
-		line-height: 16px;
+		font-size: var(--spatial-breadcrumb-font-size);
+		line-height: var(--spatial-breadcrumb-height);
+		pointer-events: auto;
 	}
 
 	ol {
 		display: flex;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
+		direction: ltr;
+		width: max-content;
+		min-width: 100%;
 		gap: 0;
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
+	li { flex: none; white-space: nowrap; }
+	.breadcrumbs::-webkit-scrollbar { display: none; }
 
 	li:not(:last-child)::after {
 		margin-inline: 0.45rem;
@@ -62,10 +77,4 @@
 		text-decoration: underline;
 	}
 
-	@media (max-width: 1100px) {
-		.breadcrumbs {
-			width: 100%;
-			margin-left: 0;
-		}
-	}
 </style>

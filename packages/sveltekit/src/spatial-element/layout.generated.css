@@ -73,3 +73,61 @@
 @media (min-width: 2300px) {
 	[data-spatial-detail-pane] .spatial-section-surface { border-radius: 0; }
 }
+
+.stage {
+	--spatial-shell-fixed: 0;
+	--spatial-shell-sticky-range: 112px;
+	--spatial-shell-menu-top: 0px;
+	--spatial-shell-menu-height: 66px;
+	--spatial-shell-reserve: 66px;
+	--spatial-shell-satellite-top: 28px;
+	--spatial-shell-satellite-inset: 28px;
+	--spatial-shell-satellite-width: 80px;
+	--spatial-shell-satellite-height: 40px;
+}
+
+.spatial-shell-menu.spatial-content-width { width: 100%; }
+.spatial-shell-satellite { display: none; }
+
+.stage { --spatial-breadcrumb-height: 24px; --spatial-breadcrumb-font-size: 10px; }
+
+@media (min-width: 600px) {
+	.stage { --spatial-breadcrumb-height: 24px; --spatial-breadcrumb-font-size: 10px; }
+}
+
+@media (min-width: 840px) {
+	.stage { --spatial-breadcrumb-height: 30px; --spatial-breadcrumb-font-size: 12px; }
+}
+
+@media (min-width: 1200px) {
+	.stage { --spatial-breadcrumb-height: 40px; --spatial-breadcrumb-font-size: 14px; }
+}
+
+@media (min-width: 1600px) {
+	.stage { --spatial-breadcrumb-height: 40px; --spatial-breadcrumb-font-size: 14px; }
+}
+
+@media (min-width: 1809px) {
+	.stage { --spatial-breadcrumb-height: 40px; --spatial-breadcrumb-font-size: 14px; }
+}
+
+@media (min-width: 2300px) {
+	.stage { --spatial-breadcrumb-height: 40px; --spatial-breadcrumb-font-size: 14px; }
+}
+
+@media (min-width: 1600px) {
+	.stage { --spatial-shell-menu-top: 16px; --spatial-shell-menu-height: 64px; --spatial-shell-reserve: 80px; }
+	.spatial-shell-menu.spatial-content-width { width: min(1536px, max(0px, calc(100% - 272px))); }
+	.spatial-shell-satellite { display: block; }
+	.spatial-shell-compact-only { display: none !important; }
+}
+
+@media (min-width: 1809px) {
+	.spatial-shell-menu.spatial-content-width { width: min(100%, 1536px); }
+}
+
+@media (min-width: 2300px) and (min-height: 512px) {
+	.stage:has([data-spatial-element-root]) { --spatial-shell-fixed: 1; }
+	.stage:not(.stage-virtual-scroll-active):has([data-spatial-element-root]) .spatial-shell-rack { position: fixed; top: 0; left: 0; right: 0; }
+	[data-spatial-element-root] .breadcrumbs li:last-child [aria-current='page'] { display: none; }
+}

@@ -1,5 +1,6 @@
 import type { StagePanelTarget, StageViewportTarget } from './stageTypes.js';
 import { getStickyPanelTop } from './stageDom.js';
+import { resolveMenuOffset } from '../spatial-element/responsiveLayout.js';
 
 export interface CachedStageRect {
 	fixed: boolean;
@@ -8,6 +9,8 @@ export interface CachedStageRect {
 	top: number;
 	width: number;
 	sticky?: { inset: number; boundaryBottom: number };
+	/** Persistent shell panels share the DOM rack's bounded scroll rule. */
+	shell?: { fixed: boolean };
 }
 
 /** Page-local registrations only. Never owns element leases or a renderer. */
@@ -90,22 +93,25 @@ export class PageBindingController {
 		const style = window.getComputedStyle(element);
 		const fixed = style.position === 'fixed' ||
 			Boolean(popover && window.getComputedStyle(popover).position === 'fixed');
+		const shell = !fixed ? element.closest?.<HTMLElement>('[data-stage-scroll-shell]') : undefined;
+		const compensation = shell ? Number(shell.dataset.stageScrollCompensation) || 0 : 0;
 		const sticky = style.position === 'sticky' && element.parentElement && style.top !== 'auto'
 			? { inset: Number.parseFloat(style.top) || 0, boundaryBottom: element.parentElement.getBoundingClientRect().bottom + scrollY }
 			: undefined;
 		return {
 			fixed,
 			left: rect.left + (fixed ? 0 : scrollX),
-			top: rect.top + (fixed ? 0 : scrollY),
+			top: rect.top + (fixed ? 0 : scrollY) - compensation,
 			width: rect.width,
 			height: rect.height,
-			...(sticky ? { sticky } : {})
+			...(sticky ? { sticky } : {}),
+			...(shell ? { shell: { fixed: shell.hasAttribute('data-stage-scroll-shell-fixed') } } : {})
 		};
 	}
 
 	resolve(rect: CachedStageRect, scrollX: number, scrollY: number) {
 		const left = rect.left - (rect.fixed ? 0 : scrollX);
-		const top = rect.sticky
+		const top = rect.shell ? rect.top + resolveMenuOffset(scrollY, rect.shell.fixed) : rect.sticky
 			? getStickyPanelTop(rect.top, rect.height, rect.sticky.boundaryBottom, rect.sticky.inset, scrollY)
 			: rect.top - (rect.fixed ? 0 : scrollY);
 		return {
