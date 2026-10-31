@@ -102,6 +102,34 @@ See the [layout migration guide](layout-migration.md) when updating existing pag
 
 ## Touch and pointer interaction
 
+Carousel layout follows the same content grid as the surrounding sections. Keep its section
+headline optional; omitting it also removes the heading gap from the height budget. On XS/S,
+the carousel shows a compact title and optional eyebrow above the model. The reserved title
+strip does not change when selection moves between items with and without an eyebrow. From M,
+the full information panel has natural height and centers beside the selected model. Long
+content scrolls within that panel instead of increasing the model frame. The detail link is an
+arrow in the panel's upper-right corner and retains a complete accessible product name.
+
+To author custom detail and carousel summaries, define the snippet in the persistent brand
+layout rather than in an outgoing route:
+
+~~~svelte
+<BrandStageShell {theme}>
+  {#snippet summary(context)}
+    <ProductConfiguration {context} />
+  {/snippet}
+  {@render children()}
+</BrandStageShell>
+~~~
+
+`ProductConfiguration` can contain genuine reactive state and controls. Use
+`@container spatial-summary (...)` for its layout and `context.mode` for presentation-specific
+content. Reserve space for the carousel's detail arrow in the custom heading. Keep page-head
+metadata outside the snippet and load initial data before rendering. The framework supplies a
+default summary when the snippet is omitted. Compact carousel UI is framework-owned; the full
+summary remains in its keyed instance while hidden, retaining state across selection and
+resizing. Use distinct `itemKey` values for repeated occurrences of one product.
+
 Carousels use a native horizontal scroll-snap rail until WebGPU enhancement. The enhanced
 carousel has one authoritative fractional turntable phase; it never drives or follows a native
 scroll offset. PointerEvents cover mouse, touch and pen, including desktop touch browsers without
@@ -136,11 +164,13 @@ input and control-wheel zoom retain browser behavior. Reduced motion removes sel
 
 Cards clamp text to the selected size's line budget. Truncated titles expose their complete text through a native card tooltip; full text remains available on the detail page. Mouse hover and keyboard focus raise card text, enlarge the model and highlight the card outline in the accent color. Carousel models use the detail interaction theme's silhouette glow, including the selected model. Hover or keyboard focus smoothly removes their defocus, and a native tooltip identifies the element using its complete title. Carousel indicators follow movement immediately, and dot selections animate across intermediate elements (except under reduced motion). Defocus increases with distance from the center, and summary panels soften as they fade.
 
-Before WebGPU is ready, carousels are native horizontal scroll-snap rails with visible native scrollbars, keyboard scrolling and working detail links, including without JavaScript. Pagination dots and previous/next arrows beside the model appear only after enhancement; arrows are hidden at their respective endpoints. Their shared CSS grid reserves the same content height and selected panel frame as the spatial presentation. Selections made while loading are retained when enhancement succeeds. GPU failure keeps the native presentation available. Keep fallback images representative of the initial model view; posters disappear immediately when their GPU model is ready, avoiding a duplicate silhouette during return transitions.
+Before WebGPU is ready, carousels are native horizontal scroll-snap rails with keyboard scrolling, pagination links and working detail links, including without JavaScript. Enhancement turns pagination links into controlled buttons and adds previous/next arrows beside the model; arrows are hidden at their respective endpoints. The rail's scrollbar is hidden while native scrolling remains available. The shared layout reserves the same fit frame before and after enhancement. Selections made while loading are retained when enhancement succeeds. GPU failure keeps the native presentation available. Keep fallback images representative of the initial model view; posters disappear immediately when their GPU model is ready, avoiding a duplicate silhouette during return transitions.
 
 The enhanced carousel places elements on the front arc of a shared turntable, viewed at a ten-degree angle. The resting information panel stays parallel to the screen. Selection smoothly advances an element toward the viewer without a lateral offset; perspective determines its size and spacing without per-element scale compensation. Products rotate with their seats. A shared floor plane grounds different model sizes in the same scene. Directional shadows project the actual mesh triangles onto that plane, with lightly softened edges; neutral black silhouettes only darken the page background, without tinted floor patches or generic circular decals. Overlapping triangles resolve to one silhouette before compositing, using one bounded scratch target shared across products. Mouse proximity brings the approached corner toward the viewer by at most four degrees per axis, without moving its panel; dragging, touch and reduced-motion preferences disable this response. The floor fades with the catalog during detail handoff. The enhanced gesture surface spans the viewport width. Touch and trackpad gestures also work over panel text and controls; links and buttons retain tap activation. Mouse dragging can start on geometry, blank space or panel text, while buttons and links retain click behavior. During mouse or touch dragging, the initial panel fades out and the initial foreground advance retreats with travel. Passing seats stay on the ring without revealing panels; reversing the gesture does not restore the withdrawn presentation. Release commits selection and starts foreground advance alongside settling. Automatic focus/scrollIntoView adjustments cannot change the selected product. Dot and keyboard navigation retain the normal crossfade. Depth uses defocus without fog. Defocus withdraws with the foreground advance during a gesture, leaving the whole ring sharp; release restores foreground focus with the selected product. The arc fades out before wrapping, so long catalogs never duplicate seats; desktop layouts show up to seven elements and phone layouts normally show the selected model and its two neighbours. Neighbours can overlap in depth. Geometry, blur and hit targets may extend beyond their section; only the browser viewport clips the spatial presentation. Only the arc and a small preparation margin are loaded. Posters and hit targets use the same visibility decision, so preparation never exposes an unselectable image. Section metrics are cached on resize, not measured during animation. Detail transitions capture the complete current model and camera transforms, including an in-progress selection.
 
-On detail pages, a touch starting on visible model geometry rotates it, and a second finger on the canvas enables pinch zoom. Lifting one finger returns to rotation; lifting all fingers ends the gesture. A new touch outside the geometry scrolls the page immediately. Ordinary HTML controls retain their own touch behavior.
+On flow-layout detail pages, a touch starting on visible model geometry rotates it, and a second finger on the canvas enables pinch zoom. Lifting one finger returns to rotation; lifting all fingers ends the gesture. A new touch outside the geometry scrolls the page immediately. In the 3XL split layout, the free left area controls the selected 3D model; hiding the pane for zoom extends that free area across the viewport. A gesture keeps its initial owner until release. Ordinary HTML controls retain their own touch behavior.
+
+Detail `media` supports images, native video and explicit YouTube selections alongside the initial 3D view. Images and video use `object-fit: contain`; selecting either pauses the hidden main 3D scene and its sensor motion. Native video starts only through its controls and stops when removed. Provide caption tracks for spoken or otherwise meaningful audio. With image/video selected, the free left area in 3XL scrolls the document. A foreign player iframe owns events inside its own document. Returning from the collection starts with the 3D view again. See [media fields, examples and input boundaries](design/layout/media-and-input.md).
 
 Panel, minimap and model hover effects require a mouse pointer. Touch and stylus contact clear those effects, including on devices that also have a mouse. Keyboard focus indicators remain available.
 

@@ -529,11 +529,15 @@ export class CatalogSpatialElementLayer {
 				actor.band = pose.front ? 'front' : 'rear';
 				actor.root.visible &&= pose.visible;
 				applyCatalogMaterialOpacity(actor.materials, pose.opacity);
-				const compact = slot.width < 700;
+				const framing = pose.framing;
+				const compact = framing?.compact ?? width < 840;
+				const frame = framing ? Math.min(framing.fit.width, framing.fit.height) : Math.min(slot.width, compact ? 360 : slot.height);
 				// Every seat shares one scene origin. Depth now determines projected size
 				// and spacing naturally, including scroll parallax and the foreground advance.
-				const x = slot.left + dx + slot.width * (pose.orbit ? (compact ? 0.5 : 0.31) : pose.x - (compact ? 0 : 0.19));
-				const y = slot.top + dy + (pose.orbit ? (compact ? 180 : slot.height * 0.54) : slot.height * pose.y);
+				const anchorX = framing ? framing.fit.x + framing.fit.width / 2 : slot.width * (compact ? 0.5 : 0.31);
+				const anchorY = framing ? framing.fit.y + framing.fit.height / 2 : compact ? 180 : slot.height * 0.54;
+				const x = slot.left + dx + (pose.orbit ? anchorX : slot.width * (pose.x - (framing || compact ? 0 : 0.19)));
+				const y = slot.top + dy + (pose.orbit ? anchorY : slot.height * pose.y);
 				const perspective = pose.orbit ? 1 : 1 - pose.depth / 2500;
 				actor.root.matrix.makeTranslation(
 					(x - width / 2) * perspective + (pose.orbit?.x ?? 0),
@@ -551,11 +555,10 @@ export class CatalogSpatialElementLayer {
 					? (slot.height - 360) * pose.y / (pose.size / 0.82)
 					: 0, 0);
 				actor.view.scale.setScalar(
-					(Math.min(slot.width, compact ? 360 : slot.height) * 0.82) / (actor.radius * 2)
+					(frame * 0.82) / (actor.radius * 2)
 				);
 				let groundMatrix: THREE.Matrix4 | undefined;
 				if (pose.orbit && actor.root.visible) {
-					const frame = Math.min(slot.width, compact ? 360 : slot.height);
 					const floor = frame * 0.32;
 					const pitch = pose.orbit.pitch;
 					// Stand every model on the same plane, including wide or short assets.
@@ -614,8 +617,8 @@ export class CatalogSpatialElementLayer {
 						const matrix = panelFrame
 							.multiply(
 								new THREE.Matrix4().makeTranslation(
-									compact ? 0 : slot.width * 0.39,
-									compact ? (pose.orbit ? 180 : slot.height / 2) - 360 - ph / 2 : 0,
+									framing ? framing.summary.x + pw / 2 - anchorX : compact ? 0 : slot.width * 0.39,
+									framing ? anchorY - (framing.summary.anchorY - (framing.summary.alignment === 'end' ? ph / 2 : 0)) : compact ? (pose.orbit ? 180 : slot.height / 2) - 360 - ph / 2 : 0,
 									0
 								)
 							);

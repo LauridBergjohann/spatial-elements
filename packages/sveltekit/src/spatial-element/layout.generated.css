@@ -134,6 +134,94 @@
 }
 }
 
+.carousel-drag-section {
+	--spatial-carousel-fit-height: clamp(150px, calc(100svh - 240px - var(--spatial-carousel-headline-budget, 0px)), 300px);
+	--spatial-carousel-fit-left: 36px;
+	--spatial-carousel-fit-width: calc(100% - 72px);
+	--spatial-carousel-summary-left: 36px;
+	--spatial-carousel-summary-width: calc(100% - 72px);
+	--spatial-carousel-title-reserve: 66px;
+	--spatial-carousel-dots-gap: 0px;
+	--spatial-carousel-dots-height: 32px;
+	--spatial-detail-summary-max-height: var(--spatial-carousel-fit-height);
+}
+.carousel-drag-section:has(> .section-kicker) { --spatial-carousel-headline-budget: 36px; }
+
+@media (min-width: 600px) {
+.carousel-drag-section {
+	--spatial-carousel-fit-height: clamp(150px, calc(100svh - 248px - var(--spatial-carousel-headline-budget, 0px)), 400px);
+	--spatial-carousel-fit-left: 72px;
+	--spatial-carousel-fit-width: calc(100% - 144px);
+	--spatial-carousel-summary-left: 72px;
+	--spatial-carousel-summary-width: calc(100% - 144px);
+	--spatial-carousel-title-reserve: 66px;
+	--spatial-carousel-dots-gap: 0px;
+	--spatial-carousel-dots-height: 32px;
+	--spatial-detail-summary-max-height: var(--spatial-carousel-fit-height);
+}
+.carousel-drag-section:has(> .section-kicker) { --spatial-carousel-headline-budget: 36px; }
+}
+
+@media (min-width: 840px) {
+.carousel-drag-section {
+	--spatial-carousel-fit-height: clamp(300px, calc(100svh - 200px - var(--spatial-carousel-headline-budget, 0px)), 500px);
+	--spatial-carousel-fit-left: calc((((100% - 112px) / 8) + 16px) * 1);
+	--spatial-carousel-fit-width: calc(((100% - 112px) / 8) * 3 + 32px);
+	--spatial-carousel-summary-left: calc((((100% - 112px) / 8) + 16px) * 4);
+	--spatial-carousel-summary-width: calc(((100% - 112px) / 8) * 3 + 32px);
+	--spatial-carousel-title-reserve: 0px;
+	--spatial-carousel-dots-gap: 12px;
+	--spatial-carousel-dots-height: 32px;
+	--spatial-detail-summary-max-height: var(--spatial-carousel-fit-height);
+}
+.carousel-drag-section:has(> .section-kicker) { --spatial-carousel-headline-budget: 44px; }
+}
+
+@media (min-width: 1200px) {
+.carousel-drag-section {
+	--spatial-carousel-fit-height: clamp(340px, calc(100svh - 230px - var(--spatial-carousel-headline-budget, 0px)), 600px);
+	--spatial-carousel-fit-left: calc((((100% - 264px) / 12) + 24px) * 2);
+	--spatial-carousel-fit-width: calc(((100% - 264px) / 12) * 5 + 96px);
+	--spatial-carousel-summary-left: calc((((100% - 264px) / 12) + 24px) * 7);
+	--spatial-carousel-summary-width: calc(((100% - 264px) / 12) * 4 + 72px);
+	--spatial-carousel-title-reserve: 0px;
+	--spatial-carousel-dots-gap: 16px;
+	--spatial-carousel-dots-height: 32px;
+	--spatial-detail-summary-max-height: var(--spatial-carousel-fit-height);
+}
+.carousel-drag-section:has(> .section-kicker) { --spatial-carousel-headline-budget: 56px; }
+}
+
+@media (min-width: 1600px) {
+.carousel-drag-section {
+	--spatial-carousel-fit-height: clamp(400px, calc(100svh - 244px - var(--spatial-carousel-headline-budget, 0px)), 700px);
+	--spatial-carousel-fit-left: calc((((100% - 264px) / 12) + 24px) * 1);
+	--spatial-carousel-fit-width: calc(((100% - 264px) / 12) * 5 + 96px);
+	--spatial-carousel-summary-left: calc((((100% - 264px) / 12) + 24px) * 6);
+	--spatial-carousel-summary-width: calc(((100% - 264px) / 12) * 4 + 72px);
+	--spatial-carousel-title-reserve: 0px;
+	--spatial-carousel-dots-gap: 16px;
+	--spatial-carousel-dots-height: 32px;
+	--spatial-detail-summary-max-height: var(--spatial-carousel-fit-height);
+}
+.carousel-drag-section:has(> .section-kicker) { --spatial-carousel-headline-budget: 56px; }
+}
+
+@media (min-width: 1809px) {
+.carousel-drag-section {
+	--spatial-carousel-fit-height: clamp(400px, calc(100svh - 244px - var(--spatial-carousel-headline-budget, 0px)), 800px);
+	--spatial-carousel-fit-left: calc((((100% - 264px) / 12) + 24px) * 1);
+	--spatial-carousel-fit-width: calc(((100% - 264px) / 12) * 6 + 120px);
+	--spatial-carousel-summary-left: calc((((100% - 264px) / 12) + 24px) * 7);
+	--spatial-carousel-summary-width: calc(((100% - 264px) / 12) * 4 + 72px);
+	--spatial-carousel-title-reserve: 0px;
+	--spatial-carousel-dots-gap: 16px;
+	--spatial-carousel-dots-height: 32px;
+	--spatial-detail-summary-max-height: var(--spatial-carousel-fit-height);
+}
+.carousel-drag-section:has(> .section-kicker) { --spatial-carousel-headline-budget: 56px; }
+}
+
 @media (min-width: 2300px) and (min-height: 512px) {
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) {
 		--spatial-pane-left: calc(50% + 8px);

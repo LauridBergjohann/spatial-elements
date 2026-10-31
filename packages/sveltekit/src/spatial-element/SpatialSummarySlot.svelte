@@ -41,7 +41,7 @@
 		width: 100%;
 		min-width: 0;
 		pointer-events: auto;
-		max-height: max(0px, calc(var(--spatial-detail-summary-max-height, 100000px) - var(--spatial-summary-content-inset, 0px) * 2));
+		max-height: max(0px, calc(var(--spatial-detail-summary-max-height, 100000px) - var(--spatial-summary-content-inset, 0px) * 2 - var(--spatial-summary-height-reserve, 0px)));
 		overflow: auto;
 		overscroll-behavior: contain;
 	}

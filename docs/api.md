@@ -36,7 +36,7 @@ All fields are flat. See [SpatialElementData TSDoc](../packages/core/src/spatial
 | fallbackImage | Absent | Poster URL for loading, SSR and unavailable WebGPU. Recommended. |
 | fallbackImageSize | Absent | Actual poster pixel dimensions [width,height], not physical model dimensions. |
 | breadcrumbs | [] | { label, href? }; entries without href are plain text. |
-| media | One minimap | Entries with id, kind and label; kinds minimap, drawing, image. Images also require src and alt. [] removes entries. |
+| media | One minimap | Entries with `id`, `kind` and `label`; kinds `minimap`, `image`, `video`, `youtube`. Detail pages always place one 3D/minimap entry first, including when `media: []` is supplied. See [media and input](design/layout/media-and-input.md) for fields and lifecycle. The old source-less `drawing` entry is deprecated; replace it with an image. |
 | minimap | Runtime fit defaults | Per-element inset, modelScale, hoverModelScale, expandedHoverModelScale and dockedView. Shared colors belong in the theme. |
 | assetManifest | Absent | Advanced verified resource manifest. Not needed for a simple GLB. |
 
@@ -93,11 +93,11 @@ Interface language is independent of the theme. Pass `messages: SpatialMessagesI
 
 | Component | Props and responsibility |
 | --- | --- |
-| BrandStageShell | Required reactive theme; optional colorScheme (light/dark), messages, renderSettings, dracoDecoderPath and children. Persistent layout and renderer owner. No stage/catalog props. |
+| BrandStageShell | Required reactive theme; optional colorScheme (light/dark), messages, renderSettings, dracoDecoderPath, menu, left/right satellite snippets, summary: SpatialSummarySnippet, and children. Persistent layout and renderer owner. No stage/catalog props. |
 | ButtonGroup | Required items, label and shape; controlled value/onchange, optional theme, iconOnly and content snippet. Generic panel-backed choices owned by the host. |
 | ContentPage | Required hdr: environment URL and page: ContentPageData; optional background: CSS color and children. background overrides the flat page color for this page in DOM and enhanced rendering, without changing HDR lighting or the shared theme. page.title is required; pageTitle defaults to title, eyebrow/intro/breadcrumbs are optional. |
 | ListSection | Required section: {id,title,headline?,background?,style?}, list: SpatialListItem[]. Optional cardSize: s/m/l (default m), textAlign: start/center (default start). Registers its own element occurrences. |
-| CarouselSection | Same section/list; optional presentation: {radius?,depth?}, initialItemKey, onselectionchange({itemKey,spatialElementId}). Radius controls model spacing, normalized around 0.48 (clamped 0.2..0.7); depth defaults to 700 CSS-world pixels (clamped 0..1200). Visibility follows the viewport, including space outside a centered section. |
+| CarouselSection | Same section/list; optional presentation: {radius?,depth?}, initialItemKey, onselectionchange({itemKey,spatialElementId}). Radius controls model spacing, normalized around 0.48 (clamped 0.2..0.7); depth defaults to 700 CSS-world pixels (clamped 0..1200). The selected media fit and summary placement follow the shared responsive layout. Visibility follows the viewport, including space outside a centered section. |
 | SpatialListPage | Convenience wrapper: ContentPageData fields directly as props, required hdr and spatialElements, optional sectionLink: {href,label}. For new composable pages prefer ContentPage with sections. |
 | SpatialElementPage | Required spatialElement: SpatialElementData; optional children. Owns detail content, model selection and generated section navigation. |
 | Section | Required section: {id,title,headline?,background?,style?}; optional children and HTML attributes/class. The presentation prop is used by spatial list/carousel wrappers. Detail sections automatically populate tabs. |
@@ -105,6 +105,31 @@ Interface language is independent of the theme. Pass `messages: SpatialMessagesI
 | ContentBlock | Optional span: number or {xs?,s?,m?,l?}, children and HTML attributes/class. Fills the row by default; responsive spans inherit mobile-first. |
 
 Mount one active ContentPage or SpatialElementPage under each shell. Sections are children of that page; they are not independent pages. Section IDs must be stable, unique and start with a lowercase letter, followed by lowercase letters, digits or hyphens.
+
+### Carousel layout and summary content
+
+Carousel sections use the ordinary content grid, heading gap and background rules. The selected
+media fit is a framing target, not a clipping boundary for neighbouring geometry. XS/S reserve
+a 66px title strip and show only the framework's title, optional eyebrow and detail arrow;
+without an eyebrow the 40px title block aligns to the bottom of that same strip. From M, the
+full summary has the matching detail-panel width and centers vertically in the fit area. Its
+height is intrinsic, capped at the fit height with local scrolling. The 3XL carousel keeps the
+2XL composition and 480px panel width.
+
+Define optional `BrandStageShell.summary` in the persistent brand layout. The exported
+`SpatialSummarySnippet` receives a `SpatialSummaryContext` containing common resolved
+`spatialElement` fields, `mode: 'detail' | 'carousel'`, `heading`, `contentInset` and catalog
+endpoint addresses. The default summary remains available when the snippet is omitted. Each
+summary has an inline-size query container named `spatial-summary`; use container queries for
+host-defined one-, two- or three-column content. Initial output must be synchronous and
+content-only; await required data in route load, and keep `svelte:head` outside the summary.
+
+The adapter distinguishes occurrences by section and `itemKey`. A product shown in two sections
+has two independent live summary instances. Carousel selection and responsive changes retain
+each occurrence's interactive state. Route-transfer activation belongs to the transition
+coordinator; matching a product ID alone is not sufficient to adopt another occurrence.
+See [summary rendering and ownership](design/layout/summary-snippets.md) for the precise lifecycle
+and SSR boundaries.
 
 ### Section headings and surfaces
 

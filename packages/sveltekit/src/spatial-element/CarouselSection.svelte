@@ -4,12 +4,12 @@
 	import { retainListDeviceOrientation } from '@spatial-elements/core/catalog/listDeviceOrientation';
 	import { carouselTextHit } from './carouselTextHit.js';
 	import CarouselSpatialElement from './CarouselSpatialElement.svelte';
-	import { CATALOG_POSE_CHANGED, carouselEmphasis, CarouselDragEmphasis, type CarouselEmphasis, type CarouselLayout, type CarouselPresentation } from '@spatial-elements/core/catalog/catalogPose';
+	import { CATALOG_POSE_CHANGED, carouselEmphasis, CarouselDragEmphasis, resolveCarouselPoseLayout, type CarouselEmphasis, type CarouselLayout, type CarouselPresentation } from '@spatial-elements/core/catalog/catalogPose';
 	import type { SpatialListItem, SpatialElementSectionDefinition } from '@spatial-elements/core/spatial-element/types';
 	import { CATALOG_SECTIONS, type CatalogSections } from '@spatial-elements/core/catalog/CatalogSections';
 	import { carouselKey, resolveCarouselSelection, stepCarouselSelection } from '@spatial-elements/core/catalog/carouselSelection';
 	import { CarouselDrag, CarouselWheelInput, clampCarouselPhase, sampleCarouselInertia } from '@spatial-elements/core/catalog/carouselMotion';
-	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
+	import { STAGE_CONTEXT_KEY, STAGE_PANEL_LAYOUT_EVENT, type StageContext } from '@spatial-elements/core/stage/panelContext';
 
 	let { section, presentation, list, initialItemKey, onselectionchange }: {
 		section: SpatialElementSectionDefinition;
@@ -55,8 +55,9 @@
 	}
 	function measureLayout() {
 		if (!ring) return;
-		const { width, height, left } = ring.getBoundingClientRect();
-		layout = { width, height, left, viewportWidth: document.documentElement.clientWidth };
+		const { width, left } = ring.getBoundingClientRect();
+		const metrics = stage?.getLayoutMetrics?.('stable') ?? { width: innerWidth, height: innerHeight, scrollbarWidth: innerWidth - document.documentElement.clientWidth };
+		layout = resolveCarouselPoseLayout({ ...metrics, hasHeadline: Boolean(section.headline), hasEyebrow: true }, { width, left });
 		invalidate();
 	}
 	function commit(key: string | undefined) {
@@ -295,6 +296,7 @@
 		window.addEventListener('blur', stop);
 		window.addEventListener('keydown', escape);
 		window.addEventListener('resize', measureLayout);
+		window.addEventListener(STAGE_PANEL_LAYOUT_EVENT, measureLayout);
 		document.addEventListener('visibilitychange', hidden);
 		return () => {
 			mounted = false;
@@ -309,6 +311,7 @@
 			window.removeEventListener('blur', stop);
 			window.removeEventListener('keydown', escape);
 			window.removeEventListener('resize', measureLayout);
+			window.removeEventListener(STAGE_PANEL_LAYOUT_EVENT, measureLayout);
 			document.removeEventListener('visibilitychange', hidden);
 		};
 	});
@@ -379,16 +382,24 @@
 				</div>
 			{/if}
 		</div>
-		{#if interactive && list.length > 1}
+		{#if list.length > 0}
 			<div class="controls" role="group" aria-label={`${section.title}: element selection`}>
+			{#if list.length > 1}
 				{#each list as spatialElement (carouselKey(spatialElement))}
+					{#if interactive}
 					<button
 						onkeydown={keydown}
-						aria-label={spatialElement.eyebrow}
+						aria-label={spatialElement.eyebrow || spatialElement.title}
 						aria-pressed={indicated === carouselKey(spatialElement)}
 						onclick={() => select(carouselKey(spatialElement))}><span aria-hidden="true"></span></button
 					>
+					{:else}
+					<a href={`#carousel-${section.id}-${list.indexOf(spatialElement)}`} aria-label={spatialElement.eyebrow || spatialElement.title}
+						aria-current={selected === carouselKey(spatialElement) ? 'true' : undefined}
+						onclick={(event) => { event.preventDefault(); select(carouselKey(spatialElement)); }}><span aria-hidden="true"></span></a>
+					{/if}
 				{/each}
+			{/if}
 			</div>
 		{/if}
 		{#if interactive}<p class="sr-only" role="status">
@@ -418,7 +429,7 @@
 	.carousel.interactive { pointer-events: none; }
 	.carousel {
 		pointer-events: auto;
-		margin-top: 24px;
+		margin-top: 0;
 	}
 	.ring {
 		container-type: inline-size;
@@ -426,10 +437,12 @@
 		grid-auto-flow: column;
 		grid-auto-columns: 100%;
 		position: relative;
+		height: calc(var(--spatial-carousel-title-reserve) + var(--spatial-carousel-fit-height));
 		overflow-x: auto;
+		overflow-y: hidden;
 		scroll-snap-type: x mandatory;
 		overscroll-behavior-x: contain;
-		scrollbar-width: auto;
+		scrollbar-width: none;
 		scrollbar-color: var(--spatial-element-accent) transparent;
 		touch-action: manipulation;
 	}
@@ -443,9 +456,9 @@
 	}
 	.carousel-arrows {
 		position: absolute;
-		left: 12%;
-		right: 50%;
-		top: 50%;
+		left: var(--spatial-carousel-fit-left);
+		width: var(--spatial-carousel-fit-width);
+		top: calc(var(--spatial-carousel-title-reserve) + var(--spatial-carousel-fit-height) / 2);
 		transform: translateY(-50%);
 		z-index: 1500;
 		display: flex;
@@ -469,22 +482,23 @@
 	.carousel-arrows button:hover { background: color-mix(in srgb, var(--spatial-element-accent) 12%, transparent); }
 	.carousel-arrows button:focus-visible { outline: 2px solid var(--spatial-element-accent); }
 	.carousel-arrows svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-	@container (max-width: 700px) {
-		.carousel-arrows { left: 0; right: 0; top: 180px; }
-	}
 	.controls {
 		position: relative;
 		display: flex;
 		justify-content: center;
-		flex-wrap: wrap;
-		margin-top: 16px;
+		flex-wrap: nowrap;
+		height: var(--spatial-carousel-dots-height);
+		margin-top: var(--spatial-carousel-dots-gap);
+		overflow-x: auto;
+		scrollbar-width: none;
 	}
-	.controls button {
+	.controls button, .controls a {
 		pointer-events: auto;
 		display: grid;
 		place-items: center;
-		width: 44px;
-		height: 44px;
+		flex: 0 0 var(--spatial-carousel-dots-height);
+		width: var(--spatial-carousel-dots-height);
+		height: var(--spatial-carousel-dots-height);
 		padding: 0;
 		border: 0;
 		background: transparent;
@@ -497,10 +511,10 @@
 		border: 1px solid var(--spatial-element-accent);
 		border-radius: 50%;
 	}
-	.controls button[aria-pressed='true'] span {
+	.controls button[aria-pressed='true'] span, .controls a[aria-current='true'] span {
 		background: var(--spatial-element-accent);
 	}
-	.controls button:focus-visible {
+	.controls button:focus-visible, .controls a:focus-visible {
 		outline: 2px solid var(--spatial-element-accent);
 		outline-offset: -4px;
 	}

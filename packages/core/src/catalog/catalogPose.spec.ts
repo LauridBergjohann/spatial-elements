@@ -1,5 +1,42 @@
 import { describe, expect, it } from 'vitest';
-import { carouselDistance, carouselPose, carouselResident, carouselEmphasis, CarouselDragEmphasis } from './catalogPose.js';
+import { carouselDistance, carouselPose, carouselResident, carouselEmphasis, CarouselDragEmphasis, resolveCarouselPoseLayout } from './catalogPose.js';
+import { resolveCarouselLayout } from '../spatial-element/responsiveLayout.js';
+
+describe('shared carousel framing', () => {
+	for (const [width, ringLeft, ringWidth] of [[390, 12, 366], [600, 16, 568], [840, 16, 808], [1440, 24, 1392], [1600, 160, 1280], [1940, 226, 1488], [2300, 406, 1488]]) {
+		it(`anchors the selected seat and panel to the resolver at ${width}px`, () => {
+			const input = { width, height: 900, hasHeadline: true, hasEyebrow: true };
+			const resolved = resolveCarouselLayout(input);
+			const layout = resolveCarouselPoseLayout(input, { left: ringLeft, width: ringWidth });
+			const frame = layout.framing!;
+			expect(frame.fit.x + ringLeft).toBeCloseTo(resolved.mediaFit.x);
+			expect(frame.fit.width).toBeCloseTo(resolved.mediaFit.width);
+			expect(frame.fit.height).toBeCloseTo(resolved.mediaFit.height);
+			expect(frame.summary.x + ringLeft).toBeCloseTo(resolved.summary.x);
+			expect(frame.summary.width).toBeCloseTo(resolved.summary.width);
+			const pose = carouselPose(2, 2, 5, {}, layout);
+			expect(pose.x * ringWidth).toBeCloseTo(frame.fit.x + frame.fit.width / 2);
+			expect(pose.y * layout.height).toBeCloseTo(frame.fit.y + frame.fit.height / 2);
+			expect(pose.depth).toBeCloseTo(0);
+			expect(pose.framing).toBe(frame);
+		});
+	}
+	it('reserves the same compact frame with and without an eyebrow', () => {
+		for (const hasEyebrow of [false, true]) {
+			const layout = resolveCarouselPoseLayout({ width: 390, height: 900, hasHeadline: true, hasEyebrow }, { left: 12, width: 366 });
+			expect(layout.framing).toEqual({ compact: true, fit: { x: 36, y: 66, width: 294, height: 300 }, summary: { x: 36, width: 294, anchorY: 66, alignment: 'end' } });
+			expect(layout.height).toBe(366);
+		}
+	});
+	it('preserves the depth-only foreground advance with the new fit target', () => {
+		const layout = resolveCarouselPoseLayout({ width: 1940, height: 900 }, { left: 226, width: 1488 });
+		for (const amount of [0, 0.25, 0.5, 1]) {
+			const pose = carouselPose(1, 1, 3, {}, layout, { advance: amount, panel: amount });
+			expect(pose.orbit!.x).toBe(0);
+			expect(pose.framing).toBe(layout.framing);
+		}
+	});
+});
 
 describe('drag presentation', () => {
 	it('advances only in depth and restores defocus with the foreground selection', () => {
