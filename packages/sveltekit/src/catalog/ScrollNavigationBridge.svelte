@@ -1,16 +1,23 @@
 <script lang="ts">
 	import { readCatalogViewContext } from '@spatial-elements/core/catalog/catalogViewLink';
 	import {
+		EarlyNavigationCoordinator,
+		type EarlyNavigationCancelReason,
+		type EarlyNavigationHandle
+	} from '@spatial-elements/core/catalog/EarlyNavigationCoordinator';
+	import {
 		afterNavigate,
 		beforeNavigate,
 		disableScrollHandling,
+		goto,
 		onNavigate,
+		preloadData,
 		pushState,
 		replaceState
 	} from '$app/navigation';
 	import { navigating, page } from '$app/state';
-	import type { OnNavigate } from '@sveltejs/kit';
-	import { getContext, onDestroy, tick } from 'svelte';
+	import type { BeforeNavigate, OnNavigate } from '@sveltejs/kit';
+	import { getContext, onDestroy, onMount, tick } from 'svelte';
 	import { CATALOG_ENDPOINTS, type CatalogEndpointRegistry } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
 	import {
 		CATALOG_SECTIONS,
@@ -32,6 +39,8 @@
 	interface Props {
 		controller?: VirtualScrollController;
 		onStart?: () => void;
+		/** Starts only a source-only transition whose destination is already known. */
+		onEarlyStart?: (navigation: BeforeNavigate) => EarlyNavigationHandle | undefined;
 		onCapture?: (navigation: OnNavigate) => void | Promise<void>;
 		onInterrupt?: () => void;
 		onSupersede?: (destination: URL) => void;
@@ -39,7 +48,7 @@
 		handlesNavigation?: (navigation: OnNavigate) => boolean;
 	}
 
-	let { controller, onStart, onCapture, onInterrupt, onSupersede, onRestored, handlesNavigation }: Props =
+	let { controller, onStart, onEarlyStart, onCapture, onInterrupt, onSupersede, onRestored, handlesNavigation }: Props =
 		$props();
 	const endpoints = getContext<CatalogEndpointRegistry | undefined>(CATALOG_ENDPOINTS);
 	const sections = getContext<CatalogSections | undefined>(CATALOG_SECTIONS);
@@ -56,6 +65,38 @@
 	let generation = 0;
 	let pendingNavigation = false;
 	let focusRevision = 0;
+	let earlyReplayComplete: Promise<void> | undefined;
+	const earlyNavigation = new EarlyNavigationCoordinator({
+		preload: async (destination, signal) => {
+			let timer: ReturnType<typeof setTimeout> | undefined;
+			let abort: (() => void) | undefined;
+			try {
+				return await Promise.race([
+					preloadData(destination),
+					new Promise<never>((_resolve, reject) => {
+						abort = () => reject(new Error('Early navigation interrupted'));
+						if (signal.aborted) abort();
+						else signal.addEventListener('abort', abort, { once: true });
+						timer = setTimeout(() => reject(new Error('Early navigation preload deadline')), 15_000);
+					})
+				]);
+			} finally {
+				if (timer !== undefined) clearTimeout(timer);
+				if (abort) signal.removeEventListener('abort', abort);
+			}
+		},
+		// The absolute destination already includes Kit's configured base path.
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		navigate: async (destination) => {
+			const url = new URL(destination);
+			if (url.origin !== location.origin && (url.protocol === 'https:' || url.protocol === 'http:')) {
+				location.assign(url.href);
+				return;
+			}
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			await goto(destination);
+		}
+	});
 	// This imperative history cache must not subscribe effects to per-frame position writes.
 	// eslint-disable-next-line svelte/prefer-svelte-reactivity
 	const entryPositions = new Map<string, { x: number; y: number }>();
@@ -93,8 +134,10 @@
 		if (entryPositions.size > 100) entryPositions.delete(entryPositions.keys().next().value!);
 	}
 
-	function stopActive(destination?: URL) {
+	function stopActive(destination?: URL, reason: EarlyNavigationCancelReason = 'superseded') {
 		generation += 1;
+		earlyNavigation.cancel(reason);
+		earlyReplayComplete = undefined;
 		if (active) {
 			active.controller.endNavigation(active.token);
 			active.releasePreparation?.();
@@ -108,6 +151,22 @@
 				interruptVisuals();
 			}
 		} else interruptVisuals();
+	}
+
+	function supportsEarlyStart(navigation: BeforeNavigate): boolean {
+		if (!onEarlyStart || navigation.type !== 'link' || navigation.willUnload ||
+			!navigation.from || !navigation.to?.route.id ||
+			navigation.to.url.origin !== navigation.from.url.origin ||
+			navigation.to.url.pathname === navigation.from.url.pathname) return false;
+		// Unknown fragments require destination DOM. Only the canonical detail
+		// overview has a layout-defined endpoint that the visual owner can predict.
+		if (navigation.to.url.hash && navigation.to.url.hash !== '#overview') return false;
+		// Kit's BeforeNavigate does not expose the resolved link options. Keep
+		// explicitly authored focus/scroll/history policies on the ordinary path.
+		const anchor = navigation.event.composedPath().find((node) => node instanceof HTMLAnchorElement);
+		return anchor instanceof HTMLAnchorElement && !anchor.closest(
+			'[data-sveltekit-keepfocus], [data-sveltekit-noscroll], [data-sveltekit-replacestate], [data-sveltekit-reload]'
+		);
 	}
 
 	function interruptVisuals() {
@@ -189,9 +248,31 @@
 	}
 
 	beforeNavigate((navigation) => {
+		// The single permitted replay continues the existing visual ownership.
+		// It must not run stopActive, onSupersede, or the generic feedback again.
+		if (navigation.to && earlyNavigation.acceptReplay(navigation.to.url.href)) {
+			earlyReplayComplete = navigation.complete;
+			return;
+		}
 		if (!pendingNavigation) rememberPosition();
-		stopActive(navigation.to?.url);
+		stopActive(navigation.to?.url, navigation.type === 'popstate' ? 'history' : navigation.willUnload ? 'leave' : 'superseded');
 		pendingNavigation = true;
+		if (supportsEarlyStart(navigation)) {
+			let handle: EarlyNavigationHandle | undefined;
+			try { handle = onEarlyStart?.(navigation); }
+			catch { interruptVisuals(); }
+			if (handle) {
+				navigation.cancel();
+				// Rejecting the original navigation is intentional. Its completion
+				// must never cancel the independently owned source movement.
+				void navigation.complete.catch(() => {});
+				const epoch = generation;
+				void earlyNavigation.start(navigation.to!.url.href, handle).finally(() => {
+					if (epoch === generation && !active) pendingNavigation = false;
+				});
+				return;
+			}
+		}
 		if (controller?.active && !navigation.willUnload && navigation.to && navigation.from &&
 			navigation.from.url.pathname !== navigation.to.url.pathname &&
 			navigation.from.url.pathname.split('/')[1] === navigation.to.url.pathname.split('/')[1]) onStart?.();
@@ -205,10 +286,29 @@
 				}
 			});
 	});
-	onDestroy(() => stopActive());
+	onDestroy(() => stopActive(undefined, 'destroyed'));
+	onMount(() => {
+		const interrupt = () => { if (earlyNavigation.pending) stopActive(undefined, 'interaction'); };
+		const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') interrupt(); };
+		const resize = () => { if (earlyNavigation.pending) stopActive(undefined, 'resize'); };
+		window.addEventListener('keydown', keydown);
+		window.addEventListener('wheel', interrupt, { passive: true });
+		window.addEventListener('touchmove', interrupt, { passive: true });
+		window.addEventListener('resize', resize);
+		return () => {
+			window.removeEventListener('keydown', keydown);
+			window.removeEventListener('wheel', interrupt);
+			window.removeEventListener('touchmove', interrupt);
+			window.removeEventListener('resize', resize);
+		};
+	});
 
 	$effect(() => {
 		const complete = navigating.complete;
+		if (complete && earlyReplayComplete && complete !== earlyReplayComplete && earlyNavigation.pending) {
+			stopActive(navigating.to?.url);
+			pendingNavigation = true;
+		}
 		// Kit skips beforeNavigate while another navigation is already in progress.
 		// The public completion identity still changes when that operation is superseded.
 		if (!complete || !active?.complete || complete === active.complete) return;
