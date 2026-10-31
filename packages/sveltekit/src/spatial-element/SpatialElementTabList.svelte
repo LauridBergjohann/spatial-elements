@@ -260,6 +260,11 @@
 		outline-offset: -2px;
 	}
 
+	/* This node keeps its own visibility contract after leaving the source panel. */
+	@media (width < 840px) {
+		.spatial-element-tab-list { display: none; }
+	}
+
 	@media (max-width: 620px) {
 		.spatial-element-tab-list {
 			--spatial-element-tab-font-size: 15px;

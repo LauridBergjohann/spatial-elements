@@ -34,8 +34,35 @@
 			tabList ??= anchorElement.querySelector<HTMLElement>('[data-spatial-element-tab-list]');
 			const links = tabList?.querySelector<HTMLElement>('[data-spatial-element-tab-links]');
 			if (!frame || !tabList || !links) return;
+			if (getComputedStyle(anchorElement).display === 'none') return;
 
-			const linksWidth = links.scrollWidth;
+			let linksWidth = links.scrollWidth;
+			if (linksWidth < 1) {
+				// A submenu first opened at XS/S has no intrinsic width yet. Once
+				// it enters M, its portaled runtime is still culled by that zero-width
+				// source frame. Measure the same nodes without painting them, then
+				// restore the exact renderer-owned styles in this synchronous turn.
+				const hidden: { node: HTMLElement; display: string; displayPriority: string;
+					visibility: string; visibilityPriority: string }[] = [];
+				for (let node: HTMLElement | null = tabList; node && !node.classList.contains('stage'); node = node.parentElement) {
+					if (getComputedStyle(node).display !== 'none') continue;
+					hidden.push({ node, display: node.style.getPropertyValue('display'),
+						displayPriority: node.style.getPropertyPriority('display'),
+						visibility: node.style.getPropertyValue('visibility'),
+						visibilityPriority: node.style.getPropertyPriority('visibility') });
+					node.style.setProperty('visibility', 'hidden', 'important');
+					node.style.setProperty('display', 'block', 'important');
+				}
+				try { linksWidth = links.scrollWidth; }
+				finally {
+					for (const state of hidden) {
+						if (state.display) state.node.style.setProperty('display', state.display, state.displayPriority);
+						else state.node.style.removeProperty('display');
+						if (state.visibility) state.node.style.setProperty('visibility', state.visibility, state.visibilityPriority);
+						else state.node.style.removeProperty('visibility');
+					}
+				}
+			}
 			if (linksWidth < 1) return;
 			const naturalWidth = Math.ceil(linksWidth);
 			if (naturalWidth === measuredNaturalWidth) return;
@@ -127,7 +154,5 @@
 	}
 	@media (width < 840px) {
 		.spatial-element-tabs-anchor { display: none; }
-		/* The live list can leave this anchor for native/CSS3D presentation. */
-		:global([data-spatial-element-tab-list]) { display: none; }
 	}
 </style>

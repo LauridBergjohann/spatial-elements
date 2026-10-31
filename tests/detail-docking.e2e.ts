@@ -144,9 +144,8 @@ for (const gpu of [false, true]) {
 		if (!gpu) await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
 		for (const width of [1440, 2456]) {
 			await page.setViewportSize({ width, height: 1000 });
-			await page.goto('/demo/layout-docking?stage-test=1');
+			await page.goto('/demo/layout-docking?stage-test=1&short-sections');
 			await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', gpu ? 'enhanced' : 'fallback');
-			await page.addStyleTag({ content: '.docking-fixture-section { min-height: 0 !important; }' });
 			await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
 			const last = page.locator('[data-spatial-element-tab-id="docking-section-8"]');
 			await expect(last).toHaveAttribute('aria-current', 'location');
