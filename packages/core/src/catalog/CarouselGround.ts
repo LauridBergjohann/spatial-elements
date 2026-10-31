@@ -13,6 +13,8 @@ interface Shadow {
 	meshes: { source: THREE.Mesh; shadow: THREE.Mesh }[];
 	material: THREE.MeshBasicMaterial;
 	opacity: number;
+	/** Separate persistent render-object owners pin both numerically possible winding signs. */
+	warmGroup?: THREE.Group;
 }
 
 /** Actual mesh silhouettes on one floor; no tinted receiver or generic shadow decals. */
@@ -61,6 +63,37 @@ export class CarouselGround {
 			this.shadows.delete(key);
 		}
 	}
+	/** The projected shadow is singular, so floating-point recomputation can flip its
+	 * determinant sign. Pin both Three winding keys while idle. Mutating the live
+	 * mesh twice is insufficient: Three may release its previous pipeline owner.
+	 */
+	prepareWindingVariants(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera) {
+		if (!this.shadows.size) return;
+		for (const entry of this.shadows.values()) {
+			if (entry.warmGroup) continue;
+			const group = new THREE.Group();
+			group.visible = false;
+			for (const { shadow } of entry.meshes) for (const sign of [1, -1]) {
+				const owner = shadow.clone(false);
+				// Same geometry/material/attribute layout, but a robust determinant sign.
+				// These owners only draw in the existing offscreen DepthBlur capture.
+				owner.matrix.makeScale(sign, 1, 1);
+				owner.matrixWorldNeedsUpdate = true;
+				owner.visible = true;
+				group.add(owner);
+			}
+			entry.warmGroup = group;
+			this.scene.add(group);
+		}
+		const visibility = this.scene.children.map(child => child.visible);
+		try {
+			this.scene.children.forEach(child => { child.visible = false; });
+			for (const entry of this.shadows.values()) entry.warmGroup!.visible = true;
+			this.blur.prepareCapture(renderer, camera, projection => renderer.render(this.scene, projection));
+		} finally {
+			this.scene.children.forEach((child, index) => { child.visible = visibility[index]; });
+		}
+	}
 	draw(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera, opacity = 1) {
 		for (const entry of this.shadows.values()) {
 			entry.material.opacity = entry.opacity * opacity;
@@ -90,6 +123,8 @@ export class CarouselGround {
 	getStats() { return { silhouettes: this.shadows.size }; }
 	private release(entry: Shadow) {
 		entry.group.removeFromParent();
+		entry.warmGroup?.removeFromParent();
+		// Disposing this shared owned material also releases Three's warm render objects.
 		entry.material.dispose();
 		// Geometry belongs to the asset manager and is shared, never disposed here.
 	}

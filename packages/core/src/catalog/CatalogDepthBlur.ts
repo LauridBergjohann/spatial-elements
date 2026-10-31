@@ -16,6 +16,20 @@ export class CatalogDepthBlur {
 	private passes = 0;
 	getRenderTargets() { return this.capture ? [this.capture, ...gaussianTargets(this.effect!)] : []; }
 	getStats() { return { passes: this.passes, targets: this.getRenderTargets().length, size: this.capture?.width ?? 0 }; }
+	/** Idle preparation borrows the real capture context without resolving it onto any output. */
+	prepareCapture(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera,
+		draw: (camera: THREE.PerspectiveCamera) => void) {
+		this.ensureResources();
+		const destination = renderer.getRenderTarget(), previousCamera = this.camera.clone();
+		try {
+			this.camera.copy(camera);
+			renderer.setRenderTarget(this.capture!);
+			draw(this.camera);
+		} finally {
+			this.camera.copy(previousCamera);
+			renderer.setRenderTarget(destination);
+		}
+	}
 
 	render(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera,
 		bounds: BlurRect, radius: number, draw: (camera: THREE.PerspectiveCamera) => void,
@@ -28,6 +42,10 @@ export class CatalogDepthBlur {
 		const bottom = Math.min(innerHeight, clip.top + clip.height, Math.ceil(bounds.top + bounds.height + padding));
 		const width = right - left, height = bottom - top;
 		if (width <= 0 || height <= 0) return;
+		this.ensureResources();
+		this.renderCapture(renderer, camera, left, top, width, height, radius, draw);
+	}
+	private ensureResources() {
 		if (!this.capture) {
 			this.capture = new THREE.RenderTarget(512, 512, { type: THREE.HalfFloatType });
 			this.effect = gaussianBlur(texture(this.capture.texture), this.direction, 2,
@@ -46,6 +64,10 @@ export class CatalogDepthBlur {
 			this.material.toneMapped = false;
 			this.quad = new THREE.QuadMesh(this.material);
 		}
+	}
+	private renderCapture(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera,
+		left: number, top: number, width: number, height: number, radius: number,
+		draw: (camera: THREE.PerspectiveCamera) => void) {
 		const destination = renderer.getRenderTarget();
 		const viewport = destination ? destination.viewport.clone() : renderer.getViewport(new THREE.Vector4());
 		const clearColor = renderer.getClearColor(new THREE.Color());
@@ -56,7 +78,7 @@ export class CatalogDepthBlur {
 		// The half-resolution Gaussian uses a kernel standard deviation of 7/3 texels.
 		this.direction.value.set(radius * 256 / width / (7 / 3), radius * 256 / height / (7 / 3));
 		try {
-			renderer.setRenderTarget(this.capture);
+			renderer.setRenderTarget(this.capture!);
 			renderer.setScissorTest(false);
 			renderer.setClearColor(0x000000, 0);
 			renderer.clear();

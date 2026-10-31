@@ -320,3 +320,35 @@ size changes. These cached clears explicitly disable and restore scissor: the St
 failure, and its clear is scissor-dependent. CPU regression tests cover these invariants.
 **The performance effect of
 this cache is not measured in the 362b98a results above and is not yet an accepted gain.**
+
+## Trusted activation and ground readiness follow-up on 1b1aadd
+
+Two serial diagnostic traces on Demo build 57415 used a real pointer click and Enter
+activation of a previously focused link, with warm route data. Both retained the actual
+trusted event timestamp; profiling/fences make their absolute durations unsuitable for
+latency acceptance. The pointer trace recorded a Stage RAF requested by `pointerdown`
+before SvelteKit entered the navigation adapter. That RAF created two Ground
+`MeshBasicMaterial` pipelines in the HalfFloat DepthBlur capture, with opposite winding.
+The subsequent focus events requested no additional RAF. Enter requested no pre-adapter
+Stage render or GPU creation. Neither trace created GPU resources during moving/reveal.
+
+The empty-rear cache removed seven submissions from comparable reveal draws (initial
+32 to 25, Low/High refinement 48 to 41, retirement 54 to 47); the final draw remained 29.
+Different numbers of animation frames prevent comparing summed submission totals as a
+percentage gain. Repeated long reveal callbacks still occurred. These observations do
+not establish smoothness or p95 acceptance. The full traces and attribution are retained
+under `.artifacts/staged-gpu-trace-57415-1b1aadd-carousel-warm-pointer/` and the corresponding
+`-enter/` directory; the earlier four unprofiled samples are unchanged.
+
+Ground readiness now additionally pins both winding variants using separate persistent
+render-object owners that share the live shadow geometry and owned material. The shadow
+projection is mathematically singular, and floating-point recomputation can change the
+sign used by Three's pipeline cache. Preparation draws only into the same bounded 512²
+DepthBlur target, without a resolve onto any visible output; the existing GPU fence must
+complete before staged readiness is published. The owners leave with their shadow and
+material. Tests against the installed Three pipeline/cache implementation demonstrate
+why changing the same owner twice loses a previous variant, and why retaining separate
+owners prevents that eviction. The tests also cover shared-resource ownership, target
+and visibility restoration, and rejected readiness on failure. **The follow-up browser
+proof of this winding preparation is still pending; this section claims no measured
+latency or pacing improvement from that change.**

@@ -15,6 +15,7 @@ function fixture() {
 		scene, handoffScene, handoffCamera, camera, carouselCamera: camera, actors: new Map([['a', actor]]), desired: new Set(['a']),
 		stagedPrepared: new WeakMap(), stagedWarmFailed: new WeakMap(), stagedPreparing: false,
 		stagedSourceFrozen: false, stagedWarmRevision: 0, stagedWarmups: 0, stagedWarmFailures: 0,
+		ground: { prepareWindingVariants: vi.fn() },
 		geometryFade: { render: vi.fn((_renderer, _opacity, draw) => draw()) }
 	}) as CatalogSpatialElementLayer;
 	const state = layer as unknown as { exitOpacity: number };
@@ -64,10 +65,20 @@ test('carousel warming uses its real glass/backdrop rear pass as well as the fro
 	const work = f.layer.prepareStagedNavigation(f.renderer);
 	expect(f.rear).toHaveBeenCalledOnce(); expect(f.front).toHaveBeenCalledOnce();
 	expect(f.renderer.render).toHaveBeenCalledTimes(3);
+	const ground = (f.layer as unknown as { ground: { prepareWindingVariants: ReturnType<typeof vi.fn> } }).ground;
+	expect(ground.prepareWindingVariants).toHaveBeenCalledWith(f.renderer, expect.any(THREE.PerspectiveCamera));
 	expect(f.state.exitOpacity).toBe(1);
 	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer)).toBe(false);
 	f.finish(); await work;
 	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer)).toBe(true);
+});
+
+test('failed ground winding preparation cannot publish staged readiness', async () => {
+	const f = fixture(); Object.assign(f.actor, { pose: {} });
+	Object.assign(f.layer, { ground: { prepareWindingVariants: () => { throw Error('ground pipeline failed'); } } });
+	await expect(f.layer.prepareStagedNavigation(f.renderer)).rejects.toThrow('ground pipeline failed');
+	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer)).toBe(false);
+	expect(f.state.exitOpacity).toBe(1);
 });
 
 test('idle preparation warms both focused output variants and restores the real hover before yielding', async () => {

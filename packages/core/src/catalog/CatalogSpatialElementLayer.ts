@@ -1050,7 +1050,10 @@ export class CatalogSpatialElementLayer {
 				// Focus fires before Kit's beforeNavigate callback. Prepare its first
 				// outline while idle so that pre-navigation frame cannot compile it.
 				for (const actor of outlines) actor.hover = Math.max(actor.hover, 0.5);
-				if (actors.some(actor => Boolean(actor.pose))) this.renderRear(renderer);
+				if (actors.some(actor => Boolean(actor.pose))) {
+					this.renderRear(renderer);
+					this.ground.prepareWindingVariants(renderer, this.carouselCamera);
+				}
 				this.draw(renderer, 'front');
 				// The fade pass warms offscreen output. The ordinary focused source
 				// needs the Canvas variant too, without submitting visible pixels.

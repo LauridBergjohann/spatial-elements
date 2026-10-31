@@ -4,10 +4,53 @@ import { CarouselGround, carouselShadowProjection } from './CarouselGround.js';
 
 vi.mock('./CatalogDepthBlur.js', () => ({ CatalogDepthBlur: class {
 	getRenderTargets() { return []; }
+	prepareCapture(_renderer: unknown, camera: THREE.PerspectiveCamera,
+		draw: (camera: THREE.PerspectiveCamera) => void) { draw(camera); }
 	render(_renderer: unknown, camera: THREE.PerspectiveCamera, _bounds: unknown, _radius: number,
 		draw: (camera: THREE.PerspectiveCamera) => void) { draw(camera); }
 	dispose() {}
 } }));
+
+it('pins separate winding owners sharing live geometry/material, with stable identity and no visible warm owners', () => {
+	const ground = new CarouselGround(), model = new THREE.Group(), geometry = new THREE.BoxGeometry();
+	model.add(new THREE.Mesh(geometry)); model.updateMatrixWorld(true);
+	ground.beginFrame(); ground.shadow({}, model, new THREE.Matrix4(), 0.2); ground.endFrame();
+	let scene!: THREE.Scene;
+	let owners: THREE.Mesh[] = [];
+	const renderer = { render: vi.fn((value: THREE.Scene) => {
+		scene = value; scene.updateMatrixWorld(true);
+		owners = [];
+		scene.traverseVisible(object => { if ((object as THREE.Mesh).isMesh) owners.push(object as THREE.Mesh); });
+	}) } as unknown as THREE.WebGPURenderer;
+	ground.prepareWindingVariants(renderer, new THREE.PerspectiveCamera());
+	expect(owners).toHaveLength(2);
+	expect(owners.map(owner => Math.sign(owner.matrixWorld.determinantAffine()))).toEqual([1, -1]);
+	expect(owners.every(owner => owner.geometry === geometry)).toBe(true);
+	const live = scene.children[0].children[0] as THREE.Mesh;
+	expect(owners.every(owner => owner.material === live.material)).toBe(true);
+	expect(scene.children.every(child => !child.visible)).toBe(true);
+	const firstOwners = [...owners], sourceMatrix = live.matrix.clone();
+	ground.prepareWindingVariants(renderer, new THREE.PerspectiveCamera());
+	expect(owners[0]).toBe(firstOwners[0]); expect(owners[1]).toBe(firstOwners[1]);
+	expect(live.matrix.equals(sourceMatrix)).toBe(true);
+	const materialDispose = vi.spyOn(live.material as THREE.Material, 'dispose');
+	const geometryDispose = vi.spyOn(geometry, 'dispose');
+	ground.dispose();
+	expect(scene.children).toHaveLength(0);
+	expect(materialDispose).toHaveBeenCalledOnce(); expect(geometryDispose).not.toHaveBeenCalled();
+	geometry.dispose();
+});
+
+it('restores live and warm visibility when a winding preparation draw throws', () => {
+	const ground = new CarouselGround(), model = new THREE.Group();
+	model.add(new THREE.Mesh(new THREE.BoxGeometry())); model.updateMatrixWorld(true);
+	ground.beginFrame(); ground.shadow({}, model, new THREE.Matrix4(), 0.2); ground.endFrame();
+	let scene!: THREE.Scene;
+	const renderer = { render: vi.fn((value: THREE.Scene) => { scene = value; throw Error('pipeline'); }) } as unknown as THREE.WebGPURenderer;
+	expect(() => ground.prepareWindingVariants(renderer, new THREE.PerspectiveCamera())).toThrow('pipeline');
+	expect(scene.children.every(child => !child.visible)).toBe(true);
+	ground.dispose();
+});
 
 it('projects geometry toward the same light direction while preserving contact points', () => {
 	const projection = carouselShadowProjection();
