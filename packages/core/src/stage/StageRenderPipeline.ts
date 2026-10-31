@@ -18,7 +18,6 @@ import {
 	Fn,
 	If,
 	mix,
-	premultiplyAlpha,
 	texture,
 	uniform,
 	uv,
@@ -207,8 +206,10 @@ export class StageRenderPipeline {
 		this.updateInteractionTheme();
 		this.setRenderSettings(ports.renderSettings);
 		this.setPageBackground(ports.pageBackground ?? '#ffffff');
-		this.backgroundCoverMaterial.fragmentNode = premultiplyAlpha(
-			vec4(inverseAcesToneMapping(this.backgroundCoverColor), this.backgroundCoverOpacity)
+		// NodeMaterial applies premultipliedAlpha in setupOutput. Supply straight
+		// RGB here; multiplying twice darkens the middle of the background reveal.
+		this.backgroundCoverMaterial.fragmentNode = vec4(
+			inverseAcesToneMapping(this.backgroundCoverColor), this.backgroundCoverOpacity
 		);
 		this.backgroundCoverMaterial.depthTest = this.backgroundCoverMaterial.depthWrite = false;
 		this.backgroundCoverMaterial.transparent =
