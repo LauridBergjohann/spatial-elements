@@ -98,6 +98,23 @@ export class PanelPresentationController {
 	get visibleMinimaps() {
 		return this.visibleMinimapCount;
 	}
+	/** Snapshot only; querying diagnostics must not advance damping or measure DOM layout. */
+	getRenderActivity() {
+		return this.panelRuntimes.map((panel, index) => {
+			const content = panel.content, projection = panel.contentProjectionRoot;
+			const nativeEligible = Boolean(content && projection && !this.minimaps.has(index) &&
+				Math.abs(content.rotation.x) <= PANEL_NATIVE_ROTATION_EPSILON &&
+				Math.abs(content.rotation.y) <= PANEL_NATIVE_ROTATION_EPSILON &&
+				Math.abs(content.rotation.z) <= PANEL_NATIVE_ROTATION_EPSILON &&
+				Math.abs(projection.matrix.elements[14] - PANEL_CONTENT_Z) <= PANEL_NATIVE_DEPTH_EPSILON);
+			return { index, frameId: this.panelTargets[index]?.frame.id ?? '',
+				visible: panel.group.visible, pointerLift: panel.pointerLift,
+				rotation: [panel.group.rotation.x, panel.group.rotation.y, panel.group.rotation.z],
+				position: panel.group.position.toArray(), scale: panel.group.scale.toArray(),
+				domMode: panel.domRenderMode, nativeRestFrames: panel.nativeRestFrames,
+				nativeSwitchPending: nativeEligible && panel.domRenderMode !== 'native' && panel.nativeRestFrames < PANEL_NATIVE_REST_FRAMES };
+		});
+	}
 	add(runtime: StagePanelRuntime) {
 		this.panelRuntimes.push(runtime);
 	}

@@ -91,7 +91,11 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 				}, { view, idleBudget });
 				// DOM activation avoids hover warming the cold case. The original Click
 				// event timestamp is still the start, including Kit's scheduling latency.
-				await link.evaluate((node: HTMLAnchorElement) => node.click());
+				const sourceActivity = await link.evaluate((node: HTMLAnchorElement) => {
+					const snapshot = window.__stageVisualTest?.getRenderActivity?.() ?? null;
+					node.click();
+					return snapshot;
+				});
 				await expect(page).toHaveURL(endpoint === 'dock' ? /\/staged\/elements\/column#reading$/ : /\/staged\/elements\/column$/);
 				await expect.poll(() => page.evaluate(() => window.__stageVisualTest?.getNavigationTimings().early?.revealed ?? 0)).toBeGreaterThan(0);
 				// Capture the frame after the last reveal submission and let the
@@ -114,6 +118,7 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 						gpuCalls: work.gpuCalls.filter(entry => entry.time >= timings.started && entry.time <= timings.revealed),
 						requests: performance.getEntriesByType('resource').filter(entry => entry.name.includes('/__data.json') || entry.name.includes('/nodes/')).map(entry => ({ name: entry.name, start: entry.startTime - timings.started, duration: entry.duration })) };
 				});
+				Object.assign(result, { sourceActivity });
 				results.push(result);
 				if (profiler) {
 					const { profile } = await profiler.send('Profiler.stop');

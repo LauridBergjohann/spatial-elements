@@ -71,6 +71,8 @@ export interface StageVisualTestController {
 		import('../catalog/CatalogSpatialElementLayer.js').CatalogSpatialElementLayer['getStats']
 	> | null;
 	getCatalogStats(): ReturnType<StageExperience['assets']['getStats']> | null;
+	/** Read-only current animation, queued-frame and preparation metadata; does not wait for idle. */
+	getRenderActivity(): ReturnType<StageExperience['getVisualTestRenderActivity']> | null;
 	/** Applies a deterministic camera pose and waits until dependent render state settles. */
 	setView(view: StageVisualTestView, frames?: number): Promise<void>;
 	/** Applies an equivalent zoom through the SpaceMouse camera/target dolly path. */

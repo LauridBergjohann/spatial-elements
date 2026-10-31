@@ -241,7 +241,11 @@ try {
   tracing = true;
   if (sampleCpu) { await pageSession.send('Profiler.start'); profiling = true; }
   await page.evaluate(() => { window.gpuProbe.active = true; performance.mark('staged-probe-start'); });
-  await link.evaluate(node => { performance.mark('staged-click'); node.click(); });
+  const sourceActivity = await link.evaluate(node => {
+    const snapshot = window.__stageVisualTest?.getRenderActivity?.() ?? null;
+    performance.mark('staged-click'); node.click();
+    return snapshot;
+  });
   await page.waitForFunction(() => (window.__stageVisualTest?.getNavigationTimings().early?.revealed ?? 0) > 0, undefined, { timeout: 60000 });
   await page.waitForFunction(() => window.gpuProbe.frames.at(-1)?.rafTime >= window.__stageVisualTest.getNavigationTimings().early.revealEnded, undefined, { timeout: 30000 });
   await page.evaluate(async () => { await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); });
@@ -274,7 +278,7 @@ try {
         : 'Unmodified incoming DOM fade.',
       incomingDomLimitations: localIncomingDom ? 'Not general semantic equivalence: receiver-local authored declarations are temporarily overridden; unmarked custom consumers and nodes created between writes see the constant root fallback until their next intercepted write. Selector queries and additional local writes add probe CPU overhead. No production or latency-acceptance claim.' : null,
       latencyAcceptance: false, fencePolicy: probeFences ? 'One additional asynchronous queue fence per synchronous submission batch; never awaited by application code.' : 'No additional queue fences.' },
-    promotion: args.promote === 'true', prepareDom: args.prepareDom === 'true', sourceStyles, categories, clockMetrics, systemInfo, commandLine, browser: browser.version(), ...report }, null, 2));
+    promotion: args.promote === 'true', prepareDom: args.prepareDom === 'true', sourceActivity, sourceStyles, categories, clockMetrics, systemInfo, commandLine, browser: browser.version(), ...report }, null, 2));
   const complete = new Promise(resolve => browserSession.once('Tracing.tracingComplete', resolve));
   await browserSession.send('Tracing.end'); tracing = false;
   const { stream } = await complete;

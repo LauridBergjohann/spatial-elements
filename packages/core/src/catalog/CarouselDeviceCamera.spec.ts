@@ -55,3 +55,20 @@ it('smooths changing selection pivots and settles exactly on the new centre', ()
 	expect(motion.orbit(camera, next, 2)).toBe(false);
 	expect(firstStep).toBeLessThan(camera.position.distanceTo(before) / 4);
 });
+
+it('reports the current pivot state without advancing or exposing mutable camera state', () => {
+	const camera = new PerspectiveCamera();
+	const motion = new CarouselDeviceCamera();
+	motion.update(camera, 12, 0, 0, 1);
+	motion.orbit(camera, new Vector3());
+	motion.orbit(camera, new Vector3(500, 0, -400), 0.016, true);
+	const snapshot = motion.getRenderActivity();
+	expect(snapshot).toMatchObject({ pivotReady: true, pivotSettling: true, neutral: false });
+	const position = camera.position.clone();
+	expect(motion.getRenderActivity()).toEqual(snapshot);
+	expect(camera.position).toEqual(position);
+	snapshot.pivot[0] = 999;
+	snapshot.angles[0] = 999;
+	expect(motion.getRenderActivity().pivot[0]).not.toBe(999);
+	expect(motion.getRenderActivity().angles[0]).not.toBe(999);
+});

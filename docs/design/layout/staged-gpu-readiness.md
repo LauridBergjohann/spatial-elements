@@ -28,6 +28,8 @@ The enhanced Carousel therefore declares `will-change: transform` on only its se
 
 For CPU attribution, `--minimal=true --cpu=true` writes an additional 1 ms `cpu.cpuprofile` while omitting render-pass descriptors, shader-body copies and per-submit timing marks. The normal JavaScript callbacks and GPU/Viz events remain in `trace.json`; `probe.json` records the exact phase boundaries and instrumentation settings. `--fences=false` provides a control without the extra asynchronous queue fences. Profiling results must not replace the uninstrumented latency or frame-pacing measurements.
 
+The query-gated `getRenderActivity()` control reads existing Stage animation/dirty/pending-frame flags, queued preparation state, the Carousel camera's current pivot settling state, and current actor/panel transforms. It does not advance a clock, measure layout, schedule work or keep a frame history. The performance harness and trace save this snapshot immediately before the existing click. They add no idle wait: GPU readiness and a settled source remain separate conditions, and early-click samples are not silently removed.
+
 ## Keep pipeline owners stable
 
 A production WebGPU probe found a pipeline creation in the first moving frame even though the shaders and the complete GPU pipeline descriptor were already prepared. The affected shader was the catalog fade's texture-times-alpha composite.

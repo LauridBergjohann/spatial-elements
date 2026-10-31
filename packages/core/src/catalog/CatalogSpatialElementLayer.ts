@@ -189,6 +189,16 @@ export class CatalogSpatialElementLayer {
 	}
 	private readonly scene = new THREE.Scene();
 	private passes = 0;
+	getRenderActivity() {
+		return { camera: this.carouselDeviceCamera.getRenderActivity(), pointer: { ...this.pointer },
+			layoutDirty: this.layoutDirty, queueDirty: this.queueDirty, loadingActors: this.loadingKeys.size,
+			preparing: this.stagedPreparing, warmups: this.stagedWarmups,
+			selected: this.carouselSelection?.spatialElementId ?? null,
+			actors: [...this.actors.values()].map(actor => ({ spatialElementId: actor.spatialElementId,
+				visible: actor.root.visible, hover: actor.hover, rotationX: actor.rotationX, rotationY: actor.rotationY,
+				lift: actor.lift, deviceYaw: actor.deviceYaw, devicePitch: actor.devicePitch, deviceRoll: actor.deviceRoll,
+				materialReady: this.stagedMaterialReady(actor) })) };
+	}
 	getStats(renderer?: THREE.WebGPURenderer) {
 		const signature = renderer ? this.stagedSignature(renderer) : undefined;
 		const stagedReady = (actor: CatalogActor) => Boolean(!this.stagedPreparing && signature &&

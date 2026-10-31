@@ -689,6 +689,7 @@
 			loseDevice: () => experience?.loseDeviceForTest(),
 			getCarouselStats: () => experience?.getCarouselStats() ?? null,
 			getCatalogStats: () => experience?.assets.getStats() ?? null,
+			getRenderActivity: () => experience?.getVisualTestRenderActivity() ?? null,
 			getCatalogEndpoints: () => catalogEndpoints.getSnapshot(),
 			getCatalogOwnership: () => transition?.getOwnership() ?? null,
 			getNavigationTimings: () => ({ ...navigationTimings, early: earlyTransition?.timings ?? lastEarlyTimings }),

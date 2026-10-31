@@ -7,6 +7,12 @@ export class CarouselDeviceCamera {
 	private readonly pivot = new Vector3();
 	private pivotReady = false;
 	private pivotSettling = false;
+	/** Read-only; a neutral camera can still have an internally settling pivot. */
+	getRenderActivity() {
+		return { pivotReady: this.pivotReady, pivotSettling: this.pivotSettling,
+			neutral: this.angles.x === 0 && this.angles.y === 0 && this.angles.z === 0,
+			pivot: this.pivot.toArray(), angles: this.angles.toArray() };
+	}
 	orbit(camera: PerspectiveCamera, pivot: Vector3, delta = 1, smooth = false) {
 		if (this.pivotReady && (smooth || this.pivotSettling)) {
 			this.pivot.lerp(pivot, 1 - Math.exp(-12 * delta));

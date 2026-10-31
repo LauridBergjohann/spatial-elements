@@ -2085,6 +2085,25 @@ export class StageExperience {
 		return this.catalogLayer?.getStats(this.renderer) ?? null;
 	}
 
+	/** Query-gated snapshot: no new frame state, DOM measurements, scheduling or settling. */
+	getVisualTestRenderActivity() {
+		const preparation = this.preparation?.current;
+		const assets = this.assets.getStats();
+		return { at: performance.now(), lastFrameAt: this.lastFrameTime,
+			animationActive: this.animationActive, catalogAnimating: this.catalogLayerAnimating,
+			renderInvalidated: this.renderInvalidated, pendingRenderFrame: this.renderRequestId !== 0,
+			pendingScrollFrame: hasPendingStageScrollFrame(), scrollActive: this.scrollActive,
+			stagedAwaitingFirstFrame: this.stagedAwaitingFirstFrame,
+			transitionActive: this.catalogPresentation.active,
+			preparation: { stagedIdlePending: this.stagedPreparationIdle !== 0,
+				zoomFramePending: this.zoomPreparationFrame !== 0, zoomDeferred: this.deferredZoomPreparation,
+				gate: this.preparationGate.getActivity(), detailGate: this.detailPreparationGate.getActivity(),
+				background: preparation?.backgroundState ?? null, high: preparation?.highState ?? null,
+				assetLoads: assets.pendingLoads, activeInstances: assets.activeInstances },
+			catalog: this.catalogLayer?.getRenderActivity() ?? null,
+			panels: this.panels.getRenderActivity() };
+	}
+
 	/** Returns render-target lifecycle counters for query-gated performance tests. */
 	getVisualTestRenderTargetStats() {
 		// Captured minimaps retain only their spatialElement/ring, not disposed page-local blur targets.
