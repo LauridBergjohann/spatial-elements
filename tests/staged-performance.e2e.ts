@@ -97,6 +97,10 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 				// Capture the frame after the last reveal submission and let the
 				// observer deliver its trailing Long Animation Frame entry.
 				await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+				await expect.poll(() => page.evaluate(() => {
+					const frames = (window as unknown as { performanceProbe: { frames: number[] } }).performanceProbe.frames;
+					return (frames.at(-1) ?? 0) >= (window.__stageVisualTest?.getNavigationTimings().early?.revealEnded ?? Infinity);
+				})).toBe(true);
 				const result = await page.evaluate(() => {
 					const timings = window.__stageVisualTest!.getNavigationTimings().early!;
 					const probe = (window as unknown as { performanceProbe: { frames: number[]; changed: number; budget: number; sourceBudget: number; stop: boolean; assetsBefore: unknown } }).performanceProbe;
@@ -115,21 +119,26 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of ['co
 					const { profile } = await profiler.send('Profiler.stop');
 					await writeFile(testInfo.outputPath(`cpu-${sample}.json`), JSON.stringify({ profileStart, clockMetrics, timings: result.timings, profile }));
 				}
+				const previousErrors = testInfo.errors.length;
+				const dataRequests = result.requests.filter(entry => entry.name.includes('/staged/elements/column/__data.json'));
+				// Keep the complete planned sample set even when a measured gate fails.
+				// Navigation/readiness errors above remain hard failures: there is then
+				// no completed transition whose timing could be meaningfully recorded.
+				expect.soft(dataRequests.length).toBeGreaterThan(0);
+				if (temperature === 'cold') {
+					expect.soft(dataRequests.every(entry => entry.start >= 0)).toBe(true);
+					expect.soft(result.requests.some(entry => entry.name.includes('/nodes/') && entry.start >= 0)).toBe(true);
+				} else {
+					expect.soft(dataRequests.every(entry => entry.start + entry.duration < 0)).toBe(true);
+					expect.soft(result.requests.filter(entry => entry.name.includes('/nodes/')).every(entry => entry.start + entry.duration < 0)).toBe(true);
+				}
+				expect.soft(errors).toEqual([]);
+				expect.soft(result.gpuCalls.filter(call => call.phase === 'moving')).toEqual([]);
+				expect.soft(result.gpuCalls.filter(call => call.time <= result.timings.motionEnded)).toEqual([]);
+				expect.soft(result.gpuCalls.filter(call => call.time >= result.timings.revealStarted && call.time <= result.timings.revealEnded)).toEqual([]);
+				Object.assign(result, { validationErrors: testInfo.errors.slice(previousErrors).map(error => error.message) });
 				await writeFile(testInfo.outputPath('samples.json'), JSON.stringify({ view, endpoint, temperature, samples,
 					completedSamples: results.length, profiled: Boolean(process.env.SPATIAL_PERFORMANCE_PROFILE), results }, null, 2));
-				const dataRequests = result.requests.filter(entry => entry.name.includes('/staged/elements/column/__data.json'));
-				expect(dataRequests.length).toBeGreaterThan(0);
-				if (temperature === 'cold') {
-					expect(dataRequests.every(entry => entry.start >= 0)).toBe(true);
-					expect(result.requests.some(entry => entry.name.includes('/nodes/') && entry.start >= 0)).toBe(true);
-				} else {
-					expect(dataRequests.every(entry => entry.start + entry.duration < 0)).toBe(true);
-					expect(result.requests.filter(entry => entry.name.includes('/nodes/')).every(entry => entry.start + entry.duration < 0)).toBe(true);
-				}
-				expect(errors).toEqual([]);
-				expect(result.gpuCalls.filter(call => call.phase === 'moving')).toEqual([]);
-				expect(result.gpuCalls.filter(call => call.time <= result.timings.motionEnded)).toEqual([]);
-				expect(result.gpuCalls.filter(call => call.time >= result.timings.revealStarted && call.time <= result.timings.revealEnded)).toEqual([]);
 			} finally { await context.close(); }
 		}
 		const report = { view, endpoint, temperature, samples, completedSamples: results.length, profiled: Boolean(process.env.SPATIAL_PERFORMANCE_PROFILE), userAgent: browser.version(),
