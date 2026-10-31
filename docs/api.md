@@ -93,7 +93,7 @@ Interface language is independent of the theme. Pass `messages: SpatialMessagesI
 
 | Component | Props and responsibility |
 | --- | --- |
-| BrandStageShell | Required reactive theme; optional colorScheme (light/dark), messages, renderSettings, dracoDecoderPath, menu, left/right satellite snippets, summary: SpatialSummarySnippet, and children. Persistent layout and renderer owner. No stage/catalog props. |
+| BrandStageShell | Required reactive theme; optional colorScheme (light/dark), messages, renderSettings, dracoDecoderPath, deviceOrientation (default false, for detail geometry/minimap), menu, left/right satellite snippets, summary: SpatialSummarySnippet, and children. Persistent layout and renderer owner. No stage/catalog props. |
 | ButtonGroup | Required items, label and shape; controlled value/onchange, optional theme, iconOnly and content snippet. Generic panel-backed choices owned by the host. |
 | ContentPage | Required hdr: environment URL and page: ContentPageData; optional background: CSS color and children. background overrides the flat page color for this page in DOM and enhanced rendering, without changing HDR lighting or the shared theme. page.title is required; pageTitle defaults to title, eyebrow/intro/breadcrumbs are optional. |
 | ListSection | Required section: {id,title,headline?,background?,style?}, list: SpatialListItem[]. Optional cardSize: s/m/l (default m), textAlign: start/center (default start). Registers its own element occurrences. |
@@ -195,6 +195,11 @@ contract allows its endpoint to be resolved before route mounting; arbitrary fra
 use the ordinary restored-destination path. Native document limits remain authoritative. In
 3XL the model stays on the fixed left stage and the pane header is the corresponding endpoint.
 See [known detail endpoints](design/layout/staged-detail-endpoints.md).
+
+The source-first transition currently requires `?stagedNavigation=1` on the source page and
+an enhanced, prepared source. It remains an experimental opt-in until the production performance
+gate is accepted. The declaration does not enable that path by itself. Without the query opt-in,
+the ordinary transition remains active; no application link or history migration is required.
 
 `getSpatialListItems` also preserves each element's `minimap` settings so a compact destination
 uses the same fit, pivot and docked orientation as its mounted detail. Custom synchronous shell

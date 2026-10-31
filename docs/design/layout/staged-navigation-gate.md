@@ -16,7 +16,7 @@ The supported path uses only public APIs:
 4. The current owner receives exactly one destination-specific replay permit and calls `goto`.
 5. The replay's `beforeNavigate` consumes the permit without resetting source ownership. Normal capture, DOM commit, restoration and reveal then continue.
 
-The intentionally rejected original `navigation.complete` is handled without triggering visual cancellation. A native popstate is not converted into a new link or `goto`, preserving history semantics and avoiding phantom entries. Unhandled routes, unknown fragments, and explicitly authored link focus/scroll/history policies stay on the ordinary path.
+The intentionally rejected original `navigation.complete` is handled without triggering visual cancellation. A native popstate is not converted into a new link or `goto`, preserving history semantics and avoiding phantom entries. Unhandled routes, fragments without a known endpoint, and explicitly authored link focus/scroll/history policies stay on the ordinary path.
 
 ## Ownership and failure behavior
 
@@ -24,7 +24,9 @@ The intentionally rejected original `navigation.complete` is handled without tri
 
 A preload redirect releases the predicted pose before navigating once to the resolved destination. A route's handled error is still owned by Kit: in this version, the proof's universal `error(503, ...)` can produce a preload result with status 200, while the subsequent ordinary `goto` correctly renders the 503 error page. The implementation must not infer successful destination content from preload status alone.
 
-Escape, scroll interaction, resize, a superseding navigation, history navigation and destruction cancel the pending early owner. The production adapter currently accepts same-origin links with a matched route, a different pathname, and either no fragment or the canonical `#overview` fragment. The visual callback can further decline any transition whose source or deterministic target is unavailable. Reduced Motion can resolve the visual handle immediately; the coordinator adds no timer.
+Escape, scroll interaction, resize, a superseding navigation, history navigation and destruction cancel the pending early owner. The production adapter accepts same-origin links with a matched route, a different pathname, and either no fragment, the canonical `#overview` fragment or an explicit `targetPresentation: 'dock'` contract. The visual callback can further decline any transition whose source or deterministic target is unavailable. The production Stage currently requires `?stagedNavigation=1` on the source page while its performance gate remains open. Reduced Motion can resolve the visual handle immediately; the coordinator adds no timer.
+
+After public navigation completion, the destination owns the route even if a visual hold is still active. Input then cancels only the visual owner, leaving destination GPU binding to finish without replaying historical scroll or focus. An equal carousel summary retains its semantic owner until it transfers to that destination; supersession cancels this additional lease. See [detail endpoints](staged-detail-endpoints.md) for the production handoff and late-interruption contract.
 
 The SvelteKit adapter bounds the preload hold to 15 seconds. A deadline restores the source visual state and falls back to ordinary navigation, so a stalled preload cannot leave a frozen transition indefinitely. Each owner also supplies an AbortSignal to release this adapter wait immediately on cancellation; it does not claim to abort Kit's underlying request. The timer and abort listener are removed in `finally`.
 

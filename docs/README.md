@@ -8,7 +8,7 @@
 - [Illustrated layout guide](wiki/Home.md): container grids, sections, cards, detail layouts, persistent navigation, media and migration. The portable Markdown/image export is prepared locally with `node docs/wiki/export.mjs` and is not published automatically.
 - [Interface texts and help](interface-texts.md): host-owned translations, English defaults and 3D guidance.
 - [Asset contract](architecture/assets.md): prepare model representations and shared coordinate frames.
-- [Configuration migration](configuration-migration.md) and [SpatialElement API migration](spatial-element-migration.md): update existing pre-release integrations.
+- [Layout migration](layout-migration.md): update section headings, surfaces, cards, live summaries and media defaults. [Configuration migration](configuration-migration.md) and [SpatialElement API migration](spatial-element-migration.md) cover preceding pre-release API changes.
 
 ## Developing the packages
 

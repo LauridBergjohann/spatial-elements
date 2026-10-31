@@ -4,6 +4,11 @@ A known destination should not require a complete destination page just to begin
 The same layout resolver that positions the detail page supplies its model fit and panel
 anchor before that page exists. Natural text height remains a separate content concern.
 
+**Current activation:** the source-first path requires `?stagedNavigation=1` on the source page
+and an enhanced, prepared source. It remains an experimental opt-in while the production
+performance gate is being evaluated. Without the flag, ordinary transitions continue to work.
+The endpoint declaration below does not enable this experimental path by itself.
+
 ## Movement, holding and content
 
 ![Warm and cold timelines share source-only movement. Cold loading extends the still hold before binding and revealing destination content.](images/transition-phases.png)
@@ -72,8 +77,13 @@ as shown in [Summary Panels](Summary-Panels.md).
 
 The moving source is temporarily inert. Pointer and sensor effects stop competing with the
 transition; sensor motion resumes from a recalibrated neutral pose. Resizing, scrolling, Escape,
-another navigation or leaving the page cancels obsolete ownership. Cleanup restores source
-styles and input, or releases the source after the route has legitimately replaced it.
+another navigation or leaving the page cancels obsolete visual ownership. Before the router
+commits, cleanup restores the source and prevents the obsolete destination from mounting.
+After commit, interruption removes the visual hold while the destination finishes binding.
+It does not restore an old scroll position or move focus over the user's new interaction.
+An equal carousel summary renderer still transfers its live instance and form values; a newer
+navigation cancels that pending transfer before it can adopt an obsolete slot. A list card uses
+a different renderer and does not transfer arbitrary card component state into the summary.
 
 Unprepared sources, unsupported routes, ambiguous occurrences and summaries whose internal
 scroll/clipping cannot be transferred safely keep the ordinary navigation path. Back/Forward

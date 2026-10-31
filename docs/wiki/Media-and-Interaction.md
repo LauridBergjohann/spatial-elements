@@ -40,7 +40,9 @@ Ownership is selected at gesture start and does not flip when the finger crosses
 
 ## Device orientation
 
-Enable device orientation on the persistent shell where desired. When a browser needs explicit permission, the application can request it from a real navigation gesture; other supported browsers can start automatically. Device rotation is calibrated, smoothed and bounded. Orientation changes reset the reference. Scrolling pauses application, and release establishes a new reference before the effect fades back in.
+ListSection and CarouselSection enable device orientation automatically; they have no `deviceOrientation` prop. Set `deviceOrientation` on BrandStageShell to enable detail geometry and minimaps as well. Access starts automatically where allowed. If explicit permission is needed, the framework requests it during a trusted internal navigation gesture without delaying navigation. Denial, missing sensors and reduced motion leave ordinary interaction available.
+
+Device rotation is calibrated, smoothed and bounded. Orientation changes reset the reference. Scrolling pauses application, and release establishes a new reference before the effect fades back in.
 
 The carousel uses a subtle shared view change with stronger rotation of the active item; mouse proximity still rotates individual items. Sensor behavior on real Android, Surface and iOS hardware requires direct checks. Desktop automation does not prove sensor axes, permission prompts or mobile browser-toolbar performance.
 

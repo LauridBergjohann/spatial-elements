@@ -15,6 +15,18 @@ The shared layout replaces host-specific width and position assumptions. Migrate
 | Duplicate tabs for source and dock | Move one live navigation instance |
 | Ultra-wide detail has an inner scroll panel | Keep the document as the single vertical scroll owner |
 | Drawing media can omit a source | Supply an image source and meaningful alternative text |
+| An empty media array removes the 3D entry | Detail presentation always starts with one 3D entry |
+
+The layout update retains the existing package-root exports and high-level props. Its
+incompatible layout changes concern rendered defaults and geometry. Application-owned exhaustive
+switches over `SpatialElementMediaItem.kind` must also handle the new `video` and `youtube`
+variants. Legacy section styles and the single panel radius remain supported; source-less
+`drawing` is deprecated rather than removed from the type. Earlier Product-name and
+SpatialStageConfig removals belong to preceding API migrations, not this layout update.
+
+The early source-first transition is currently opt-in through `?stagedNavigation=1` on the
+source page. [Transitions](Transitions.md) documents its endpoint declarations and acceptance
+limits. Declaring a dock target alone does not enable the experiment.
 
 ## Radius and palette compatibility
 

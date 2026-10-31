@@ -22,7 +22,7 @@ The ordinary shell stays at its starting position for the first 112px of documen
 
 Detail 3XL is the exception: its menu remains fixed. The native sticky layout and enhanced virtual-scroll compensation follow the same equation. Compensation is applied once; the renderer does not subtract the document scroll again from a fixed-region panel.
 
-The shell is not keyed to the current route and does not join the departing page's opacity animation. That continuity is especially visible when navigating between a category and a detail page at the top.
+The shell is not keyed to the current route and keeps its owner through navigation. When both pages are at the top, it stays visible throughout the transition. A declared compact dock destination outside split 3XL instead fades the old top menu as the dock header takes over. Split 3XL retains the fixed menu. Focusing or zooming into the 3D model also moves and fades the native menu with its corresponding spatial surface; the native layout measurement stays unchanged.
 
 ## Breadcrumbs
 

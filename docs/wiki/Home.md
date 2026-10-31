@@ -38,4 +38,4 @@ The executable public fixtures are the reference for complete shell setup and lo
 
 DOM measurements still matter for natural text height and custom content. They do not define the known page geometry. Pure layout functions resolve known rectangles from CSS width, stable viewport height, scrollbar width and safe areas. Generated CSS uses the same tokens. This makes native fallback, enhanced rendering and navigation agree without rebuilding an entire target page merely to discover its basic shape.
 
-These guides document the implemented layout. The staged-navigation integration is documented separately when its acceptance gates are complete; a predictable destination rectangle alone is not a promise of sub-100ms navigation on every device.
+These guides document the implemented layout. [Transitions](Transitions.md) explains the current experimental source-first navigation path, its query opt-in and remaining performance gate. A predictable destination rectangle alone is not a promise of sub-100ms navigation on every device.

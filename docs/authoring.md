@@ -180,6 +180,10 @@ Keep native scrolling enabled on the page and avoid overriding the components' `
 
 ## Navigation and live summaries
 
+The source-first transition described here currently requires `?stagedNavigation=1` on the
+source page. It is an experimental opt-in pending production performance acceptance; ordinary
+transitions continue to handle navigation without that flag.
+
 Keep native links as the source of navigation. A prepared forward transition moves existing
 model and panel content before mounting the destination; its final layout comes from the shared
 resolver. Data may preload during movement. Extra content and natural summary height belong to
@@ -194,6 +198,9 @@ To preserve application-owned state from carousel to detail, put a synchronous c
 in `BrandStageShell.summary`. Keep the component inside the shell context and register its title
 and eyebrow endpoint roles. The persistent host retains the actual instance rather than cloning
 its markup. See [Summary Panels](wiki/Summary-Panels.md) for a complete component example.
+The retained carousel and detail must use the same summary renderer. A list card uses a
+different renderer, so card-to-detail navigation does not promise to transfer arbitrary card
+component state into the detail summary.
 
 ## Rendering budget
 
