@@ -5,6 +5,7 @@ import type { CssProjectionQuad } from '../stage/cssProjection.js';
 
 export interface StagedDomActor { element: HTMLElement; projection: SourceDomProjection; target: SourceDomTarget }
 export interface StagedDomFrame { element: HTMLElement; quad: CssProjectionQuad; width: number; height: number }
+export type StagedCatalogTransitionPhase = 'idle' | 'moving' | 'holding' | 'held' | 'revealing' | 'committing' | 'complete' | 'cancelled';
 export interface StagedCatalogTransitionHooks {
 	/** Only already prepared source resources may be used here. */
 	begin(): boolean;
@@ -14,6 +15,8 @@ export interface StagedCatalogTransitionHooks {
 	reveal(progress: number): void;
 	finish(): void;
 	cancel(reason: EarlyNavigationCancelReason): void;
+	/** Optional diagnostics; an observer failure never prevents ownership cleanup. */
+	error?(error: unknown, phase: StagedCatalogTransitionPhase): void;
 }
 export interface StagedCatalogTransitionOptions {
 	actors: readonly StagedDomActor[];
@@ -31,7 +34,7 @@ const restoreFade = (entry: FadedElement) => entry.value
 
 /** Owns source-only motion, the static hold, and the later content reveal. */
 export class StagedCatalogTransition {
-	private state: 'idle' | 'moving' | 'holding' | 'held' | 'revealing' | 'complete' | 'cancelled' = 'idle';
+	private state: StagedCatalogTransitionPhase = 'idle';
 	private frame = 0;
 	private generation = 0;
 	private motions: ReturnType<typeof createSourceDomMotion>[] = [];
@@ -118,8 +121,9 @@ export class StagedCatalogTransition {
 		} catch (error) { if (generation === this.generation) this.fail(error); }
 	}
 
-	/** Call only after route restoration; adoption/reflow belongs to prepare. */
-	async reveal(incoming: readonly HTMLElement[] = [], prepare?: (signal: AbortSignal) => void | Promise<void>): Promise<void> {
+	/** Bind before reveal; offscreen ownership transfers may commit after the visible replacement is complete. */
+	async reveal(incoming: readonly HTMLElement[] = [], prepare?: (signal: AbortSignal) => void | Promise<void>,
+		commit?: (signal: AbortSignal) => void | Promise<void>): Promise<void> {
 		if (this.state !== 'held') return;
 		this.state = 'revealing';
 		const generation = this.generation;
@@ -140,11 +144,15 @@ export class StagedCatalogTransition {
 						for (const entry of this.incoming) writeFade(entry, progress);
 						this.options.hooks.reveal(progress);
 						if (fraction < 1) this.frame = requestAnimationFrame(animate);
-						else { this.complete(); resolve(); }
+						else { this.state = 'committing'; resolve(); }
 					} catch (error) { this.fail(error); resolve(); }
 				};
 				this.frame = requestAnimationFrame(animate);
 			});
+			if (generation !== this.generation) return;
+			await Promise.race([commit?.(this.abort.signal), this.stopped]);
+			if (generation !== this.generation) return;
+			this.complete();
 		} catch (error) { if (generation === this.generation) this.fail(error); }
 	}
 
@@ -160,6 +168,7 @@ export class StagedCatalogTransition {
 	}
 
 	private fail(error: unknown) {
+		try { this.options.hooks.error?.(error, this.state); } catch { /* Diagnostics cannot retain a failed transition. */ }
 		const reject = this.rejectMotion;
 		this.releaseMotion = undefined; this.rejectMotion = undefined;
 		this.cancel('error');

@@ -17,13 +17,17 @@
 	onMount(() => {
 		// The stage reparents the rendered content. Keep its layout placeholder in
 		// sync using untransformed content size, including wrapping and font loads.
-		panelHeight = presentation.offsetHeight + contentInset * 2;
+		// Explicit ownership transfers finish their reflow before revealing pixels.
+		// offsetHeight is untransformed, unlike the projected CSS3D bounding box.
+		const measureTransfer = () => { panelHeight = presentation.offsetHeight + contentInset * 2; };
+		measureTransfer();
+		presentation.addEventListener('spatial-summary-measure', measureTransfer);
 		const observer = new ResizeObserver(([entry]) => {
 			const height = entry.borderBoxSize?.[0]?.blockSize ?? presentation.offsetHeight;
 			panelHeight = Math.ceil(height + contentInset * 2);
 		});
 		observer.observe(presentation);
-		return () => observer.disconnect();
+		return () => { observer.disconnect(); presentation.removeEventListener('spatial-summary-measure', measureTransfer); };
 	});
 </script>
 

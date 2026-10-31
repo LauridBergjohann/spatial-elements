@@ -80,6 +80,11 @@ export function refineProjectedLayoutOffset(
 export function captureCardElement(element: HTMLElement) {
 	const card = element.closest<HTMLElement>('[data-catalog-card]');
 	if (!card) return;
+	return captureElementPlane(element, card);
+}
+
+/** Capture a nested element relative to a known planar root (also used after a live-root transfer). */
+export function captureElementPlane(element: HTMLElement, card: HTMLElement) {
 	const { width, height } = borderBox(element);
 	const cardSize = borderBox(card);
 	if (!width || !height || !cardSize.width || !cardSize.height) return;

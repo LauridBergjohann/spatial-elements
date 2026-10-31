@@ -125,3 +125,63 @@ test('a synchronous first-frame failure rolls back without leaking a rejected pr
 	expect(f.transition.start()).toBeUndefined(); await flush();
 	expect(f.hooks.cancel).toHaveBeenCalledExactlyOnceWith('error'); expect(f.motion.restore).toHaveBeenCalledTimes(1);
 });
+
+test('final content commit waits until replacement is fully revealed and retains ownership until its async work finishes', async () => {
+	const f = fixture(), handle = f.transition.start()!;
+	await frame(MOTION_DURATION); await frame(MOTION_DURATION + 16); await handle.finished;
+	let release!: () => void;
+	const pending = new Promise<void>(resolve => { release = resolve; });
+	const commit = vi.fn(() => pending);
+	const revealing = f.transition.reveal([f.incoming], undefined, commit); await flush();
+	expect(commit).not.toHaveBeenCalled();
+	await frame(MOTION_DURATION + 16 + ASYNC_REVEAL_DURATION);
+	expect(f.hooks.reveal).toHaveBeenLastCalledWith(1);
+	expect(commit).toHaveBeenCalledTimes(1);
+	expect(f.transition.phase).toBe('committing');
+	expect(f.incoming.style.getPropertyValue('opacity')).toBe('0.8');
+	expect(f.actor.inert).toBe(true); expect(f.motion.restore).not.toHaveBeenCalled();
+	expect(f.hooks.finish).not.toHaveBeenCalled(); expect(frames.size).toBe(0);
+	release(); await revealing;
+	expect(f.transition.phase).toBe('complete'); expect(f.hooks.finish).toHaveBeenCalledTimes(1);
+	expect(f.motion.restore).toHaveBeenCalledTimes(1); expect(f.actor.inert).toBe(false);
+});
+
+test('cancellation aborts a stalled final commit and late completion cannot finish or clean up twice', async () => {
+	const f = fixture(), handle = f.transition.start()!;
+	await frame(MOTION_DURATION); await frame(MOTION_DURATION + 16); await handle.finished;
+	let release!: () => void, signal!: AbortSignal;
+	const pending = new Promise<void>(resolve => { release = resolve; });
+	const revealing = f.transition.reveal([], undefined, current => { signal = current; return pending; }); await flush();
+	await frame(MOTION_DURATION + 16 + ASYNC_REVEAL_DURATION);
+	expect(f.transition.phase).toBe('committing');
+	f.transition.cancel('superseded'); await revealing;
+	expect(signal.aborted).toBe(true); expect(f.transition.phase).toBe('cancelled');
+	expect(f.motion.restore).toHaveBeenCalledTimes(1); expect(f.hooks.cancel).toHaveBeenCalledExactlyOnceWith('superseded');
+	release(); await flush();
+	expect(f.hooks.finish).not.toHaveBeenCalled(); expect(f.motion.restore).toHaveBeenCalledTimes(1);
+});
+
+test('a rejected final content commit releases the retained source through the ordinary error cleanup', async () => {
+	const f = fixture(), handle = f.transition.start()!;
+	await frame(MOTION_DURATION); await frame(MOTION_DURATION + 16); await handle.finished;
+	const revealing = f.transition.reveal([], undefined, () => { throw new Error('adoption'); }); await flush();
+	await frame(MOTION_DURATION + 16 + ASYNC_REVEAL_DURATION); await revealing;
+	expect(f.transition.phase).toBe('cancelled'); expect(f.hooks.cancel).toHaveBeenCalledExactlyOnceWith('error');
+	expect(f.hooks.finish).not.toHaveBeenCalled(); expect(f.actor.inert).toBe(false);
+});
+
+test('error diagnostics receive the original binding exception before cleanup and cannot prevent cancellation', async () => {
+	const f = fixture(), handle = f.transition.start()!;
+	await frame(MOTION_DURATION); await frame(MOTION_DURATION + 16); await handle.finished;
+	const error = new Error('Declared dock endpoint is not fully docked');
+	f.hooks.error = vi.fn((received, phase) => {
+		expect(received).toBe(error); expect(phase).toBe('revealing');
+		expect(f.hooks.cancel).not.toHaveBeenCalled();
+		throw new Error('diagnostic observer failed');
+	});
+	await f.transition.reveal([], () => { throw error; });
+	expect(f.hooks.error).toHaveBeenCalledTimes(1);
+	expect(f.hooks.cancel).toHaveBeenCalledExactlyOnceWith('error');
+	expect(f.motion.restore).toHaveBeenCalledTimes(1);
+	expect(f.transition.phase).toBe('cancelled');
+});

@@ -165,4 +165,8 @@ Bei Abschluss jedes Schritts ergänzen: Framework-/Examples-Commit, ausgeführte
 
 | Schritt | Status | Commits / Nachweis |
 | --- | --- | --- |
-| 1–9 | offen | Noch keine Implementierung dieses Umbaus |
+| 1 Messung/Gate | abgeschlossen | Öffentliche Kit-Integration und Cancel/Preload/Goto-Gate in `9a85db4`; zehn Routing-, vier DOM-Browserfälle und 39 Unit-Fälle. |
+| 2–4 Layoutgrundlage | abgeschlossen | Durch Schritte 01–12 des [Layoutplans](layout-system-implementation-plan.md) ersetzt: kanonischer Resolver, Grid/Sections, Karten, Summary, Dock, 3XL und Carousel. Dort stehen die einzelnen Commits und Produktionsnachweise. |
+| 5 Persistente Darstellung | abgeschlossen | `44a99fd`: echte Card-/Summary-Komponenten, Freeze/Hold/Adopt/Restore; 18 Ownership-/DOM-Browserfälle und sieben Carousel-Regressionsfälle. |
+| 6–8 Vorwärtsbewegung | in Produktionsprüfung | `3453218`, `7e26ede`: vorbereitete GPU-Pässe, reine Hero-/Dock-Zielgeometrie, Sensorpause, abbrechbarer Capture-Besitz. Adapter verbindet Liste/Carousel mit Hero/Dock und festem 3XL-Ziel. Zwei strikte GPU-Läufe erzeugten während Bewegung keine Pipelines, Shader, Texturen oder Buffer; finale Variantenmatrix folgt. |
+| 9 Performance/Aktivierung | in Umsetzung | Wiederholungsmessung mit getrennt kalten/warmen Daten und Modulen sowie echte Abbruch-/Fehlerfälle im Produktionsbuild. Keine allgemeine Aktivierung vor diesen Prüfungen. |

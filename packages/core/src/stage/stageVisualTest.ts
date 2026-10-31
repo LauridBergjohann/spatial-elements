@@ -41,7 +41,9 @@ export interface StageVisualTestVisibilityStats {
 
 /** Browser-only controls exposed when a stage is opened with `?stage-test=1`. */
 export interface StageVisualTestController {
-	getNavigationTimings(): { dataReady: number; captured: number; restoring: number; bound: number };
+	getNavigationTimings(): { dataReady: number; captured: number; restoring: number; bound: number;
+		early?: { started: number; entered: number; captured: number; prepared: number; firstMotion: number;
+			firstSubmitted: number; held: number; committed: number; revealed: number } };
 	captureHeroPresentation(): boolean;
 	getSpatialCapture(): ReturnType<StageExperience['getSpatialCapture']> | null;
 	releaseSpatialCapture(): void;

@@ -53,7 +53,7 @@
 .stage:is(
 		[data-catalog-recipe='list-to-dock'],
 		[data-catalog-recipe='carousel-to-dock']
-	)[data-catalog-transition]
+	)[data-catalog-transition]:not([data-catalog-staged-phase='revealing']):not([data-catalog-staged-phase='committing'])
 	[data-spatial-element-sticky-header]::before {
 	opacity: 0 !important;
 }

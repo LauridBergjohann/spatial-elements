@@ -3,6 +3,8 @@
 	import { DEFAULT_BACKGROUND } from '@spatial-elements/core/stage/stageConstants';
 	import { onMount, setContext, tick } from 'svelte';
 	import { ResponsiveViewportMetrics } from '@spatial-elements/core/spatial-element/ResponsiveViewportMetrics';
+	import { SPATIAL_PRESENTATION_OWNER, type SpatialPresentationOwner } from '../spatial-element/spatialPresentationOwner.js';
+	import type { SpatialSummaryHostController } from '../spatial-element/spatialSummaryHost.svelte.js';
 	import type { Snippet } from 'svelte';
 	import type {
 		BackgroundSettings,
@@ -24,6 +26,7 @@
 	import { VirtualScrollController } from '@spatial-elements/core/stage/VirtualScrollController';
 	import { StageFullscreenController } from '@spatial-elements/core/stage/StageFullscreenController';
 	import ScrollNavigationBridge from '../catalog/ScrollNavigationBridge.svelte';
+	import { startStagedCatalogNavigation } from '../catalog/stagedCatalogNavigation.js';
 	import { NavigationFeedback } from '@spatial-elements/core/catalog/NavigationFeedback';
 	import { CatalogTransition } from '@spatial-elements/core/catalog/CatalogTransition';
 	import {
@@ -48,7 +51,7 @@
 		hasSpatialElementScene
 	} from '@spatial-elements/core/spatial-element/spatialElementScene';
 	import { SPATIAL_PAGE } from '../spatial-element/spatialPageContext.js';
-	import type { OnNavigate } from '@sveltejs/kit';
+	import type { BeforeNavigate, OnNavigate } from '@sveltejs/kit';
 	import {
 		STAGE_CONTEXT_KEY,
 		type StageContext,
@@ -151,6 +154,13 @@
 	let domLayerOpacity = $state(1);
 	let experience = $state<StageExperience | null>(null);
 	let layoutMetrics: ResponsiveViewportMetrics | undefined;
+	let presentationHost: SpatialSummaryHostController | undefined;
+	setContext<SpatialPresentationOwner>(SPATIAL_PRESENTATION_OWNER, {
+		register(host) {
+			presentationHost = host;
+			return () => { if (presentationHost === host) presentationHost = undefined; };
+		}
+	});
 	let readDetailMedia = $state.raw<(() => SpatialElementMediaItem['kind']) | undefined>();
 	let detailMediaOwner: symbol | undefined;
 	const detailMedia = $derived(readDetailMedia?.() ?? 'minimap');
@@ -164,6 +174,8 @@
 	let visualTestController: StageVisualTestController | undefined;
 	let virtualScroll = $state<VirtualScrollController>();
 	let transition: CatalogTransition | undefined;
+	let earlyTransition: ReturnType<typeof startStagedCatalogNavigation>;
+	let lastEarlyTimings: NonNullable<typeof earlyTransition>['timings'] | undefined;
 	let initialized: Promise<void> | undefined;
 	let navigationGeneration = 0;
 	let navigationFeedback: NavigationFeedback | undefined;
@@ -317,6 +329,7 @@
 					fullscreenController?.setFullscreen(false);
 					navigationFeedback?.end();
 					navigationGeneration += 1;
+					earlyTransition?.cancel('error');
 					transition?.cancel();
 					experience = null;
 					try {
@@ -384,6 +397,7 @@
 			releasePageBinding?.();
 			navigationGeneration += 1;
 			navigationFeedback?.end();
+			earlyTransition?.cancel('destroyed');
 			transition?.dispose();
 			document.documentElement.classList.remove('stage-route');
 			document.body.classList.remove('stage-route');
@@ -445,6 +459,7 @@
 	}
 
 	function interruptNavigation() {
+		earlyTransition?.cancel('cancelled');
 		navigationFeedback?.end();
 		navigationGeneration += 1;
 		reuseCatalogPage = false;
@@ -453,6 +468,7 @@
 	}
 
 	function supersedeNavigation(destination: URL) {
+		if (earlyTransition?.destination !== destination.href) earlyTransition?.cancel('superseded');
 		navigationFeedback?.end();
 		navigationGeneration += 1;
 		transition?.supersede(destination);
@@ -460,10 +476,36 @@
 	}
 
 	let navigationTimings = { dataReady: 0, captured: 0, restoring: 0, bound: 0 };
+	function startEarlyNavigation(navigation: BeforeNavigate) {
+		// The opt-in is temporary while production frame/ownership gates are verified.
+		stage.dataset.catalogStagedDecision = `gate:${isEnhanced}:${Boolean(experience)}:${Boolean(presentationHost)}`;
+		if (!new URL(location.href).searchParams.has('stagedNavigation') || !isEnhanced || !experience || !presentationHost) return;
+		const metrics = layoutMetrics?.read();
+		if (!metrics) return;
+		earlyTransition?.cancel('superseded');
+		const candidate = startStagedCatalogNavigation({ root: stage, navigation, endpoints: catalogEndpoints,
+			host: presentationHost, experience, metrics, items: catalogSpatialElements,
+			onFinish() {
+				if (earlyTransition) lastEarlyTimings = earlyTransition.timings;
+				earlyTransition = undefined;
+				navigationFeedback?.end();
+			}
+		});
+		earlyTransition = candidate;
+		return candidate?.handle;
+	}
 	async function captureNavigation(navigation: OnNavigate) {
 		fullscreenController?.setFullscreen(false);
 		navigationTimings = { dataReady: performance.now(), captured: 0, restoring: 0, bound: 0 };
 		const generation = ++navigationGeneration;
+		if (earlyTransition?.phase === 'held' && navigation.to?.url.href === earlyTransition.destination) {
+			earlyTransition.commit();
+			reuseCatalogPage = false;
+			navigationTimings.captured = performance.now();
+			experience?.releasePage();
+			setZoomFocusState(restingZoomFocus);
+			return;
+		}
 		await navigationFeedback?.painted;
 		if (destroyed || generation !== navigationGeneration) return;
 		reuseCatalogPage = Boolean(
@@ -545,10 +587,15 @@
 			isFallback = false;
 			stageState = 'enhanced';
 			navigationTimings.bound = performance.now();
-			await transition?.play();
+			if (earlyTransition?.phase === 'held') {
+				await earlyTransition.reveal(() => experience?.updateAppearance({
+					pageBackground: resolvedPageBackground, background, interactionTheme, panels: getPanelTargets()
+				}));
+			} else await transition?.play();
 		} catch (error) {
 			if (destroyed || generation !== navigationGeneration) return;
 			transition?.cancel();
+			earlyTransition?.cancel('error');
 			try {
 				experience.discardFailedPage();
 			} catch (cleanupError) {
@@ -611,7 +658,7 @@
 			getCatalogStats: () => experience?.assets.getStats() ?? null,
 			getCatalogEndpoints: () => catalogEndpoints.getSnapshot(),
 			getCatalogOwnership: () => transition?.getOwnership() ?? null,
-			getNavigationTimings: () => ({ ...navigationTimings }),
+			getNavigationTimings: () => ({ ...navigationTimings, early: earlyTransition?.timings ?? lastEarlyTimings }),
 			captureHeroPresentation: () => experience?.captureHeroPresentation() ?? false,
 			getSpatialCapture: () => experience?.getSpatialCapture() ?? null,
 			releaseSpatialCapture: () => experience?.releaseSpatialCapture(),
@@ -720,6 +767,7 @@
 {#if catalog}
 	<ScrollNavigationBridge
 		controller={virtualScroll}
+		onEarlyStart={startEarlyNavigation}
 		onStart={() => { if (isEnhanced) navigationFeedback?.begin(); }}
 		onCapture={captureNavigation}
 		onSupersede={supersedeNavigation}

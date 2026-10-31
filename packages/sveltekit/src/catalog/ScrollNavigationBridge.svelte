@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { readCatalogViewContext } from '@spatial-elements/core/catalog/catalogViewLink';
+	import { readCatalogLinkContext, readCatalogViewContext } from '@spatial-elements/core/catalog/catalogViewLink';
 	import {
 		EarlyNavigationCoordinator,
 		type EarlyNavigationCancelReason,
@@ -66,6 +66,9 @@
 	let pendingNavigation = false;
 	let focusRevision = 0;
 	let earlyReplayComplete: Promise<void> | undefined;
+	// Kit invokes beforeNavigate after the click dispatch has finished. The DOM
+	// event's composedPath is empty by then, so remember its original anchor now.
+	const earlyAnchors = new WeakMap<Event, HTMLAnchorElement>();
 	const earlyNavigation = new EarlyNavigationCoordinator({
 		preload: async (destination, signal) => {
 			let timer: ReturnType<typeof setTimeout> | undefined;
@@ -158,12 +161,13 @@
 			!navigation.from || !navigation.to?.route.id ||
 			navigation.to.url.origin !== navigation.from.url.origin ||
 			navigation.to.url.pathname === navigation.from.url.pathname) return false;
-		// Unknown fragments require destination DOM. Only the canonical detail
-		// overview has a layout-defined endpoint that the visual owner can predict.
-		if (navigation.to.url.hash && navigation.to.url.hash !== '#overview') return false;
 		// Kit's BeforeNavigate does not expose the resolved link options. Keep
 		// explicitly authored focus/scroll/history policies on the ordinary path.
-		const anchor = navigation.event.composedPath().find((node) => node instanceof HTMLAnchorElement);
+		const anchor = earlyAnchors.get(navigation.event);
+		// An author can declare a complete Dock endpoint. Arbitrary hashes still
+		// need destination DOM, including short pages where native scrolling clamps.
+		if (navigation.to.url.hash && navigation.to.url.hash !== '#overview' &&
+			readCatalogLinkContext(anchor, navigation.to.url).targetPresentation !== 'dock') return false;
 		return anchor instanceof HTMLAnchorElement && !anchor.closest(
 			'[data-sveltekit-keepfocus], [data-sveltekit-noscroll], [data-sveltekit-replacestate], [data-sveltekit-reload]'
 		);
@@ -288,6 +292,10 @@
 	});
 	onDestroy(() => stopActive(undefined, 'destroyed'));
 	onMount(() => {
+		const rememberAnchor = (event: MouseEvent) => {
+			const anchor = event.composedPath().find((node) => node instanceof HTMLAnchorElement);
+			if (anchor instanceof HTMLAnchorElement) earlyAnchors.set(event, anchor);
+		};
 		const interrupt = () => { if (earlyNavigation.pending) stopActive(undefined, 'interaction'); };
 		const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') interrupt(); };
 		const resize = () => { if (earlyNavigation.pending) stopActive(undefined, 'resize'); };
@@ -295,11 +303,13 @@
 		window.addEventListener('wheel', interrupt, { passive: true });
 		window.addEventListener('touchmove', interrupt, { passive: true });
 		window.addEventListener('resize', resize);
+		document.addEventListener('click', rememberAnchor, true);
 		return () => {
 			window.removeEventListener('keydown', keydown);
 			window.removeEventListener('wheel', interrupt);
 			window.removeEventListener('touchmove', interrupt);
 			window.removeEventListener('resize', resize);
+			document.removeEventListener('click', rememberAnchor, true);
 		};
 	});
 
