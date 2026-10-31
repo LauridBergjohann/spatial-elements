@@ -84,9 +84,11 @@ test('half-mask probe preserves target identity across viewport resizes and High
 	expect([target.width, target.height]).toEqual([500, 350]);
 	const disposed = vi.spyOn(target, 'dispose');
 	pipeline.createModelOutline(model);
-	expect(disposed).toHaveBeenCalledOnce();
+	expect(disposed).not.toHaveBeenCalled();
+	expect(pipeline.getRenderTargets()[0]).toBe(target);
 	expect(pipeline.getRenderTargets().map((t) => [t.width, t.height])).toEqual([[500, 350]]);
 	pipeline.releaseOutline();
+	expect(disposed).toHaveBeenCalledOnce();
 });
 
 test('fused halo renders the live mask without a separate composite submission', () => {
@@ -140,7 +142,7 @@ test('active touch manipulation does not submit the mouse hover glow pass', () =
 	}
 });
 
-test('High replacement retains the fused display material and frees the previous mask', () => {
+test('High replacement retains both the fused display material and its sampled mask', () => {
 	vi.stubGlobal('window', { devicePixelRatio: 1, innerWidth: 800, innerHeight: 600 });
 	const f = rendererFixture();
 	const pipeline = new StageRenderPipeline({
@@ -157,12 +159,14 @@ test('High replacement retains the fused display material and frees the previous
 	const first = pipeline.getRenderTargets()[0];
 	const disposed = vi.spyOn(first, 'dispose');
 	pipeline.createModelOutline(new THREE.Group());
-	expect(disposed).toHaveBeenCalledOnce();
+	expect(disposed).not.toHaveBeenCalled();
+	expect(pipeline.getRenderTargets()[0]).toBe(first);
 	expect(pipeline.stageDisplayQuad!.material).toBe(display);
 	expect([pipeline.getRenderTargets()[0].width, pipeline.getRenderTargets()[0].height]).toEqual([
 		800, 600
 	]);
 	pipeline.dispose();
+	expect(disposed).toHaveBeenCalledOnce();
 	f.originalTarget.dispose();
 });
 
@@ -275,7 +279,7 @@ test('backdrop blur retains its CSS sampling density across DPR and scroll targe
 	f.originalTarget.dispose();
 });
 
-test('late High silhouette replacement retains the current viewport without another resize', () => {
+test('late High silhouette replacement retains warmed target/material owners and invalidates its pixels', () => {
 	const model = new THREE.Group();
 	const mesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
 	model.add(mesh);
@@ -285,14 +289,39 @@ test('late High silhouette replacement retains the current viewport without anot
 	} as unknown as StageRenderPorts);
 	pipeline.resizeOutline(1440, 900);
 	pipeline.createModelOutline(model);
+	const owned = pipeline as unknown as {
+		outlineMaskModel: THREE.Object3D; outlineMaskMaterial: THREE.Material;
+		outlineCompositeMaterial: THREE.Material; outlineQuad: THREE.QuadMesh; outlineMaskValid: boolean;
+	};
+	const original = {
+		model: owned.outlineMaskModel, material: owned.outlineMaskMaterial,
+		composite: owned.outlineCompositeMaterial, quad: owned.outlineQuad
+	};
 	const first = pipeline.getRenderTargets()[0];
 	expect([first.width, first.height]).toEqual([1440, 900]);
 	const dispose = vi.spyOn(first, 'dispose');
-	pipeline.createModelOutline(model);
-	expect(dispose).toHaveBeenCalledOnce();
+	const materialDispose = vi.spyOn(original.material, 'dispose');
+	const compositeDispose = vi.spyOn(original.composite, 'dispose');
+	const highGeometry = new THREE.SphereGeometry();
+	const high = new THREE.Group().add(new THREE.Mesh(highGeometry, mesh.material));
+	owned.outlineMaskValid = true;
+	pipeline.createModelOutline(high);
+	expect(dispose).not.toHaveBeenCalled();
+	expect(pipeline.getRenderTargets()[0]).toBe(first);
+	expect(owned.outlineMaskMaterial).toBe(original.material);
+	expect(owned.outlineCompositeMaterial).toBe(original.composite);
+	expect(owned.outlineQuad).toBe(original.quad);
+	expect(owned.outlineMaskModel).not.toBe(original.model);
+	expect(original.model.parent).toBeNull();
+	expect((owned.outlineMaskModel.children[0] as THREE.Mesh).geometry).toBe(highGeometry);
+	expect(owned.outlineMaskValid).toBe(false);
 	expect(pipeline.getRenderTargets().map((t) => [t.width, t.height])).toEqual([[1440, 900]]);
 	pipeline.releaseOutline();
+	expect(dispose).toHaveBeenCalledOnce();
+	expect(materialDispose).toHaveBeenCalledOnce();
+	expect(compositeDispose).toHaveBeenCalledOnce();
 	mesh.geometry.dispose();
+	highGeometry.dispose();
 	mesh.material.dispose();
 });
 

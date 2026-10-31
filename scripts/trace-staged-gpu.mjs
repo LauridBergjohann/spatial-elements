@@ -21,6 +21,7 @@ try {
   const commandLine = await browserSession.send('Browser.getBrowserCommandLine').catch(error => ({ unavailable: error.message }));
   const context = await browser.newContext({ baseURL, viewport: { width: 1440, height: 1000 } });
   await context.addInitScript(() => {
+    Error.stackTraceLimit = 40;
     const probe = { active: false, phase: '', submits: [], fences: [], frames: [], longFrames: [], gpuCreates: [], errors: [] };
     Object.assign(window, { gpuProbe: probe });
     const views = new WeakMap(), encoders = new WeakMap(), buffers = new WeakMap(), shaders = new WeakMap(), pendingFences = new WeakSet();
@@ -64,7 +65,10 @@ try {
             entry.pipeline = { label: descriptor.label, vertex: shaders.get(descriptor.vertex?.module), fragment: shaders.get(descriptor.fragment?.module),
               targets: descriptor.fragment?.targets, depthStencil: descriptor.depthStencil, multisample: descriptor.multisample, primitive: descriptor.primitive };
             entry.stack = new Error().stack;
-          } else if (method === 'createTexture') entry.texture = { size: descriptor.size, format: descriptor.format, samples: descriptor.sampleCount, usage: descriptor.usage, label: descriptor.label };
+          } else if (method === 'createTexture') {
+            entry.texture = { size: descriptor.size, format: descriptor.format, samples: descriptor.sampleCount, usage: descriptor.usage, label: descriptor.label };
+            entry.stack = new Error().stack;
+          }
           else entry.buffer = { size: descriptor.size, usage: descriptor.usage, label: descriptor.label };
           probe.gpuCreates.push(entry);
         }
@@ -118,6 +122,15 @@ try {
   page.on('pageerror', error => process.stderr.write(`${error.message}\n`));
   await page.goto(`/staged/categories/${view}?stage-test=1&stagedNavigation=1`);
   if (args.promote === 'true') await page.addStyleTag({ content: '.interactive.selected .summary, .interactive.selected .spatial-summary-island { will-change: transform; }' });
+  if (args.prepareDom === 'true') await page.addStyleTag({ content: `
+    .stage[data-catalog-staged-phase='held'] {
+      --catalog-enter-opacity: 0.001 !important;
+      --catalog-shared-opacity: 0.001 !important;
+    }
+    .stage[data-catalog-staged-phase='held'] :is([data-catalog-transition-dom='enter'], [data-catalog-transition-group='enter'], [data-catalog-transition-group='shared']) {
+      visibility: visible !important;
+    }
+  ` });
   await page.waitForFunction(() => window.__stageVisualTest?.getCarouselStats()?.actors.some(actor => actor.spatialElementId === 'column' && actor.stagedReady), undefined, { timeout: 60000 });
   const link = page.locator(view === 'list' ? '[data-catalog-card][data-spatial-element-id="column"]' : '[data-carousel-item="column"] .spatial-element-target').first();
   await link.evaluate(node => { const url = new URL(node.href); url.hash = ''; node.href = url.href; });
@@ -160,7 +173,7 @@ try {
     }]));
     return { timings, phases, catalog: window.__stageVisualTest.getCarouselStats(), probe: window.gpuProbe };
   });
-  await writeFile(join(output, 'probe.json'), JSON.stringify({ view, temperature, promotion: args.promote === 'true', sourceStyles, categories, clockMetrics, systemInfo, commandLine, browser: browser.version(), ...report }, null, 2));
+  await writeFile(join(output, 'probe.json'), JSON.stringify({ view, temperature, promotion: args.promote === 'true', prepareDom: args.prepareDom === 'true', sourceStyles, categories, clockMetrics, systemInfo, commandLine, browser: browser.version(), ...report }, null, 2));
   const complete = new Promise(resolve => browserSession.once('Tracing.tracingComplete', resolve));
   await browserSession.send('Tracing.end'); tracing = false;
   const { stream } = await complete;

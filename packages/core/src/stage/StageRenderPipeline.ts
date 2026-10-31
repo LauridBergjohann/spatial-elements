@@ -315,10 +315,7 @@ export class StageRenderPipeline {
 	}
 	createModelOutline(model: Object3D) {
 		this.outlineMaskModel?.removeFromParent();
-		this.outlineMaskMaterial?.dispose();
-		this.outlineCompositeMaterial?.dispose();
-		this.outlineMaskTarget?.dispose();
-		this.outlineMaskMaterial = new THREE.MeshBasicMaterial({
+		this.outlineMaskMaterial ??= new THREE.MeshBasicMaterial({
 			color: 0xffffff,
 			depthTest: true,
 			depthWrite: true,
@@ -340,19 +337,24 @@ export class StageRenderPipeline {
 
 		this.outlineMaskModel = maskModel;
 		this.outlineMaskScene.add(maskModel);
-		this.outlineMaskTarget = new THREE.RenderTarget(1, 1, {
-			depthBuffer: true,
-			stencilBuffer: false,
-			samples: 4
-		});
-		this.outlineMaskTarget.texture.minFilter = THREE.LinearFilter;
-		this.outlineMaskTarget.texture.magFilter = THREE.LinearFilter;
-		this.outlineMaskTarget.texture.generateMipmaps = false;
-		this.displayOutlineMask.value = this.outlineMaskTarget.texture;
-		this.outlineCompositeMaterial = this.createOutlineCompositeMaterial(
-			this.outlineMaskTarget.texture
-		);
-		this.outlineQuad = new THREE.QuadMesh(this.outlineCompositeMaterial);
+		// Low/High changes replace the silhouette, not its viewport-sized storage.
+		// StageDisplay binds this sampler even while its opacity branch is zero;
+		// replacing it mid-reveal would recreate the texture and MSAA attachment.
+		if (!this.outlineMaskTarget) {
+			this.outlineMaskTarget = new THREE.RenderTarget(1, 1, {
+				depthBuffer: true,
+				stencilBuffer: false,
+				samples: 4
+			});
+			this.outlineMaskTarget.texture.minFilter = THREE.LinearFilter;
+			this.outlineMaskTarget.texture.magFilter = THREE.LinearFilter;
+			this.outlineMaskTarget.texture.generateMipmaps = false;
+			this.displayOutlineMask.value = this.outlineMaskTarget.texture;
+			this.outlineCompositeMaterial = this.createOutlineCompositeMaterial(
+				this.outlineMaskTarget.texture
+			);
+			this.outlineQuad = new THREE.QuadMesh(this.outlineCompositeMaterial);
+		}
 		// High refinement can replace the silhouette long after the last window resize.
 		this.resizeOutline(this.outlineWidth, this.outlineHeight);
 	}
