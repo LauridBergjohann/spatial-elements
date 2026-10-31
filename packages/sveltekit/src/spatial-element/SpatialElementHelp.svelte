@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { getContext, onMount, tick } from 'svelte';
 	import { CircleHelp, X } from 'lucide-svelte';
 	import InteractionGesture from './InteractionGesture.svelte';
@@ -14,6 +15,7 @@
 
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
+	const radii = $derived(resolveSpatialThemeRadii(theme));
 	const stageContext = getContext<StageContext>(STAGE_CONTEXT_KEY);
 	const fullscreen = $derived(stageContext.isFullscreen?.() ?? false);
 	const readMessages = useSpatialMessages();
@@ -42,7 +44,7 @@
 		`--help-tint-opacity: ${(theme.panelTheme.tintOpacity ?? 0.65) * 100}%`,
 		`--help-blur: ${Math.min(100, Math.max(0, theme.panelTheme.backdropBlur ?? 8))}px`,
 		`--help-shadow: ${getCssPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2)}`,
-		`--help-radius: ${theme.panelShape.radius}px`
+		`--help-radius: ${radii.panel}px`
 	].join(';'));
 
 	function clearDelay() { clearTimeout(delay); delay = undefined; }
@@ -217,7 +219,7 @@
 		onfocusin={clearHideDelay} onfocusout={() => { queueMicrotask(schedule); }}
 		ontoggle={(event) => { open = event.newState === 'open'; if (!open) { manual = false; clearHideDelay(); } }}>
 		<Panel class="interaction-help-panel" data-stage-fullscreen-visible nativeContent nativeLayout={position} visible={open} pointerReactive={false} focusReactive={false}
-			shape={{ ...theme.panelShape, contentInset: 0 }} theme={theme.panelTheme}>
+			shape={{ ...theme.panelShape, radius: radii.panel, contentInset: 0 }} theme={theme.panelTheme}>
 			<div class="help-copy">
 				<div class="help-heading">
 					<h2 id={`${id}-title`}>{help.title}</h2>
@@ -253,7 +255,7 @@
 	.model-tools-buttons { display: flex; gap: 8px; justify-content: flex-end; }
 	.touch-hint {
 		position: absolute; right: 0; top: 48px; width: max-content; max-width: min(260px, calc(100vw - 48px));
-		margin: 0; padding: 8px 12px; border-radius: 10px; font-size: 12px; line-height: 1.45;
+		margin: 0; padding: 8px 12px; border-radius: var(--spatial-element-control-radius); font-size: 12px; line-height: 1.45;
 		color: var(--spatial-element-ink); pointer-events: none;
 		background: color-mix(in srgb, var(--help-tint) var(--help-tint-opacity), transparent);
 		backdrop-filter: blur(var(--help-blur)); box-shadow: var(--help-shadow);
@@ -271,7 +273,7 @@
 	h2 { margin: 0; font-size: 15px; font-weight: 650; }
 	.close-help {
 		width: 40px; height: 40px; flex: 0 0 40px; display: grid; place-items: center;
-		padding: 0; border: 0; border-radius: 8px; color: inherit; background: transparent; cursor: pointer;
+		padding: 0; border: 0; border-radius: var(--spatial-element-control-radius); color: inherit; background: transparent; cursor: pointer;
 	}
 	.close-help:focus-visible { outline: 2px solid var(--spatial-element-accent); }
 	dl { display: grid; gap: 8px; margin: 8px 0 0; }

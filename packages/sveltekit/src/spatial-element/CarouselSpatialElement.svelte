@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import SpatialElementSummaryContent from './SpatialElementSummaryContent.svelte';
 	import { getContext } from 'svelte';
 	import { getCssPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
@@ -53,6 +54,7 @@
 	const sections = getContext<CatalogSections | undefined>(CATALOG_SECTIONS);
 	const readTheme = useSpatialTheme();
 	const brand = $derived(readTheme());
+	const radii = $derived(resolveSpatialThemeRadii(brand));
 	const contentInset = $derived(brand.panelShape.contentInset ?? Math.max(16, Math.round(brand.panelShape.radius * 0.7)));
 	const catalogEndpoint = createCatalogEndpointAction();
 	function address(role: CatalogEndpointRole) {
@@ -117,7 +119,7 @@
 	data-carousel-surface={brand.panelTheme.surface ?? 'glass'}
 	data-carousel-theme={JSON.stringify({
 		...brand.panelTheme,
-		radius: brand.panelShape.radius,
+		radius: radii.panel,
 		tintOpacity: Math.min(brand.panelTheme.tintOpacity ?? 0.28, 0.72)
 	})}
 	data-catalog-occurrence={occurrence}
@@ -192,7 +194,7 @@
 			'%'}
 		style:--carousel-panel-blur={(brand.panelTheme.backdropBlur ?? 5) + 'px'}
 		style:--carousel-focus-blur={interactive && pose.panelOpacity < 1 ? `blur(${(1 - pose.panelOpacity) * 6}px)` : 'none'}
-		style:--carousel-panel-radius={brand.panelShape.radius + 'px'}
+		style:--carousel-panel-radius={radii.panel + 'px'}
 		use:catalogEndpoint={address('summary-surface')}
 	>
         <SpatialElementSummaryContent {address} {contentInset} spatialElement={{
@@ -291,7 +293,7 @@
 	.spatial-element-target:focus-visible {
 		outline: 2px solid var(--spatial-element-accent);
 		outline-offset: 4px;
-		border-radius: 12px;
+		border-radius: var(--spatial-element-control-radius);
 	}
 	/* Enhanced geometry already has a silhouette focus outline in the renderer. */
 	.interactive:global([data-catalog-model-ready]) .spatial-element-target:focus-visible {

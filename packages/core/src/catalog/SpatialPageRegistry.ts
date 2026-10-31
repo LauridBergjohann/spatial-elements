@@ -1,7 +1,7 @@
 import type { SpatialElementData } from '../spatial-element/types.js';
 
 /** @internal A page declares its role, rather than asking its parent layout to inspect route data. */
-export type SpatialPage = { kind: 'content'; hdr: string } | { kind: 'detail'; element: SpatialElementData };
+export type SpatialPage = { kind: 'content'; hdr: string; background?: string } | { kind: 'detail'; element: SpatialElementData };
 
 /** @internal Each Stage owns an instance; nothing is shared between SSR requests or shells. */
 export class SpatialPageRegistry {

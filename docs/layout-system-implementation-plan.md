@@ -368,9 +368,9 @@ Ein Schritt gilt erst als fertig, wenn seine Abnahme erfüllt ist. Eintragen: Fr
 | --- | --- | --- |
 | 01 Spezifikation | abgeschlossen | Framework `159b006`: [Verträge und Entscheidungen](design/layout/README.md), [Prüffälle](design/layout/validation.md); Examples `af85ecd` archiviert 9 Originale und 7 verlustfreie Referenzblätter. Alle SHA-256 und öffentliche Dokumentlinks geprüft. Baseline: 71 Dateien / 369 Unit-Tests bestanden. |
 | 02 Resolver | abgeschlossen | Framework `b7a1e0d`: gemeinsame JSON-Tokens, reine Raster-/Detail-/Carousel-/Zoom-Berechnung, natürliche Panel-Constraints und generiertes CSS. 56 gezielte Tests und Core-Typecheck bestanden; CSS-/TS-Tokens per `check:layout` abgesichert. |
-| 03 Grid/ContentPage | abgeschlossen | ContentGrid/ContentBlock, containerabhängige Spans, ContentPage und öffentliche Fixture. Paket-/Demo-Produktionsbuild bestanden; 4 Browserfälle in `content-grid.e2e.ts` bestanden (SSR/noJS, Hydration, 320–3200px, Containergrenzen und Fokusreihenfolge). |
-| 04 Sections/Theme | in Arbeit | Rollen, Normalisierung, Headline-Migration und Gruppierung vorbereitet; Browserprüfung folgt. |
-| 05 Liste/Karten | offen | — |
+| 03 Grid/ContentPage | abgeschlossen | Framework `5092a37`: ContentGrid/ContentBlock, containerabhängige Spans, ContentPage und öffentliche Fixture. Paket-/Demo-Produktionsbuild bestanden; 4 Browserfälle in `content-grid.e2e.ts` bestanden (SSR/noJS, Hydration, 320–3200px, Containergrenzen und Fokusreihenfolge). Scrollbar-Fall anschließend mit `ea33ab0` berücksichtigt. |
+| 04 Sections/Theme | abgeschlossen | Section-Headline/Background, SSR-Gruppenradien mit separater Präsentationsregistrierung, Theme-Rollen und Seitenfarbe integriert. Beide Section-Browserfälle bestanden (SSR/noJS und Hydration, einschließlich dynamischer Oberfläche); 19 Regel-/Theme-Tests, Paket-/Demo-Build und vollständiger Typecheck bestanden. Bestehende Headlines und Themenfarben explizit migriert. |
+| 05 Liste/Karten | in Arbeit | Kartenmatrix und SSR-Browserfälle bestanden; eine strenge GPU-Textübergabeprüfung wird noch untersucht (Zeitpunkt der Quellmessung). |
 | 06 Lebende Panels | offen | — |
 | 07 Shell/Navigation | offen | — |
 | 08 Detail-Hero | offen | — |

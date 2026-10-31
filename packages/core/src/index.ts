@@ -3,7 +3,7 @@ export { defaultSpatialMessages, resolveSpatialMessages, type SpatialMessages, t
 export { SpatialElementAssetManager, GltfSpatialElementAssetLoader } from './catalog/assets/SpatialElementAssetManager.js';
 export * from './spatial-element/types.js';
 export { findSpatialElement, getSpatialListItems, getSpatialElementSectionStyle, isSpatialElementSectionId } from './spatial-element/spatialElement.js';
-export { createSpatialTheme, type SpatialThemeOptions } from './spatial-element/spatialTheme.js';
+export { createSpatialTheme, resolveSpatialThemeRadii, resolveSpatialSectionBackgrounds, type SpatialThemeOptions } from './spatial-element/spatialTheme.js';
 export type { CatalogPage } from './catalog/catalogPage.js';
 export type { CarouselPresentation } from './catalog/catalogPose.js';
 export { catalogViewLink } from './catalog/catalogViewLink.js';

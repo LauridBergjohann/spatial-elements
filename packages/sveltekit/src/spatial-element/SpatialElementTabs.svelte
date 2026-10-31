@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { onMount, tick } from 'svelte';
 	import Panel from '../stage/Panel.svelte';
 	import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
@@ -16,6 +17,7 @@
 	let anchorElement: HTMLDivElement;
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
+	const radii = $derived(resolveSpatialThemeRadii(theme));
 
 	onMount(() => {
 		let resizeObserver: ResizeObserver | undefined;
@@ -81,7 +83,7 @@
 		transitionGroup="enter"
 		class="spatial-element-tabs-panel"
 		pointerReactive={false}
-		shape={{ ...theme.panelShape, contentInset: 0 }}
+		shape={{ ...theme.panelShape, radius: radii.control, contentInset: 0 }}
 		theme={theme.panelTheme}
 		contentClass="spatial-element-tabs-panel-content"
 	>

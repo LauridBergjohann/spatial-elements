@@ -19,6 +19,8 @@
 	import SpatialElementHelp from './SpatialElementHelp.svelte';
 	import SpatialElementStickyHeader from './SpatialElementStickyHeader.svelte';
 	import SpatialElementTabs from './SpatialElementTabs.svelte';
+	import SectionSurfaceGroup from './SectionSurfaceGroup.svelte';
+	import './layout.generated.css';
 	import { SpatialElementDockController } from '@spatial-elements/core/spatial-element/SpatialElementDockController';
 	import { SPATIAL_ELEMENT_SECTION_REGISTRY_KEY, SpatialElementSectionRegistry } from '@spatial-elements/core/spatial-element/spatialElementSectionRegistry';
 	import type { SpatialElementData, SpatialElementSectionNavigationItem } from '@spatial-elements/core/spatial-element/types';
@@ -185,8 +187,8 @@
 	</section>
 
 	<div class="spatial-element-content">
-		<div class="spatial-element-section-list" data-catalog-transition-dom="enter">
-			{@render children?.()}
+		<div class="spatial-element-section-list spatial-content-container" data-catalog-transition-dom="enter">
+			<SectionSurfaceGroup>{@render children?.()}</SectionSurfaceGroup>
 		</div>
 		<!-- Read after the section snippet has registered its metadata during SSR. -->
 		<SpatialElementTabs {activeSectionId} sections={[SPATIAL_ELEMENT_OVERVIEW_SECTION, ...sections]} />

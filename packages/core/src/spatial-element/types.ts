@@ -64,6 +64,18 @@ export interface SpatialSectionTheme {
 	backdropBlur: number;
 }
 
+/** CSS-pixel radii for the two layout surface roles. */
+export interface SpatialThemeRadii {
+	control: number;
+	panel: number;
+}
+
+/** Opaque section colors, independent of the flat page color and glass materials. */
+export interface SpatialSectionBackgrounds {
+	standard: string;
+	muted: string;
+}
+
 /** CSS material used only by the fixed element header and its docked subnavigation. */
 export interface SpatialDockedPanelTheme {
 	/** Gaussian CSS backdrop blur radius in pixels. */
@@ -86,6 +98,10 @@ export interface SpatialTheme {
 	name: string;
 	/** Opaque CSS/Three.js color behind content and the independently revealed HDR stage. */
 	background: string;
+	/** Optional for hand-authored legacy themes; createSpatialTheme resolves both roles. */
+	radii?: SpatialThemeRadii;
+	/** Optional for hand-authored legacy themes; createSpatialTheme supplies both colors. */
+	sectionBackgrounds?: SpatialSectionBackgrounds;
 	/** Shared minimap appearance; element-specific framing belongs in SpatialElementData.minimap. */
 	minimapTheme: SpatialMinimapTheme;
 	/** Hover/selection outline appearance. */
@@ -149,10 +165,25 @@ export interface SpatialElementSectionStyle {
 	width?: string;
 }
 
+export type SectionBackgroundColor =
+	| 'transparent' | 'standard' | 'muted'
+	| 'transparentToStandard' | 'transparentToMuted'
+	| 'standardToTransparent' | 'standardToMuted'
+	| 'mutedToTransparent' | 'mutedToStandard';
+
+export interface SectionBackground {
+	color: SectionBackgroundColor;
+	size?: 'standard' | 'full';
+}
+
 /** Metadata supplied to a composable spatial-element `Section`. */
 export interface SpatialElementSectionDefinition {
 	id: string;
 	title: string;
+	/** Optional visible heading, separate from the navigation/accessibility title. */
+	headline?: string;
+	/** Semantic section background; legacy style remains available during migration. */
+	background?: SectionBackground;
 	style?: SpatialElementSectionStyle;
 }
 

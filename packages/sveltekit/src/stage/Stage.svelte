@@ -104,6 +104,7 @@
 		})
 	);
 	const activePage = $derived(readPage?.());
+	const resolvedPageBackground = $derived(activePage?.kind === 'content' ? activePage.background ?? pageBackground : pageBackground);
 	const activeElement = $derived(activePage?.kind === 'detail' ? activePage.element : undefined);
 	const activeScene = $derived(activeElement ? getSpatialElementScene(activeElement) : undefined);
 	const catalog = $derived<CatalogPage | undefined>(
@@ -170,7 +171,7 @@
 	const pageSignature = () =>
 		JSON.stringify([
 			renderSettings,
-			pageBackground,
+			resolvedPageBackground,
 			background,
 			hdr,
 			glb,
@@ -287,7 +288,7 @@
 						spatialElementId: catalog.spatialElementId
 					}) !== 'dock',
 				background,
-				pageBackground,
+				pageBackground: resolvedPageBackground,
 				hdr,
 				glb,
 				lodPair,
@@ -381,7 +382,7 @@
 	});
 
 	$effect(() => {
-		void pageBackground; void background; void isEnhanced;
+		void resolvedPageBackground; void background; void isEnhanced;
 		Object.values(interactionTheme ?? {});
 		scheduleAppearanceUpdate();
 	});
@@ -392,7 +393,7 @@
 		void tick().then(() => {
 			appearanceUpdatePending = false;
 			if (!destroyed && isEnhanced) experience?.updateAppearance({
-				pageBackground, background, interactionTheme, panels: getPanelTargets()
+				pageBackground: resolvedPageBackground, background, interactionTheme, panels: getPanelTargets()
 			});
 		});
 	}
@@ -505,7 +506,7 @@
 					}) === 'dock'
 				),
 				background,
-				pageBackground,
+				pageBackground: resolvedPageBackground,
 				hdr,
 				glb,
 				lodPair,
@@ -712,7 +713,7 @@
 
 <div
 	bind:this={stage}
-	style:--stage-page-background={pageBackground}
+	style:--stage-page-background={resolvedPageBackground}
 	class="stage"
 	class:stage-enhanced={isEnhanced}
 	class:stage-fallback={isFallback}

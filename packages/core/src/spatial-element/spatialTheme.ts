@@ -1,4 +1,37 @@
-import type { SpatialTheme } from './types.js';
+import type { SpatialSectionBackgrounds, SpatialTheme, SpatialThemeRadii } from './types.js';
+
+const defaultSectionBackgrounds: SpatialSectionBackgrounds = {
+	standard: '#ffffff',
+	muted: '#f5f7f9'
+};
+
+function nonNegativeFinite(value: number | undefined, fallback: number) {
+	return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : fallback;
+}
+
+/** Works for both factory inputs and older complete themes without split radius roles. */
+export function resolveSpatialThemeRadii(theme: {
+	panelShape?: { radius?: number };
+	radii?: Partial<SpatialThemeRadii>;
+}): SpatialThemeRadii {
+	const legacy = theme.panelShape?.radius;
+	return {
+		control: nonNegativeFinite(theme.radii?.control, nonNegativeFinite(legacy, 12)),
+		panel: nonNegativeFinite(theme.radii?.panel, nonNegativeFinite(legacy, 16))
+	};
+}
+
+/** Resolve missing new roles without changing the legacy section material or source object. */
+export function resolveSpatialSectionBackgrounds(theme: {
+	sectionBackgrounds?: Partial<SpatialSectionBackgrounds>;
+}): SpatialSectionBackgrounds {
+	const color = (value: string | undefined, fallback: string) =>
+		typeof value === 'string' && value.trim() ? value.trim() : fallback;
+	return {
+		standard: color(theme.sectionBackgrounds?.standard, defaultSectionBackgrounds.standard),
+		muted: color(theme.sectionBackgrounds?.muted, defaultSectionBackgrounds.muted)
+	};
+}
 
 /** Input for createSpatialTheme. Every appearance group merges with the library defaults. */
 export type SpatialThemeOptions = Pick<SpatialTheme, 'id' | 'name'> & {
@@ -17,6 +50,8 @@ export function createSpatialTheme(options: SpatialThemeOptions): SpatialTheme {
 		id: options.id,
 		name: options.name,
 		background: options.background ?? '#eef1f4',
+		radii: resolveSpatialThemeRadii(options),
+		sectionBackgrounds: resolveSpatialSectionBackgrounds(options),
 		...(options.sceneBackground ? { sceneBackground: { ...options.sceneBackground } } : {}),
 		minimapTheme: {
 			expandedHeight: 240,
@@ -31,7 +66,11 @@ export function createSpatialTheme(options: SpatialThemeOptions): SpatialTheme {
 			outlineColor: options.colors?.accent ?? '#285c89',
 			...options.interactionTheme
 		},
-		panelShape: { radius: 16, contentInset: 26, ...options.panelShape },
+		panelShape: {
+			...options.panelShape,
+			radius: nonNegativeFinite(options.panelShape?.radius, 16),
+			contentInset: nonNegativeFinite(options.panelShape?.contentInset, 26)
+		},
 		panelTheme: {
 			surface: 'frosted',
 			tint: '#ffffff',

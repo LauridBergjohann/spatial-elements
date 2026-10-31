@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ButtonGroup, type SpatialTheme } from '@spatial-elements/sveltekit';
+	import { ButtonGroup, resolveSpatialThemeRadii, type SpatialTheme } from '@spatial-elements/sveltekit';
 	import { Sun, Moon, Monitor } from 'lucide-svelte';
 	import type { Appearance } from './appearance.svelte';
 	let { theme, appearance }: { theme: SpatialTheme; appearance: Appearance } = $props();
@@ -9,7 +9,7 @@
 	label="Appearance"
 	iconOnly
 	focusReactive
-	shape={theme.panelShape}
+	shape={{ ...theme.panelShape, radius: resolveSpatialThemeRadii(theme).control }}
 	theme={theme.panelTheme}
 	items={[
 		{ value: 'light', label: 'Light mode' },

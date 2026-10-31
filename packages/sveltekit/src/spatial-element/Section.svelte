@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { getContext, onDestroy, onMount } from 'svelte';
+	import { dev } from '$app/environment';
+	import './layout.generated.css';
+	import { createSectionBackgroundNormalizer } from '@spatial-elements/core/spatial-element/sectionBackground';
+	import { SECTION_SURFACES, type SectionSurfaceRegistry } from '@spatial-elements/core/spatial-element/SectionSurfaceRegistry';
 	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
 	import { getSpatialElementSectionStyle } from '@spatial-elements/core/spatial-element/spatialElement';
@@ -29,6 +33,16 @@
 	let sectionElement: HTMLElement;
 
 	const contentPage = getContext(SECTION_PAGE_KIND) === 'content';
+	const normalizeBackground = createSectionBackgroundNormalizer(dev ? (diagnostic) => console.warn(diagnostic.message) : undefined);
+	const background = $derived(normalizeBackground(section.background, { pageKind: contentPage ? 'content' : 'detail' }));
+	const legacyMaterial = $derived(!section.background && Boolean(section.style &&
+		(section.style.tint !== undefined || section.style.tintOpacity !== undefined || section.style.backdropBlur !== undefined)));
+	const surface = $derived(legacyMaterial ? { ...background, color: 'standard' as const } : background);
+	const surfaces = getContext<SectionSurfaceRegistry | undefined>(SECTION_SURFACES);
+	function registerSurface() { return surfaces?.register(surface); }
+	const surfaceRegistration = registerSurface();
+	onDestroy(() => surfaceRegistration?.unregister());
+	$effect(() => surfaceRegistration?.update(surface));
 	const registry = getContext<SpatialElementSectionRegistry>(SPATIAL_ELEMENT_SECTION_REGISTRY_KEY);
 	if (!registry) {
 		throw new Error(
@@ -106,42 +120,55 @@
 	bind:this={sectionElement}
 	{...rest}
 	id={section.id}
-	class={['content-section', contentPage ? 'content-page-section' : '', className]
+	class={['content-section spatial-grid-scope', contentPage ? 'content-page-section' : '', className]
 		.filter(Boolean)
 		.join(' ')}
 	data-stage-dom-content
 	data-spatial-element-tab-target={!contentPage || undefined}
 	data-catalog-transition-dom={contentPage ? 'exit' : undefined}
 	data-section-presentation={presentation}
-	aria-labelledby={`${section.id}-title`}
+	data-section-background={surface.color}
+	data-section-background-size={surface.size}
+	data-spatial-section-surface={surfaceRegistration?.id}
+	aria-labelledby={section.headline ? `${section.id}-title` : undefined}
+	aria-label={section.headline ? undefined : section.title}
 	style={getSpatialElementSectionStyle(section.style)}
 >
-	<svelte:element this={contentPage ? 'h2' : 'p'} id={`${section.id}-title`} class="section-kicker"
-		>{section.title}</svelte:element
-	>
+	<span class="section-surface spatial-section-surface" class:legacy-material={legacyMaterial}
+		style:background={legacyMaterial ? undefined : background.cssBackground} aria-hidden="true"></span>
+	{#if section.headline}
+		<h2 id={`${section.id}-title`} class="section-kicker">{section.headline}</h2>
+	{/if}
 	{@render children?.()}
 </section>
 
 <style>
-	.content-section.content-page-section {
-		margin-top: 24px;
-		padding: 24px;
-	}
-	.content-section[data-section-presentation='list'] {
-		padding: 0;
-		background: none;
-		box-shadow: none;
-		-webkit-backdrop-filter: none;
-		backdrop-filter: none;
-	}
 	.content-section {
+		position: relative;
+		isolation: isolate;
 		scroll-margin-top: var(--spatial-element-section-scroll-offset, 150px);
 		width: min(var(--spatial-element-section-width, 100%), 100%);
 		box-sizing: border-box;
-		margin: 42px 0 0;
-		padding: clamp(30px, 4vw, 56px);
-		border-radius: 18px;
+		margin: 0;
+		padding: var(--spatial-grid-gap);
 		color: var(--spatial-element-section-color, var(--spatial-element-ink));
+		font-size: var(--spatial-grid-body-size);
+		line-height: var(--spatial-grid-body-line-height);
+		pointer-events: auto;
+	}
+	.section-surface {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+	}
+	.content-section[data-section-background-size='full'] .section-surface {
+		left: 50%;
+		right: auto;
+		width: 100vw;
+		transform: translateX(-50%);
+	}
+	.legacy-material {
 		background: color-mix(
 			in srgb,
 			var(--spatial-element-section-tint) var(--spatial-element-section-tint-opacity),
@@ -150,7 +177,6 @@
 		box-shadow: 0 20px 45px rgb(27 55 89 / 0.08);
 		-webkit-backdrop-filter: blur(min(var(--spatial-element-section-backdrop-blur), 18px));
 		backdrop-filter: blur(min(var(--spatial-element-section-backdrop-blur), 18px));
-		pointer-events: auto;
 	}
 
 	.content-section[data-spatial-element-section-culling-ready] {
@@ -162,30 +188,15 @@
 	 * Do not retain a full-width backdrop-compositing layer for distant sections.
 	 * The 240px observer margin recreates it before the section can enter the viewport.
 	 */
-	.content-section[data-spatial-element-section-culled] {
+	.content-section[data-spatial-element-section-culled] .section-surface {
 		-webkit-backdrop-filter: none;
 		backdrop-filter: none;
 	}
 
-	.content-section:last-child {
-		margin-bottom: 180px;
-	}
-
 	.section-kicker {
-		max-width: 780px;
-		margin: 0;
-		color: color-mix(in srgb, currentColor 70%, transparent);
-		font-size: 18px;
-		font-weight: 720;
-		line-height: 1.65;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-	}
-
-	@media (max-width: 1100px) {
-		.content-section {
-			width: 100%;
-			margin-left: 0;
-		}
+		margin: 0 0 var(--spatial-grid-headline-gap);
+		font-size: var(--spatial-grid-headline-size);
+		font-weight: 600;
+		line-height: var(--spatial-grid-headline-line-height);
 	}
 </style>

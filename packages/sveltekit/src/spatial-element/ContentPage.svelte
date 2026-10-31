@@ -5,6 +5,7 @@
 	import { useSpatialTheme } from './brandContext.js';
 	import SpatialElementBreadcrumbs from './SpatialElementBreadcrumbs.svelte';
 	import { registerSpatialPage } from './spatialPageContext.js';
+	import SectionSurfaceGroup from './SectionSurfaceGroup.svelte';
 	import './layout.generated.css';
 	import {
 		SPATIAL_ELEMENT_SECTION_REGISTRY_KEY,
@@ -16,19 +17,32 @@
 		hdr: string;
 		/** Category metadata. Only title is required; pageTitle defaults to title. */
 		page: ContentPageData;
+		/** Flat page color override, using the same color format as SpatialTheme.background. */
+		background?: string;
 		/** ListSection, CarouselSection and ordinary Section children. */
 		children?: Snippet;
 	}
-	let { page, hdr, children }: Props = $props();
+	let { page, hdr, background, children }: Props = $props();
+	const backgroundId = $props.id();
+	const backgroundScope = backgroundId.replace(/[^a-zA-Z0-9_-]/g, '_');
+	const backgroundRules = $derived.by(() => {
+		if (!background) return '';
+		if (/[;{}<>]/.test(background)) throw new Error('ContentPage.background must be a color value.');
+		// A child page cannot inherit a custom property upwards. This page-scoped rule
+		// supplies the native SSR surface before the browser registers GPU ownership.
+		return `.stage:has([data-spatial-page-background="${backgroundScope}"]) { --stage-page-background: ${background} !important; }`;
+	});
 	const readTheme = useSpatialTheme();
 	const brand = $derived(readTheme());
-	registerSpatialPage(() => ({ kind: 'content', hdr }));
+	registerSpatialPage(() => ({ kind: 'content', hdr, background }));
 	setContext(SPATIAL_ELEMENT_SECTION_REGISTRY_KEY, new SpatialElementSectionRegistry());
 	setContext(SECTION_PAGE_KIND, 'content');
 </script>
 
 <svelte:head><title>{page.pageTitle ?? page.title}</title></svelte:head>
-<main class="content-page spatial-content-width spatial-content-container" data-catalog-list data-brand-id={brand.id}>
+<main class="content-page spatial-content-width spatial-content-container" data-catalog-list data-brand-id={brand.id}
+	data-spatial-page-background={background ? backgroundScope : undefined}>
+	{#if background}<svelte:element this={'style'}>{backgroundRules}</svelte:element>{/if}
 	{#if page.breadcrumbs?.length}<SpatialElementBreadcrumbs
 			items={page.breadcrumbs}
 			transition="exit"
@@ -38,7 +52,7 @@
 		<h1 id="catalog-title" tabindex="-1">{page.title}</h1>
 		{#if page.intro}<p class="intro">{page.intro}</p>{/if}
 	</header>
-	{@render children?.()}
+	<SectionSurfaceGroup>{@render children?.()}</SectionSurfaceGroup>
 </main>
 
 <style>

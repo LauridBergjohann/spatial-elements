@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { getContext } from 'svelte';
 	import { PanelsTopLeft, Maximize } from 'lucide-svelte';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
@@ -13,6 +14,7 @@
 	const stage = getContext<StageContext>(STAGE_CONTEXT_KEY);
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
+	const radii = $derived(resolveSpatialThemeRadii(theme));
 	const readMessages = useSpatialMessages();
 	const messages = $derived(readMessages());
 	const fullscreen = $derived(stage.isFullscreen?.() ?? false);
@@ -40,7 +42,7 @@
 	onchange={select}
 	disabled={!enabled}
 	visible={enabled}
-	shape={theme.panelShape}
+	shape={{ ...theme.panelShape, radius: radii.control }}
 	theme={theme.panelTheme}
 	focusReactive="top-right"
 	{focusAnchor}

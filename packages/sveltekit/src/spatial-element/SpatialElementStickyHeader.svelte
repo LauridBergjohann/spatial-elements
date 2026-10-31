@@ -168,7 +168,7 @@
 		position: fixed;
 		z-index: 4;
 		display: block;
-		border-radius: var(--spatial-element-panel-radius);
+		border-radius: var(--spatial-element-control-radius);
 		background: transparent;
 		cursor: pointer;
 	}
@@ -179,8 +179,8 @@
 	}
 
 	.spatial-element-sticky-tabs {
-		--spatial-element-tabs-dock-top-radius: var(--spatial-element-panel-radius);
-		--spatial-element-tabs-dock-bottom-radius: var(--spatial-element-panel-radius);
+		--spatial-element-tabs-dock-top-radius: var(--spatial-element-control-radius);
+		--spatial-element-tabs-dock-bottom-radius: var(--spatial-element-control-radius);
 
 		position: fixed;
 		z-index: 19;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 	import type { ResolvedSpatialElementData as SpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
@@ -6,6 +7,7 @@
 	let { spatialElement }: { spatialElement: SpatialElementData } = $props();
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
+	const radii = $derived(resolveSpatialThemeRadii(theme));
 	const minimap = $derived({
 		...spatialElement.minimap,
 		...theme.minimapTheme,
@@ -25,7 +27,7 @@
 					: undefined}
 				transitionGroup="enter"
 				class={`thumbnail-panel ${media.kind === 'minimap' ? 'active' : ''}`}
-				shape={{ ...theme.panelShape, contentInset: 0 }}
+				shape={{ ...theme.panelShape, radius: radii.control, contentInset: 0 }}
 				theme={theme.panelTheme}
 				contentClass="thumbnail-panel-content"
 				minimap={media.kind === 'minimap' ? minimap : false}
@@ -85,7 +87,7 @@
 		width: 100%;
 		height: 100%;
 		border: 0;
-		border-radius: var(--spatial-element-panel-radius);
+		border-radius: var(--spatial-element-control-radius);
 		background: transparent;
 		cursor: pointer;
 	}

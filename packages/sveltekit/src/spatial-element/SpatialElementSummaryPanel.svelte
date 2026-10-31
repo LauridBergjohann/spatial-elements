@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { onMount } from 'svelte';
 	import SpatialElementSummaryContent from './SpatialElementSummaryContent.svelte';
 	import Panel from '../stage/Panel.svelte';
@@ -8,6 +9,7 @@
 	let { spatialElement }: { spatialElement: SpatialElementData } = $props();
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
+	const radii = $derived(resolveSpatialThemeRadii(theme));
 	const contentInset = $derived(theme.panelShape.contentInset ?? Math.max(16, Math.round(theme.panelShape.radius * 0.7)));
 	let presentation = $state<HTMLDivElement>(null!);
 	let panelHeight = $state<number>();
@@ -36,7 +38,7 @@
 		pointerReactive={false}
 		transitionGroup="shared"
 		class="spatial-element-panel"
-		shape={theme.panelShape}
+		shape={{ ...theme.panelShape, radius: radii.panel, contentInset }}
 		theme={theme.panelTheme}
 		contentClass="stage-panel-content spatial-element-content"
 		aria-labelledby="spatial-element-title"

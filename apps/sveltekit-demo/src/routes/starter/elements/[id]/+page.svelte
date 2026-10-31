@@ -5,7 +5,7 @@
 </script>
 
 <SpatialElementPage spatialElement={data.element}>
-	<Section section={{ id: 'details', title: 'About this element' }}>
+	<Section section={{ id: 'details', title: 'About this element', headline: 'About this element', background: { color: 'standard' } }}>
 		<p>Rotate the model, zoom in, or return to the collection.</p>
 		<a href="/starter/categories/list">Back to the collection</a>
 	</Section>

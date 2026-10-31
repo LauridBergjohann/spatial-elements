@@ -108,11 +108,11 @@
 		--spatial-element-tab-font-size: 16px;
 		--spatial-element-tab-highlight-top-radius: var(
 			--spatial-element-tabs-dock-top-radius,
-			var(--spatial-element-panel-radius, 9px)
+			var(--spatial-element-control-radius, 12px)
 		);
 		--spatial-element-tab-highlight-bottom-radius: var(
 			--spatial-element-tabs-dock-bottom-radius,
-			var(--spatial-element-panel-radius, 9px)
+			var(--spatial-element-control-radius, 12px)
 		);
 
 		display: flex;

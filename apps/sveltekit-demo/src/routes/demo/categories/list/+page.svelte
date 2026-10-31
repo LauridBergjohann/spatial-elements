@@ -4,6 +4,6 @@
  </script>
  <ContentPage hdr="/assets/demo/studio.hdr" page={{ title:'A study of form', eyebrow:'SPATIAL ELEMENTS', breadcrumbs:[{label:'Collection',href:'/demo/categories/list'}] }}>
 
- <ListSection section={{id:"elements",title:"Collection"}} list={data.spatialElements} />
+ <ListSection section={{id:"elements",title:"Collection", headline: "Collection"}} list={data.spatialElements} />
 
  </ContentPage>
