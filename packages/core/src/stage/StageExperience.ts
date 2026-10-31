@@ -1774,8 +1774,17 @@ export class StageExperience {
 		cancelAnimationFrame(this.renderRequestId);
 		this.renderRequestId = 0;
 		this.renderFrame(true);
+		// A synchronous render callback (for example adopting newly prepared High)
+		// can invalidate while this forced frame is running. Its own RAF would run
+		// before the next external-clock pose and draw this pose again. Keep the
+		// dirty flag, but let that next external flush consume it. Invalidations
+		// outside this flush remain schedulable, including during held page binding.
+		if (this.catalogPresentation.active) {
+			cancelAnimationFrame(this.renderRequestId);
+			this.renderRequestId = 0;
+		}
 		// After the transition's external clock stops, optional refinement resumes its own RAF.
-		if (!this.catalogPresentation.active && (this.animationActive || this.renderInvalidated))
+		else if (this.animationActive || this.renderInvalidated)
 			this.scheduleRender();
 	}
 
