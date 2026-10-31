@@ -60,17 +60,18 @@ export class CatalogPreparation {
 			highState: pair ? 'loading' : 'unavailable'
 		};
 		this.current = entry;
+		const setBackgroundState = (state: 'ready' | 'failed') => {
+			if (this.current !== entry || entry.controller.signal.aborted || entry.backgroundState === state) return;
+			entry.backgroundState = state;
+			this.changed();
+		};
 		void entry.environment.ready
 			.then(
 				async () => {
 					await this.gate.wait(entry.controller.signal);
-					entry.backgroundState = 'ready';
-					this.changed();
+					setBackgroundState('ready');
 				},
-				() => {
-					entry.backgroundState = 'failed';
-					this.changed();
-				}
+				() => setBackgroundState('failed')
 			)
 			.catch(() => {});
 		if (entry.environment.value) entry.backgroundState = 'ready';

@@ -35,3 +35,10 @@ fallback, transition takeover and disposal. The separate
 with and without staged mode, late DOM veto, Tab, warm pointer press and neighbour
 selection. These are functional scheduling checks; latency improvement requires
 an unchanged-protocol performance trace after a coherent production build.
+
+Build `70245`, runtime `8eaf276`, passed all six separate browser cases. Evidence
+is retained under `.artifacts/catalog-activation-focus-70245-8eaf276`. This is a
+functional pass, not a speed claim. A subsequent sampled cold trace still shows
+a 39-submit source frame before the adapter. Its registration is distinct from
+the short activation-focus RAF and occurs in a post-click microtask. That
+remaining source invalidation requires separate attribution and measurement.
