@@ -50,6 +50,8 @@ export function createStagedDetailGeometry(
 	camera.updateMatrixWorld();
 	const model = new THREE.Object3D();
 	model.matrixAutoUpdate = false;
-	model.matrix.copy(modelMatrix); model.updateMatrixWorld();
+	// Manual matrices do not mark Object3D dirty. Publish the canonical import
+	// scale/translation now; ordinary handoff updates must not see identity here.
+	model.matrix.copy(modelMatrix); model.updateMatrixWorld(true);
 	return { camera, model, framing };
 }

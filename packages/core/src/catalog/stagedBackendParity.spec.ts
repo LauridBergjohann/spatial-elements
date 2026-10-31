@@ -4,6 +4,7 @@ import { createStagedDetailGeometry, detailCameraFit } from './stagedDetailGeome
 import { sourceDomProjectiveMatrix } from './SourceDomMotion.js';
 import { resolveDetailLayout } from '../spatial-element/responsiveLayout.js';
 import { prepareSpatialElementFrame } from '../stage/spatialElementFrame.js';
+import { captureSpatialElementProjection } from './SpatialGeometryCapture.js';
 
 test.each([[1200, 400], [1600, 400], [840, 300], [390, 900], [3440, 900]])(
 	'pre-route camera matches the mounted detail viewport projection at %ix%i', (width, height) => {
@@ -49,10 +50,41 @@ test('canonical imported model frame survives interaction on its ancestors and m
 	const viewport = { width: 1440, height: 900 };
 	const staged = createStagedDetailGeometry(bounds, canonical, {}, viewport, resolveDetailLayout(viewport).mediaFit);
 	expect(staged.model.matrix.equals(canonical)).toBe(true);
+	// renderHandoff asks updateWorldMatrix without force. Manual descriptors must
+	// already publish their canonical scale/translation to that world matrix.
+	staged.model.updateWorldMatrix(true, true);
+	expect(staged.model.matrixWorld.equals(canonical)).toBe(true);
 	expect(staged.model.matrix.equals(model.matrixWorld)).toBe(false);
 	const transformedCenter = source.getWorldPosition(new THREE.Vector3());
 	expect(Number.isFinite(transformedCenter.x)).toBe(true);
 	mesh.geometry.dispose(); (mesh.material as THREE.Material).dispose();
+});
+
+test.each([430, 1440, 2456])('prepared Hero and mounted Low/High roots project the same canonical points at %ipx', width => {
+	const low = new THREE.Group(), high = new THREE.Group();
+	low.add(new THREE.Mesh(new THREE.BoxGeometry(1.8, 2, .8), new THREE.MeshBasicMaterial()));
+	high.add(new THREE.Mesh(new THREE.BoxGeometry(1.8, 2, .8, 4, 4, 4), new THREE.MeshBasicMaterial()));
+	const pair = { assetToFrame: new THREE.Matrix4().toArray(), bounds: { min: [-1, -1, -1], max: [1, 1, 1] } } as Parameters<typeof prepareSpatialElementFrame>[2];
+	const mountedLow = new THREE.Group(), mountedHigh = new THREE.Group();
+	const bounds = prepareSpatialElementFrame(mountedLow, low, pair, {});
+	prepareSpatialElementFrame(mountedHigh, high, pair, {});
+	const viewport = { width, height: 1000 };
+	const staged = createStagedDetailGeometry(bounds, mountedLow.matrix.clone(), { azimuth: 15, elevation: 10 },
+		viewport, resolveDetailLayout(viewport).mediaFit);
+	// This is the real handoff caller's update, not a force-update in the test.
+	staged.model.updateWorldMatrix(true, true);
+	const actual = captureSpatialElementProjection(staged.model, staged.camera).clip;
+	for (const mounted of [mountedLow, mountedHigh]) {
+		const expected = captureSpatialElementProjection(mounted, staged.camera).clip;
+		for (const point of [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]]) {
+			const a = new THREE.Vector4(...point, 1).applyMatrix4(actual), b = new THREE.Vector4(...point, 1).applyMatrix4(expected);
+			expect((a.x / a.w - b.x / b.w) * width / 2).toBeCloseTo(0, 8);
+			expect((a.y / a.w - b.y / b.w) * viewport.height / 2).toBeCloseTo(0, 8);
+		}
+	}
+	for (const source of [low, high]) source.traverse(node => {
+		if (node instanceof THREE.Mesh) { node.geometry.dispose(); (node.material as THREE.Material).dispose(); }
+	});
 });
 
 test('the retained glass screen-to-world matrix projects the same four corners as the moving DOM', () => {
