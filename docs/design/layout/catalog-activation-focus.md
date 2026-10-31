@@ -38,7 +38,12 @@ an unchanged-protocol performance trace after a coherent production build.
 
 Build `70245`, runtime `8eaf276`, passed all six separate browser cases. Evidence
 is retained under `.artifacts/catalog-activation-focus-70245-8eaf276`. This is a
-functional pass, not a speed claim. A subsequent sampled cold trace still shows
+functional pass, not a speed claim. The subsequent sampled cold trace showed
 a 39-submit source frame before the adapter. Its registration is distinct from
-the short activation-focus RAF and occurs in a post-click microtask. That
-remaining source invalidation requires separate attribution and measurement.
+the short activation-focus RAF and occurs in a post-click microtask. The later
+isolated readiness-notification fix (`be72259`, build `36109`) removes that extra
+request in the matching diagnostic trace: the deferred focus Stage RAF is then
+cancelled by transition takeover, with zero GPU submissions before adapter entry.
+See [the preserved before/after evidence](catalog-preparation-notifications.md).
+This confirms the scheduling sequence in those runs; it is not repeated
+unprofiled performance acceptance.
