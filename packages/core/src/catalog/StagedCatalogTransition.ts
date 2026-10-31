@@ -85,7 +85,15 @@ export class StagedCatalogTransition {
 				if (generation !== this.generation || this.state !== 'moving') return;
 				// RAF timestamps refer to the beginning of a frame and can precede
 				// the synchronous first submission. Never move that submission back.
-				fraction = this.options.reducedMotion ? 1 : Math.min(1, Math.max(fraction, (time - started) / MOTION_DURATION));
+				const nextFraction = this.options.reducedMotion ? 1 : Math.min(1, Math.max(fraction, (time - started) / MOTION_DURATION));
+				// A RAF from the already active browser frame can be older than the
+				// synchronous submission. Keep its next tick, but do not submit the
+				// identical DOM/GPU pose twice before it has reached the display.
+				if (!synchronous && nextFraction === fraction) {
+					this.frame = requestAnimationFrame(animate);
+					return;
+				}
+				fraction = nextFraction;
 				this.move(fraction);
 				if (generation !== this.generation || this.state !== 'moving') return;
 				if (fraction < 1) this.frame = requestAnimationFrame(animate);

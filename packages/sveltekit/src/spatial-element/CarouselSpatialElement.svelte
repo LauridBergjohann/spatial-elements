@@ -249,6 +249,13 @@
 		z-index: 1400;
 		transform-origin: 0 0;
 	}
+	/* Keep only the selected source's compositing layers ready before navigation.
+	 * Promoting its rounded/frosted surface at the click can compile a new browser
+	 * raster shader during motion even when all WebGPU passes are already warm. */
+	.interactive.selected .summary,
+	.interactive.selected .summary :global(.spatial-summary-island) {
+		will-change: transform;
+	}
 	.spatial-element-target,
 	.spatial-element-poster {
 		position: absolute;

@@ -93,15 +93,19 @@ test.each([100, 800])('a %i ms preparation contributes at most one frame and shi
 	expect(await handle.finished).toBe(true);
 });
 
-test('an earlier RAF timestamp cannot reverse the synchronous first movement', async () => {
+test('an earlier RAF timestamp neither reverses nor redundantly submits the synchronous first movement', async () => {
 	const f = fixture();
 	vi.mocked(f.hooks.begin).mockImplementation(() => { now = 15; return true; });
 	f.transition.start();
 	await frame(12);
+	expect(f.hooks.frame).toHaveBeenCalledTimes(1);
+	expect(f.motion.update).toHaveBeenCalledTimes(1);
+	await frame(15);
+	expect(f.hooks.frame).toHaveBeenCalledTimes(1);
 	await frame(20);
 	await frame(30);
 	const progress = vi.mocked(f.hooks.frame).mock.calls.map(([value]) => value.progress);
-	expect(progress).toEqual([15, 15, 20, 30].map(elapsed => 1 - (1 - elapsed / MOTION_DURATION) ** 2));
+	expect(progress).toEqual([15, 20, 30].map(elapsed => 1 - (1 - elapsed / MOTION_DURATION) ** 2));
 	expect(frames.size).toBe(1);
 });
 

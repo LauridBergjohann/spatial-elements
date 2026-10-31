@@ -16,7 +16,15 @@ Readiness also includes the first keyboard/focus outline. Focusing the activated
 
 Progress zero preserves the already displayed source pixels. After capture, Stage cancels its pending independent render callback and keeps subsequent invalidations dirty without scheduling a replacement. The source-motion clock submits the first changed DOM/GPU pose together through `flushCatalogFrame()`, which releases this initial pause. Cancellation also releases it and schedules the restored source. This avoids an unchanged full render before the first visible reaction; it does not skip any moving frame or reduce rendering quality.
 
-The motion clock starts before synchronous source preparation. Immediately after preparation, the controller submits the actual elapsed progress instead of waiting for another animation frame. The first time contribution is capped at one nominal 60 Hz frame; if preparation took longer, the clock shifts so the remaining motion still plays continuously. An earlier RAF timestamp cannot reverse the first submitted pose. Reduced Motion submits the endpoint immediately, then leaves a RAF paint barrier before the following RAF may prepare destination ownership. Neither barrier draws an additional frame.
+The motion clock starts before synchronous source preparation. Immediately after preparation, the controller submits the actual elapsed progress instead of waiting for another animation frame. The first time contribution is capped at one nominal 60 Hz frame; if preparation took longer, the clock shifts so the remaining motion still plays continuously. An earlier RAF timestamp cannot reverse the first submitted pose or submit that unchanged pose again. Reduced Motion submits the endpoint immediately, then leaves a RAF paint barrier before the following RAF may prepare destination ownership. Neither barrier draws an additional frame.
+
+## Browser compositing is a separate preparation concern
+
+Zero WebGPU resource creations do not guarantee that the browser's DOM compositor has already compiled every raster shader. A Windows Intel Gen11 diagnostic showed a 317 ms RAF gap while JavaScript remained short: Chrome's GPU raster worker spent 257 ms in its raster flush, including ANGLE/D3D shader compilation, and Viz waited on the resulting synchronization token. The preceding paint included the real Carousel summary and summary island.
+
+The enhanced Carousel therefore declares `will-change: transform` on only its selected summary and its real presentation island before activation. A controlled CSS-injection trace against the same production bundle removed the moving-phase compiler events and the 300 ms gap while preserving the existing DOM, rounded/frosted surface, and live 3D geometry. This diagnostic supports the bounded promotion; it is not a latency percentile or a replacement for the uninstrumented repeated suite. Other cards and inactive Carousel panels are not permanently promoted.
+
+`scripts/trace-staged-gpu.mjs` records browser GPU/Viz events, source styles, actual RAF callback times, WebGPU queue submissions and asynchronous queue fences. Fences include driver/IPC delay and delay in dispatching their JavaScript completion callback; their wall-clock duration is not pure GPU execution time. The trace and its fence instrumentation are diagnostic only.
 
 ## Keep pipeline owners stable
 

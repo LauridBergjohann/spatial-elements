@@ -86,7 +86,9 @@
 		getFocusReactive: () => focusReactive,
 		getFocusAnchor: () => focusAnchor,
 		getNativeContent: () => nativeContent,
-		updateNativeLayout: () => nativeLayout?.(),
+		// Absence matters: only an actively positioned popover needs a fresh
+		// native measurement on every render; ordinary panels use the layout cache.
+		get updateNativeLayout() { return nativeLayout; },
 		getVisible: () => visible,
 		getMinimapOptions: () => getMinimapOptions(),
 		getMinimapDockProgress,
