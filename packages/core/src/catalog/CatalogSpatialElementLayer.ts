@@ -264,6 +264,7 @@ export class CatalogSpatialElementLayer {
 	private stagedPanel?: { card: HTMLElement; matrix: THREE.Matrix4 };
 	private stagedPanelOpacity = 1;
 	private stagedSourceFrozen = false;
+	private groundPoseSettled = false;
 	private stagedPreparing = false;
 	private stagedWarmRevision = 0;
 	private stagedWarmups = 0;
@@ -833,6 +834,7 @@ export class CatalogSpatialElementLayer {
 		}
 		this.glass.endFrame(this.stagedPanel?.card);
 		if (!this.handoff) this.ground.endFrame();
+		this.groundPoseSettled = !animating;
 		return animating;
 	}
 
@@ -925,7 +927,10 @@ export class CatalogSpatialElementLayer {
 
 	renderRear(renderer: THREE.WebGPURenderer) {
 		this.glass.render(renderer, this.carouselUiCamera, () => {
-			this.ground.draw(renderer, this.carouselCamera, this.exitOpacity);
+			// The full per-shadow signature is valid during normal focus/hover frames too;
+			// any changed source/camera pose falls back to live rendering immediately.
+			this.ground.draw(renderer, this.carouselCamera, this.exitOpacity,
+				true, this.stagedSignature(renderer), this.stagedPreparing);
 			this.draw(renderer, 'rear');
 		}, this.exitOpacity === 0);
 	}
@@ -1017,7 +1022,8 @@ export class CatalogSpatialElementLayer {
 	}
 	needsStagedPreparation(renderer: THREE.WebGPURenderer) {
 		return !this.disposed && !this.stagedPreparing && !this.handoff && !this.stagedSourceFrozen &&
-			this.stagedCandidates(renderer).length > 0;
+			(this.stagedCandidates(renderer).length > 0 || (this.groundPoseSettled &&
+				this.ground.needsCachePreparation(this.carouselCamera, this.stagedSignature(renderer))));
 	}
 	isStagedDetailReady(spatialElementId: string, occurrence: string | undefined, renderer: THREE.WebGPURenderer) {
 		const actor = [...this.actors.values()].find(item => item.spatialElementId === spatialElementId &&
@@ -1030,6 +1036,8 @@ export class CatalogSpatialElementLayer {
 	async prepareStagedNavigation(renderer: THREE.WebGPURenderer) {
 		if (!this.needsStagedPreparation(renderer)) return;
 		const actors = this.stagedCandidates(renderer), signature = this.stagedSignature(renderer);
+		const warmRear = actors.some(actor => Boolean(actor.pose)) || (this.groundPoseSettled &&
+			this.ground.needsCachePreparation(this.carouselCamera, signature));
 		this.stagedPreparing = true;
 		const fog = this.scene.fog, environment = this.handoffScene.environment, handoffFog = this.handoffScene.fog;
 		const exitOpacity = this.exitOpacity;
@@ -1050,7 +1058,8 @@ export class CatalogSpatialElementLayer {
 				// Focus fires before Kit's beforeNavigate callback. Prepare its first
 				// outline while idle so that pre-navigation frame cannot compile it.
 				for (const actor of outlines) actor.hover = Math.max(actor.hover, 0.5);
-				if (actors.some(actor => Boolean(actor.pose))) {
+				if (warmRear) {
+					if (this.groundPoseSettled) this.ground.prepareCaches(renderer, this.carouselCamera, signature);
 					this.renderRear(renderer);
 					this.ground.prepareWindingVariants(renderer, this.carouselCamera);
 				}

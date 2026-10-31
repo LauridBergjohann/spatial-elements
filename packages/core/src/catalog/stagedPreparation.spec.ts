@@ -15,7 +15,8 @@ function fixture() {
 		scene, handoffScene, handoffCamera, camera, carouselCamera: camera, actors: new Map([['a', actor]]), desired: new Set(['a']),
 		stagedPrepared: new WeakMap(), stagedWarmFailed: new WeakMap(), stagedPreparing: false,
 		stagedSourceFrozen: false, stagedWarmRevision: 0, stagedWarmups: 0, stagedWarmFailures: 0,
-		ground: { prepareWindingVariants: vi.fn() },
+		groundPoseSettled: false,
+		ground: { prepareWindingVariants: vi.fn(), prepareCaches: vi.fn(), needsCachePreparation: vi.fn(() => false) },
 		geometryFade: { render: vi.fn((_renderer, _opacity, draw) => draw()) }
 	}) as CatalogSpatialElementLayer;
 	const state = layer as unknown as { exitOpacity: number };
@@ -79,6 +80,27 @@ test('failed ground winding preparation cannot publish staged readiness', async 
 	await expect(f.layer.prepareStagedNavigation(f.renderer)).rejects.toThrow('ground pipeline failed');
 	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer)).toBe(false);
 	expect(f.state.exitOpacity).toBe(1);
+});
+
+test('cache refresh follows settled source poses at idle without changing the freeze path', async () => {
+	const f = fixture(); Object.assign(f.actor, { pose: {} });
+	const first = f.layer.prepareStagedNavigation(f.renderer); f.finish(); await first;
+	const ground = (f.layer as unknown as { ground: { prepareCaches: ReturnType<typeof vi.fn>; needsCachePreparation: ReturnType<typeof vi.fn> } }).ground;
+	ground.needsCachePreparation.mockReturnValue(true);
+	// Shader readiness can remain true while a moving source has no reusable image.
+	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer)).toBe(true);
+	expect(f.layer.needsStagedPreparation(f.renderer)).toBe(false);
+	Object.assign(f.layer, { groundPoseSettled: true });
+	expect(f.layer.needsStagedPreparation(f.renderer)).toBe(true);
+	ground.prepareCaches.mockImplementation(() => ground.needsCachePreparation.mockReturnValue(false));
+	await f.layer.prepareStagedNavigation(f.renderer);
+	expect(ground.prepareCaches).toHaveBeenCalledOnce();
+	expect(f.layer.needsStagedPreparation(f.renderer)).toBe(false);
+	ground.needsCachePreparation.mockReturnValue(true);
+	f.layer.freezeStagedSource();
+	await f.layer.prepareStagedNavigation(f.renderer);
+	expect(ground.prepareCaches).toHaveBeenCalledOnce();
+	expect(f.layer.needsStagedPreparation(f.renderer)).toBe(false);
 });
 
 test('idle preparation warms both focused output variants and restores the real hover before yielding', async () => {
