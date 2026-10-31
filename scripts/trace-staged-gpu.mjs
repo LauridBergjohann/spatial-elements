@@ -3,6 +3,8 @@
 // Run against an already running production preview; this script owns and closes only its browser.
 // Low-overhead attribution: --view=list --temperature=warm --minimal=true --cpu=true
 // --fences=false is a control without added queue fences; GPU/Viz tracing remains enabled.
+// --stageSnapshots=true records existing pass/ownership getters only at phase changes.
+// --activation=pointer|enter adds trusted warm-route activation probes; default synthetic is unchanged.
 // --constantIncomingDom=true disables only the incoming DOM fade during reveal for causal attribution.
 // This deliberately changes the presentation and is not a product or acceptance configuration.
 // --localIncomingDom=true redirects the same fade values to existing DOM/group receivers instead.
@@ -19,6 +21,10 @@ const view = args.view ?? 'carousel', temperature = args.temperature ?? 'cold';
 if (!['list', 'carousel'].includes(view) || !['cold', 'warm'].includes(temperature)) throw Error('Invalid view/temperature');
 const minimal = args.minimal === 'true', sampleCpu = args.cpu === 'true';
 const probeFences = args.fences !== 'false';
+const stageSnapshots = args.stageSnapshots === 'true';
+const activation = args.activation ?? 'synthetic';
+if (!['synthetic', 'pointer', 'enter'].includes(activation)) throw Error('Invalid activation');
+if (activation !== 'synthetic' && temperature !== 'warm') throw Error('Trusted activation probes require --temperature=warm');
 const constantIncomingDom = args.constantIncomingDom === 'true';
 const localIncomingDom = args.localIncomingDom === 'true';
 if (constantIncomingDom && localIncomingDom) throw Error('constantIncomingDom and localIncomingDom are mutually exclusive');
@@ -34,15 +40,23 @@ try {
   const systemInfo = await browserSession.send('SystemInfo.getInfo');
   const commandLine = await browserSession.send('Browser.getBrowserCommandLine').catch(error => ({ unavailable: error.message }));
   const context = await browser.newContext({ baseURL, viewport: { width: 1440, height: 1000 } });
-  await context.addInitScript(({ minimal, probeFences, constantIncomingDom, localIncomingDom }) => {
+  await context.addInitScript(({ minimal, probeFences, stageSnapshots, constantIncomingDom, localIncomingDom }) => {
     Error.stackTraceLimit = 40;
-    const probe = { active: false, phase: '', submits: [], fences: [], frames: [], longFrames: [], gpuCreates: [], errors: [],
+    const probe = { active: false, phase: '', submits: [], fences: [], frames: [], longFrames: [], gpuCreates: [], errors: [], stageSnapshots: [],
       constantIncomingDom: { enabled: constantIncomingDom, interceptedWrites: 0, appliedWrites: 0 },
       localIncomingDom: { enabled: localIncomingDom, interceptedWrites: 0, appliedRootWrites: 0, localWrites: 0, restoredProperties: 0, pendingReceivers: 0 } };
     Object.assign(window, { gpuProbe: probe });
     const views = new WeakMap(), encoders = new WeakMap(), buffers = new WeakMap(), shaders = new WeakMap(), pendingFences = new WeakSet();
     let stage;
     const phase = () => { stage ??= document.querySelector('.stage'); return stage?.dataset.catalogStagedPhase ?? ''; };
+    const snapshotStage = reason => {
+      const api = window.__stageVisualTest;
+      if (!stageSnapshots || !probe.active || !api) return;
+      probe.stageSnapshots.push({ time: performance.now(), reason, phase: phase(),
+        visibility: api.getVisibilityStats(), minimap: api.getMinimapRenderStats(),
+        catalog: api.getCarouselStats(), presentation: api.getCatalogPresentation() });
+    };
+    Object.assign(window, { gpuProbeSnapshotStage: snapshotStage });
     let restoreLocalIncomingDom = () => {};
     if (constantIncomingDom || localIncomingDom) {
       const setProperty = CSSStyleDeclaration.prototype.setProperty;
@@ -198,9 +212,15 @@ try {
     new MutationObserver(() => {
       const phase = document.querySelector('.stage')?.dataset.catalogStagedPhase ?? '';
       if (localIncomingDom && phase !== 'revealing' && phase !== 'committing') restoreLocalIncomingDom();
-      if (phase !== probe.phase) { probe.phase = phase; if (probe.active) performance.mark(`staged-phase-${phase || 'none'}`); }
+      if (phase !== probe.phase) {
+        probe.phase = phase;
+        if (probe.active) {
+          performance.mark(`staged-phase-${phase || 'none'}`);
+          snapshotStage('phase-change-after-task');
+        }
+      }
     }).observe(document, { attributes: true, subtree: true, attributeFilter: ['data-catalog-staged-phase'] });
-  }, { minimal, probeFences, constantIncomingDom, localIncomingDom });
+  }, { minimal, probeFences, stageSnapshots, constantIncomingDom, localIncomingDom });
   const page = await context.newPage();
   page.on('pageerror', error => process.stderr.write(`${error.message}\n`));
   await page.goto(`/staged/categories/${view}?stage-test=1&stagedNavigation=1`);
@@ -221,6 +241,9 @@ try {
     const data = page.waitForResponse(response => response.url().includes('/staged/elements/column/__data.json'));
     await link.hover(); await data; await page.waitForLoadState('networkidle');
   }
+  // Enter starts from an ordinarily focused link, outside the click interval.
+  // No settling wait is added; this diagnostic leaves the acceptance harness untouched.
+  if (activation === 'enter') await link.focus();
   const { categories: available } = await browserSession.send('Tracing.getCategories');
   const requested = ['toplevel', 'gpu', 'gpu.angle', 'viz', 'cc', 'benchmark', 'blink', 'blink.user_timing', 'renderer.scheduler', 'devtools.timeline', 'v8.execute',
     'disabled-by-default-gpu.service', 'disabled-by-default-gpu.device', 'disabled-by-default-gpu.dawn',
@@ -240,16 +263,45 @@ try {
   await browserSession.send('Tracing.start', { categories: categories.join(','), transferMode: 'ReturnAsStream', options: 'record-as-much-as-possible' });
   tracing = true;
   if (sampleCpu) { await pageSession.send('Profiler.start'); profiling = true; }
-  await page.evaluate(() => { window.gpuProbe.active = true; performance.mark('staged-probe-start'); });
-  const sourceActivity = await link.evaluate(node => {
-    const snapshot = window.__stageVisualTest?.getRenderActivity?.() ?? null;
-    performance.mark('staged-click'); node.click();
-    return snapshot;
+  await page.evaluate(() => {
+    window.gpuProbe.active = true;
+    window.gpuProbeSnapshotStage('before-click');
+    performance.mark('staged-probe-start');
   });
+  let sourceActivity, activationObservation;
+  if (activation === 'synthetic') {
+    sourceActivity = await link.evaluate(node => {
+      const snapshot = window.__stageVisualTest?.getRenderActivity?.() ?? null;
+      performance.mark('staged-click'); node.click();
+      return snapshot;
+    });
+  } else {
+    await link.evaluate(node => {
+      const observation = { preActivationActivity: window.__stageVisualTest?.getRenderActivity?.() ?? null };
+      window.gpuProbeActivation = observation;
+      const clicked = event => {
+        if (!event.composedPath().includes(node)) return;
+        // Actual dispatched click, not the start of Playwright's pointer/key action.
+        observation.clickObservedAt = performance.now();
+        observation.clickEventTimeStamp = event.timeStamp;
+        observation.isTrusted = event.isTrusted;
+        observation.clickActivity = window.__stageVisualTest?.getRenderActivity?.() ?? null;
+        performance.mark('staged-click');
+        window.removeEventListener('click', clicked, true);
+      };
+      window.addEventListener('click', clicked, true);
+    });
+    if (activation === 'pointer') await link.click();
+    else await page.keyboard.press('Enter');
+    activationObservation = await page.evaluate(() => window.gpuProbeActivation);
+    if (!activationObservation.isTrusted || !Number.isFinite(activationObservation.clickObservedAt)) throw Error('Trusted click was not observed');
+    sourceActivity = activationObservation.clickActivity;
+  }
   await page.waitForFunction(() => (window.__stageVisualTest?.getNavigationTimings().early?.revealed ?? 0) > 0, undefined, { timeout: 60000 });
   await page.waitForFunction(() => window.gpuProbe.frames.at(-1)?.rafTime >= window.__stageVisualTest.getNavigationTimings().early.revealEnded, undefined, { timeout: 30000 });
   await page.evaluate(async () => { await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); });
   const report = await page.evaluate(() => {
+    window.gpuProbeSnapshotStage('after-revealed');
     window.gpuProbe.active = false;
     const timings = window.__stageVisualTest.getNavigationTimings().early;
     const intervals = {
@@ -271,7 +323,11 @@ try {
     await writeFile(join(output, 'cpu.cpuprofile'), JSON.stringify(profile));
   }
   await writeFile(join(output, 'probe.json'), JSON.stringify({ view, temperature,
-    instrumentation: { minimal, sampleCpu, cpuSamplingInterval: sampleCpu ? cpuSamplingInterval : null, probeFences,
+    instrumentation: { minimal, sampleCpu, cpuSamplingInterval: sampleCpu ? cpuSamplingInterval : null, probeFences, stageSnapshots,
+      activation, activationObservation: activationObservation ?? null,
+      activationPolicy: activation === 'synthetic' ? 'Existing node.click path and immediately preceding stage snapshot; unchanged default.'
+        : 'Warm route only. Actual trusted click captured separately from Playwright action start; Enter focuses the real link before tracing. No additional app-settling waits. Not an acceptance run.',
+      stageSnapshotPolicy: stageSnapshots ? 'Read-only existing counters at phase-change MutationObserver delivery, before click and after completion. Phase observations follow synchronous work, so deltas include edge frames/cleanup and are not exact per-phase totals. No per-frame polling or settling.' : null,
       constantIncomingDom, localIncomingDom, alteredPresentation: constantIncomingDom || localIncomingDom,
       incomingDomPolicy: constantIncomingDom ? 'Diagnostic only: during revealing, clamp the two Stage incoming opacity variables to 1 and omit repeated writes. Incoming DOM does not fade; not a product candidate.'
         : localIncomingDom ? 'Diagnostic only: root incoming opacity stays at 1; the exact requested values are written to all current enter/shared framework receivers on every write, retaining nested scopes. No wrapper opacity or layer promotion. Original inline values/priorities restore on finish/cancel.'
