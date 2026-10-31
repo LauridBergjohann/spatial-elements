@@ -47,6 +47,23 @@ const panelOptions = {
 } as Required<LiquidGlassPanelOptions>;
 
 describe('stage math', () => {
+	it.each([[0, 0], [35, 20], [-45, -15]])('fits every near corner of a deep object at orbit %s/%s', (azimuth, elevation) => {
+		const bounds = new THREE.Box3(new THREE.Vector3(-2, -1, -4), new THREE.Vector3(2, 1, 4));
+		const camera = new THREE.PerspectiveCamera(45, 1.6, 0.01, 1000);
+		const direction = getCameraOrbitDirection(azimuth, elevation);
+		const scale = { x: 0.6, y: 0.5 };
+		const distance = getCameraFitDistance(bounds, direction, camera, 1, scale);
+		camera.position.copy(direction).multiplyScalar(distance);
+		camera.lookAt(bounds.getCenter(new THREE.Vector3()));
+		camera.updateMatrixWorld(true);
+		const projected = getBoxCorners(bounds).map(corner => corner.project(camera));
+		for (const point of projected) {
+			expect(Math.abs(point.x)).toBeLessThanOrEqual(scale.x + 1e-9);
+			expect(Math.abs(point.y)).toBeLessThanOrEqual(scale.y + 1e-9);
+		}
+		// At least one corner reaches the fit edge; the fit does not just back away arbitrarily.
+		expect(Math.max(...projected.flatMap(point => [Math.abs(point.x) / scale.x, Math.abs(point.y) / scale.y]))).toBeCloseTo(1, 8);
+	});
 	it('aligns native panel positions to the physical pixel grid', () => {
 		expect(
 			getNativePanelDomPosition(
