@@ -21,6 +21,9 @@ export type {
 } from '@spatial-elements/core/spatial-element/types';
 
 export { default as ContentPage } from './ContentPage.svelte';
+export { default as ContentGrid } from './ContentGrid.svelte';
+export { default as ContentBlock } from './ContentBlock.svelte';
+export type { ContentGridSize, ContentSpan } from '@spatial-elements/core/spatial-element/responsiveLayout';
 export { default as CarouselSection } from './CarouselSection.svelte';
 export { default as ListSection } from './ListSection.svelte';
 export type { ContentPageData } from '@spatial-elements/core/spatial-element/types';

@@ -49,6 +49,11 @@
 	.demo-shell:has(:global([data-spatial-element-root])) {
 		min-height: 240vh;
 	}
+	/* The new ContentPage owns its capped width and section insets. The shared
+	   navigation shell will take over the remaining host geometry in step 07. */
+	.demo-shell:has(> :global(.content-page)) {
+		padding-inline: 0;
+	}
 	:global(.demo-header) {
 		position: relative;
 		width: 100%;
