@@ -176,6 +176,14 @@ export class StagedCatalogTransition {
 			if (generation !== this.generation) return;
 			await Promise.race([commit?.(this.abort.signal), this.stopped]);
 			if (generation !== this.generation) return;
+			// Final reveal and summary adoption run before this paint opportunity.
+			// Promise continuations alone are microtasks in the last animation frame;
+			// releasing DOM/GPU ownership there would still delay that frame's paint.
+			await Promise.race([
+				new Promise<void>(resolve => { this.frame = requestAnimationFrame(() => resolve()); }),
+				this.stopped
+			]);
+			if (generation !== this.generation) return;
 			this.complete();
 		} catch (error) { if (generation === this.generation) this.fail(error); }
 	}

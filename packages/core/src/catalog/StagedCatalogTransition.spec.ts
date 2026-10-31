@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { StagedCatalogTransition, type StagedCatalogTransitionHooks } from './StagedCatalogTransition.js';
 import { MOTION_DURATION, ASYNC_REVEAL_DURATION } from './transitionTiming.js';
 import { createSourceDomMotion } from './SourceDomMotion.js';
+import { PresentationLease } from './PresentationLease.js';
 
 vi.mock('./SourceDomMotion.js', () => ({ createSourceDomMotion: vi.fn() }));
 let now: number, next: number, frames: Map<number, FrameRequestCallback>;
@@ -114,7 +115,11 @@ test('binding and content reflow occur only in reveal; source and incoming style
 	const handle = f.transition.start()!; await frame(MOTION_DURATION); await frame(MOTION_DURATION + 16); await handle.finished;
 	const prepare = vi.fn(); const revealing = f.transition.reveal([f.incoming], prepare); await flush();
 	expect(prepare).toHaveBeenCalledTimes(1); expect(f.incoming.style.getPropertyValue('opacity')).toBe('0');
-	await frame(MOTION_DURATION + 16 + ASYNC_REVEAL_DURATION); await revealing;
+	await frame(MOTION_DURATION + 16 + ASYNC_REVEAL_DURATION);
+	expect(f.hooks.reveal).toHaveBeenLastCalledWith(1);
+	expect(f.hooks.finish).not.toHaveBeenCalled(); expect(f.motion.restore).not.toHaveBeenCalled();
+	expect(f.transition.phase).toBe('committing'); expect(f.actor.inert).toBe(true);
+	await frame(MOTION_DURATION + 32 + ASYNC_REVEAL_DURATION); await revealing;
 	expect(f.transition.phase).toBe('complete'); expect(f.hooks.finish).toHaveBeenCalledTimes(1);
 	expect(f.motion.restore).toHaveBeenCalledTimes(1); expect(f.actor.inert).toBe(false);
 	expect(f.exiting.style.getPropertyValue('opacity')).toBe('.4');
@@ -163,7 +168,10 @@ test('Reduced Motion uses no duration wait but retains the final-frame-before-ho
 	expect(f.hooks.frame).toHaveBeenCalledTimes(1);
 	await frame(32); expect(await handle.finished).toBe(true);
 	expect(f.hooks.frame).toHaveBeenCalledTimes(1);
-	const reveal = f.transition.reveal(); await flush(); await frame(48); await reveal;
+	const reveal = f.transition.reveal(); await flush(); await frame(48);
+	expect(f.hooks.reveal).toHaveBeenLastCalledWith(1);
+	expect(f.hooks.finish).not.toHaveBeenCalled();
+	await frame(64); await reveal;
 	expect(f.transition.phase).toBe('complete');
 });
 
@@ -213,9 +221,54 @@ test('final content commit waits until replacement is fully revealed and retains
 	expect(f.incoming.style.getPropertyValue('opacity')).toBe('0.8');
 	expect(f.actor.inert).toBe(true); expect(f.motion.restore).not.toHaveBeenCalled();
 	expect(f.hooks.finish).not.toHaveBeenCalled(); expect(frames.size).toBe(0);
-	release(); await revealing;
+	release(); await flush();
+	expect(f.transition.phase).toBe('committing'); expect(f.hooks.finish).not.toHaveBeenCalled();
+	expect(frames.size).toBe(1);
+	await frame(MOTION_DURATION + 32 + ASYNC_REVEAL_DURATION); await revealing;
 	expect(f.transition.phase).toBe('complete'); expect(f.hooks.finish).toHaveBeenCalledTimes(1);
 	expect(f.motion.restore).toHaveBeenCalledTimes(1); expect(f.actor.inert).toBe(false);
+});
+
+test.each(['cancelled', 'history', 'superseded'] as const)('%s during the final paint opportunity releases exactly once and ignores a queued stale RAF', async reason => {
+	const f = fixture(), handle = f.transition.start()!;
+	await frame(MOTION_DURATION); await frame(MOTION_DURATION + 16); await handle.finished;
+	const commit = vi.fn();
+	const revealing = f.transition.reveal([f.incoming], undefined, commit); await flush();
+	await frame(MOTION_DURATION + 16 + ASYNC_REVEAL_DURATION);
+	expect(f.hooks.reveal).toHaveBeenLastCalledWith(1); expect(commit).toHaveBeenCalledOnce();
+	expect(f.transition.phase).toBe('committing'); expect(frames.size).toBe(1);
+	const staleCallback = frames.values().next().value!;
+	f.transition.cancel(reason); f.transition.cancel(reason); await revealing;
+	expect(frames.size).toBe(0); expect(f.actor.inert).toBe(false);
+	expect(f.motion.restore).toHaveBeenCalledOnce(); expect(f.hooks.cancel).toHaveBeenCalledExactlyOnceWith(reason);
+	expect(f.hooks.finish).not.toHaveBeenCalled();
+	staleCallback(now + 16); await flush();
+	expect(f.motion.restore).toHaveBeenCalledOnce(); expect(f.hooks.cancel).toHaveBeenCalledOnce();
+	expect(f.hooks.finish).not.toHaveBeenCalled(); expect(commit).toHaveBeenCalledOnce();
+});
+
+test.each([false, true])('final summary ownership transfers before the paint opportunity and survives old cleanup (cancel=%s)', async cancelled => {
+	const f = fixture(), handle = f.transition.start()!;
+	await frame(MOTION_DURATION); await frame(MOTION_DURATION + 16); await handle.finished;
+	const summary = { root: element(), input: { value: 'Retained user edit' } };
+	const dispose = vi.fn(), lease = new PresentationLease(summary, dispose), sourceOwner = lease.claim();
+	let destinationOwner: ReturnType<typeof lease.claim> | undefined;
+	const releaseOldOwner = () => { expect(sourceOwner.release()).toBe(false); };
+	vi.mocked(f.hooks.finish).mockImplementation(releaseOldOwner);
+	vi.mocked(f.hooks.cancel).mockImplementation(releaseOldOwner);
+	const commit = vi.fn(() => { destinationOwner = lease.claim(); });
+	const revealing = f.transition.reveal([], undefined, commit); await flush();
+	await frame(MOTION_DURATION + 16 + ASYNC_REVEAL_DURATION);
+	expect(destinationOwner!.value).toBe(summary);
+	expect(destinationOwner!.value.root).toBe(summary.root);
+	expect(destinationOwner!.value.input.value).toBe('Retained user edit');
+	expect(destinationOwner!.isCurrent()).toBe(true); expect(dispose).not.toHaveBeenCalled();
+	if (cancelled) f.transition.cancel('history');
+	else await frame(MOTION_DURATION + 32 + ASYNC_REVEAL_DURATION);
+	await revealing;
+	expect(destinationOwner!.isCurrent()).toBe(true); expect(dispose).not.toHaveBeenCalled();
+	expect(commit).toHaveBeenCalledOnce();
+	destinationOwner!.release(); destinationOwner!.release(); expect(dispose).toHaveBeenCalledExactlyOnceWith(summary);
 });
 
 test('cancellation aborts a stalled final commit and late completion cannot finish or clean up twice', async () => {
