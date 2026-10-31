@@ -69,6 +69,23 @@
 	visibility: hidden !important;
 }
 
+/* The source is stationary in its independent hold. Rasterize real destination
+   DOM now, before its fade: visibility:hidden/opacity:0 postpones the browser's
+   rounded-rectangle/path shader preparation until the first visible frame.
+   The persistent menu keeps its explicit full opacity below; canvas and held
+   source content do not use these incoming DOM variables. */
+.stage[data-catalog-staged-phase='held'] {
+	--catalog-enter-opacity: 0.001 !important;
+	--catalog-shared-opacity: 0.001 !important;
+}
+.stage[data-catalog-staged-phase='held'] :is(
+	[data-catalog-transition-dom='enter'],
+	[data-catalog-transition-group='enter'],
+	[data-catalog-transition-group='shared']
+) {
+	visibility: visible !important;
+}
+
 .stage[data-catalog-transition] [data-catalog-transition-dom],
 .stage[data-catalog-transition] [data-catalog-transition-dom] *,
 .stage[data-catalog-transition] [data-catalog-transition-group],

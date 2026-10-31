@@ -43,9 +43,12 @@ export interface StageVisualTestVisibilityStats {
 export interface StageVisualTestController {
 	getNavigationTimings(): { dataReady: number; captured: number; restoring: number; bound: number;
 		early?: { started: number; entered: number; captured: number; prepared: number; firstMotion: number;
-			firstSubmitted: number; held: number; committed: number; revealed: number } };
+			firstSubmitted: number; motionEnded: number; holdStarted: number; held: number; committed: number;
+			revealStarted: number; revealEnded: number; revealed: number } };
 	captureHeroPresentation(): boolean;
 	getSpatialCapture(): ReturnType<StageExperience['getSpatialCapture']> | null;
+	/** Clip matrix of the bound detail owner, after the retained source is released. */
+	getDetailProjection(kind: 'hero' | 'dock'): number[] | null;
 	releaseSpatialCapture(): void;
 	getCatalogOwnership(): ReturnType<
 		import('../catalog/CatalogTransition.js').CatalogTransition['getOwnership']

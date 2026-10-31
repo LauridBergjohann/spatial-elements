@@ -26,7 +26,8 @@
 	import { VirtualScrollController } from '@spatial-elements/core/stage/VirtualScrollController';
 	import { StageFullscreenController } from '@spatial-elements/core/stage/StageFullscreenController';
 	import ScrollNavigationBridge from '../catalog/ScrollNavigationBridge.svelte';
-	import { startStagedCatalogNavigation } from '../catalog/stagedCatalogNavigation.js';
+	import { startStagedCatalogNavigation, type InterruptedCatalogPresentation } from '../catalog/stagedCatalogNavigation.js';
+	import type { EarlyNavigationCancelReason } from '@spatial-elements/core/catalog/EarlyNavigationCoordinator';
 	import { NavigationFeedback } from '@spatial-elements/core/catalog/NavigationFeedback';
 	import { CatalogTransition } from '@spatial-elements/core/catalog/CatalogTransition';
 	import {
@@ -54,6 +55,7 @@
 	import type { BeforeNavigate, OnNavigate } from '@sveltejs/kit';
 	import {
 		STAGE_CONTEXT_KEY,
+		STAGE_PANEL_LAYOUT_EVENT,
 		type StageContext,
 		type StagePanelRegistration,
 		type StageViewportRegistration
@@ -175,6 +177,7 @@
 	let virtualScroll = $state<VirtualScrollController>();
 	let transition: CatalogTransition | undefined;
 	let earlyTransition: ReturnType<typeof startStagedCatalogNavigation>;
+	let interruptedPresentation: InterruptedCatalogPresentation | undefined;
 	let lastEarlyTimings: NonNullable<typeof earlyTransition>['timings'] | undefined;
 	let initialized: Promise<void> | undefined;
 	let navigationGeneration = 0;
@@ -398,6 +401,7 @@
 			navigationGeneration += 1;
 			navigationFeedback?.end();
 			earlyTransition?.cancel('destroyed');
+			interruptedPresentation?.cancel(); interruptedPresentation = undefined;
 			transition?.dispose();
 			document.documentElement.classList.remove('stage-route');
 			document.body.classList.remove('stage-route');
@@ -460,6 +464,7 @@
 
 	function interruptNavigation() {
 		earlyTransition?.cancel('cancelled');
+		interruptedPresentation?.cancel(); interruptedPresentation = undefined;
 		navigationFeedback?.end();
 		navigationGeneration += 1;
 		reuseCatalogPage = false;
@@ -467,8 +472,19 @@
 		if (pageBindingConsumed) releasePageBinding?.();
 	}
 
+	function interruptCommittedNavigation(reason: EarlyNavigationCancelReason) {
+		if (!earlyTransition) return false;
+		// The destination owns the route already. Release only the visual source;
+		// restoreNavigation must keep its generation and finish updatePage normally.
+		interruptedPresentation = earlyTransition.cancelCommitted(reason);
+		navigationFeedback?.end();
+		if (pageBindingConsumed) releasePageBinding?.();
+		return true;
+	}
+
 	function supersedeNavigation(destination: URL) {
 		if (earlyTransition?.destination !== destination.href) earlyTransition?.cancel('superseded');
+		interruptedPresentation?.cancel(); interruptedPresentation = undefined;
 		navigationFeedback?.end();
 		navigationGeneration += 1;
 		transition?.supersede(destination);
@@ -478,13 +494,13 @@
 	let navigationTimings = { dataReady: 0, captured: 0, restoring: 0, bound: 0 };
 	function startEarlyNavigation(navigation: BeforeNavigate) {
 		// The opt-in is temporary while production frame/ownership gates are verified.
-		stage.dataset.catalogStagedDecision = `gate:${isEnhanced}:${Boolean(experience)}:${Boolean(presentationHost)}`;
+		if (visualTestController) stage.dataset.catalogStagedDecision = `gate:${isEnhanced}:${Boolean(experience)}:${Boolean(presentationHost)}`;
 		if (!new URL(location.href).searchParams.has('stagedNavigation') || !isEnhanced || !experience || !presentationHost) return;
 		const metrics = layoutMetrics?.read();
 		if (!metrics) return;
 		earlyTransition?.cancel('superseded');
 		const candidate = startStagedCatalogNavigation({ root: stage, navigation, endpoints: catalogEndpoints,
-			host: presentationHost, experience, metrics, items: catalogSpatialElements,
+			host: presentationHost, experience, metrics, items: catalogSpatialElements, diagnostics: Boolean(visualTestController),
 			onFinish() {
 				if (earlyTransition) lastEarlyTimings = earlyTransition.timings;
 				earlyTransition = undefined;
@@ -522,6 +538,17 @@
 		setZoomFocusState(restingZoomFocus);
 	}
 
+	async function settleInterruptedPresentation(generation: number, rebind = false) {
+		const pending = interruptedPresentation;
+		if (!pending) return;
+		await pending.finished;
+		if (interruptedPresentation === pending) interruptedPresentation = undefined;
+		if (destroyed || generation !== navigationGeneration || !rebind) return;
+		experience?.updateAppearance({ pageBackground: resolvedPageBackground, background, interactionTheme, panels: getPanelTargets() });
+		window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
+		experience?.flushCatalogFrame();
+	}
+
 	async function restoreNavigation() {
 		navigationTimings.restoring = performance.now();
 		const generation = navigationGeneration;
@@ -544,6 +571,8 @@
 				await pending;
 				if (destroyed || generation !== navigationGeneration) return;
 			}
+			if (interruptedPresentation) await settleInterruptedPresentation(generation);
+			if (destroyed || generation !== navigationGeneration) return;
 			registerSpatialElements();
 			const catalogReady = catalog
 				? experience.setCatalogSpatialElements(catalog.brandId, catalogSpatialElements)
@@ -576,6 +605,8 @@
 				viewport: getViewportTarget()
 			});
 			if (destroyed || generation !== navigationGeneration) return;
+			if (interruptedPresentation) await settleInterruptedPresentation(generation, true);
+			if (destroyed || generation !== navigationGeneration) return;
 			if (experience.getSpatialCapture()) {
 				await Promise.race([
 					catalogReady,
@@ -592,8 +623,10 @@
 					pageBackground: resolvedPageBackground, background, interactionTheme, panels: getPanelTargets()
 				}));
 			} else await transition?.play();
+			if (interruptedPresentation) await settleInterruptedPresentation(generation, true);
 		} catch (error) {
 			if (destroyed || generation !== navigationGeneration) return;
+			interruptedPresentation?.cancel(); interruptedPresentation = undefined;
 			transition?.cancel();
 			earlyTransition?.cancel('error');
 			try {
@@ -661,6 +694,7 @@
 			getNavigationTimings: () => ({ ...navigationTimings, early: earlyTransition?.timings ?? lastEarlyTimings }),
 			captureHeroPresentation: () => experience?.captureHeroPresentation() ?? false,
 			getSpatialCapture: () => experience?.getSpatialCapture() ?? null,
+			getDetailProjection: kind => experience?.getVisualTestDetailProjection(kind) ?? null,
 			releaseSpatialCapture: () => experience?.releaseSpatialCapture(),
 			registerCatalogEndpoint: (address, element) => catalogEndpoints.register(address, element),
 			getCatalogPresentation: () => experience?.getCatalogPresentation() ?? null,
@@ -772,6 +806,7 @@
 		onCapture={captureNavigation}
 		onSupersede={supersedeNavigation}
 		onInterrupt={interruptNavigation}
+		onInterruptCommitted={interruptCommittedNavigation}
 		onRestored={restoreNavigation}
 	/>
 {/if}

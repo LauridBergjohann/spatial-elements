@@ -43,12 +43,14 @@
 		onEarlyStart?: (navigation: BeforeNavigate) => EarlyNavigationHandle | undefined;
 		onCapture?: (navigation: OnNavigate) => void | Promise<void>;
 		onInterrupt?: () => void;
+		/** Cancel only a still-owned visual handoff after route commit; retain destination binding. */
+		onInterruptCommitted?: (reason: EarlyNavigationCancelReason) => boolean;
 		onSupersede?: (destination: URL) => void;
 		onRestored?: (navigation: OnNavigate) => void | Promise<void>;
 		handlesNavigation?: (navigation: OnNavigate) => boolean;
 	}
 
-	let { controller, onStart, onEarlyStart, onCapture, onInterrupt, onSupersede, onRestored, handlesNavigation }: Props =
+	let { controller, onStart, onEarlyStart, onCapture, onInterrupt, onInterruptCommitted, onSupersede, onRestored, handlesNavigation }: Props =
 		$props();
 	const endpoints = getContext<CatalogEndpointRegistry | undefined>(CATALOG_ENDPOINTS);
 	const sections = getContext<CatalogSections | undefined>(CATALOG_SECTIONS);
@@ -109,6 +111,8 @@
 				token: object;
 				complete?: Promise<void>;
 				releasePreparation?: () => void;
+				committed: boolean;
+				interrupted: boolean;
 		  }
 		| undefined;
 	let initial = $state<{ target: ScrollRestoreTarget; url: string }>();
@@ -171,6 +175,21 @@
 		return anchor instanceof HTMLAnchorElement && !anchor.closest(
 			'[data-sveltekit-keepfocus], [data-sveltekit-noscroll], [data-sveltekit-replacestate], [data-sveltekit-reload]'
 		);
+	}
+
+	function interruptInput(reason: EarlyNavigationCancelReason) {
+		const binding = active;
+		if (binding?.committed) {
+			// goto may already be complete while its real source is still held for
+			// destination binding/reveal. Do not invalidate that binding generation:
+			// there is no successor navigation which could finish the current page.
+			if (binding.interrupted || !onInterruptCommitted?.(reason)) return;
+			binding.interrupted = true;
+			focusRevision += 1;
+			binding.controller.endNavigation(binding.token);
+			return;
+		}
+		if (earlyNavigation.pending) stopActive(undefined, reason);
 	}
 
 	function interruptVisuals() {
@@ -296,9 +315,9 @@
 			const anchor = event.composedPath().find((node) => node instanceof HTMLAnchorElement);
 			if (anchor instanceof HTMLAnchorElement) earlyAnchors.set(event, anchor);
 		};
-		const interrupt = () => { if (earlyNavigation.pending) stopActive(undefined, 'interaction'); };
+		const interrupt = () => interruptInput('interaction');
 		const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') interrupt(); };
-		const resize = () => { if (earlyNavigation.pending) stopActive(undefined, 'resize'); };
+		const resize = () => interruptInput('resize');
 		window.addEventListener('keydown', keydown);
 		window.addEventListener('wheel', interrupt, { passive: true });
 		window.addEventListener('touchmove', interrupt, { passive: true });
@@ -356,7 +375,11 @@
 		const interrupted = new Promise<boolean>((resolve) => {
 			releasePreparation = () => resolve(false);
 		});
-		active = { controller: owner, token, complete: navigation.complete, releasePreparation };
+		const binding: NonNullable<typeof active> = {
+			controller: owner, token, complete: navigation.complete, releasePreparation,
+			committed: false, interrupted: false
+		};
+		active = binding;
 		let preparationTimer: ReturnType<typeof setTimeout> | undefined;
 		try {
 			const preparation = onCapture?.(navigation);
@@ -388,13 +411,14 @@
 		// Do not return this promise: SvelteKit must commit before it can complete.
 		void navigation.complete
 			.then(async () => {
+				binding.committed = true;
 				await tick();
 				// Kit queues fragment focus/history work after committing the page. Its
 				// scroll correction must finish before our sole destination restoration.
 				// A microtask/tick alone runs before that queued task (Kit 2.69.2).
 				if (destination.url.hash) await new Promise<void>((resolve) => setTimeout(resolve, 0));
 				if (epoch !== generation || !owner.active) return;
-				sections?.restore();
+				if (!binding.interrupted) sections?.restore();
 				let requestedSection = viewContext.targetSection;
 				if (destination.url.hash) {
 					try {
@@ -403,7 +427,7 @@
 						requestedSection = undefined;
 					}
 				}
-				if (navigation.type !== 'popstate' && requestedSection && viewContext.spatialElementId)
+				if (!binding.interrupted && navigation.type !== 'popstate' && requestedSection && viewContext.spatialElementId)
 					sections?.selectForView(requestedSection, viewContext.spatialElementId);
 				await tick();
 				if (epoch !== generation || !owner.active) return;
@@ -412,15 +436,15 @@
 				// Our bounded cache belongs to public page.state entry IDs, never URLs.
 				const saved =
 					navigation.type === 'popstate' ? entryPositions.get(entryState()?.id ?? '') : undefined;
-				const restored = owner.restoreTarget(saved ?? target, token);
-				if (!restored) syncStageScrollToNative();
+				const restored = binding.interrupted ? undefined : owner.restoreTarget(saved ?? target, token);
+				if (!restored && !binding.interrupted) syncStageScrollToNative();
 				ensureEntry();
 				const revision = focusRevision;
-				endpoints?.restoreFocus(entryState()?.focus);
+				if (!binding.interrupted) endpoints?.restoreFocus(entryState()?.focus);
 				const origin = sections?.getOrigin();
-				endpoints?.restoreOrigin(origin);
+				if (!binding.interrupted) endpoints?.restoreOrigin(origin);
 				await onRestored?.(navigation);
-				if (restored && epoch === generation && owner.active && revision === focusRevision) {
+				if (!binding.interrupted && restored && epoch === generation && owner.active && revision === focusRevision) {
 					focusDestination(navigation);
 				}
 			})
@@ -494,7 +518,7 @@
 		const token = {};
 		const epoch = generation;
 		owner.beginNavigation(token);
-		active = { controller: owner, token };
+		active = { controller: owner, token, committed: true, interrupted: false };
 		void tick()
 			.then(() => {
 				if (epoch !== generation || !owner.active || location.href !== start.url) return;

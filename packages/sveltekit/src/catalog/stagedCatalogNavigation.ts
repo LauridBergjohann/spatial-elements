@@ -15,6 +15,23 @@ import { resolveDetailLayout, type ResponsiveLayoutInput } from '@spatial-elemen
 import type { SpatialSummaryHostController } from '../spatial-element/spatialSummaryHost.svelte.js';
 import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
 import { getStageVisualScrollPosition } from '@spatial-elements/core/stage/scrollFrame';
+import { finishInterruptedPresentation, type InterruptedCatalogPresentation } from './interruptedPresentation.js';
+export type { InterruptedCatalogPresentation } from './interruptedPresentation.js';
+
+/** Leave a real paint opportunity between destination raster preparation and fade. */
+function destinationPainted(signal: AbortSignal): Promise<void> {
+	return new Promise(resolve => {
+		if (signal.aborted) { resolve(); return; }
+		let frame = 0;
+		const finish = () => {
+			cancelAnimationFrame(frame);
+			signal.removeEventListener('abort', finish);
+			resolve();
+		};
+		signal.addEventListener('abort', finish, { once: true });
+		frame = requestAnimationFrame(() => { frame = requestAnimationFrame(finish); });
+	});
+}
 
 /** Source ownership stays in the persistent shell; Kit only replaces its placement. */
 export function startStagedCatalogNavigation(options: {
@@ -25,18 +42,21 @@ export function startStagedCatalogNavigation(options: {
 	experience: StageExperience;
 	metrics: ResponsiveLayoutInput;
 	items: readonly SpatialListItem[];
+	diagnostics?: boolean;
 	onFinish(): void;
 }) {
 	const { root, navigation, endpoints, host, experience } = options;
-	const entered = performance.now();
-	const decline = (reason: string) => { root.dataset.catalogStagedDecision = reason; };
+	const diagnostics = Boolean(options.diagnostics);
+	const now = () => diagnostics ? performance.now() : 0;
+	const entered = now();
+	let decision: string | undefined;
+	const decline = (reason: string) => { decision = reason; if (diagnostics) root.dataset.catalogStagedDecision = reason; };
 	if (!navigation.from || !navigation.to) return;
 	const intent = resolveCatalogIntent(navigation.from.url, navigation.to.url, navigation.type);
 	const declaredDock = Boolean(navigation.to.url.hash && navigation.to.url.hash !== '#overview' &&
 		readCatalogViewContext(navigation.to.url).targetPresentation === 'dock');
 	if (intent?.direction !== 'list-to-detail' || intent.history ||
 		(navigation.to.url.hash && navigation.to.url.hash !== '#overview' && !declaredDock)) return;
-	const diagnostics = navigation.from.url.searchParams.has('stage-test');
 	if (diagnostics) delete root.dataset.catalogStagedError;
 	const slot = endpoints.getContentSlot(intent.identity);
 	if (slot !== 'catalog.card' && slot !== 'carousel.front') { decline('source-slot'); return; }
@@ -84,14 +104,16 @@ export function startStagedCatalogNavigation(options: {
 		actors.push({ element: actor, projection,
 			target: { left: layout.summary.x, top: layout.summary.anchor.y, width: layout.summary.width } });
 	}
-	const captured = performance.now();
+	const captured = now();
 	const destination = navigation.to.url.href;
 	// Include Kit's own post-click scheduling in the acknowledgement measurement.
-	const started = navigation.type === 'link' ? navigation.event.timeStamp : performance.now();
-	let prepared = 0, firstMotion = 0, firstSubmitted = 0, heldAt = 0, committedAt = 0, revealedAt = 0;
+	const started = diagnostics && navigation.type === 'link' ? navigation.event.timeStamp : now();
+	let prepared = 0, firstMotion = 0, firstSubmitted = 0, motionEnded = 0, holdStarted = 0, heldAt = 0, committedAt = 0, revealedAt = 0;
+	let revealStarted = 0, revealEnded = 0;
 	let holdingHost: HTMLElement | undefined;
 	const holdingMotions: ReturnType<typeof createSourceDomMotion>[] = [];
 	let adopted = false, committed = false, cleaned = false;
+	let retainInterruptedSummary = false;
 	let restoreClipping: (() => void) | undefined;
 	const savedShells: HTMLElement[] = [];
 	const exiting: HTMLElement[] = [];
@@ -121,8 +143,10 @@ export function startStagedCatalogNavigation(options: {
 		cleaned = true;
 		for (const motion of holdingMotions.splice(0)) motion?.restore();
 		restoreClipping?.(); restoreClipping = undefined;
-		if (cancelled && !adopted) retained.restore() || retained.release();
-		else retained.release();
+		if (!retainInterruptedSummary) {
+			if (cancelled && !adopted) retained.restore() || retained.release();
+			else retained.release();
+		}
 		holdingHost?.remove(); holdingHost = undefined;
 		for (const name of ['catalog-transition', 'catalog-direction', 'catalog-recipe', 'catalog-enter-hidden', 'catalog-shared-hidden', 'catalog-staged-phase']) root.removeAttribute(`data-${name}`);
 		for (const name of ['enter', 'shared', 'exit']) root.style.removeProperty(`--catalog-${name}-opacity`);
@@ -147,19 +171,21 @@ export function startStagedCatalogNavigation(options: {
 				}
 				decline('accepted');
 				root.dataset.catalogStagedPhase = 'moving';
-				prepared = performance.now();
+				prepared = now();
 				return true;
 			},
 			frame({ progress, exit, quads }) {
-				if (progress > 0 && !firstMotion) firstMotion = performance.now();
+				if (diagnostics && progress > 0 && !firstMotion) firstMotion = now();
 				experience.setStagedDetailProgress(progress);
 				const panel = quads[0];
 				if (!experience.setStagedDetailPanel(container, panel.quad, panel.width, panel.height)) throw new Error('Source panel is not prepared');
 				presentation(exit);
 				if (progress > 0) experience.flushCatalogFrame();
-				if (progress > 0 && !firstSubmitted) firstSubmitted = performance.now();
+				if (diagnostics && progress > 0 && !firstSubmitted) firstSubmitted = now();
+				if (diagnostics && progress === 1) motionEnded = now();
 			},
 			hold({ releaseDomStyles }) {
+				holdStarted = now();
 				root.dataset.catalogStagedPhase = 'holding';
 				if (!experience.holdStagedDetail(intent.identity.spatialElementId, geometryKind)) return false;
 				releaseDomStyles();
@@ -188,10 +214,11 @@ export function startStagedCatalogNavigation(options: {
 						shell.setAttribute('data-catalog-shell-continuous', ''); savedShells.push(shell);
 					}
 				}
-				heldAt = performance.now();
+				heldAt = now();
 				return true;
 			},
 			reveal(progress) {
+				if (diagnostics && !revealStarted) revealStarted = now();
 				root.dataset.catalogStagedPhase = 'revealing';
 				root.removeAttribute('data-catalog-enter-hidden'); root.removeAttribute('data-catalog-shared-hidden');
 				root.style.setProperty('--catalog-enter-opacity', String(progress));
@@ -200,9 +227,10 @@ export function startStagedCatalogNavigation(options: {
 				experience.setStagedPanelOpacity(1 - progress);
 				presentation(0, progress);
 				experience.flushCatalogFrame();
+				if (diagnostics && progress === 1) revealEnded = now();
 			},
-			finish() { revealedAt = performance.now(); clear(false); },
-			cancel(reason) { if (root.dataset.catalogStagedDecision === 'accepted') decline(`cancelled:${reason}`); clear(true); },
+			finish() { revealedAt = now(); clear(false); },
+			cancel(reason) { if (decision === 'accepted') decline(`cancelled:${reason}`); clear(true); },
 			error(error, phase) {
 				if (!diagnostics) return;
 				const message = error instanceof Error ? error.message : String(error);
@@ -227,9 +255,32 @@ export function startStagedCatalogNavigation(options: {
 	return {
 		handle, destination,
 		get phase() { return transition.phase; },
-		get timings() { return { started, entered, captured, prepared, firstMotion, firstSubmitted, held: heldAt, committed: committedAt, revealed: revealedAt }; },
-		commit() { committed = true; committedAt = performance.now(); presentation(0); },
+		get timings() { return { started, entered, captured, prepared, firstMotion, firstSubmitted, motionEnded, holdStarted, held: heldAt, committed: committedAt, revealStarted, revealEnded, revealed: revealedAt }; },
+		commit() { committed = true; committedAt = now(); presentation(0); },
 		cancel(reason: EarlyNavigationCancelReason = 'cancelled') { transition.cancel(reason); },
+		cancelCommitted(reason: EarlyNavigationCancelReason): InterruptedCatalogPresentation | undefined {
+			// Scroll/resize cancels the visual overlay, not the already committed
+			// forward navigation or the source component's semantic state.
+			const transferSummary = committed && retained.record.kind === 'summary';
+			retainInterruptedSummary = transferSummary && !adopted;
+			transition.cancel(reason);
+			if (!transferSummary) return;
+			return finishInterruptedPresentation({
+				settle: tick,
+				release: retained.release,
+				adopt() {
+					const destinationSurface = endpoints.resolve({ ...intent.identity, slot: 'detail.summary', role: 'summary-surface' });
+					const destinationSlot = destinationSurface?.querySelector<HTMLElement>('[data-spatial-summary-slot]');
+					if (!destinationSlot) throw new Error('Interrupted summary destination did not bind');
+					if (!adopted) {
+						adopted = retained.adopt(destinationSlot);
+						if (!adopted) throw new Error('Interrupted summary ownership transfer failed');
+						retained.unfreeze();
+					}
+					return destinationSlot;
+				}
+			});
+		},
 		async reveal(rebind: () => void) {
 			const adoptSummary = async (signal: AbortSignal) => {
 				if (signal.aborted || cleaned) return;
@@ -258,6 +309,11 @@ export function startStagedCatalogNavigation(options: {
 				experience.beginCatalogMotion();
 				experience.setCatalogGeometryProgress(1);
 				if (!declaredDock) await adoptSummary(signal);
+				if (signal.aborted) return;
+				if (!await experience.prepareStagedReveal(signal) && !signal.aborted) throw new Error('Detail reveal could not be prepared');
+				// held CSS rasterizes the real incoming DOM at negligible opacity.
+				// GPU readiness alone does not warm the browser's separate compositor.
+				await destinationPainted(signal);
 			}, declaredDock ? async signal => {
 				if (signal.aborted || cleaned) return;
 				root.dataset.catalogStagedPhase = 'committing';

@@ -21,6 +21,52 @@ async function expectEarlyReveal(page: import('@playwright/test').Page) {
 	expect(state.timings?.early?.revealed, JSON.stringify(state)).toBeGreaterThan(0);
 }
 
+async function expectHeldEndpointParity(page: import('@playwright/test').Page) {
+	await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getNavigationTimings().restoring)).toBeGreaterThan(0);
+	expect(await page.evaluate(() => window.__stageVisualTest!.getNavigationTimings().bound)).toBe(0);
+	await page.evaluate(() => {
+		const api = window.__stageVisualTest!;
+		const held = api.getSpatialCapture()!;
+		if (!held) throw new Error('The committed destination lost its retained geometry');
+		const probe = { held, bound: undefined as { projection: number[] } | undefined, width: innerWidth, height: innerHeight };
+		Object.assign(window, { heldEndpointProbe: probe });
+		const sample = () => {
+			const phase = document.querySelector<HTMLElement>('.stage')?.dataset.catalogStagedPhase;
+			// Forward handoff disposes the capture at progress one. Its final
+			// successor frame therefore belongs to the real detail renderer. The
+			// reveal timestamp starts only in the hook which synchronously flushes
+			// that owner; a later RAF cannot observe its pre-binding preparation.
+			if ((phase === 'revealing' || phase === 'committing') && (api.getNavigationTimings().early?.revealStarted ?? 0) > 0) {
+				const detail = document.querySelector('[data-spatial-element-root]');
+				const kind = !detail?.hasAttribute('data-spatial-detail-pane') && detail?.hasAttribute('data-spatial-element-dock-active') ? 'dock' : 'hero';
+				const projection = api.getDetailProjection(kind);
+				if (projection) { probe.bound = { projection }; return; }
+			}
+			if (phase) requestAnimationFrame(sample);
+		};
+		requestAnimationFrame(sample);
+		api.releasePageBinding();
+	});
+	await expect.poll(() => page.evaluate(() => Boolean((window as unknown as {
+		heldEndpointProbe: { bound?: unknown }
+	}).heldEndpointProbe.bound))).toBe(true);
+	const result = await page.evaluate(() => {
+		const probe = (window as unknown as { heldEndpointProbe: {
+			held: { projection: number[] }; bound: { projection: number[] }; width: number; height: number;
+		} }).heldEndpointProbe;
+		const project = (matrix: number[], [x, y, z]: number[]) => {
+			const w = matrix[3] * x + matrix[7] * y + matrix[11] * z + matrix[15];
+			return [(1 + (matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12]) / w) * probe.width / 2,
+				(1 - (matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13]) / w) * probe.height / 2];
+		};
+		return [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]].map(point => {
+			const before = project(probe.held.projection, point), after = project(probe.bound.projection, point);
+			return { point, before, after, error: Math.hypot(before[0] - after[0], before[1] - after[1]) };
+		});
+	});
+	for (const entry of result) expect(entry.error, JSON.stringify(result)).toBeLessThanOrEqual(1);
+}
+
 for (const width of [430, 1440, 2456]) for (const view of ['list', 'carousel'] as const) {
 	test(`${width}px ${view} moves the existing source before mounting the detail`, async ({ page }, testInfo) => {
 		await page.setViewportSize({ width, height: 1000 });
@@ -67,8 +113,10 @@ for (const width of [430, 1440, 2456]) for (const view of ['list', 'carousel'] a
 			requestAnimationFrame(sample);
 			Object.assign(window, { stagedProbe: { source, frames, changes, stop: () => observer.disconnect() } });
 		}, view);
+		await page.evaluate(() => window.__stageVisualTest!.holdNextPageBinding());
 		await link.click();
 		await expect(page).toHaveURL(/\/demo\/elements\/column$/);
+		await expectHeldEndpointParity(page);
 		await expect(page.locator('.stage')).not.toHaveAttribute('data-catalog-staged-phase', /.+/);
 		const probe = await page.evaluate(() => {
 			const probe = (window as unknown as { stagedProbe: { frames: { phase: string; sourceConnected: boolean; targetMounted: boolean; width: number; originalWidth: number }[]; changes: unknown[]; stop(): void } }).stagedProbe;
@@ -181,6 +229,61 @@ test('Back during destination binding releases the hold without reviving obsolet
 	expect(errors).toEqual([]);
 });
 
+for (const interruption of ['Escape', 'wheel', 'resize'] as const) {
+	test(`committed destination finishes binding after ${interruption} cancels its held source`, async ({ page }) => {
+		const errors: string[] = [];
+		page.on('pageerror', error => errors.push(error.message));
+		const link = await readySource(page);
+		const sourceField = page.locator('[data-carousel-item="column"] textarea');
+		await sourceField.fill('Keep the committed configuration');
+		await sourceField.evaluate(node => Object.assign(window, { committedSourceField: node }));
+		await page.evaluate(() => window.__stageVisualTest!.holdNextPageBinding());
+		await link.evaluate((node: HTMLAnchorElement) => node.click());
+		await expect(page).toHaveURL(/\/staged\/elements\/column#reading$/);
+		await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getNavigationTimings().restoring)).toBeGreaterThan(0);
+		expect(await page.evaluate(() => window.__stageVisualTest!.getNavigationTimings().bound)).toBe(0);
+		await expect(page.locator('[data-catalog-staged-hold]')).toHaveCount(1);
+		await page.evaluate(kind => {
+			const type = kind === 'Escape' ? 'keydown' : kind === 'wheel' ? 'wheel' : 'resize';
+			window.addEventListener(type, () => {
+				// Run after the bridge listener, before binding's awaited continuation.
+				const heading = document.querySelector<HTMLElement>('#reading h2')!;
+				heading.tabIndex = -1; heading.focus({ preventScroll: true });
+				const intendedScroll = window.scrollY + 80;
+				window.scrollTo({ top: intendedScroll, behavior: 'instant' });
+				Object.assign(window, { lateInterruption: { heading, intendedScroll } });
+			}, { once: true });
+		}, interruption);
+		if (interruption === 'Escape') await page.keyboard.press('Escape');
+		else if (interruption === 'wheel') await page.mouse.wheel(0, 30);
+		else await page.setViewportSize({ width: 1200, height: 1000 });
+		// Interruption must release the artificial binding gate itself. Do not
+		// navigate again or manually bind the page to make this assertion pass.
+		await expect(page.locator('[data-catalog-staged-hold]')).toHaveCount(0);
+		await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getNavigationTimings().bound)).toBeGreaterThan(0);
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
+		await expect(page.locator('.stage')).not.toHaveAttribute('data-catalog-staged-phase', /.+/);
+		await expect(page.locator('[data-spatial-presentation-frozen]')).toHaveCount(0);
+		await expect(page.locator('[data-spatial-summary-root]')).toHaveCount(1);
+		await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().visibleMinimaps)).toBeGreaterThan(0);
+		expect(await page.evaluate(() => {
+			const probe = (window as unknown as { lateInterruption: { heading: HTMLElement; intendedScroll: number } }).lateInterruption;
+			return { focus: document.activeElement === probe.heading, scroll: window.scrollY >= probe.intendedScroll - 1,
+				inert: Boolean(probe.heading.closest('[inert]')), capture: Boolean(window.__stageVisualTest!.getSpatialCapture()) };
+		})).toEqual({ focus: true, scroll: true, inert: false, capture: false });
+		// The Dock intentionally hides the overview summary. Return using native
+		// scroll only after proving cancellation preserved the user's prior position.
+		await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+		const field = page.locator('[data-spatial-summary-root] textarea');
+		await expect(field).toBeVisible();
+		expect(await field.evaluate(node => node === (window as unknown as { committedSourceField: Node }).committedSourceField)).toBe(true);
+		await expect(field).toHaveValue('Keep the committed configuration');
+		await field.fill('Destination remains interactive');
+		await expect(field).toHaveValue('Destination remains interactive');
+		expect(errors).toEqual([]);
+	});
+}
+
 test('a failed speculative data request falls back to usable ordinary navigation', async ({ page }) => {
 	const errors: string[] = [];
 	page.on('pageerror', error => errors.push(error.message));
@@ -225,8 +328,10 @@ for (const width of [430, 1440, 2456]) for (const view of ['list', 'carousel'] a
 		});
 		await link.hover();
 		await expect.poll(() => page.evaluate(() => window.__stageVisualTest?.getCarouselStats()?.actors.some(actor => actor.spatialElementId === 'column' && actor.stagedReady) ?? false)).toBe(true);
+		await page.evaluate(() => window.__stageVisualTest!.holdNextPageBinding());
 		await link.click();
 		await expect(page).toHaveURL(/\/staged\/elements\/column#reading$/);
+		await expectHeldEndpointParity(page);
 		await expectEarlyReveal(page);
 		await expect(page.locator('.stage')).toHaveAttribute('data-catalog-staged-decision', 'accepted');
 		await expect(page.locator('[data-catalog-staged-hold]')).toHaveCount(0);
