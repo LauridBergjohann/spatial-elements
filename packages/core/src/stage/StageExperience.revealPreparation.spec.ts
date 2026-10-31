@@ -17,7 +17,7 @@ function fixture() {
 			expect(delta).toBe(0);
 			applied.push(stage.catalogPresentation.enterOpacity);
 		}),
-		pipeline: { warmRevealFrame: vi.fn(() => {
+		pipeline: { setScrollRenderQuality: vi.fn(), warmRevealFrame: vi.fn(() => {
 			expect(stage.catalogPresentation.sharedOpacity).toBe(stage.catalogPresentation.enterOpacity);
 			return true;
 		}) },
@@ -72,4 +72,20 @@ test('missing bound render targets fail readiness without waiting on a queue', a
 	await expect(stage.prepareStagedReveal()).resolves.toBe(false);
 	expect(applied).toEqual([0.5, 0]);
 	expect(stage.renderer.backend.device.queue.onSubmittedWorkDone).not.toHaveBeenCalled();
+});
+
+test('reveal selects full quality before warming; pre-abort preserves the current scroll target', async () => {
+	const { stage, finish } = fixture();
+	const abort = new AbortController();
+	abort.abort();
+	await expect(stage.prepareStagedReveal(abort.signal)).resolves.toBe(false);
+	expect(stage.pipeline.setScrollRenderQuality).not.toHaveBeenCalled();
+	const result = stage.prepareStagedReveal();
+	expect(stage.pipeline.setScrollRenderQuality).toHaveBeenCalledExactlyOnceWith(false);
+	expect(stage.pipeline.setScrollRenderQuality.mock.invocationCallOrder[0])
+		.toBeLessThan(stage.syncPanelLayouts.mock.invocationCallOrder[0]);
+	expect(stage.syncPanelLayouts.mock.invocationCallOrder[0])
+		.toBeLessThan(stage.pipeline.warmRevealFrame.mock.invocationCallOrder[0]);
+	finish();
+	await expect(result).resolves.toBe(true);
 });

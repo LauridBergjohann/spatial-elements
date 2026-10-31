@@ -1123,6 +1123,9 @@ export class StageExperience {
 		const backgroundReveal = this.catalogBackgroundReveal.value;
 		let prepared = true;
 		try {
+			// Programmatic dock restoration may still own the temporary scroll targets.
+			// The reveal uses full quality; do not let its settle timer select cold targets.
+			this.pipeline.setScrollRenderQuality(false);
 			this.syncPanelLayouts();
 			for (const opacity of [0.5, 1]) {
 				this.catalogPresentation = {
