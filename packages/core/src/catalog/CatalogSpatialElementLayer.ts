@@ -201,7 +201,7 @@ export class CatalogSpatialElementLayer {
 	}
 	getStats(renderer?: THREE.WebGPURenderer) {
 		const signature = renderer ? this.stagedSignature(renderer) : undefined;
-		const stagedReady = (actor: CatalogActor) => Boolean(!this.stagedPreparing && signature &&
+		const stagedReady = (actor: CatalogActor) => Boolean(!this.stagedReadinessBlocked && signature &&
 			actor.rendered && actor.root.visible && this.desired.has(actor.key) && this.stagedMaterialReady(actor) &&
 			this.stagedPrepared.get(actor) === signature);
 		return {
@@ -266,6 +266,7 @@ export class CatalogSpatialElementLayer {
 	private stagedSourceFrozen = false;
 	private groundPoseSettled = false;
 	private stagedPreparing = false;
+	private stagedReadinessBlocked = false;
 	private stagedWarmRevision = 0;
 	private stagedWarmups = 0;
 	private stagedWarmFailures = 0;
@@ -1029,7 +1030,7 @@ export class CatalogSpatialElementLayer {
 		const actor = [...this.actors.values()].find(item => item.spatialElementId === spatialElementId &&
 			this.desired.has(item.key) && (occurrence ? item.occurrence === occurrence :
 				!item.occurrence || item.card?.hasAttribute('data-catalog-selected')));
-		return Boolean(!this.stagedPreparing && actor?.rendered && actor.root.visible && this.stagedMaterialReady(actor) &&
+		return Boolean(!this.stagedReadinessBlocked && actor?.rendered && actor.root.visible && this.stagedMaterialReady(actor) &&
 			this.stagedPrepared.get(actor) === this.stagedSignature(renderer));
 	}
 	/** Idle-only: warm the exact existing Low fade and handoff passes before a click can claim them. */
@@ -1039,6 +1040,7 @@ export class CatalogSpatialElementLayer {
 		const warmRear = actors.some(actor => Boolean(actor.pose)) || (this.groundPoseSettled &&
 			this.ground.needsCachePreparation(this.carouselCamera, signature));
 		this.stagedPreparing = true;
+		this.stagedReadinessBlocked = true;
 		const fog = this.scene.fog, environment = this.handoffScene.environment, handoffFog = this.handoffScene.fog;
 		const exitOpacity = this.exitOpacity;
 		const outlines = actors.filter(actor => actor.pose && actor.clip && actor.renderRect);
@@ -1098,6 +1100,10 @@ export class CatalogSpatialElementLayer {
 				outlines.forEach((actor, index) => { actor.hover = hover[index]; });
 				this.scene.fog = fog; this.handoffScene.environment = environment; this.handoffScene.fog = handoffFog;
 				this.handoffCamera.copy(handoffCamera);
+				// Optional shadow pixels must not revoke already fenced actor readiness.
+				// Keep preparation serialized, but unblock only after every borrowed
+				// render/scene value is restored. New actor passes still await the fence.
+				if (!actors.length) this.stagedReadinessBlocked = false;
 			}
 			const device = (renderer.backend as unknown as { device?: GPUDevice }).device;
 			await device?.queue.onSubmittedWorkDone();
@@ -1111,6 +1117,7 @@ export class CatalogSpatialElementLayer {
 			throw error;
 		} finally {
 			this.stagedPreparing = false;
+			this.stagedReadinessBlocked = false;
 		}
 	}
 	freezeStagedSource() { this.stagedSourceFrozen = true; }
