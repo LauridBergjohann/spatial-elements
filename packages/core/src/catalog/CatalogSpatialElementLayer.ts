@@ -918,12 +918,16 @@ export class CatalogSpatialElementLayer {
 	hasCarousel() {
 		return [...this.actors.values()].some((actor) => Boolean(actor.pose));
 	}
+	/** A retained glass panel outlives its source actors during staged reveal. */
+	hasRearOutput() {
+		return this.glass.hasActivePanels() || (this.exitOpacity > 0 && this.hasCarousel());
+	}
 
 	renderRear(renderer: THREE.WebGPURenderer) {
 		this.glass.render(renderer, this.carouselUiCamera, () => {
 			this.ground.draw(renderer, this.carouselCamera, this.exitOpacity);
 			this.draw(renderer, 'rear');
-		});
+		}, this.exitOpacity === 0);
 	}
 
 	/** Warm the existing Low material passes in an offscreen preparation target. */

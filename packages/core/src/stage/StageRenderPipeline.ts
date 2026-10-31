@@ -67,7 +67,7 @@ export interface StageRenderPorts {
 	panelRuntimes(): readonly StagePanelRuntime[];
 	minimaps(): ReadonlyMap<number, StageMinimapState>;
 	minimapScene(): THREE.Scene;
-	catalogLayer(): Pick<CatalogSpatialElementLayer, 'hasCarousel' | 'renderRear' | 'draw'> | undefined;
+	catalogLayer(): Pick<CatalogSpatialElementLayer, 'hasRearOutput' | 'renderRear' | 'draw'> | undefined;
 	spatialCapture(): SpatialGeometryCapture | undefined;
 	exitingMinimaps(): readonly { capture: SpatialGeometryCapture; minimap: StageMinimapState }[];
 	contentSecondaries(): readonly { capture: SpatialGeometryCapture }[];
@@ -266,6 +266,7 @@ export class StageRenderPipeline {
 	private carouselRearTarget?: THREE.CanvasTarget;
 	private carouselRearCanvas?: HTMLCanvasElement;
 	private carouselRearSize = new THREE.Vector3();
+	private carouselRearClear = false;
 	private foregroundCanvas?: HTMLCanvasElement;
 	configureRenderer() {
 		this.ports.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -276,7 +277,9 @@ export class StageRenderPipeline {
 		this.ports.backgroundCanvas.style.touchAction = 'pan-y';
 	}
 	renderCarouselRear() {
-		if (!this.carouselRearTarget && !this.ports.catalogLayer()?.hasCarousel()) return;
+		const layer = this.ports.catalogLayer();
+		const active = layer?.hasRearOutput() ?? false;
+		if (!this.carouselRearTarget && !active) return;
 		if (!this.carouselRearTarget) {
 			const canvas = document.createElement('canvas');
 			canvas.className = 'stage-webgpu-carousel-rear';
@@ -289,20 +292,27 @@ export class StageRenderPipeline {
 		const width = window.innerWidth,
 			height = window.innerHeight,
 			ratio = this.getFullPixelRatio();
-		if (
+		const resized = (
 			this.carouselRearSize.x !== width ||
 			this.carouselRearSize.y !== height ||
 			this.carouselRearSize.z !== ratio
-		) {
-			this.resizeCanvasTarget(target, width, height, ratio);
-			this.carouselRearSize.set(width, height, ratio);
-		}
-		this.ports.renderer.setCanvasTarget(target);
-		this.ports.renderer.setRenderTarget(null);
-		this.ports.renderer.setClearColor(0x000000, 0);
-		this.ports.renderer.clear();
-		this.ports.catalogLayer()?.renderRear(this.ports.renderer);
-		this.ports.renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
+		);
+		// Clear the formerly visible layer once. Keep its allocation for Back/Cancel,
+		// but do not switch canvases or submit empty passes on subsequent detail frames.
+		if (!active && this.carouselRearClear && !resized) return;
+		withRendererState(this.ports.renderer, () => {
+			this.carouselRearClear = false;
+			if (resized) {
+				this.resizeCanvasTarget(target, width, height, ratio);
+				this.carouselRearSize.set(width, height, ratio);
+			}
+			this.ports.renderer.setCanvasTarget(target);
+			this.ports.renderer.setRenderTarget(null);
+			this.ports.renderer.setClearColor(0x000000, 0);
+			this.ports.renderer.clear();
+			if (active) layer!.renderRear(this.ports.renderer);
+			else this.carouselRearClear = true;
+		});
 	}
 	createForegroundCanvas() {
 		const canvas = document.createElement('canvas');

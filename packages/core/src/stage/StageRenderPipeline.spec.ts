@@ -326,6 +326,70 @@ test('late High silhouette replacement retains warmed target/material owners and
 });
 
 afterEach(() => vi.unstubAllGlobals());
+
+function carouselRearFixture() {
+	vi.stubGlobal('window', { innerWidth: 800, innerHeight: 600, devicePixelRatio: 1 });
+	const canvas = { width: 800, height: 600, setAttribute: vi.fn() };
+	vi.stubGlobal('document', { createElement: () => canvas });
+	const f = rendererFixture();
+	const renderer = { ...f.renderer, setPixelRatio: vi.fn(), setSize: vi.fn() };
+	const canvasSwitch = vi.spyOn(renderer, 'setCanvasTarget');
+	let active = true;
+	const layer = { hasRearOutput: () => active, renderRear: vi.fn() };
+	const pipeline = new StageRenderPipeline({ renderer, container: { appendChild: vi.fn() },
+		backgroundCanvasTarget: f.originalCanvas, catalogLayer: () => layer,
+		interactionTheme: () => DEFAULT_INTERACTION_THEME } as unknown as StageRenderPorts);
+	const restored = () => {
+		expect(renderer.getCanvasTarget()).toBe(f.originalCanvas);
+		expect(renderer.getRenderTarget()).toBe(f.originalTarget);
+		expect(renderer.getClearColor(new THREE.Color()).getHex()).toBe(0xff0000);
+		expect(renderer.getClearAlpha()).toBe(0.4);
+		expect(renderer.getScissorTest()).toBe(true);
+		expect(f.viewport.toArray()).toEqual([1, 2, 3, 4]);
+		expect(f.scissor.toArray()).toEqual([5, 6, 7, 8]);
+	};
+	const reset = () => { canvasSwitch.mockClear(); renderer.clear.mockClear(); layer.renderRear.mockClear(); renderer.setSize.mockClear(); };
+	return { ...f, renderer, pipeline, layer, canvasSwitch, restored, reset,
+		setActive: (value: boolean) => { active = value; } };
+}
+
+test('rear canvas clears once after its last output and then pauses until output or viewport changes', () => {
+	const f = carouselRearFixture();
+	f.pipeline.renderCarouselRear(); expect(f.layer.renderRear).toHaveBeenCalledOnce(); f.restored();
+	f.setActive(false); f.reset(); f.pipeline.renderCarouselRear();
+	expect(f.renderer.clear).toHaveBeenCalledOnce(); expect(f.layer.renderRear).not.toHaveBeenCalled(); f.restored();
+	f.reset(); f.pipeline.renderCarouselRear(); f.pipeline.renderCarouselRear();
+	expect(f.canvasSwitch).not.toHaveBeenCalled(); expect(f.renderer.clear).not.toHaveBeenCalled();
+	window.innerWidth = 1024;
+	f.pipeline.renderCarouselRear(); expect(f.renderer.setSize).toHaveBeenCalledWith(1024, 600, true);
+	expect(f.renderer.clear).toHaveBeenCalledOnce(); f.restored();
+	f.reset(); f.pipeline.renderCarouselRear(); expect(f.canvasSwitch).not.toHaveBeenCalled();
+	f.setActive(true); f.pipeline.renderCarouselRear(); expect(f.layer.renderRear).toHaveBeenCalledOnce();
+	f.setActive(false); f.reset(); f.pipeline.renderCarouselRear(); expect(f.renderer.clear).toHaveBeenCalledOnce();
+	f.reset(); f.pipeline.renderCarouselRear(); expect(f.canvasSwitch).not.toHaveBeenCalled();
+	f.restored(); f.originalTarget.dispose();
+});
+
+test('a failed rear draw or empty clear restores borrowed renderer state and retries instead of caching success', () => {
+	const f = carouselRearFixture();
+	f.layer.renderRear.mockImplementationOnce(() => { throw new Error('rear draw failed'); });
+	expect(() => f.pipeline.renderCarouselRear()).toThrow('rear draw failed'); f.restored();
+	f.pipeline.renderCarouselRear();
+	f.setActive(false); f.reset();
+	f.renderer.clear.mockImplementationOnce(() => { throw new Error('clear failed'); });
+	expect(() => f.pipeline.renderCarouselRear()).toThrow('clear failed'); f.restored();
+	f.reset(); f.pipeline.renderCarouselRear(); expect(f.renderer.clear).toHaveBeenCalledOnce();
+	f.reset(); f.pipeline.renderCarouselRear(); expect(f.canvasSwitch).not.toHaveBeenCalled();
+	f.restored(); f.originalTarget.dispose();
+});
+
+test('a page with no rear output never creates or switches to a carousel canvas', () => {
+	const f = carouselRearFixture(); f.setActive(false);
+	f.pipeline.renderCarouselRear(); f.pipeline.renderCarouselRear();
+	expect(f.canvasSwitch).not.toHaveBeenCalled(); expect(f.renderer.clear).not.toHaveBeenCalled();
+	f.restored(); f.originalTarget.dispose();
+});
+
 function rendererFixture() {
 	const originalCanvas = {} as THREE.CanvasTarget;
 	const originalTarget = new THREE.RenderTarget(5, 7);

@@ -215,3 +215,60 @@ Raw results and the complete analysis are retained locally in
 acceptance runs follow only after the shared render/start causes have been addressed.
 Physical-device checks remain separate. Later accepted results must name their own source
 revision; these measurements must not silently be relabelled as results of a later fix.
+
+## Follow-up diagnostic on 362b98a — still not an acceptance run
+
+Build 54041 corresponds to runtime **362b98a** (including the reveal changes in `d997b46`,
+cadence diagnostics in `45c7154`, and the tabs correction). On the same 1440 × 1000,
+DPR 1 Windows/Intel setup, four serial, unprofiled **n = 1** hero samples produced:
+
+| Source / route cache | First source update | CPU submission | Observed DOM change | Clear cadence excesses: moving / reveal |
+| --- | ---: | ---: | ---: | --- |
+| List / cold | 45.0 ms | 56.8 ms | 61.8 ms | none / none |
+| List / warm | 39.6 ms | 48.8 ms | 55.4 ms | none / none |
+| Carousel / cold | 69.3 ms | 94.5 ms | 98.9 ms | none / 50.1, 50.0 ms |
+| Carousel / warm | 68.3 ms | 90.6 ms | 97.4 ms | 49.7 ms / 49.9, 50.1, 49.9 ms |
+
+All four idle calibrations met the predeclared stability conditions; estimated periods
+were approximately 16.667 ms. The last column lists only complete phase-internal gaps
+above `2T + 0.5 ms`. Borderline gaps remain in the raw data and are **not passes**. The
+unchanged raw moving/reveal gates passed only for cold List; both raw phase gates failed
+for the other three samples. No GPU resources were created during movement or reveal,
+and application/cache validation reported no errors. Four individual responses below
+100 ms do not establish p95 acceptance. The roughly 50 ms Carousel gaps remain real,
+unresolved pacing failures. Interphase loading/binding/preparation lasted approximately
+1.47–2.28 s; that interval is retained separately rather than counted as moving/reveal CPU.
+
+A subsequent, isolated **warm Carousel trace on the same runtime** used CPU samples,
+GPU/Viz events, queue fences and optional phase-edge stage snapshots. It confirmed two
+distinct sources of work:
+
+- During reveal, sampled inclusive CPU in `renderCarouselRear` was about **64.1 ms**,
+  including **57.4 ms** inside `CarouselGlassCompositor.render`. At the first revealing
+  snapshot there were **zero catalog actors and ground silhouettes**, but one retained
+  glass panel; glass pass count continued from 33 to 40 while catalog geometry and depth
+  blur pass counts stayed unchanged. The snapshot interval includes phase-edge/cleanup
+  work, so these deltas are not exact reveal-only pass totals. The trace recorded no
+  resource creation or shader compilation during reveal. The live glass draw is still
+  necessary; the entire measured rear cost is not removable.
+- Before the click, the stage snapshot was idle with no pending RAF or preparation job.
+  A `focusin` event registered a new stage RAF **4.25 ms after the click**. That RAF ran
+  at +11.92 ms and occupied approximately 40.08 ms; SvelteKit's following RAF/timer then
+  entered the navigation adapter at +66.1 ms. There were 49 GPU submissions and no GPU
+  resource creation before adapter entry. This identifies a newly requested focus render,
+  rather than a render loop already active at the idle snapshot. It is a separate start
+  issue from retained rear work during reveal.
+
+Tracing, CPU profiling, fences and snapshots perturb timing. Their absolute durations do
+not replace unprofiled latency or pacing measurements. Raw artifacts remain local under
+`.artifacts/staged-performance-54041-362b98a-hero1440-n1/` and
+`.artifacts/staged-gpu-trace-54041-362b98a-carousel-warm/`.
+
+The resulting narrow cache change treats **only exactly zero outgoing opacity** as a
+known-empty rear. It retains the transparent capture and the mathematically identical
+opaque-white blur result for each radius/size, while continuing to draw the actual glass
+matrix and opacity. Live captures invalidate all blur keys, including inactive keys;
+resize and failed writes cannot reuse stale results. Once no geometry or retained glass
+contributes, the separate rear canvas is cleared once and then paused until output or
+size changes. CPU regression tests cover these invariants. **The performance effect of
+this cache is not measured in the 362b98a results above and is not yet an accepted gain.**
