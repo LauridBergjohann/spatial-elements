@@ -262,6 +262,8 @@ export class StageRenderPipeline {
 	private _activeRenderTargets?: StageRenderTargetSet;
 	private stageDisplayMaterial?: THREE.NodeMaterial;
 	private _stageDisplayQuad?: THREE.QuadMesh;
+	private readonly displayViewport = new THREE.Vector4();
+	private readonly displaySize = new THREE.Vector2();
 	private stageDisplayTextureNode?: THREE.TextureNode;
 	private foregroundCanvasTarget?: THREE.CanvasTarget;
 	private carouselRearTarget?: THREE.CanvasTarget;
@@ -990,11 +992,43 @@ export class StageRenderPipeline {
 	}
 	renderStageDisplay() {
 		if (!this._stageDisplayQuad) return;
-		this.ports.renderer.setRenderTarget(null);
-		this.ports.renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
-		this.ports.renderer.setClearColor(0xffffff, 1);
-		this.ports.renderer.clear();
-		this._stageDisplayQuad.render(this.ports.renderer);
+		const { renderer, backgroundCanvasTarget } = this.ports;
+		renderer.setRenderTarget(null);
+		renderer.setCanvasTarget(backgroundCanvasTarget);
+		renderer.setClearColor(0xffffff, 1);
+		if (!this.canClearWithStageDisplay()) {
+			renderer.clear();
+			this._stageDisplayQuad.render(renderer);
+			return;
+		}
+		// Only this opaque, depth-independent fullscreen copy has no nested scene
+		// rendering. Include its clear in the same render pass, avoiding the manual
+		// Canvas clear's separate pass and intermediate output-color-transform draw.
+		const { autoClear, autoClearColor, autoClearDepth, autoClearStencil } = renderer;
+		try {
+			renderer.autoClear = renderer.autoClearColor = renderer.autoClearDepth = renderer.autoClearStencil = true;
+			this._stageDisplayQuad.render(renderer);
+		} finally {
+			renderer.autoClear = autoClear;
+			renderer.autoClearColor = autoClearColor;
+			renderer.autoClearDepth = autoClearDepth;
+			renderer.autoClearStencil = autoClearStencil;
+		}
+	}
+	private canClearWithStageDisplay() {
+		const { renderer, backgroundCanvasTarget } = this.ports;
+		// Deliberately retain explicit clearing for unproved output configurations.
+		if (
+			!(renderer.backend as { isWebGPUBackend?: boolean } | undefined)?.isWebGPUBackend ||
+			renderer.xr.isPresenting || renderer.stencil || renderer.reversedDepthBuffer ||
+			renderer.getClearDepth() !== 1 || renderer.getClearStencil() !== 0 ||
+			renderer.getOutputRenderTarget() !== null || renderer.getMRT() !== null ||
+			backgroundCanvasTarget.getScissorTest()
+		) return false;
+		const viewport = backgroundCanvasTarget.getViewport(this.displayViewport);
+		const size = backgroundCanvasTarget.getSize(this.displaySize);
+		return size.x > 0 && size.y > 0 && viewport.x === 0 && viewport.y === 0 &&
+			viewport.z === size.x && viewport.w === size.y;
 	}
 	renderStageContents() {
 		this.ports.renderer.clear();
