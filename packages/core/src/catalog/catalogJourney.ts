@@ -8,6 +8,8 @@ export interface CatalogViewContext {
 	targetSection?: string;
 	sourceOccurrence?: string;
 	targetOccurrence?: string;
+	/** Explicit detail endpoint contract; unknown fragment positions keep ordinary navigation. */
+	targetPresentation?: 'hero' | 'dock';
 }
 
 export type CatalogJourney =

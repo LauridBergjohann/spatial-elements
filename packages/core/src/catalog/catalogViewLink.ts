@@ -19,11 +19,16 @@ export function catalogViewLink(node: HTMLAnchorElement, context: CatalogViewCon
 
 export function readCatalogViewContext(destination: URL): CatalogViewContext {
 	const link = document.activeElement?.closest<HTMLAnchorElement>('a[data-catalog-view]');
+	return readCatalogLinkContext(link, destination);
+}
+
+/** Read the originally activated anchor even after focus/ownership has changed. */
+export function readCatalogLinkContext(link: HTMLAnchorElement | null | undefined, destination: URL): CatalogViewContext {
 	if (!link || link.href !== destination.href) return {};
 	try {
 		const parsed = JSON.parse(link.dataset.catalogView ?? '{}');
 		if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-		return Object.fromEntries(
+		const context: CatalogViewContext = Object.fromEntries(
 			[
 				'spatialElementId',
 				'sourceSection',
@@ -32,6 +37,8 @@ export function readCatalogViewContext(destination: URL): CatalogViewContext {
 				'targetOccurrence'
 			].flatMap((key) => (typeof parsed[key] === 'string' ? [[key, parsed[key]]] : []))
 		);
+		if (parsed.targetPresentation === 'hero' || parsed.targetPresentation === 'dock') context.targetPresentation = parsed.targetPresentation;
+		return context;
 	} catch {
 		return {};
 	}

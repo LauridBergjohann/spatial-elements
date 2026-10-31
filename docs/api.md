@@ -189,6 +189,20 @@ getSpatialListItems(elements, basePath) derives links and includes summary and f
 
 Keep ordinary anchor links and supply all required data through route load functions. Current transition route patterns and deployment requirements are documented in [Getting started](getting-started.md).
 
+`SpatialListItem.targetPresentation: 'dock'` and `summary.sectionLink.targetPresentation: 'dock'`
+declare that a fragment destination opens the completely docked content view. This optional
+contract allows its endpoint to be resolved before route mounting; arbitrary fragments still
+use the ordinary restored-destination path. Native document limits remain authoritative. In
+3XL the model stays on the fixed left stage and the pane header is the corresponding endpoint.
+See [known detail endpoints](design/layout/staged-detail-endpoints.md).
+
+`getSpatialListItems` also preserves each element's `minimap` settings so a compact destination
+uses the same fit, pivot and docked orientation as its mounted detail. Custom synchronous shell
+summaries receive `SpatialSummaryContext`. Initialize `createCatalogEndpointAction()` inside
+the custom summary component and apply `context.address('title')` / `context.address('eyebrow')`
+to its actual text nodes. The factory depends on the enclosing Stage context and cannot be
+initialized by a parent above BrandStageShell. See the complete [live summary example](wiki/Summary-Panels.md).
+
 ## Renderer infrastructure
 
 BrandStageShell.renderSettings accepts maxPixelRatio (default 1) and maxPixels (default 2,073,600). The tighter budget wins. maxPixels: null disables the area limit; invalid/nonpositive numeric values fall back to defaults. DOM text retains native resolution. Budget settings are applied at renderer creation and page binding; they are not an animation control. See [performance](performance.md).

@@ -13,6 +13,7 @@
 
 	import { CATALOG_SECTIONS, type CatalogSections } from '@spatial-elements/core/catalog/CatalogSections';
 	import { useCatalogNavigation } from '../catalog/catalogNavigation.js';
+	import { catalogViewLink } from '@spatial-elements/core/catalog/catalogViewLink';
 	let {
 		spatialElement,
 		occurrence,
@@ -51,6 +52,7 @@
 
 <a
 	use:mouseHover
+	use:catalogViewLink={{ spatialElementId: spatialElement.id, targetPresentation: spatialElement.targetPresentation }}
 	use:catalogEndpoint={active ? {
 		brandId: brand.id,
 		spatialElementId: spatialElement.id,

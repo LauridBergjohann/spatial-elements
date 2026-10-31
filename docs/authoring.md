@@ -178,6 +178,23 @@ Detail pages also provide a compact, themed help button and once-per-session int
 
 Keep native scrolling enabled on the page and avoid overriding the components' `touch-action` styles or cancelling their touch events in application-level handlers.
 
+## Navigation and live summaries
+
+Keep native links as the source of navigation. A prepared forward transition moves existing
+model and panel content before mounting the destination; its final layout comes from the shared
+resolver. Data may preload during movement. Extra content and natural summary height belong to
+the later reveal. Heavy work in application `load` functions can still compete for the main thread.
+
+Use `targetPresentation: 'dock'` only when a linked fragment opens the fully docked content view.
+Do not add it merely because a link contains a hash. Short documents keep native scroll limits,
+and unknown positions use the ordinary transition. See [Transitions](wiki/Transitions.md) for
+examples, cancellation, fallback and the distinction between model movement and content readiness.
+
+To preserve application-owned state from carousel to detail, put a synchronous custom summary
+in `BrandStageShell.summary`. Keep the component inside the shell context and register its title
+and eyebrow endpoint roles. The persistent host retains the actual instance rather than cloning
+its markup. See [Summary Panels](wiki/Summary-Panels.md) for a complete component example.
+
 ## Rendering budget
 
 `BrandStageShell`, `Stage`, and the core `StageExperience` accept `renderSettings`.

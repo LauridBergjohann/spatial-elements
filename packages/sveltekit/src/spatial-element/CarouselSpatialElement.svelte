@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { catalogViewLink } from '@spatial-elements/core/catalog/catalogViewLink';
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import SpatialSummarySlot from './SpatialSummarySlot.svelte';
 	import { getContext } from 'svelte';
@@ -139,6 +140,7 @@
 		<div data-carousel-fit-anchor aria-hidden="true"></div>
 		<a
 			use:mouseHover
+			use:catalogViewLink={{ spatialElementId: spatialElement.id, targetPresentation: spatialElement.targetPresentation }}
 			draggable="false"
 			class="spatial-element-target"
 			title={tooltip}

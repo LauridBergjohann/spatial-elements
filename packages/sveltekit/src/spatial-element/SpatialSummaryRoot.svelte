@@ -4,6 +4,7 @@
  import SpatialCardPresentation from './SpatialCardPresentation.svelte';
  import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
  import { useCatalogNavigation } from '../catalog/catalogNavigation.js';
+ import { catalogViewLink } from '@spatial-elements/core/catalog/catalogViewLink';
  import { CATALOG_ENDPOINTS, type CatalogEndpointRegistry } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
  import { CATALOG_SECTIONS, type CatalogSections } from '@spatial-elements/core/catalog/CatalogSections';
  let { content, model }: { content: SpatialSummarySnippet; model: SpatialPresentationModel } = $props();
@@ -36,8 +37,10 @@
  </div>
  {#if model.current.carousel}
   {#if model.current.carousel.item.summary?.sectionLink}<a class="section-information" href={href(model.current.carousel.item.summary.sectionLink.href)} onclick={activate}
+   use:catalogViewLink={{ spatialElementId: model.current.spatialElement.id, targetPresentation: model.current.carousel.item.summary.sectionLink.targetPresentation }}
    data-catalog-focus-key={`catalog-section:${model.current.carousel.occurrence}`}>{model.current.carousel.item.summary.sectionLink.label}</a>{/if}
   <a class="information" href={href(model.current.carousel.item.href)} onclick={activate} onpointerenter={prepareCarousel} onfocus={prepareCarousel} onpointerdown={prepareCarousel}
+   use:catalogViewLink={{ spatialElementId: model.current.spatialElement.id, targetPresentation: model.current.carousel.item.targetPresentation }}
    aria-label={`More information: ${model.current.spatialElement.title}`}
    data-catalog-focus-key={`catalog:${JSON.stringify([model.current.spatialElement.brandId, model.current.spatialElement.id, model.current.carousel.occurrence, 'carousel.front'])}`}>
    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>

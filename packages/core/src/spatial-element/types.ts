@@ -25,6 +25,7 @@ export interface SpatialListItem extends Partial<
 		| 'background'
 		| 'model'
 		| 'camera'
+		| 'minimap'
 		| 'assetManifest'
 		| 'fallbackImage'
 		| 'fallbackImageSize'
@@ -37,7 +38,9 @@ export interface SpatialListItem extends Partial<
 		features: SpatialElementFeature[];
 		action?: SpatialElementAction;
 		/** Optional authored link to an existing element content section. */
-		sectionLink?: { href: string; label: string };
+		sectionLink?: { href: string; label: string;
+			/** Assert that this anchor opens the fully docked content view (3XL: pane header). */
+			targetPresentation?: 'dock' };
 	};
 	/** Stable optional key when the same element occurs twice within a section. */
 	itemKey?: string;
@@ -47,6 +50,8 @@ export interface SpatialListItem extends Partial<
 	id: string;
 	/** Ordinary link to the detail page. */
 	href: string;
+	/** Optional assertion for a fragment link opening fully docked detail content (3XL: pane header). */
+	targetPresentation?: 'dock';
 	/** Short label above the title; the helper supplies an empty string when omitted. */
 	eyebrow: string;
 	/** Visible card title. */
