@@ -60,6 +60,9 @@ eyebrow and title. Narrow cards reduce their media fit area to preserve these fi
 Check the 320px case with long titles and mixed eyebrows. Keep full accessible link text, posters
 and ordinary anchors when applying custom content styles.
 
+For responsive detail, persistent menus, a single movable section-navigation instance and the
+document-scrolled ultra-wide pane, continue with the [illustrated migration reference](wiki/Migration-and-Reference.md).
+
 ## Split theme radius roles
 
 Use `radii: { control: 12, panel: 16 }` to distinguish cards/small controls from larger panels.

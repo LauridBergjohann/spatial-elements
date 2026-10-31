@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="470" viewBox="0 0 1200 470" role="img" aria-labelledby="title description">
+<title id="title">The ultra-wide pane grows to its cap without recentering</title>
+<desc id="description">At 2456 CSS pixels, the pane starts at 1236 and is 1200 pixels wide. At 3600 pixels it starts at 1808 and remains 1536 pixels wide, leaving 256 pixels on the right. Both diagrams show no scrollbar or safe-area inset.</desc>
+<style>text{font-family:Arial,sans-serif;fill:#18344b;font-size:18px}.title{font-size:23px;font-weight:600}.small{font-size:15px}.viewport{fill:#e7edf2;stroke:#8ba4b8;stroke-width:2}.pane{fill:#fff;stroke:#27688e;stroke-width:2}.media{fill:#c1dced}.axis{stroke:#59748b;stroke-width:2;stroke-dasharray:5 5}</style>
+<rect width="1200" height="470" fill="#fafcfe"/>
+<text class="title" x="32" y="38">A growing right pane keeps its midpoint anchor after reaching the 1536px cap</text>
+<text x="32" y="79">Viewport 2456px: pane starts at 1236px; width 1200px; outside inset 20px</text>
+<rect class="viewport" x="32" y="97" width="1136" height="118" rx="12"/>
+<rect class="media" x="40" y="105" width="551" height="102" rx="6"/>
+<rect class="pane" x="603.7" y="105" width="555.05" height="102" rx="12"/>
+<line class="axis" x1="600" y1="92" x2="600" y2="222"/>
+<text x="220" y="168">Stationary media area</text><text x="765" y="168">Pane 1200px</text>
+<text x="32" y="268">Viewport 3600px: pane starts at 1808px; width capped at 1536px; remaining space 256px</text>
+<rect class="viewport" x="32" y="286" width="1136" height="118" rx="12"/>
+<rect class="media" x="40" y="294" width="551" height="102" rx="6"/>
+<rect class="pane" x="602.52" y="294" width="484.69" height="102" rx="12"/>
+<line class="axis" x1="600" y1="281" x2="600" y2="411"/>
+<text x="220" y="357">Stationary media area</text><text x="743" y="357">Pane 1536px</text><text class="small" x="1097" y="357">256px</text>
+<text class="small" x="32" y="447">Both rows are scaled independently. Midpoint uses viewport minus scrollbar; these examples have zero safe-area insets.</text>
+</svg>

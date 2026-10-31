@@ -382,5 +382,5 @@ Ein Schritt gilt erst als fertig, wenn seine Abnahme erfüllt ist. Eintragen: Fr
 | 14a–f Frühe Transition | in Umsetzung | Teilnachweise unten; allgemeine Aktivierung folgt erst nach Produktionsprüfungen. |
 | 14a Navigations-Gate | abgeschlossen | `9a85db4`: öffentliche Kit-Integration und Source-Motion-Vertrag. Der native onNavigate-Promise-Hold lässt bei warmer supersedierter Navigation eine veraltete Zielseite mounten; geprüfter cancel/preload/goto-Pfad verhindert dies. 10 Routing- und 4 DOM-/Controller-Browserfälle sowie 39 Unit-Fälle bestanden. |
 | 14b Lebende Darstellung | abgeschlossen | Echte Card-/Summary-Inseln, Freeze/Hold/Adopt/Restore und Subpixelprojektion integriert. 18 Produktionsbrowserfälle bestanden: SSR, Cards, echte Komponentenzustände, Cleanup-Besitz, Abbruch, Posterzustand und reaktive Isolation; zusätzlich 7 Carousel-Regressionsfälle. Frühe GPU-Bewegung bleibt separat bis zur Prüfung aller Pipelinevarianten. |
-| 15 Wiki-Dokumentation | offen | — |
+| 15 Wiki-Dokumentation | in Prüfung | 13 portable Markdown-Dateien, 12 öffentliche Screenshots, 9 SVG/PNG-Diagramme, generierte Tokenreferenz und lokaler Export mit Hashmanifest. Links, sieben Svelte-Beispiele und lokale Vorschau geprüft; finaler Performanceverweis/Aktivierungsstand folgt mit Schritt 14. |
 | 16 Gesamtprüfung | offen | — |

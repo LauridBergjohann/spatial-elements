@@ -1,0 +1,72 @@
+[
+  {
+    "file": "detail-xs.png",
+    "route": "/demo/elements/column?stage-test=1",
+    "width": 375,
+    "height": 900,
+    "mode": "WebGPU"
+  },
+  {
+    "file": "detail-s.png",
+    "route": "/demo/elements/column?stage-test=1",
+    "width": 720,
+    "height": 900,
+    "mode": "WebGPU"
+  },
+  {
+    "file": "detail-m.png",
+    "route": "/demo/elements/column?stage-test=1",
+    "width": 1024,
+    "height": 900,
+    "mode": "WebGPU"
+  },
+  {
+    "file": "detail-l.png",
+    "route": "/demo/elements/column?stage-test=1",
+    "width": 1440,
+    "height": 900,
+    "mode": "WebGPU"
+  },
+  {
+    "file": "detail-xl.png",
+    "route": "/demo/elements/column?stage-test=1",
+    "width": 1700,
+    "height": 900,
+    "mode": "WebGPU"
+  },
+  {
+    "file": "detail-2xl.png",
+    "route": "/demo/elements/column?stage-test=1",
+    "width": 2000,
+    "height": 900,
+    "mode": "WebGPU"
+  },
+  {
+    "file": "detail-3xl.png",
+    "route": "/demo/elements/column?stage-test=1",
+    "width": 2456,
+    "height": 900,
+    "mode": "WebGPU"
+  },
+  {
+    "file": "cards-320.png",
+    "route": "/demo/layout-cards?stage-test=1",
+    "width": 320,
+    "height": 1000,
+    "mode": "WebGPU"
+  },
+  {
+    "file": "cards-840.png",
+    "route": "/demo/layout-cards?stage-test=1",
+    "width": 840,
+    "height": 1000,
+    "mode": "WebGPU"
+  },
+  {
+    "file": "cards-large-720.png",
+    "route": "/demo/layout-cards?stage-test=1#cards-large",
+    "width": 720,
+    "height": 1000,
+    "mode": "WebGPU"
+  }
+]

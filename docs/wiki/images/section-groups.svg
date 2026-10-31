@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="490" viewBox="0 0 1200 490" role="img" aria-labelledby="title description">
+<title id="title">Section background grouping</title><desc id="description">Standard and muted join; transparency separates groups; full-width backgrounds have no detached corners.</desc>
+<style>text{font-family:Arial,sans-serif;fill:#18344b;font-size:18px}.title{font-size:22px;font-weight:600}.canvas{fill:#e4ebf1}.standard{fill:#fff}.muted{fill:#c3d5e3}</style>
+<rect width="1200" height="490" fill="#fafcfe"/>
+<text class="title" x="32" y="42">Joined sections at XL / 2XL / ordinary ContentPage 3XL</text>
+<rect class="canvas" x="32" y="74" width="352" height="344" rx="10"/>
+<rect class="standard" x="64" y="110" width="288" height="268" rx="16"/><rect class="muted" x="64" y="196" width="288" height="94"/>
+<text x="86" y="161">Standard</text><text x="86" y="248">Muted</text><text x="86" y="338">Standard</text><text x="70" y="453">One group; only outer corners</text>
+<rect class="canvas" x="424" y="74" width="352" height="344" rx="10"/>
+<rect class="standard" x="456" y="110" width="288" height="86" rx="16"/><rect class="muted" x="456" y="292" width="288" height="86" rx="16"/>
+<text x="478" y="161">Standard</text><text x="478" y="248">Transparent</text><text x="478" y="341">Muted</text><text x="462" y="453">A transparent section separates</text>
+<rect class="canvas" x="816" y="74" width="352" height="344" rx="10"/>
+<rect class="standard" x="848" y="110" width="288" height="86" rx="16"/>
+<defs><linearGradient id="full" x2="0" y2="1"><stop stop-color="#c3d5e3" stop-opacity="0"/><stop offset="1" stop-color="#c3d5e3"/></linearGradient></defs>
+<rect fill="url(#full)" x="816" y="196" width="352" height="96"/><rect class="standard" x="848" y="292" width="288" height="86" rx="16"/>
+<text x="870" y="161">Standard</text><text x="870" y="248">Full gradient</text><text x="870" y="341">Standard</text><text x="836" y="453">Full background breaks the group</text>
+</svg>
