@@ -5,11 +5,17 @@ import { disposeMaterialOnly } from '../stageSceneUtils.js';
 
 /** Original material state retained while a minimap fades between overlay and hover views. */
 export interface MinimapMaterialOpacityState {
-	material: Material;
+	readonly material: Material;
 	opacity: number;
 	transparent: boolean;
 	depthWrite: boolean;
+	setOpacity(opacity: number): void;
 }
+
+// Material identity participates in Three's render-object cache. Mutating the
+// same material's transparency at either endpoint disposes its other pipeline.
+// Retain both owners while sharing the actual mesh, geometry and texture assets.
+const ownedMaterials = new WeakMap<Mesh, { rest: Material | Material[]; fade?: Material | Material[] }>();
 
 /** Clones minimap materials so opacity changes cannot mutate the main element. */
 export function prepareMinimapModel(model: Object3D) {
@@ -20,13 +26,30 @@ export function prepareMinimapModel(model: Object3D) {
 		mesh.frustumCulled = false;
 		mesh.renderOrder = MINIMAP_MODEL_RENDER_ORDER;
 		mesh.material = cloneMinimapMaterial(mesh.material);
+		const owned = { rest: mesh.material, fade: undefined as Material | Material[] | undefined };
+		ownedMaterials.set(mesh, owned);
 		const meshMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-		meshMaterials.forEach((material) => {
+		meshMaterials.forEach((material, index) => {
 			materials.push({
-				material,
+				get material() { return Array.isArray(mesh.material) ? mesh.material[index] : mesh.material; },
 				opacity: material.opacity,
 				transparent: material.transparent,
-				depthWrite: material.depthWrite
+				depthWrite: material.depthWrite,
+				setOpacity(opacity) {
+					if (opacity === 1) {
+						mesh.material = owned.rest;
+						return;
+					}
+					if (!owned.fade) {
+						owned.fade = cloneMinimapMaterial(owned.rest);
+						for (const fade of Array.isArray(owned.fade) ? owned.fade : [owned.fade]) {
+							fade.transparent = true;
+							fade.depthWrite = false;
+						}
+					}
+					mesh.material = owned.fade;
+					this.material.opacity = this.opacity * opacity;
+				}
 			});
 		});
 	});
@@ -45,7 +68,13 @@ export function addMinimapBlurLights(scene: THREE.Scene) {
 export function disposeMinimapModelMaterials(model: Object3D) {
 	model.traverse((child) => {
 		const mesh = child as Mesh;
-		if (mesh.isMesh) disposeMaterialOnly(mesh.material);
+		if (!mesh.isMesh) return;
+		const owned = ownedMaterials.get(mesh);
+		if (owned) {
+			disposeMaterialOnly(owned.rest);
+			if (owned.fade) disposeMaterialOnly(owned.fade);
+			ownedMaterials.delete(mesh);
+		} else disposeMaterialOnly(mesh.material);
 	});
 }
 

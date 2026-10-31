@@ -1,17 +1,12 @@
 import * as THREE from 'three/webgpu';
-import type { Material, Object3D } from 'three';
+import type { Object3D } from 'three';
+import type { MinimapMaterialOpacityState } from './MinimapModel.js';
 import type { MinimapBlurPipeline } from '../MinimapBlurPipeline.js';
 import type { StageMinimapOptions } from '../stageTypes.js';
 
 export type ResolvedStageMinimapOptions = Required<Omit<StageMinimapOptions, 'dockedView'>>;
 
-/** Original material state retained while the live minimap model fades in and out. */
-export interface MinimapMaterialOpacityState {
-	material: Material;
-	opacity: number;
-	transparent: boolean;
-	depthWrite: boolean;
-}
+export type { MinimapMaterialOpacityState } from './MinimapModel.js';
 
 /**
  * Owns all resources and animated values for one panel-backed element minimap.

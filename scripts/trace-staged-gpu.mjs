@@ -23,7 +23,9 @@ try {
   await context.addInitScript(() => {
     const probe = { active: false, phase: '', submits: [], fences: [], frames: [], longFrames: [], gpuCreates: [], errors: [] };
     Object.assign(window, { gpuProbe: probe });
-    const views = new WeakMap(), encoders = new WeakMap(), buffers = new WeakMap(), pendingFences = new WeakSet();
+    const views = new WeakMap(), encoders = new WeakMap(), buffers = new WeakMap(), shaders = new WeakMap(), pendingFences = new WeakSet();
+    let stage;
+    const phase = () => { stage ??= document.querySelector('.stage'); return stage?.dataset.catalogStagedPhase ?? ''; };
     let sequence = 0;
     if (globalThis.GPUTexture) {
       const original = GPUTexture.prototype.createView;
@@ -54,8 +56,22 @@ try {
     if (globalThis.GPUDevice) for (const method of ['createRenderPipeline', 'createRenderPipelineAsync', 'createShaderModule', 'createTexture', 'createBuffer']) {
       const original = GPUDevice.prototype[method];
       GPUDevice.prototype[method] = function (...args) {
-        if (probe.active) probe.gpuCreates.push({ method, time: performance.now(), phase: probe.phase });
-        return original.apply(this, args);
+        const descriptor = args[0];
+        const entry = probe.active ? { method, time: performance.now(), phase: phase() } : undefined;
+        if (entry) {
+          if (method === 'createShaderModule') entry.shader = { label: descriptor.label, code: descriptor.code };
+          else if (method.startsWith('createRenderPipeline')) {
+            entry.pipeline = { label: descriptor.label, vertex: shaders.get(descriptor.vertex?.module), fragment: shaders.get(descriptor.fragment?.module),
+              targets: descriptor.fragment?.targets, depthStencil: descriptor.depthStencil, multisample: descriptor.multisample, primitive: descriptor.primitive };
+            entry.stack = new Error().stack;
+          } else if (method === 'createTexture') entry.texture = { size: descriptor.size, format: descriptor.format, samples: descriptor.sampleCount, usage: descriptor.usage, label: descriptor.label };
+          else entry.buffer = { size: descriptor.size, usage: descriptor.usage, label: descriptor.label };
+          probe.gpuCreates.push(entry);
+        }
+        const result = original.apply(this, args);
+        if (method === 'createShaderModule') shaders.set(result, { label: descriptor.label, code: descriptor.code });
+        if (entry) entry.returned = performance.now();
+        return result;
       };
     }
     if (globalThis.GPUQueue) {
@@ -65,17 +81,19 @@ try {
         const list = Array.from(commands), id = ++sequence, start = performance.now();
         performance.mark(`staged-submit-${id}`);
         const result = submit.call(this, list);
-        probe.submits.push({ id, start, returned: performance.now(), phase: probe.phase, passes: list.flatMap(command => buffers.get(command) ?? []) });
+        probe.submits.push({ id, start, returned: performance.now(), phase: phase(), passes: list.flatMap(command => buffers.get(command) ?? []) });
         if (!pendingFences.has(this)) {
           pendingFences.add(this);
           queueMicrotask(() => {
             pendingFences.delete(this);
             const throughSubmit = sequence, requested = performance.now();
+            const fence = { throughSubmit, requested, phase: phase(), completed: null, duration: null };
+            probe.fences.push(fence);
             performance.mark(`staged-fence-request-${throughSubmit}`);
             done.call(this).then(() => {
               const completed = performance.now();
               performance.mark(`staged-fence-complete-${throughSubmit}`);
-              probe.fences.push({ throughSubmit, requested, completed, duration: completed - requested });
+              fence.completed = completed; fence.duration = completed - requested;
             }, error => probe.errors.push(String(error)));
           });
         }
@@ -86,7 +104,7 @@ try {
       if (probe.active) probe.longFrames.push(...list.getEntries().map(entry => entry.toJSON()));
     }).observe({ type: 'long-animation-frame', buffered: true });
     const sample = time => {
-      probe.phase = document.querySelector('.stage')?.dataset.catalogStagedPhase ?? '';
+      probe.phase = phase();
       if (probe.active) probe.frames.push({ rafTime: time, observed: performance.now(), phase: probe.phase });
       requestAnimationFrame(sample);
     };
@@ -123,10 +141,24 @@ try {
   await page.evaluate(() => { window.gpuProbe.active = true; performance.mark('staged-probe-start'); });
   await link.evaluate(node => { performance.mark('staged-click'); node.click(); });
   await page.waitForFunction(() => (window.__stageVisualTest?.getNavigationTimings().early?.revealed ?? 0) > 0, undefined, { timeout: 60000 });
+  await page.waitForFunction(() => window.gpuProbe.frames.at(-1)?.rafTime >= window.__stageVisualTest.getNavigationTimings().early.revealEnded, undefined, { timeout: 30000 });
   await page.evaluate(async () => { await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); });
   const report = await page.evaluate(() => {
     window.gpuProbe.active = false;
-    return { timings: window.__stageVisualTest.getNavigationTimings().early, catalog: window.__stageVisualTest.getCarouselStats(), probe: window.gpuProbe };
+    const timings = window.__stageVisualTest.getNavigationTimings().early;
+    const intervals = {
+      beforeMotion: [timings.started, timings.firstMotion], moving: [timings.firstMotion, timings.motionEnded],
+      beforeReveal: [timings.motionEnded, timings.revealStarted], reveal: [timings.revealStarted, timings.revealEnded],
+      afterReveal: [timings.revealEnded, timings.revealed]
+    };
+    const phases = Object.fromEntries(Object.entries(intervals).map(([name, [start, end]]) => [name, {
+      start, end, duration: end - start,
+      // Exact timing wins over a MutationObserver's later phase notification.
+      gpuCreates: window.gpuProbe.gpuCreates.filter(call => call.time >= start && call.time < end),
+      submits: window.gpuProbe.submits.filter(call => call.start >= start && call.start < end).length,
+      rafObservations: window.gpuProbe.frames.filter(frame => frame.observed >= start && frame.observed <= end).length
+    }]));
+    return { timings, phases, catalog: window.__stageVisualTest.getCarouselStats(), probe: window.gpuProbe };
   });
   await writeFile(join(output, 'probe.json'), JSON.stringify({ view, temperature, promotion: args.promote === 'true', sourceStyles, categories, clockMetrics, systemInfo, commandLine, browser: browser.version(), ...report }, null, 2));
   const complete = new Promise(resolve => browserSession.once('Tracing.tracingComplete', resolve));

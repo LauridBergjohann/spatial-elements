@@ -54,6 +54,41 @@ describe('minimap model preparation', () => {
 		expect(sourceDispose).not.toHaveBeenCalled();
 	});
 
+	it('retains distinct fade and authored pipeline owners across repeated endpoints', () => {
+		const geometry = new THREE.BoxGeometry();
+		const source = [new THREE.MeshStandardMaterial(), new THREE.MeshBasicMaterial({
+			transparent: true, opacity: 0.7, depthWrite: false
+		})];
+		const mesh = new THREE.Mesh(geometry, source);
+		const model = new THREE.Group().add(mesh);
+		const states = prepareMinimapModel(model);
+		const rest = mesh.material;
+		const restVersions = rest.map(material => material.version);
+		states.forEach(state => state.setOpacity(0.5));
+		const fade = mesh.material;
+		const fadeVersions = fade.map(material => material.version);
+		expect(fade).not.toBe(rest);
+		expect(fade.map(material => material.opacity)).toEqual([0.5, 0.35]);
+		expect(fade.every(material => material.transparent && !material.depthWrite)).toBe(true);
+		for (const opacity of [1, 0, 0.2, 1, 0.75, 1]) {
+			states.forEach(state => state.setOpacity(opacity));
+			expect(mesh.material).toBe(opacity === 1 ? rest : fade);
+			expect(states.map(state => state.material)).toEqual(mesh.material);
+		}
+		expect(rest.map(material => material.version)).toEqual(restVersions);
+		expect(fade.map(material => material.version)).toEqual(fadeVersions);
+		expect(rest[0]).toMatchObject({ transparent: false, opacity: 1, depthWrite: true });
+		expect(rest[1]).toMatchObject({ transparent: true, opacity: 0.7, depthWrite: false });
+		expect(mesh.geometry).toBe(geometry);
+		const ownedDisposals = [...rest, ...fade].map(material => vi.spyOn(material, 'dispose'));
+		const sourceDisposals = source.map(material => vi.spyOn(material, 'dispose'));
+		disposeMinimapModelMaterials(model);
+		expect(ownedDisposals.every(dispose => dispose.mock.calls.length === 1)).toBe(true);
+		expect(sourceDisposals.every(dispose => dispose.mock.calls.length === 0)).toBe(true);
+		geometry.dispose();
+		source.forEach(material => material.dispose());
+	});
+
 	it('adds stable neutral lighting to the isolated capture scene', () => {
 		const scene = new THREE.Scene();
 

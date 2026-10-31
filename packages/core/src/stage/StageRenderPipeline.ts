@@ -574,6 +574,38 @@ export class StageRenderPipeline {
 			this.activateRenderTargetSet(previousTargets);
 		}
 	}
+	/** Warm the bound DETAIL's actual reveal passes while its DOM remains hidden.
+	 * Unlike optional scroll/zoom preparation this uses only the active target set.
+	 * Offscreen captures receive real pixels; Canvas pipelines keep their exact
+	 * output context but a zero-area scissor prevents any visible warm-up draw.
+	 */
+	warmRevealFrame() {
+		const targets = this._activeRenderTargets;
+		if (this.disposed || !targets || !this._stageDisplayQuad || !this.foregroundCanvasTarget)
+			return false;
+		return withRendererState(this.ports.renderer, () => {
+			const renderer = this.ports.renderer;
+			renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
+			renderer.setRenderTarget(targets.sceneCapture);
+			renderer.setScissorTest(false);
+			this.ports.renderStage();
+			this.renderPanelBlurCaptures(targets, true);
+			const maskCanvas = (canvas: THREE.CanvasTarget) => {
+				renderer.setCanvasTarget(canvas);
+				renderer.setRenderTarget(null);
+				renderer.setScissor(new THREE.Vector4(0, 0, 0, 0));
+				renderer.setScissorTest(true);
+			};
+			maskCanvas(this.ports.backgroundCanvasTarget);
+			// Do not call renderStageDisplay/renderForegroundLayer: their Canvas color
+			// clears are attachment load-ops and need not obey a scissor rectangle.
+			this._stageDisplayQuad!.render(renderer);
+			this.renderBackgroundPanels();
+			maskCanvas(this.foregroundCanvasTarget!);
+			this.renderMinimapScene();
+			return true;
+		});
+	}
 	private resizeCanvasTarget(
 		target: THREE.CanvasTarget,
 		width: number,

@@ -1111,6 +1111,38 @@ export class StageExperience {
 		return this.catalogLayer.setSpatialElements(brandId, items);
 	}
 
+	/** Finish required DETAIL GPU preparation before its first visible reveal frame.
+	 * Binding happens with enterOpacity=0, which intentionally skips minimaps and
+	 * panel blur passes. Borrow fractional/end-point alpha to prepare both real
+	 * material owners, restore all presentation state synchronously, then fence.
+	 */
+	async prepareStagedReveal(signal?: AbortSignal): Promise<boolean> {
+		if (this.disposed || signal?.aborted || !this.catalogPresentation.active) return false;
+		const generation = this.pageBinding.token;
+		const presentation = this.catalogPresentation;
+		const backgroundReveal = this.catalogBackgroundReveal.value;
+		let prepared = true;
+		try {
+			this.syncPanelLayouts();
+			for (const opacity of [0.5, 1]) {
+				this.catalogPresentation = {
+					...presentation, enterOpacity: opacity, sharedOpacity: opacity
+				};
+				this.catalogBackgroundReveal.value = opacity;
+				this.updatePanelPointerInteraction(0);
+				if (!this.pipeline.warmRevealFrame()) { prepared = false; break; }
+			}
+		} finally {
+			this.catalogPresentation = presentation;
+			this.catalogBackgroundReveal.value = backgroundReveal;
+			this.updatePanelPointerInteraction(0);
+		}
+		if (!prepared) return false;
+		const device = (this.renderer.backend as unknown as { device?: GPUDevice }).device;
+		await device?.queue.onSubmittedWorkDone();
+		return !this.disposed && !signal?.aborted && this.pageBinding.isCurrent(generation);
+	}
+
 	setCatalogTransitionPresentation(state: CatalogTransitionPresentation) {
 		if (!state.active) this.scheduleZoomPreparation();
 		this.catalogPresentation = normalizeCatalogPresentation(state);
@@ -1953,6 +1985,14 @@ export class StageExperience {
 			width: Math.max(...xCoordinates) - left,
 			height: Math.max(...yCoordinates) - top
 		};
+	}
+
+	/** Returns the bound renderer's projection for query-gated handoff regressions. */
+	getVisualTestDetailProjection(kind: 'hero' | 'dock') {
+		// Forward ownership releases SpatialGeometryCapture at progress one. Read
+		// its actual successor instead of expecting a final retained-capture frame.
+		if (kind === 'dock') return this.getDockProjection(true)?.clip.toArray() ?? null;
+		return this.model ? captureSpatialElementProjection(this.model, this.camera).clip.toArray() : null;
 	}
 
 	/** Returns the main element's projected bounds for query-gated layout regressions. */

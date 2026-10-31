@@ -337,6 +337,74 @@ function rendererFixture() {
 	return { renderer, originalCanvas, originalTarget, clear, viewport, scissor };
 }
 
+test.each([false, true])('reveal preparation masks both real Canvas outputs and restores state (failure=%s)', fail => {
+	vi.stubGlobal('window', { devicePixelRatio: 1 });
+	const f = rendererFixture();
+	const foreground = {} as THREE.CanvasTarget;
+	const panel = { group: new THREE.Group(), glass: {}, surface: 'glass' };
+	const view = {
+		panelIndex: 0, viewportVisible: true,
+		layer: new THREE.Group(), spatialElementRoot: new THREE.Group(),
+		overlayComposite: { visible: false }, screenCamera: new THREE.PerspectiveCamera()
+	} as unknown as StageMinimapState;
+	const stage = vi.fn(() => {
+		expect(f.renderer.getRenderTarget()).not.toBeNull();
+		expect(f.renderer.getScissorTest()).toBe(false);
+		f.renderer.clear();
+	});
+	const pipeline = new StageRenderPipeline({
+		renderer: f.renderer, backgroundCanvasTarget: f.originalCanvas,
+		interactionTheme: () => DEFAULT_INTERACTION_THEME,
+		fallbackPanelOptions: () => [resolveLiquidGlassPanelOptions({ backdropBlur: 5 })],
+		panelRuntimes: () => [panel], minimaps: () => new Map([[0, view]]),
+		minimapScene: () => new THREE.Scene(), getPanelTransitionOpacity: () => 0.5,
+		frame: () => ({}), renderStage: stage
+	} as unknown as StageRenderPorts);
+
+	pipeline.createSceneCapture();
+	Object.assign(pipeline, { foregroundCanvasTarget: foreground });
+	const active = pipeline.activeRenderTargets;
+	const blur = vi.spyOn(pipeline, 'renderPanelBlurCaptures');
+	const canvasOutputs: THREE.CanvasTarget[] = [];
+	const assertCanvas = () => {
+		expect(f.renderer.getRenderTarget()).toBeNull();
+		expect(f.renderer.getScissorTest()).toBe(true);
+		expect(f.scissor.toArray()).toEqual([0, 0, 0, 0]);
+		canvasOutputs.push(f.renderer.getCanvasTarget());
+	};
+	f.renderer.clear.mockImplementation(() => {
+		// Canvas attachment color clears can ignore the zero-area scissor.
+		expect(f.renderer.getRenderTarget()).not.toBeNull();
+	});
+	f.renderer.render.mockImplementation(() => {
+		assertCanvas();
+		if (fail && f.renderer.getCanvasTarget() === foreground) throw new Error('minimap failed');
+	});
+	const quad = vi.spyOn(THREE.QuadMesh.prototype, 'render').mockImplementation(() => {
+		if (f.renderer.getRenderTarget() === null) assertCanvas();
+	});
+	try {
+		if (fail) expect(() => pipeline.warmRevealFrame()).toThrow('minimap failed');
+		else expect(pipeline.warmRevealFrame()).toBe(true);
+		expect(stage).toHaveBeenCalledOnce();
+		expect(blur).toHaveBeenCalledWith(active, true);
+		expect(canvasOutputs).toContain(f.originalCanvas);
+		expect(canvasOutputs).toContain(foreground);
+		expect(f.renderer.getCanvasTarget()).toBe(f.originalCanvas);
+		expect(f.renderer.getRenderTarget()).toBe(f.originalTarget);
+		expect(f.scissor.toArray()).toEqual([5, 6, 7, 8]);
+		expect(f.viewport.toArray()).toEqual([1, 2, 3, 4]);
+		expect(view.layer.visible).toBe(true);
+		expect(panel.group.visible).toBe(true);
+		expect(pipeline.activeRenderTargets).toBe(active);
+	} finally {
+		quad.mockRestore();
+		Object.assign(pipeline, { foregroundCanvasTarget: undefined });
+		pipeline.dispose();
+		f.originalTarget.dispose();
+	}
+});
+
 test('a failed pass restores the borrowed canvas, target, clear and clipping state', () => {
 	const f = rendererFixture(),
 		r = f.renderer;

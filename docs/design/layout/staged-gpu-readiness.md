@@ -34,6 +34,16 @@ In the installed Three r186 renderer, render contexts are shared by attachment f
 
 `CatalogGeometryFade` therefore retains separate Canvas and offscreen quad objects. They share the existing capture texture, material, and alpha uniform, but keep the two render-object owners alive. Both objects are created during preparation. Alternating High preparation and visible catalog fading cannot displace the warmed Canvas owner.
 
+## Prepare destination passes before the content reveal
+
+Source readiness and destination readiness are separate contracts. Binding the destination while its enter opacity is zero deliberately excludes its minimap and invisible panels from ordinary rendering. A trace of production build 39072 found no moving-phase allocations, but the subsequent reveal still created fractional and opaque minimap pipelines, Gaussian blur pipelines, and their intermediate targets. The resulting GPU decoder work overlapped the reveal. That trace did not show the earlier DOM raster-shader compilation during this phase.
+
+After destination binding and before the reveal clock begins, `prepareStagedReveal()` applies fractional alpha and the exact opaque endpoint to the actual destination. `warmRevealFrame()` submits the active-quality scene capture, every bound panel blur capture, and the real background/foreground output variants. It uses the existing Canvas contexts with a zero-area scissor and never clears their color attachment; such clears may ignore scissoring. The live destination DOM stays hidden. Preparation restores all borrowed presentation and renderer state synchronously before waiting for GPU queue completion. Abort, disposal, or a changed page binding rejects the completed readiness result.
+
+Minimap display meshes retain separate authored and fade material objects. The fade object remains transparent with depth writes disabled; the authored object retains its original state. Both share the existing geometry and texture assets. Switching their material identities retains two renderer cache owners rather than repeatedly changing one material's shader/depth state and evicting its prepared pipeline. Both owned material sets are disposed with the minimap.
+
+Focused CPU tests verify state restoration on success/failure, stale and aborted fences, masked Canvas output without color clears, and stable material identities/versions across repeated alpha endpoints. This preparation still requires a fresh production trace and uninstrumented reveal measurements; the source-only resource result does not establish destination readiness.
+
 ## Endpoint and cancellation parity
 
 The fit distance uses the intrinsic resolved media rectangle. The camera offset uses the visible viewport-clamped rectangle, matching the mounted detail's camera behavior in short windows. Treating both as the unbounded rectangle produces a visible final-position error despite a correct normal-height layout.

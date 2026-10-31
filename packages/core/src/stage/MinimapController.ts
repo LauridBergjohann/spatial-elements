@@ -1067,15 +1067,7 @@ export class MinimapController {
 
 		minimap.displayOpacity = resolvedOpacity;
 		minimap.displayModel.visible = resolvedOpacity > 0.001;
-		minimap.displayMaterials.forEach((state) => {
-			const transparent = state.transparent || resolvedOpacity < 0.999;
-			if (state.material.transparent !== transparent) {
-				state.material.transparent = transparent;
-				state.material.needsUpdate = true;
-			}
-			state.material.opacity = state.opacity * resolvedOpacity;
-			state.material.depthWrite = state.depthWrite && resolvedOpacity > 0.999;
-		});
+		minimap.displayMaterials.forEach((state) => state.setOpacity(resolvedOpacity));
 	}
 	renderMinimapBlur(minimap: StageMinimapState) {
 		return withRendererState(this.renderer, () => {
