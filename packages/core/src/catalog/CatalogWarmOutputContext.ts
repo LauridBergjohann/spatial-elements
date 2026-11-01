@@ -1,8 +1,9 @@
 import * as THREE from 'three/webgpu';
+import type { BackgroundOutputScratch } from '../stage/BackgroundLayerOutput.js';
 
 let nextGeneration = 0;
 
-/** Internal, opt-in scratch output. It owns its target; never borrow a published layer. */
+/** Internal, opt-in warm output. Storage is either owned scratch or an exclusive output-owner lease. */
 export class CatalogWarmOutputContext {
 	readonly target: THREE.RenderTarget;
 	readonly profileKey: string;
@@ -12,18 +13,21 @@ export class CatalogWarmOutputContext {
 	private readonly invalidate = () => { this.valid = false; };
 	private readonly size = new THREE.Vector2();
 	private readonly viewport = new THREE.Vector4();
+	private readonly leaseGeneration?: number;
 
 	private constructor(private readonly renderer: THREE.WebGPURenderer,
 		private readonly canvas: THREE.CanvasTarget, private readonly width: number, private readonly height: number,
 		private readonly cssWidth: number, private readonly cssHeight: number, private readonly pixelRatio: number,
-		private readonly exposure: number, private readonly ownerCurrent: () => boolean) {
-		this.target = new THREE.RenderTarget(width, height, {
+		private readonly exposure: number, private readonly ownerCurrent: () => boolean,
+		private readonly lease?: BackgroundOutputScratch) {
+		this.target = lease?.target ?? new THREE.RenderTarget(width, height, {
 			type: renderer.getOutputBufferType(), format: THREE.RGBAFormat, samples: renderer.samples,
 			depthBuffer: renderer.depth, stencilBuffer: renderer.stencil,
 			colorSpace: THREE.ColorManagement.workingColorSpace as THREE.ColorSpace, generateMipmaps: false,
 			minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter
 		});
-		this.profileKey = `scratch-canvas:${++nextGeneration}:${width}:${height}:${pixelRatio}:${this.target.texture.type}:${this.target.samples}:${renderer.depth}:${renderer.stencil}:${THREE.ColorManagement.workingColorSpace}:${renderer.outputColorSpace}:${renderer.toneMapping}:${exposure}`;
+		this.leaseGeneration = lease?.generation;
+		this.profileKey = `${lease ? `leased-canvas:${this.leaseGeneration}` : 'scratch-canvas'}:${++nextGeneration}:${width}:${height}:${pixelRatio}:${this.target.texture.type}:${this.target.samples}:${renderer.depth}:${renderer.stencil}:${THREE.ColorManagement.workingColorSpace}:${renderer.outputColorSpace}:${renderer.toneMapping}:${exposure}`;
 		canvas.addEventListener('resize', this.invalidate);
 		canvas.addEventListener('dispose', this.invalidate);
 		this.target.addEventListener('dispose', this.invalidate);
@@ -31,6 +35,18 @@ export class CatalogWarmOutputContext {
 
 	/** Unknown output profiles retain the existing production warm path. No GPU work here. */
 	static create(renderer: THREE.WebGPURenderer, isCurrent: () => boolean): CatalogWarmOutputContext | undefined {
+		return this.fromProfile(renderer, isCurrent);
+	}
+
+	/** Share the output owner's one target; this context cannot publish, resize or dispose it. */
+	static createBorrowed(renderer: THREE.WebGPURenderer, lease: BackgroundOutputScratch,
+		isCurrent: () => boolean): CatalogWarmOutputContext | undefined {
+		if (!lease.isCurrent()) return;
+		return this.fromProfile(renderer, isCurrent, lease);
+	}
+
+	private static fromProfile(renderer: THREE.WebGPURenderer, isCurrent: () => boolean,
+		lease?: BackgroundOutputScratch): CatalogWarmOutputContext | undefined {
 		if (!this.supported(renderer) || !isCurrent()) return;
 		const canvas = renderer.getCanvasTarget(), size = canvas.getDrawingBufferSize(new THREE.Vector2());
 		const css = canvas.getSize(new THREE.Vector2()), viewport = canvas.getViewport(new THREE.Vector4());
@@ -39,8 +55,10 @@ export class CatalogWarmOutputContext {
 			!Number.isInteger(size.x) || !Number.isInteger(size.y) ||
 			size.x !== Math.floor(css.x * ratio) || size.y !== Math.floor(css.y * ratio) ||
 			!viewport.equals(new THREE.Vector4(0, 0, css.x, css.y)) || canvas.getScissorTest()) return;
-		return new CatalogWarmOutputContext(renderer, canvas, size.x, size.y, css.x, css.y,
-			ratio, renderer.toneMappingExposure, isCurrent);
+		const context = new CatalogWarmOutputContext(renderer, canvas, size.x, size.y, css.x, css.y,
+			ratio, renderer.toneMappingExposure, isCurrent, lease);
+		if (lease && !context.isCurrent(renderer)) { context.dispose(); return; }
+		return context;
 	}
 
 	private static supported(renderer: THREE.WebGPURenderer) {
@@ -54,6 +72,7 @@ export class CatalogWarmOutputContext {
 
 	isCurrent(renderer: THREE.WebGPURenderer) {
 		if (!this.valid || this.disposed || renderer !== this.renderer || !this.ownerCurrent() || this.canvas.getScissorTest() ||
+			(this.lease && (this.lease.target !== this.target || this.lease.generation !== this.leaseGeneration || !this.lease.isCurrent())) ||
 			!CatalogWarmOutputContext.supported(renderer) || renderer.toneMappingExposure !== this.exposure) return false;
 		this.canvas.getDrawingBufferSize(this.size);
 		if (this.size.x !== this.width || this.size.y !== this.height || this.canvas.getPixelRatio() !== this.pixelRatio) return false;
@@ -80,12 +99,30 @@ export class CatalogWarmOutputContext {
 	borrow(renderer: THREE.WebGPURenderer, draw: () => void) {
 		if (this.borrowed || !this.isCurrent(renderer) || renderer.getRenderTarget() === this.target)
 			throw new Error('Catalog warm output is stale or already in use');
+		if (this.lease) {
+			let entered = false;
+			const accepted = this.lease.borrow(() => {
+				// A handle from another renderer must fail before any catalog submission.
+				if (renderer.getRenderTarget() !== this.target) throw new Error('Catalog warm output lease bound another renderer');
+				entered = true;
+				return this.borrowTarget(draw);
+			});
+			if (!accepted || !entered) {
+				this.valid = false;
+				throw new Error('Catalog warm output lease became stale');
+			}
+			return;
+		}
+		this.borrowTarget(draw);
+	}
+
+	private borrowTarget(draw: () => void) {
 		const viewport = this.target.viewport.clone(), scissor = this.target.scissor.clone(), test = this.target.scissorTest;
 		this.borrowed = true;
 		try {
 			this.target.viewport.set(0, 0, this.width, this.height);
 			this.target.scissor.set(0, 0, 0, 0); this.target.scissorTest = true;
-			draw();
+			return draw();
 		} finally {
 			this.target.viewport.copy(viewport); this.target.scissor.copy(scissor); this.target.scissorTest = test;
 			this.borrowed = false;
@@ -96,6 +133,7 @@ export class CatalogWarmOutputContext {
 		if (this.disposed) return;
 		this.disposed = true; this.valid = false;
 		this.canvas.removeEventListener('resize', this.invalidate); this.canvas.removeEventListener('dispose', this.invalidate);
-		this.target.removeEventListener('dispose', this.invalidate); this.target.dispose();
+		this.target.removeEventListener('dispose', this.invalidate);
+		if (!this.lease) this.target.dispose();
 	}
 }
