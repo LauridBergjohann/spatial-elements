@@ -7,10 +7,14 @@ not establish smooth animation or a latency percentile.
 
 ## Current verified boundary
 
-The current source checkpoint `52c342e`, including tabs `83ea019` and fullscreen
+The fully verified source checkpoint `52c342e`, including tabs `83ea019` and fullscreen
 ordering `6e79c9a`, passes **936/936 units in 119 files** (run `46764`) and all
 workspace checks with **0 errors / 0 warnings** (run `97989`). Package build
 `67527`, demo build `39337` and Examples build `82285` each exit successfully.
+The complete public production matrix also passes **24/24 together** on demo
+`39337` / runtime `83ea019` (run `98004`, exit 0), with artifacts in
+`.artifacts/staged-production-39337-83ea019`. This is a new complete run, separate
+from the earlier `8873f41` matrix and the targeted private/fullscreen cases.
 The two fullscreen browser cases also pass on demo build `39337` (run `3553`,
 exit 0): retained fallback pose is within 1 CSS pixel before binding/movement,
 and native exit plus resize leaves a usable destination. The isolated packed
@@ -26,8 +30,13 @@ reported as a successful consumer run. Evidence:
 bytes (Svelte runtime `83ea019`, Core `8873f41`, source checkpoint `52c342e`), not
 the subsequent deferred-warmup work in progress. Release metadata, six release
 tests, boundaries, generated layout and Wiki 13-page/31-image validation also
-pass (run `92806`, exit 0). The complete public navigation matrix below remains
-tied to its earlier runtime rather than being claimed again for this checkpoint.
+pass (run `92806`, exit 0). The earlier results below retain their own revisions.
+
+The subsequent deferred-scroll-warmup commit `60deaac` has 76 focused unit passes,
+type checks and successful package build `23283`; its demo build `27554` is in
+progress and browser acceptance is not yet established. The 936-unit, 24-case,
+package-consumer and performance evidence above does not certify that later
+runtime. No warmup performance benefit is inferred from its source or unit checks.
 
 Runtime `8873f41`, demo build `10039` (pixel-proof fixture `6a2ed1f`), passes
 **914/914 unit tests in 116 files**, all workspace checks with **0 errors / 0 warnings**,
@@ -793,3 +802,37 @@ directories. This cohort is not pooled with trusted Pointer/Enter samples or any
 earlier runtime. It establishes neither a StageDisplay-specific improvement nor
 p95 acceptance; general activation remains blocked pending the required repeated
 measurements and device checks.
+
+## Offscreen scroll preparation follow-up: build 11873 / 960483f
+
+Run `76630` completed the same unprofiled v2 synthetic Hero diagnostic at
+1440 × 1000 with **4/4 start-latency cases, exit 0**. This build includes the
+fullscreen/Tabs fixes and [offscreen scroll preparation](deferred-scroll-warmup.md).
+There is one fresh-context sample per case, no retry or discarded calibration.
+
+| Case | Motion | Submission | DOM observation | Raw Moving / Reveal | Stable calibration |
+| --- | ---: | ---: | ---: | --- | --- |
+| List cold | 54.5 ms | 60.8 ms | 64.7 ms | fail / fail | yes |
+| List warm | 31.6 ms | 38.1 ms | 41.5 ms | pass / fail | yes |
+| Carousel cold | 29.8 ms | 51.3 ms | 55.5 ms | fail / pass | no |
+| Carousel warm | 25.6 ms | 35.2 ms | 38.4 ms | fail / fail | no |
+
+All twelve start gates pass; every sample retains zero measured GPU-creation
+calls during movement and reveal and no validation errors. Raw failures remain
+unchanged: cold List has a 33.5ms moving gap and a 66.6ms reveal gap; warm List
+has a 33.5ms reveal gap; cold Carousel has a 50.0ms moving gap; warm Carousel has
+34.3ms moving and 33.5ms reveal gaps. The two stable List baselines do not turn
+those failures into passes. Neither Carousel calibration is acceptance-eligible.
+
+The motion-end to reveal-start intervals are 1.447s / 1.236s for cold/warm List
+and 1.070s / 0.976s for cold/warm Carousel. Later recorded script work is 57.5ms
+for cold List (11.1ms forced layout) and 55.7ms for cold Carousel (8.7ms forced
+layout); the warm samples have no recorded post-reveal LongFrame. This does not
+establish that optional work is free or attribute a timing improvement to the
+new shortcut: this cohort neither holds High loading nor isolates that path.
+
+Evidence: [complete analyzer output](../../../.artifacts/staged-performance-11873-960483f-v2-hero1440-synthetic-n1-analysis.json),
+with all original measurements and calibration timestamps in the sibling
+`staged-performance-11873-960483f-v2-hero1440-synthetic-n1` directory and the
+runner log beside it. This is a revision-bound diagnostic, not a percentile
+acceptance run. The general activation gate and physical-device checks remain open.

@@ -1,8 +1,9 @@
 # Deferred scroll-target warmup candidate
 
-Status: **Canvas-retention measurement corrected; offscreen-only revision
-implemented; its DOM-screenshot/GPU acceptance pending**.
-No measured speedup or pixel-parity claim follows from this source checkpoint.
+Status: **offscreen-only revision passes its three focused GPU/DOM/navigation
+cases on runtime `960483f`, demo build `11873`; performance measurement pending**.
+The bounded pixel/functional evidence below does not establish a speedup or
+general staged-navigation acceptance.
 This is a narrow follow-up to [the recorded cleanup/zoom audit](../../../.artifacts/staged-gpu-trace-36109-be72259-carousel-cold/cleanup-zoom-audit.md).
 
 ## Evidence and limit
@@ -215,15 +216,15 @@ but Gaussian horizontal/vertical work is nested in Three's `updateBefore`.
 Breaking private Three internals or merely delaying the same 107 ms call is
 outside this candidate.
 
-## Source-check evidence and pending browser runs
+## Source-check evidence and browser protocol
 
 The focused Pipeline/Reveal/Zoom suites pass **76/76 tests in four files** after
 the offscreen-only change. They now require zero Canvas draws and check cleanup
 after both scene and blur failures. Core `tsc --noEmit` and the isolated GPU
 fixture TypeScript check against current Core source pass, without rebuilding
 packages or changing the currently tested `dist`. The earlier CPU checks did not
-validate presented Canvas retention. The offscreen-only revision still requires
-its corrected GPU/browser run; no previous passing pixel claim is carried forward.
+validate presented Canvas retention. The corrected browser run is reported
+separately below; no earlier Canvas2D result is reclassified as passing.
 The separate checkpoint-owner suite passes **3/3 tests** (acknowledgement order,
 stale IDs, overlapping requests and teardown). The revised GPU fixture passes
 its isolated TypeScript check; Playwright lists all three cases. These are
@@ -254,3 +255,55 @@ The two intentionally held-High cases establish functional eligibility only.
 They do not modify existing performance cohorts or stand in for natural cold/warm
 latency measurements. The strict pixel thresholds are zero, without a new
 tolerance allowance. Browser failures and their artifacts must be retained.
+
+## Focused result: demo `11873`, runtime `960483f`
+
+Run `56431` passed **3/3 cases**: the actual Pipeline pixel/resource proof and
+both real List/Carousel navigation cases. The protocol was
+`offscreen-scroll-warmup-v3-dom-checkpoints`. Its
+[raw pixel report](../../../.artifacts/offscreen-scroll-warmup-11873-960483f/deferred-scroll-warmup.e2e-83d90-the-real-first-Scroll-frame-chrome/deferred-scroll-warmup-pixels.json)
+contains no GPU-validation or page errors. All 16 checkpoint PNGs are retained
+beside it, including the positive source and unchanged post-fence source.
+
+| Recorded result | Renderer DPR 1 | Renderer DPR 1.5 |
+| --- | ---: | ---: |
+| Presented source spatial RGB range | 220 | 227 |
+| Exact DOM screenshot comparisons | 5/5 | 5/5 |
+| Maximum RGBA error in those comparisons | 0 | 0 |
+| HalfFloat color / first Scroll / following Full error | 0 / 0 / 0 | 0 / 0 / 0 |
+| Depth-witness error | 0 | 0 |
+| Explicit cleared-depth negative-control difference | 0.7370986938476562 | 0.7370986938476562 |
+| New measured resources during first Scroll | 0 | 0 |
+| Inactive source draws / state restored / stale resize rejected | 1 / true / true | 1 / true / true |
+
+The five screenshot pairs per DPR are source versus no-op fence/two RAFs,
+source versus completed offscreen warmup, source versus another fence/two RAFs,
+and candidate versus reference for Scroll and Full. The sources exceed the
+unchanged `>40` positive-control threshold; the comparison images also have
+spatial ranges at least 217 and 224, respectively. Every maximum channel error
+is exactly zero. `firstScrollCreates` is empty in both rows: no new measured
+shader, render pipeline, texture or buffer. This does not assert zero bind-group
+creation or zero draw cost.
+
+The saved locator PNG sizes are **160 x 121** and **1440 x 1001**, respectively.
+The first iteration's resize-rejection exercise changes the Canvas CSS size
+before the fractional-renderer-DPR iteration. Every compared pair retains the
+same size; the protocol therefore proves these recorded compositions, not two
+identical CSS viewports with only DPR varied. The screenshots were inspected:
+the source includes the colored depth seed and gradient, and the subsequent
+Scroll frame contains the two real Glass panels. No blank-image pass is claimed.
+
+Both the [List navigation report](../../../.artifacts/offscreen-scroll-warmup-11873-960483f/deferred-scroll-warmup.nav-b9120--Hero-and-keeps-zoom-usable-chrome/deferred-scroll-navigation.json)
+and [Carousel navigation report](../../../.artifacts/offscreen-scroll-warmup-11873-960483f/deferred-scroll-warmup.nav-63992--Hero-and-keeps-zoom-usable-chrome/deferred-scroll-navigation.json)
+record `inactiveScrollWarmups=1`, total `warmups=1` and restored `activeScale=1`
+after reveal. High was deliberately held in `loading`, with the live Hero still
+Low, so the real Stage owner—not only the isolated fixture—used the shortcut.
+Each passing case then released High and exercised zoom `0.6` / azimuth `25`,
+requiring focus above `0.3`, another minimap render and minimap width above 20.
+These are functional checks; the artifact timestamps are not latency evidence.
+
+The older Canvas2D `255` results remain a measurement limitation, not a proved
+masking regression. This run establishes presented-pixel retention for the
+offscreen-only implementation with genuine screenshots. Optional-warm callback
+cost, later minimap/High work and overall transition pacing still require their
+separate revision-bound measurement.
