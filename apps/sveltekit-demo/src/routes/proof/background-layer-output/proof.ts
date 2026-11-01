@@ -21,6 +21,7 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 	const camera = new THREE.PerspectiveCamera(45, 4 / 3, 1, 1000); camera.position.z = 200;
 	const minimapCamera = camera.clone();
 	const panelScene = new THREE.Scene();
+	let outgoingBackground = false;
 	const runtimes: StagePanelRuntime[] = [], minimaps = new Map<number, StageMinimapState>();
 	const panelOptions = [
 		{ width: 72, height: 55, radius: 12, backdropBlur: 4, position: { x: -22, y: 10 }, tint: 0x94bad5, tintOpacity: 0.2 },
@@ -29,7 +30,8 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 	const ports = { renderer, backgroundCanvasTarget: outputs[0], panelScene, camera, panelCamera: camera,
 		interactionTheme: () => DEFAULT_INTERACTION_THEME, fallbackPanelOptions: () => panelOptions,
 		panelRuntimes: () => runtimes, minimaps: () => minimaps,
-		frame: () => ({ stageViewportVisible: true, modelHover: false }), spatialCapture: () => undefined
+		frame: () => ({ stageViewportVisible: true, modelHover: false, outgoingBackground }), spatialCapture: () => undefined,
+		catalogLayer: () => undefined
 	} as unknown as StageRenderPorts;
 	const pipeline = new StageRenderPipeline(ports);
 	const layer = new THREE.RenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4, depthBuffer: true, stencilBuffer: false });
@@ -79,10 +81,10 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 		return left instanceof THREE.Vector4 ? left.equals(right as THREE.Vector4) : left instanceof THREE.Color ? left.equals(right as THREE.Color) : left === right;
 	});
 	const eligible = () => ['first', 'repeat', 'resize-dpr'].includes(mode);
-	const draw = (candidate: boolean, fail = false) => {
+	const draw = (candidate: boolean, fail = false, output = outputs[candidate ? 1 : 0], publish = true, maskOutput = false) => {
 		const before = state();
 		try {
-			ports.backgroundCanvasTarget = outputs[candidate ? 1 : 0];
+			ports.backgroundCanvasTarget = output;
 			renderer.setCanvasTarget(ports.backgroundCanvasTarget); renderer.setRenderTarget(null);
 			if (!candidate || !eligible()) {
 				pipeline.renderStageDisplay(); pipeline.renderBackgroundPanels();
@@ -95,16 +97,18 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 			renderer.autoClear = false;
 			pipeline.renderBackgroundPanels();
 			if (fail) throw new Error('deliberate-after-panels');
+			if (!publish) return;
 			// The public RenderPipeline applies the same RenderOutputNode as Three's Canvas path.
 			// NoToneMapping/workingColorSpace is scoped internally; no nested output framebuffer is requested.
 			renderer.setRenderTarget(null);
+			if (maskOutput) { renderer.setScissor(0, 0, 0, 0); renderer.setScissorTest(true); }
 			finalOutput.render();
 		} finally { restore(before); }
 	};
-	const linearPixels = async (candidate: boolean, inputTarget = candidate && eligible() ? layer : null) => {
+	const linearPixels = async (candidate: boolean, inputTarget = candidate && eligible() ? layer : null, output = outputs[candidate ? 1 : 0]) => {
 		const before = state();
 		try {
-			renderer.setCanvasTarget(outputs[candidate ? 1 : 0]);
+			renderer.setCanvasTarget(output);
 			renderer.setRenderTarget(inputTarget);
 			// Public API copies the current linear framebuffer, including Three's Canvas intermediate.
 			// Copy to an owned readback attachment without another shader, filtering or color transform.
@@ -128,8 +132,8 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 			readbackControls.push({ layout: capture.layout, expected, maxError });
 		} finally { restore(before); }
 	};
-	const canvasPixels = (index: number) => {
-		const canvas = canvases[index]; snapshot.width = canvas.width; snapshot.height = canvas.height;
+	const canvasPixels = (index: number, canvas = canvases[index]) => {
+		snapshot.width = canvas.width; snapshot.height = canvas.height;
 		context.drawImage(canvas, 0, 0); return context.getImageData(0, 0, canvas.width, canvas.height).data;
 	};
 	const resize = () => {
@@ -168,6 +172,127 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 		if (mode === 'partial-viewport') renderer.setViewport(5, 6, width - 16, height - 18);
 		renderer.setClearDepth(mode === 'clear-depth' ? 0.8 : 1);
 		renderer.autoClearColor = false; renderer.autoClearDepth = false; renderer.autoClearStencil = true;
+	};
+	const runLifecycleProof = async () => {
+		const before = state(), beforePort = ports.backgroundCanvasTarget;
+		// Diagnostic only: .has() neither allocates nor returns/mutates a private target.
+		// Never call _getFrameBufferTarget(), whose lookup may allocate the very buffer being tested.
+		const implicitTargets = (renderer as unknown as { _frameBufferTargets?: WeakMap<object, unknown> })._frameBufferTargets;
+		if (!(implicitTargets instanceof WeakMap)) throw new Error('Three r186 implicit-target presence diagnostic unavailable');
+		const container = document.createElement('div'); container.style.display = 'flex';
+		container.dataset.backgroundLifecycleProof = ''; document.body.appendChild(container);
+		const freshCanvases = [document.createElement('canvas'), document.createElement('canvas')];
+		freshCanvases.forEach(canvas => container.appendChild(canvas));
+		const freshOutputs = freshCanvases.map(canvas => new THREE.CanvasTarget(canvas));
+		const initialImplicit = freshOutputs.map(output => implicitTargets.has(output));
+		const presence: { phase: string; width: number; height: number; dpr: number; reference: boolean; candidate: boolean }[] = [];
+		const observe = (phase: string) => presence.push({ phase, width, height, dpr,
+			reference: implicitTargets.has(freshOutputs[0]), candidate: implicitTargets.has(freshOutputs[1]) });
+		const clearRows: { phase: string; width: number; height: number; dpr: number; referenceSubmits: number; candidateSubmits: number;
+			maxLinearError: number; maxCanvasError: number; maxLinearZeroError: number; maxCanvasZeroError: number; flagsRestored: boolean }[] = [];
+		const heldRows: { width: number; height: number; dpr: number; sourceCanvasError: number; sourceCanvasRgbRange: number; skippedReferenceSubmits: number; skippedCandidateSubmits: number;
+			skipHeldCanvasError: number; warmSubmits: number; warmStateRestored: boolean; preparedLinearDifference: number;
+			unpublishedHeldCanvasError: number; maskedWarmSubmits: number; maskedWarmHeldCanvasError: number; maskedWarmStateRestored: boolean;
+			publishedCanvasError: number; publishedLinearError: number; incomingCanvasDifference: number }[] = [];
+		const paint = async () => { await device!.queue.onSubmittedWorkDone(); await new Promise(requestAnimationFrame); await new Promise(requestAnimationFrame); };
+		const zeroError = (values: ArrayLike<number>) => { let max = 0; for (let i = 0; i < values.length; i++) max = Math.max(max, Math.abs(values[i])); return max; };
+		const clearContentOnly = (candidate: boolean, held = false) => {
+			const previous = state(), previousHeld = outgoingBackground;
+			try {
+				ports.backgroundCanvasTarget = freshOutputs[candidate ? 1 : 0];
+				renderer.setCanvasTarget(ports.backgroundCanvasTarget); renderer.setRenderTarget(null);
+				renderer.setScissorTest(false); renderer.autoClear = false; outgoingBackground = held;
+				if (!candidate) { pipeline.renderFrame(true, false); return; }
+				if (held) return;
+				renderer.setRenderTarget(layer); renderer.setClearColor(0, 0); renderer.clear();
+				renderer.setRenderTarget(null); finalOutput.render();
+			} finally { outgoingBackground = previousHeld; restore(previous); }
+		};
+		const compareClear = async (phase: string) => {
+			const results = [];
+			for (const candidate of [false, true]) {
+				const previous = state(), start = submits;
+				validate(`lifecycle/${phase}/${candidate}`, () => clearContentOnly(candidate));
+				const count = submits - start, restored = sameState(previous, state());
+				const pixels = canvasPixels(0, freshCanvases[candidate ? 1 : 0]);
+				const linear = await linearPixels(candidate, candidate ? layer : null, freshOutputs[candidate ? 1 : 0]);
+				results.push({ count, restored, pixels, linear });
+			}
+			const [reference, candidate] = results;
+			clearRows.push({ phase, width, height, dpr, referenceSubmits: reference.count, candidateSubmits: candidate.count,
+				maxLinearError: difference(reference.linear.pixels, candidate.linear.pixels), maxCanvasError: difference(reference.pixels, candidate.pixels),
+				maxLinearZeroError: Math.max(zeroError(reference.linear.pixels), zeroError(candidate.linear.pixels)),
+				maxCanvasZeroError: Math.max(zeroError(reference.pixels), zeroError(candidate.pixels)), flagsRestored: reference.restored && candidate.restored });
+			observe(phase);
+		};
+		try {
+			for (const next of ['first', 'resize-dpr']) {
+				mode = next; width = next === 'first' ? 160 : 200; height = next === 'first' ? 120 : 144; dpr = next === 'first' ? 1 : 1.5;
+				validate('lifecycle/source-and-target-resize', resize);
+				for (let index = 0; index < freshOutputs.length; index++) {
+					renderer.setCanvasTarget(freshOutputs[index]); renderer.setPixelRatio(dpr); renderer.setSize(width, height, false);
+					freshCanvases[index].style.width = `${width}px`; freshCanvases[index].style.height = `${height}px`;
+					renderer.setScissorTest(false); renderer.setClearDepth(1);
+				}
+				observe('before-first-output');
+				// The first candidate output is the transparent content-only clear, not a poisoned Canvas seed.
+				await compareClear('initial-transparent-clear');
+				glass.forEach(panel => panel.setVisibilityAlpha(1));
+				for (const candidate of [false, true]) validate('lifecycle/publish-source', () => draw(candidate, false, freshOutputs[candidate ? 1 : 0]));
+				await paint();
+				const sourcePixels = freshCanvases.map(canvas => canvasPixels(0, canvas));
+				let sourceMin = 255, sourceMax = 0;
+				for (let i = 0; i < sourcePixels[1].length; i++) if (i % 4 !== 3) {
+					sourceMin = Math.min(sourceMin, sourcePixels[1][i]); sourceMax = Math.max(sourceMax, sourcePixels[1][i]);
+				}
+				const sourceLinear = await linearPixels(true, layer, freshOutputs[1]);
+				observe('published-source-and-readback');
+				const skipped: number[] = [];
+				for (const candidate of [false, true]) { const start = submits; validate('lifecycle/held-content-only', () => clearContentOnly(candidate, true)); skipped.push(submits - start); }
+				await paint();
+				const skipHeldCanvasError = Math.max(...freshCanvases.map((canvas, index) => difference(sourcePixels[index], canvasPixels(0, canvas))));
+				// Simulate incoming content preparation using the real separate scene/blur sources.
+				const stateBeforeSource = state();
+				try {
+					validate('lifecycle/incoming-source', () => {
+						renderer.setRenderTarget(pipeline.activeRenderTargets!.sceneCapture); renderer.setScissorTest(false);
+						renderer.setClearColor(new THREE.Color().setRGB(0.125, 1.5, 0.25), 1); renderer.clear();
+						pipeline.renderPanelBlurCaptures(pipeline.activeRenderTargets!, true);
+					});
+				} finally { restore(stateBeforeSource); }
+				const warmState = state(), warmStart = submits;
+				validate('lifecycle/offscreen-warm', () => draw(true, false, freshOutputs[1], false));
+				const warmSubmits = submits - warmStart, warmStateRestored = sameState(warmState, state());
+				await paint();
+				const unpublishedHeldCanvasError = Math.max(...freshCanvases.map((canvas, index) => difference(sourcePixels[index], canvasPixels(0, canvas))));
+				const prepared = await linearPixels(true, layer, freshOutputs[1]);
+				observe('offscreen-warm-and-readback');
+				const maskedState = state(), maskedStart = submits;
+				validate('lifecycle/masked-output-warm', () => draw(true, false, freshOutputs[1], true, true));
+				const maskedWarmSubmits = submits - maskedStart, maskedWarmStateRestored = sameState(maskedState, state());
+				await paint();
+				const maskedWarmHeldCanvasError = difference(sourcePixels[1], canvasPixels(0, freshCanvases[1]));
+				observe('masked-output-warm');
+				for (const candidate of [false, true]) validate('lifecycle/publish-incoming', () => draw(candidate, false, freshOutputs[candidate ? 1 : 0]));
+				const incomingPixels = freshCanvases.map(canvas => canvasPixels(0, canvas));
+				const incomingReference = await linearPixels(false, null, freshOutputs[0]);
+				const incomingCandidate = await linearPixels(true, layer, freshOutputs[1]);
+				heldRows.push({ width, height, dpr, sourceCanvasError: difference(sourcePixels[0], sourcePixels[1]), sourceCanvasRgbRange: sourceMax - sourceMin,
+					skippedReferenceSubmits: skipped[0], skippedCandidateSubmits: skipped[1], skipHeldCanvasError, warmSubmits, warmStateRestored,
+					preparedLinearDifference: difference(sourceLinear.pixels, prepared.pixels), unpublishedHeldCanvasError,
+					maskedWarmSubmits, maskedWarmHeldCanvasError, maskedWarmStateRestored,
+					publishedCanvasError: difference(incomingPixels[0], incomingPixels[1]),
+					publishedLinearError: difference(incomingReference.pixels, incomingCandidate.pixels),
+					incomingCanvasDifference: difference(sourcePixels[1], incomingPixels[1]) });
+				observe('published-incoming');
+				await compareClear('transparent-clear-after-content');
+			}
+		} finally {
+			restore(before); ports.backgroundCanvasTarget = beforePort;
+			freshOutputs.forEach(output => output.dispose()); container.remove();
+		}
+		return { initialImplicit, presence, clearRows, heldRows, disposedImplicit: freshOutputs.map(output => implicitTargets.has(output)),
+			implicitDiagnostic: 'Three r186 _frameBufferTargets.has(CanvasTarget) only; no lookup allocation, get, set, delete or private target mutation' };
 	};
 	const dispose = () => {
 		restoreSubmit?.(); device?.removeEventListener('uncapturederror', onGpuError);
@@ -231,6 +356,7 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 				baseline ??= candidate.pixels;
 			}
 		}
+		const lifecycle = await runLifecycleProof();
 		mode = 'repeat'; width = 200; height = 144; dpr = 1.5; validate('final/resize', resize);
 		glass.forEach(panel => panel.setVisibilityAlpha(1));
 		prepareOutput(1); const failedState = state(); let injectedFailure = false;
@@ -241,12 +367,12 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 		const recoveryCanvasError = difference(canvasPixels(0), canvasPixels(1));
 		await device.queue.onSubmittedWorkDone(); await Promise.all(checks);
 		const pixels = layer.width * layer.height;
-		const result = { protocol: 'background-layer-output-v2', rows, readbackControls, errors, failureStateRestored, recoveryCanvasError,
+		const result = { protocol: 'background-layer-output-v3', rows, readbackControls, lifecycle, errors, failureStateRestored, recoveryCanvasError,
 			linearReadback: 'public copyFramebufferToTexture -> copyTextureToTexture -> RGBA/HalfFloat readRenderTargetPixelsAsync',
 			memory: { width: layer.width, height: layer.height, samples: layer.samples, resolvedColorBytes: pixels * 8,
 				multisampledColorBytes: pixels * 8 * 4, multisampledDepth32Bytes: pixels * 4 * 4,
 				excludes: 'Optional depth resolve, original Three Canvas intermediates, source/blur/readback targets and driver overhead. This proof intentionally retains both paths.' },
-			limitations: ['Opaque Background only; no Foreground/Rear or transparent-layer claim.', 'Partial viewport/scissor/nonstandard clear depth use the unchanged Canvas fallback.',
+			limitations: ['Filled Background and empty transparent clear only; no Foreground/Rear or arbitrary transparent-layer claim.', 'Partial viewport/scissor/nonstandard clear depth use the unchanged Canvas fallback.',
 				'Frosted is actual DOM, not a GPU material; tested separately with the real Panel component.', 'Submission counts are not frame-time measurements.'] };
 		return { result, dispose };
 	} catch (error) { dispose(); throw error; }

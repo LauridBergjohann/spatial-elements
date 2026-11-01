@@ -7,19 +7,52 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 	const status = page.locator('[data-background-layer-proof-state]');
 	await expect(status).not.toHaveAttribute('data-background-layer-proof-state', 'preparing', { timeout: 90000 });
 	const proof = await page.evaluate(() => (window as unknown as { __backgroundLayerProof: {
+		protocol: string;
 		rows: { mode: string; alpha: number; eligible: boolean; width: number; height: number; dpr: number; maxLinearError: number; maxCanvasError: number; minAlpha: number; maxAlpha: number; hdrMax: number;
 			referenceMinAlpha: number; referenceMaxAlpha: number; readbackLayout: { width: number; height: number; pixelValues: number };
 			referenceSubmits: number; candidateSubmits: number; panelDifference: number; flagsRestored: boolean }[];
 		readbackControls: { maxError: number; layout: { width: number; height: number; pixelValues: number } }[];
+		lifecycle: { initialImplicit: boolean[]; disposedImplicit: boolean[]; presence: { phase: string; reference: boolean; candidate: boolean }[];
+			clearRows: { phase: string; referenceSubmits: number; candidateSubmits: number; maxLinearError: number; maxCanvasError: number;
+				maxLinearZeroError: number; maxCanvasZeroError: number; flagsRestored: boolean }[];
+			heldRows: { sourceCanvasError: number; sourceCanvasRgbRange: number; skippedReferenceSubmits: number; skippedCandidateSubmits: number;
+				skipHeldCanvasError: number; warmSubmits: number; warmStateRestored: boolean; preparedLinearDifference: number;
+				unpublishedHeldCanvasError: number; maskedWarmSubmits: number; maskedWarmHeldCanvasError: number; maskedWarmStateRestored: boolean;
+				publishedCanvasError: number; publishedLinearError: number; incomingCanvasDifference: number }[] };
 		errors: string[]; failureStateRestored: boolean; recoveryCanvasError: number; linearReadback: string; memory: unknown;
 	} }).__backgroundLayerProof);
 	await writeFile(testInfo.outputPath('background-layer-output.json'), JSON.stringify(proof, null, 2));
 	await expect(status).toHaveAttribute('data-background-layer-proof-state', 'ready');
+	expect(proof.protocol).toBe('background-layer-output-v3');
 	expect(errors).toEqual([]); expect(proof.errors).toEqual([]); expect(proof.rows).toHaveLength(18);
 	expect(proof.readbackControls).toHaveLength(2);
 	for (const control of proof.readbackControls) {
 		expect(control.maxError, JSON.stringify(control)).toBe(0);
 		expect(control.layout.pixelValues).toBe(control.layout.width * control.layout.height * 4);
+	}
+	expect(proof.lifecycle.initialImplicit).toEqual([false, false]);
+	expect(proof.lifecycle.disposedImplicit).toEqual([false, false]);
+	expect(proof.lifecycle.presence.length).toBeGreaterThan(8);
+	for (const sample of proof.lifecycle.presence) expect(sample.candidate, JSON.stringify(sample)).toBe(false);
+	expect(proof.lifecycle.presence.some(sample => sample.reference)).toBe(true);
+	expect(proof.lifecycle.clearRows).toHaveLength(4);
+	for (const row of proof.lifecycle.clearRows) {
+		expect(row.maxLinearError, JSON.stringify(row)).toBe(0); expect(row.maxCanvasError, JSON.stringify(row)).toBe(0);
+		expect(row.maxLinearZeroError, JSON.stringify(row)).toBe(0); expect(row.maxCanvasZeroError, JSON.stringify(row)).toBe(0);
+		expect(row.referenceSubmits).toBe(2); expect(row.candidateSubmits).toBe(2); expect(row.flagsRestored).toBe(true);
+	}
+	expect(proof.lifecycle.heldRows).toHaveLength(2);
+	for (const row of proof.lifecycle.heldRows) {
+		expect(row.sourceCanvasError, JSON.stringify(row)).toBe(0); expect(row.sourceCanvasRgbRange).toBeGreaterThan(20);
+		expect(row.skippedReferenceSubmits).toBe(0); expect(row.skippedCandidateSubmits).toBe(0);
+		expect(row.skipHeldCanvasError, JSON.stringify(row)).toBe(0);
+		expect(row.warmSubmits).toBe(5); expect(row.warmStateRestored).toBe(true);
+		expect(row.preparedLinearDifference).toBeGreaterThan(0.1);
+		expect(row.unpublishedHeldCanvasError, JSON.stringify(row)).toBe(0);
+		expect(row.maskedWarmSubmits).toBe(6); expect(row.maskedWarmStateRestored).toBe(true);
+		expect(row.maskedWarmHeldCanvasError, JSON.stringify(row)).toBe(0);
+		expect(row.publishedCanvasError, JSON.stringify(row)).toBe(0); expect(row.publishedLinearError, JSON.stringify(row)).toBe(0);
+		expect(row.incomingCanvasDifference).toBeGreaterThan(10);
 	}
 	for (const row of proof.rows) {
 		expect(row.maxLinearError, JSON.stringify(row)).toBe(0);
