@@ -7,18 +7,30 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 	const status = page.locator('[data-background-layer-proof-state]');
 	await expect(status).not.toHaveAttribute('data-background-layer-proof-state', 'preparing', { timeout: 90000 });
 	const proof = await page.evaluate(() => (window as unknown as { __backgroundLayerProof: {
-		rows: { mode: string; alpha: number; eligible: boolean; maxLinearError: number; maxCanvasError: number; minAlpha: number; maxAlpha: number; hdrMax: number;
+		rows: { mode: string; alpha: number; eligible: boolean; width: number; height: number; dpr: number; maxLinearError: number; maxCanvasError: number; minAlpha: number; maxAlpha: number; hdrMax: number;
+			referenceMinAlpha: number; referenceMaxAlpha: number; readbackLayout: { width: number; height: number; pixelValues: number };
 			referenceSubmits: number; candidateSubmits: number; panelDifference: number; flagsRestored: boolean }[];
+		readbackControls: { maxError: number; layout: { width: number; height: number; pixelValues: number } }[];
 		errors: string[]; failureStateRestored: boolean; recoveryCanvasError: number; linearReadback: string; memory: unknown;
 	} }).__backgroundLayerProof);
 	await writeFile(testInfo.outputPath('background-layer-output.json'), JSON.stringify(proof, null, 2));
 	await expect(status).toHaveAttribute('data-background-layer-proof-state', 'ready');
 	expect(errors).toEqual([]); expect(proof.errors).toEqual([]); expect(proof.rows).toHaveLength(18);
+	expect(proof.readbackControls).toHaveLength(2);
+	for (const control of proof.readbackControls) {
+		expect(control.maxError, JSON.stringify(control)).toBe(0);
+		expect(control.layout.pixelValues).toBe(control.layout.width * control.layout.height * 4);
+	}
 	for (const row of proof.rows) {
 		expect(row.maxLinearError, JSON.stringify(row)).toBe(0);
 		expect(row.maxCanvasError, JSON.stringify(row)).toBe(0);
 		expect(row.flagsRestored, JSON.stringify(row)).toBe(true);
-		expect(row.minAlpha).toBe(1); expect(row.maxAlpha).toBe(1); expect(row.hdrMax).toBeGreaterThan(1);
+		expect(row.readbackLayout).toMatchObject({ width: Math.floor(row.width * row.dpr), height: Math.floor(row.height * row.dpr),
+			pixelValues: Math.floor(row.width * row.dpr) * Math.floor(row.height * row.dpr) * 4 });
+		expect(row.minAlpha).toBe(row.referenceMinAlpha); expect(row.maxAlpha).toBe(row.referenceMaxAlpha);
+		if (row.alpha === 0) { expect(row.minAlpha).toBe(1); expect(row.maxAlpha).toBe(1); }
+		else { expect(row.minAlpha).toBeGreaterThan(0); expect(row.maxAlpha).toBeGreaterThan(1); }
+		expect(row.hdrMax).toBeGreaterThan(1);
 		if (row.alpha > 0 && row.mode !== 'clear-depth') expect(row.panelDifference, JSON.stringify(row)).toBeGreaterThan(10);
 		if (row.eligible && row.alpha > 0) expect(row.referenceSubmits - row.candidateSubmits, JSON.stringify(row)).toBe(4);
 		else expect(row.candidateSubmits, JSON.stringify(row)).toBe(row.referenceSubmits);

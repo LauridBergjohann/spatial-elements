@@ -5,6 +5,7 @@ import { LiquidGlassPanel, STAGE_TONE_MAPPING_EXPOSURE } from '@spatial-elements
 import { DEFAULT_INTERACTION_THEME } from '@spatial-elements/core/stage/stageConstants';
 import type { StagePanelRuntime } from '@spatial-elements/core/stage/StagePanelRuntime';
 import type { StageMinimapState } from '@spatial-elements/core/stage/minimap/MinimapState';
+import { unpackHalfFloatRgbaRows } from './readback';
 
 const difference = (a: ArrayLike<number>, b: ArrayLike<number>) => {
 	if (a.length !== b.length) throw new Error('Mismatched pixel dimensions');
@@ -49,7 +50,9 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 	let framebuffer = new THREE.FramebufferTexture(1, 1); framebuffer.type = THREE.HalfFloatType;
 	const rows: { mode: string; alpha: number; eligible: boolean; width: number; height: number; dpr: number;
 		maxLinearError: number; maxCanvasError: number; minAlpha: number; maxAlpha: number; hdrMax: number;
+		referenceMinAlpha: number; referenceMaxAlpha: number; readbackLayout: ReturnType<typeof unpackHalfFloatRgbaRows>['layout'];
 		referenceSubmits: number; candidateSubmits: number; panelDifference: number; flagsRestored: boolean }[] = [];
+	const readbackControls: { layout: ReturnType<typeof unpackHalfFloatRgbaRows>['layout']; expected: number[]; maxError: number }[] = [];
 	const errors: string[] = [], checks: Promise<void>[] = [];
 	let device: GPUDevice | undefined, submits = 0, restoreSubmit: (() => void) | undefined;
 	let width = 160, height = 120, dpr = 1, mode = 'first';
@@ -98,18 +101,31 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 			finalOutput.render();
 		} finally { restore(before); }
 	};
-	const linearPixels = async (candidate: boolean) => {
+	const linearPixels = async (candidate: boolean, inputTarget = candidate && eligible() ? layer : null) => {
 		const before = state();
 		try {
 			renderer.setCanvasTarget(outputs[candidate ? 1 : 0]);
-			renderer.setRenderTarget(candidate && eligible() ? layer : null);
+			renderer.setRenderTarget(inputTarget);
 			// Public API copies the current linear framebuffer, including Three's Canvas intermediate.
 			// Copy to an owned readback attachment without another shader, filtering or color transform.
 			renderer.copyFramebufferToTexture(framebuffer);
 			renderer.initRenderTarget(readback); renderer.copyTextureToTexture(framebuffer, readback.texture);
 			const raw = await renderer.readRenderTargetPixelsAsync(readback, 0, 0, readback.width, readback.height);
 			if (!(raw instanceof Uint16Array)) throw new Error(`Expected HalfFloat readback, got ${raw.constructor.name}`);
-			return Array.from(raw, value => THREE.DataUtils.fromHalfFloat(value));
+			const { pixels, layout } = unpackHalfFloatRgbaRows(raw, readback.width, readback.height);
+			return { pixels: Array.from(pixels, value => THREE.DataUtils.fromHalfFloat(value)), layout };
+		} finally { restore(before); }
+	};
+	const checkReadbackControl = async () => {
+		const before = state(), expected = [0.25, 0.5, 2, 1];
+		try {
+			renderer.setRenderTarget(layer); renderer.setScissorTest(false);
+			renderer.setClearColor(new THREE.Color().setRGB(expected[0], expected[1], expected[2]), expected[3]);
+			validate('readback-control/clear', () => renderer.clear());
+			const capture = await linearPixels(true, layer);
+			let maxError = 0;
+			for (let index = 0; index < capture.pixels.length; index++) maxError = Math.max(maxError, Math.abs(capture.pixels[index] - expected[index % 4]));
+			readbackControls.push({ layout: capture.layout, expected, maxError });
 		} finally { restore(before); }
 	};
 	const canvasPixels = (index: number) => {
@@ -183,6 +199,7 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 		for (const next of ['first', 'repeat', 'resize-dpr', 'partial-viewport', 'scissor', 'clear-depth']) {
 			mode = next; width = ['first', 'repeat'].includes(mode) ? 160 : 200; height = ['first', 'repeat'].includes(mode) ? 120 : 144; dpr = ['first', 'repeat'].includes(mode) ? 1 : 1.5;
 			validate(`${mode}/resize-and-source`, resize);
+			if (mode === 'first' || mode === 'resize-dpr') await checkReadbackControl();
 			let baseline: Uint8ClampedArray | undefined;
 			for (const alpha of [0, 0.25, 1]) {
 				glass.forEach(panel => panel.setVisibilityAlpha(alpha));
@@ -200,13 +217,15 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 					captures.push({ count, restored, pixels, linear });
 				}
 				const [reference, candidate] = captures;
-				let minAlpha = Infinity, maxAlpha = -Infinity, hdrMax = -Infinity;
-				for (let i = 0; i < candidate.linear.length; i += 4) {
-					minAlpha = Math.min(minAlpha, candidate.linear[i + 3]); maxAlpha = Math.max(maxAlpha, candidate.linear[i + 3]);
-					hdrMax = Math.max(hdrMax, candidate.linear[i], candidate.linear[i + 1], candidate.linear[i + 2]);
+				let minAlpha = Infinity, maxAlpha = -Infinity, hdrMax = -Infinity, referenceMinAlpha = Infinity, referenceMaxAlpha = -Infinity;
+				for (let i = 0; i < candidate.linear.pixels.length; i += 4) {
+					minAlpha = Math.min(minAlpha, candidate.linear.pixels[i + 3]); maxAlpha = Math.max(maxAlpha, candidate.linear.pixels[i + 3]);
+					referenceMinAlpha = Math.min(referenceMinAlpha, reference.linear.pixels[i + 3]); referenceMaxAlpha = Math.max(referenceMaxAlpha, reference.linear.pixels[i + 3]);
+					hdrMax = Math.max(hdrMax, candidate.linear.pixels[i], candidate.linear.pixels[i + 1], candidate.linear.pixels[i + 2]);
 				}
 				rows.push({ mode, alpha, eligible: eligible(), width, height, dpr,
-					maxLinearError: difference(reference.linear, candidate.linear), maxCanvasError: difference(reference.pixels, candidate.pixels),
+					maxLinearError: difference(reference.linear.pixels, candidate.linear.pixels), maxCanvasError: difference(reference.pixels, candidate.pixels),
+					referenceMinAlpha, referenceMaxAlpha, readbackLayout: candidate.linear.layout,
 					minAlpha, maxAlpha, hdrMax, referenceSubmits: reference.count, candidateSubmits: candidate.count,
 					flagsRestored: reference.restored && candidate.restored, panelDifference: baseline ? difference(baseline, candidate.pixels) : 0 });
 				baseline ??= candidate.pixels;
@@ -222,7 +241,7 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 		const recoveryCanvasError = difference(canvasPixels(0), canvasPixels(1));
 		await device.queue.onSubmittedWorkDone(); await Promise.all(checks);
 		const pixels = layer.width * layer.height;
-		const result = { protocol: 'background-layer-output-v1', rows, errors, failureStateRestored, recoveryCanvasError,
+		const result = { protocol: 'background-layer-output-v2', rows, readbackControls, errors, failureStateRestored, recoveryCanvasError,
 			linearReadback: 'public copyFramebufferToTexture -> copyTextureToTexture -> RGBA/HalfFloat readRenderTargetPixelsAsync',
 			memory: { width: layer.width, height: layer.height, samples: layer.samples, resolvedColorBytes: pixels * 8,
 				multisampledColorBytes: pixels * 8 * 4, multisampledDepth32Bytes: pixels * 4 * 4,

@@ -1,6 +1,6 @@
 # Isolated Background-layer output proof
 
-Status: fixture prepared and type-checked; **not built or browser-tested yet**. This document records the proposed experiment, not a successful pixel or performance result. No production rendering path selects its candidate.
+Status: the first GPU execution completed on demo build 10026 / proof revision 7d373ab and exposed two fixture assumptions. Protocol v2 corrects them but has **not yet been rebuilt or browser-tested**. This is still an experiment, not an accepted production rendering change. No production rendering path selects its candidate.
 
 The experiment asks whether the existing opaque Background canvas can accumulate its ordered linear draws in one explicit target, then perform the output transform once. It does not combine the Background, Foreground or Carousel Rear layers, change glass sampling sources, cache model pixels, or batch GPU submissions.
 
@@ -17,6 +17,10 @@ Frosted panels have a native CSS surface in this framework, not a GPU Frosted ma
 ## Linear readback and output comparison
 
 The linear comparison uses public `copyFramebufferToTexture`, `copyTextureToTexture` and `readRenderTargetPixelsAsync` APIs with a HalfFloat readback attachment. In the installed Three r186 source, a framebuffer copy outside a render call uses the explicitly bound target or, for a Canvas, its current linear intermediate. The reference's copy therefore observes the linear framebuffer after the ordered panel draws; the candidate's copy observes its explicit linear target. The experiment requires HDR values above one to remain present and compares decoded half-float channels exactly.
+
+Three's WebGPU `copyTextureToBuffer()` returns mapped data with 256-byte row alignment; it does not repack the rows. Protocol v2 validates the exact buffer length `(height - 1) × alignedRowBytes + width × 8`, then extracts exactly `width × height × 4` HalfFloat channels. At 300 × 216 physical pixels, each 2400-byte row has a 2560-byte stride, and the returned 276400 values include 17200 padding values. Padding is never interpreted as pixel alpha. A separately cleared HDR attachment with distinct exact RGBA values `[0.25, 0.5, 2, 1]` verifies the complete copy/readback chain at both physical sizes, independently from reference/candidate agreement. Pure decoder tests poison padding and use different values for every row/channel.
+
+An opaque Background canvas does not imply that its linear intermediate alpha is always one. Real `LiquidGlassPanel` uses additive blending for its sheen; Three's WebGPU additive alpha factors are One/One. Thus linear alpha may exceed one before `RenderOutputNode` clamps it. Protocol v2 retains exact four-channel reference comparison, records both paths' alpha extrema, and requires alpha one only when the panels are hidden. No pixel tolerance is widened.
 
 `Scene.onAfterRender` is not used as a supposed pre-output hook: in this Three version it is invoked **after** `_renderOutput`. No private renderer field is read or mutated to obtain the linear image. Access to the existing WebGPU device is confined to the diagnostic submit counter, error scopes and queue fence. The counter immediately forwards the same command buffers to the original `GPUQueue.submit`; it never delays or combines submissions.
 
@@ -54,4 +58,14 @@ npx.cmd --no-install playwright test --config playwright.background-layer-output
 
 The config owns port 4205 and writes `.artifacts/background-layer-output`. The test saves the complete row JSON before asserting pixel/count results, plus both Frosted PNGs and their channel comparison.
 
-Preparation checks on 2026-11-01: `npm run check --workspace @spatial-elements/demo-sveltekit` completed with zero errors and zero warnings; `playwright test --config playwright.background-layer-output.config.ts --list` loaded exactly one test. No build, browser execution or measured pixel/submit result is included in this preparation checkpoint.
+Preparation checks on 2026-11-01: `npm run check --workspace @spatial-elements/demo-sveltekit` completed with zero errors and zero warnings; `playwright test --config playwright.background-layer-output.config.ts --list` loaded exactly one test.
+
+The first run's complete raw JSON and trace remain under `.artifacts/background-layer-output-10026-7d373ab`. All 18 rows reported exact agreement for both complete readback arrays and Canvas output, with no GPU validation/browser errors and restored state. Eligible visible-panel cases submitted 10→6 passes, hidden-panel cases 2→2, conservative fallbacks 4→4 or 12→12. The runner nevertheless exited 1 because the extra `linearAlpha === 1` assertion was invalid for real additive glass. The Frosted DOM comparison was not reached. DPR 1.5 statistics also included readback padding in that first run; those extrema are not valid pixel-only extrema and are preserved as failed-protocol evidence, not reclassified as a passing test.
+
+The v2 decoder's three CPU cases pass, the demo typecheck again reports zero errors and zero warnings, and the Playwright listing loads the single test. The independent GPU readback controls and corrected material invariant still need a fresh coordinated build and GPU run. Exact linear, Canvas and Frosted DOM comparison limits remain zero.
+
+## Preliminary integration decision
+
+The measured ordered-output count supports investigating a Background-only integration after the complete corrected pixel/DOM proof passes: four saved submissions per frame with the two glass passes, without moving glass sampling, model rendering or depth clears. It proves no frame-time benefit; that requires a separate unprofiled comparison.
+
+Memory is the decisive integration constraint. A full-size explicit target must replace the implicit Background framebuffer rather than silently coexist with it. In the installed Three version, a Canvas `clear()` or draw under ACES/sRGB may allocate that implicit framebuffer. Current `renderFrame(contentOnly)`, `freezeBackground()`, `warmRenderTargetSets()` and `warmRevealFrame()` all contain such Background paths; replacing only the ordinary detail-frame output would therefore retain both allocations. There is no public API for borrowing or retiring one private intermediate while keeping its owner unchanged. The safe design must cover the Background layer from its first clear onward, including warmup, outgoing snapshot and content-only clear, or explicitly abandon and dispose the candidate when a conservative fallback is chosen. The existing sceneCapture and blur targets remain separate. Initialization, ownership, warmup readiness, fallback lifetime, resize and total attachment memory require review before production code is authorized.
