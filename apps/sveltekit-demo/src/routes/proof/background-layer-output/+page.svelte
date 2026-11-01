@@ -3,13 +3,18 @@
 	import { Panel } from '@spatial-elements/sveltekit';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
 	import { runBackgroundLayerProof } from './proof';
+	import { createBackgroundCheckpoints } from './checkpoints';
 	// Real Panel CSS/markup, without creating a second production GPU Stage in this isolated proof.
 	setContext(STAGE_CONTEXT_KEY, { registerPanel: () => () => {} } as unknown as StageContext);
 	let reference: HTMLDivElement, candidate: HTMLDivElement;
 	let state = $state('preparing');
 	onMount(() => {
 		let active = true, dispose: (() => void) | undefined;
-		void runBackgroundLayerProof([reference, candidate]).then(proof => {
+		const checkpoints = createBackgroundCheckpoints();
+		const enabled = new URL(location.href).searchParams.get('lifecycle-checkpoints') === '1';
+		const api = { getCurrent: checkpoints.getCurrent, release: checkpoints.release };
+		if (enabled) Object.assign(window, { __backgroundLayerCheckpoints: api });
+		void runBackgroundLayerProof([reference, candidate], enabled ? value => checkpoints.wait(value) : undefined).then(proof => {
 			dispose = proof.dispose;
 			if (!active) { dispose(); return; }
 			Object.assign(window, { __backgroundLayerProof: proof.result }); state = 'ready';
@@ -19,7 +24,11 @@
 				state = 'error';
 			}
 		});
-		return () => { active = false; dispose?.(); };
+		return () => {
+			active = false; checkpoints.dispose(); dispose?.();
+			const target = window as unknown as { __backgroundLayerCheckpoints?: typeof api };
+			if (target.__backgroundLayerCheckpoints === api) delete target.__backgroundLayerCheckpoints;
+		};
 	});
 </script>
 

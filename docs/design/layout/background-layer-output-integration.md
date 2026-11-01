@@ -24,7 +24,7 @@ Conceptually it needs these operations:
 - **Initialize/select mode:** choose the explicit output path or the unchanged Canvas fallback after the renderer backend is initialized, before any Background Canvas draw or clear.
 - **Render complete Background:** clear the explicit target, draw the existing linear stage-display quad, run the unchanged `renderBackgroundPanels()`, then publish the final output once.
 - **Clear transparent:** clear and publish an empty Background using the same owner for content-only pages.
-- **Warm without publishing:** prepare the actual explicit-target passes, then exercise the final Canvas output under a zero-area scissor without clearing visible Canvas pixels.
+- **Warm without publishing:** prepare only explicit offscreen targets. Initialize the final output pipeline during the first legitimate transparent clear or visible publication; do not assume a later zero-scissor Canvas draw is invisible. Rewarming changed final-output contexts needs a separate no-draw/readiness proof.
 - **Resize / dispose / report resources:** retain one output allocation across route and scene-capture changes; release it with the pipeline or when permanently selecting the fallback.
 
 The owner must synchronously restore borrowed renderer state in `finally`: CanvasTarget, RenderTarget and OutputRenderTarget, viewport/scissor, clear values, automatic-clear flags, tone mapping/exposure, output color space and XR state. Three's public `RenderPipeline.render()` scopes output-transform settings, but the outer owner must also restore them if a draw throws. No borrowed state may survive an asynchronous fence.
@@ -40,7 +40,7 @@ The relevant code is in `packages/core/src/stage/StageRenderPipeline.ts` and `St
 | `renderFrame(true, …)` | Route the transparent content-only clear through the same owner. Preserve the current complete skip when `outgoingBackground` is retained. |
 | `freezeBackground()` | Publish the complete outgoing Background through the owner. Keep the resulting Canvas pixels as the existing transition does. |
 | `warmRenderTargetSets()` | Warm the same complete output sequence for both scene-quality sets; finish by publishing the active set. Do not allocate a separate output target per quality set. |
-| `warmRevealFrame()` | Warm the explicit target offscreen, then mask only the final Canvas publication with zero-area scissor. Do not run a visible Canvas clear: WebGPU attachment clears are not constrained by that scissor. |
+| `warmRevealFrame()` | Warm the explicit target offscreen without touching the presented Canvas. The unchanged final output should already be prepared by its first legitimate clear/publication. A later masked publication is not an established preservation mechanism. |
 | `resizeRenderTargets()` | Size the explicit target to the actual Background Canvas drawing buffer. Preserve the existing held-background resize rule; a retained outgoing Canvas and its output target keep their dimensions until a new output is required. |
 | `disposeSceneCapture()` | Dispose only scene/blur resources. The output owner must survive route rebinding and outgoing-background retention. |
 | `dispose()` | Dispose the output target and final RenderPipeline together with the Stage pipeline. Include the explicit target in the diagnostic resource inventory. |
@@ -49,9 +49,11 @@ The relevant code is in `packages/core/src/stage/StageRenderPipeline.ts` and `St
 
 ### Catalogue preparation is an additional allocation path
 
-`StageExperience.scheduleStagedPreparation()` currently calls `CatalogSpatialElementLayer.prepareStagedNavigation(renderer)` while the current Canvas has been restored to Background. That preparation explicitly binds `setRenderTarget(null)` and draws its real Canvas variants with zero-area scissor. Scissor prevents visible pixels, but it does not prevent Three from allocating the implicit Background framebuffer.
+`StageExperience.scheduleStagedPreparation()` currently calls `CatalogSpatialElementLayer.prepareStagedNavigation(renderer)` while the current Canvas has been restored to Background. That preparation explicitly binds `setRenderTarget(null)` and draws its real Canvas variants with zero-area scissor. This can allocate the implicit Background framebuffer. Zero-area scissor alone is not an established guarantee that a submitted Canvas frame preserves the already presented image.
 
-The integration must therefore explicitly lend the already existing **Foreground CanvasTarget** to this catalogue preparation. Catalogue foreground geometry is already displayed there. The catalogue algorithms, Ground/Rear capture paths and their fences need not be rewritten for this change. A narrow pipeline wrapper can select the Foreground Canvas, call the existing preparation and restore the previous state synchronously; its returned promise can then await the existing GPU fence. Foreground creation already precedes scheduled catalogue preparation.
+The earlier suggestion to lend the existing **Foreground CanvasTarget** is withdrawn. The current preparation would still submit Canvas draws there, so a swap could put visible catalogue models at risk. Do not solve the Background allocation issue by moving the same unproved operation to another visible layer.
+
+A separate design must prepare the required variants without drawing into a presented Canvas: explicit offscreen draws, a carefully scoped compile-only path, or an independent bounded warm context. None is proved equivalent yet. `compileAsync()` itself can allocate an implicit target for its selected Canvas, and compilation alone does not establish that node-driven capture/blur resources are prepared. A small warm target can also have different size-dependent capture allocations or context variants. The existing renderer/scene-state restore, signature validity and fence contracts must remain intact, and an actual first Moving-frame resource proof is required. This unresolved preparation path is an integration gate, not an approved implementation shortcut.
 
 This path is why changing only ordinary detail output would leave both linear Background allocations alive even if the new output itself never requests the implicit one.
 
@@ -59,7 +61,7 @@ This path is why changing only ordinary detail output would leave both linear Ba
 
 Initially enable only the backend and output configuration exercised by the completed proof: WebGPU, validated color format/MSAA/depth settings, full viewport and ordinary output state. Keep the old path for unsupported configurations such as foreign MRT/OutputRenderTarget, XR, reversed/nonstandard depth or an unproved viewport/scissor mode.
 
-The controlled zero-scissor warmup is an explicit supported internal operation, not an accidental reason to fall back.
+Hidden preparation must not depend on publishing a zero-scissor Canvas frame. Such a path is excluded until actual presented-pixel preservation is proved; pure offscreen preparation is distinct from that case.
 
 If an unsupported configuration appears after the explicit owner has been selected, dispose that owner and select the old path for the remainder of this pipeline instance. Do not silently alternate back into the explicit path: the old Canvas draw may have allocated an implicit framebuffer whose lifetime is owned internally by Three. Keeping both would violate the memory objective. Any more flexible switching would need a separate ownership design and proof.
 
@@ -85,8 +87,10 @@ Maintain one output target, resize it in place, and report its dimensions/sample
 Before production implementation:
 
 1. Preserve protocol v2's completed strict linear/Canvas/Frosted DOM comparisons and independent padded-readback controls. Exact comparison limits remain zero.
-2. Complete protocol v3's transparent content-only clear and retained outgoing Canvas cases, including hidden warmup without publication and the read-only allocation diagnostic. The filled-Hero comparison does not establish these cases.
+2. Complete protocol v4's checkpoint-based transparent content-only clear and retained outgoing Canvas cases, including hidden warmup without publication and the read-only allocation diagnostic. The filled-Hero comparison does not establish these cases. The masked-publish checkpoint remains a separate diagnostic candidate, not an accepted retention path merely because the offscreen path passes.
 3. Review initialization and fallback ownership, including the catalogue preparation context described above.
+
+On build 28778, the Background v3 positive control exposed an observation limitation: a Canvas2D copy of a WebGPU canvas after a fence and two RAFs was empty even with no intervening warm draw. Consequently the lifecycle's later zero-difference values cannot prove retained display pixels. Similarly, a before/after comparison that crosses a readback await cannot by itself attribute a 255-channel difference to a warmup. The next retention proof must capture actual DOM/compositor screenshots at explicit checkpoints, include a no-op paint/fence control, and keep linear attachment readbacks separate. Until then, both the alleged masked-Canvas safety and any claim of visible masked-Canvas damage remain unproven by those readbacks.
 
 During a separately authorized implementation:
 

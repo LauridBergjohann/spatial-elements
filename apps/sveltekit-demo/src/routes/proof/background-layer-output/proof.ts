@@ -6,6 +6,7 @@ import { DEFAULT_INTERACTION_THEME } from '@spatial-elements/core/stage/stageCon
 import type { StagePanelRuntime } from '@spatial-elements/core/stage/StagePanelRuntime';
 import type { StageMinimapState } from '@spatial-elements/core/stage/minimap/MinimapState';
 import { unpackHalfFloatRgbaRows } from './readback';
+import type { BackgroundCheckpoint } from './checkpoints';
 
 const difference = (a: ArrayLike<number>, b: ArrayLike<number>) => {
 	if (a.length !== b.length) throw new Error('Mismatched pixel dimensions');
@@ -13,7 +14,7 @@ const difference = (a: ArrayLike<number>, b: ArrayLike<number>) => {
 };
 
 /** Experimental fixture only. No production output, target or readiness path uses this owner. */
-export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement]) {
+export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement], checkpoint?: (value: Omit<BackgroundCheckpoint, 'id'>) => Promise<void>) {
 	const renderer = new THREE.WebGPURenderer({ antialias: true });
 	const canvases = hosts.map(host => { const canvas = document.createElement('canvas'); host.prepend(canvas); return canvas; });
 	const outputs = canvases.map(canvas => new THREE.CanvasTarget(canvas));
@@ -185,7 +186,10 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 		const container = document.createElement('div'); container.style.display = 'flex';
 		container.dataset.backgroundLifecycleProof = ''; document.body.appendChild(container);
 		const freshCanvases = [document.createElement('canvas'), document.createElement('canvas')];
-		freshCanvases.forEach(canvas => container.appendChild(canvas));
+		freshCanvases.forEach((canvas, index) => {
+			canvas.dataset.backgroundLifecycleCanvas = index ? 'candidate' : 'reference';
+			canvas.style.display = 'block'; container.appendChild(canvas);
+		});
 		const freshOutputs = freshCanvases.map(canvas => new THREE.CanvasTarget(canvas));
 		const initialImplicit = freshOutputs.map(hasImplicit);
 		const presence: { phase: string; width: number; height: number; dpr: number; reference: boolean; candidate: boolean }[] = [];
@@ -193,11 +197,15 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 			reference: hasImplicit(freshOutputs[0]), candidate: hasImplicit(freshOutputs[1]) });
 		const clearRows: { phase: string; width: number; height: number; dpr: number; referenceSubmits: number; candidateSubmits: number;
 			maxLinearError: number; maxCanvasError: number; maxLinearZeroError: number; maxCanvasZeroError: number; flagsRestored: boolean }[] = [];
-		const heldRows: { width: number; height: number; dpr: number; sourceCanvasError: number; sourceCanvasRgbRange: number; skippedReferenceSubmits: number; skippedCandidateSubmits: number;
-			skipHeldCanvasError: number; warmSubmits: number; warmStateRestored: boolean; preparedLinearDifference: number;
-			unpublishedHeldCanvasError: number; maskedWarmSubmits: number; maskedWarmHeldCanvasError: number; maskedWarmStateRestored: boolean;
-			publishedCanvasError: number; publishedLinearError: number; incomingCanvasDifference: number }[] = [];
+		const heldRows: { width: number; height: number; dpr: number; sourceImmediateCanvasError: number; skippedReferenceSubmits: number; skippedCandidateSubmits: number;
+			warmSubmits: number; warmStateRestored: boolean; preparedLinearDifference: number;
+			maskedWarmSubmits: number; maskedWarmStateRestored: boolean;
+			publishedImmediateCanvasError: number; publishedLinearError: number; immediateIncomingCanvasDifference: number }[] = [];
 		const paint = async () => { await device!.queue.onSubmittedWorkDone(); await new Promise(requestAnimationFrame); await new Promise(requestAnimationFrame); };
+		const presented = async (phase: string) => {
+			await paint();
+			await checkpoint?.({ phase, width, height, dpr });
+		};
 		const zeroError = (values: ArrayLike<number>) => { let max = 0; for (let i = 0; i < values.length; i++) max = Math.max(max, Math.abs(values[i])); return max; };
 		const clearContentOnly = (candidate: boolean, held = false) => {
 			const previous = state(), previousHeld = outgoingBackground;
@@ -240,20 +248,19 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 				observe('before-first-output');
 				// The first candidate output is the transparent content-only clear, not a poisoned Canvas seed.
 				await compareClear('initial-transparent-clear');
+				await presented('initial-transparent-clear');
 				glass.forEach(panel => panel.setVisibilityAlpha(1));
 				for (const candidate of [false, true]) validate('lifecycle/publish-source', () => draw(candidate, false, freshOutputs[candidate ? 1 : 0]));
-				await paint();
+				// Immediate Canvas-buffer data is separate from compositor screenshots after presentation.
 				const sourcePixels = freshCanvases.map(canvas => canvasPixels(0, canvas));
-				let sourceMin = 255, sourceMax = 0;
-				for (let i = 0; i < sourcePixels[1].length; i++) if (i % 4 !== 3) {
-					sourceMin = Math.min(sourceMin, sourcePixels[1][i]); sourceMax = Math.max(sourceMax, sourcePixels[1][i]);
-				}
 				const sourceLinear = await linearPixels(true, layer, freshOutputs[1]);
 				observe('published-source-and-readback');
+				await presented('published-source');
+				// Positive no-op control: another fence/paint opportunity with no GPU work.
+				await presented('held-no-work');
 				const skipped: number[] = [];
 				for (const candidate of [false, true]) { const start = submits; validate('lifecycle/held-content-only', () => clearContentOnly(candidate, true)); skipped.push(submits - start); }
-				await paint();
-				const skipHeldCanvasError = Math.max(...freshCanvases.map((canvas, index) => difference(sourcePixels[index], canvasPixels(0, canvas))));
+				await presented('held-content-only');
 				// Simulate incoming content preparation using the real separate scene/blur sources.
 				const stateBeforeSource = state();
 				try {
@@ -266,35 +273,36 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 				const warmState = state(), warmStart = submits;
 				validate('lifecycle/offscreen-warm', () => draw(true, false, freshOutputs[1], false));
 				const warmSubmits = submits - warmStart, warmStateRestored = sameState(warmState, state());
-				await paint();
-				const unpublishedHeldCanvasError = Math.max(...freshCanvases.map((canvas, index) => difference(sourcePixels[index], canvasPixels(0, canvas))));
 				const prepared = await linearPixels(true, layer, freshOutputs[1]);
 				observe('offscreen-warm-and-readback');
+				await presented('offscreen-warm');
 				const maskedState = state(), maskedStart = submits;
 				validate('lifecycle/masked-output-warm', () => draw(true, false, freshOutputs[1], true, true));
 				const maskedWarmSubmits = submits - maskedStart, maskedWarmStateRestored = sameState(maskedState, state());
-				await paint();
-				const maskedWarmHeldCanvasError = difference(sourcePixels[1], canvasPixels(0, freshCanvases[1]));
 				observe('masked-output-warm');
+				await presented('masked-output-warm');
 				for (const candidate of [false, true]) validate('lifecycle/publish-incoming', () => draw(candidate, false, freshOutputs[candidate ? 1 : 0]));
 				const incomingPixels = freshCanvases.map(canvas => canvasPixels(0, canvas));
 				const incomingReference = await linearPixels(false, null, freshOutputs[0]);
 				const incomingCandidate = await linearPixels(true, layer, freshOutputs[1]);
-				heldRows.push({ width, height, dpr, sourceCanvasError: difference(sourcePixels[0], sourcePixels[1]), sourceCanvasRgbRange: sourceMax - sourceMin,
-					skippedReferenceSubmits: skipped[0], skippedCandidateSubmits: skipped[1], skipHeldCanvasError, warmSubmits, warmStateRestored,
-					preparedLinearDifference: difference(sourceLinear.pixels, prepared.pixels), unpublishedHeldCanvasError,
-					maskedWarmSubmits, maskedWarmHeldCanvasError, maskedWarmStateRestored,
-					publishedCanvasError: difference(incomingPixels[0], incomingPixels[1]),
+				heldRows.push({ width, height, dpr, sourceImmediateCanvasError: difference(sourcePixels[0], sourcePixels[1]),
+					skippedReferenceSubmits: skipped[0], skippedCandidateSubmits: skipped[1], warmSubmits, warmStateRestored,
+					preparedLinearDifference: difference(sourceLinear.pixels, prepared.pixels),
+					maskedWarmSubmits, maskedWarmStateRestored,
+					publishedImmediateCanvasError: difference(incomingPixels[0], incomingPixels[1]),
 					publishedLinearError: difference(incomingReference.pixels, incomingCandidate.pixels),
-					incomingCanvasDifference: difference(sourcePixels[1], incomingPixels[1]) });
+					immediateIncomingCanvasDifference: difference(sourcePixels[1], incomingPixels[1]) });
 				observe('published-incoming');
+				await presented('published-incoming');
 				await compareClear('transparent-clear-after-content');
+				await presented('transparent-clear-after-content');
 			}
 		} finally {
 			restore(before); ports.backgroundCanvasTarget = beforePort;
 			freshOutputs.forEach(output => output.dispose()); container.remove();
 		}
-		return { initialImplicit, presence, clearRows, heldRows, disposedImplicit: freshOutputs.map(hasImplicit),
+		return { initialImplicit, presence, clearRows, heldRows, disposedImplicit: freshOutputs.map(hasImplicit), checkpointsEnabled: Boolean(checkpoint),
+			retentionObservation: 'Playwright compositor screenshots at released checkpoints only; no post-presentation Canvas2D copies',
 			implicitDiagnostic: 'Three r186 _frameBufferTargets Map; builtin Map.has only; no lookup allocation, get, set, delete or private target mutation' };
 	};
 	const dispose = () => {
@@ -370,7 +378,7 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 		const recoveryCanvasError = difference(canvasPixels(0), canvasPixels(1));
 		await device.queue.onSubmittedWorkDone(); await Promise.all(checks);
 		const pixels = layer.width * layer.height;
-		const result = { protocol: 'background-layer-output-v3', rows, readbackControls, lifecycle, errors, failureStateRestored, recoveryCanvasError,
+		const result = { protocol: 'background-layer-output-v4', rows, readbackControls, lifecycle, errors, failureStateRestored, recoveryCanvasError,
 			linearReadback: 'public copyFramebufferToTexture -> copyTextureToTexture -> RGBA/HalfFloat readRenderTargetPixelsAsync',
 			memory: { width: layer.width, height: layer.height, samples: layer.samples, resolvedColorBytes: pixels * 8,
 				multisampledColorBytes: pixels * 8 * 4, multisampledDepth32Bytes: pixels * 4 * 4,

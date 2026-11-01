@@ -1,6 +1,6 @@
 # Isolated Background-layer output proof
 
-Status: **protocol v2 passed** on demo build 39337 / proof revision a94344e. Protocol v3 adds transparent clear, outgoing-pixel retention and a read-only allocation diagnostic. Its first execution on build 27554 failed at an incorrectly typed diagnostic availability check before the lifecycle cases; that fixture error is corrected in source and the rerun is pending. This is still an experiment, not an accepted production rendering change. No production rendering path selects its candidate.
+Status: **protocol v2 passed** on demo build 39337 / proof revision a94344e. Protocol v3 added transparent clear, outgoing-pixel retention and a read-only allocation diagnostic. Its corrected execution on build 28778 exposed an invalid post-presentation Canvas2D observation before retention could be established. The positive control correctly failed. Protocol v4 now prepares explicit compositor-screenshot checkpoints; its GPU execution is pending. This is still an experiment, not an accepted production rendering change. No production rendering path selects its candidate.
 
 The experiment asks whether the existing opaque Background canvas can accumulate its ordered linear draws in one explicit target, then perform the output transform once. It does not combine the Background, Foreground or Carousel Rear layers, change glass sampling sources, cache model pixels, or batch GPU submissions.
 
@@ -24,7 +24,7 @@ An opaque Background canvas does not imply that its linear intermediate alpha is
 
 `Scene.onAfterRender` is not used as a supposed pre-output hook: in this Three version it is invoked **after** `_renderOutput`. No private renderer field is read or mutated to obtain the linear image. Access to the existing WebGPU device is confined to the diagnostic submit counter, error scopes and queue fence. The counter immediately forwards the same command buffers to the original `GPUQueue.submit`; it never delays or combines submissions. Protocol v3's separate allocation diagnostic only reads presence in the version-specific `_frameBufferTargets` Map, as described below.
 
-Canvas output is copied synchronously into a 2D canvas and compared independently from the linear data. The actual Frosted DOM surfaces receive a third, separate screenshot comparison. All three comparisons initially require exact equality; a failure must be diagnosed rather than silently widening the tolerance.
+Immediate Canvas output is copied synchronously into a 2D canvas and compared independently from the linear data. This observation must happen in the publishing task: it is not a valid displayed-pixel readback after presentation. Lifecycle retention and the actual Frosted DOM surfaces use separate Playwright locator screenshots, decoded in Node without drawing into any browser canvas. All advertised comparisons require exact equality; a failure must be diagnosed rather than silently widening the tolerance.
 
 ## Cases and boundaries
 
@@ -42,15 +42,18 @@ A deliberate exception after the candidate's panel draws checks renderer-state r
 
 Protocol v2 covers a filled Background with an opaque stage-display fragment and varied glass opacity. Protocol v3 adds an empty transparent clear only; neither establishes arbitrary transparent-layer composition, Foreground/Rear output, custom nested renderer callbacks, arbitrary GLTF transmission contexts or production readiness. A future integration needs its own resource lifetime, idle warmup, resize/cancel and memory review.
 
-## Protocol v3 lifecycle extension — pending GPU execution
+## Protocol v4 lifecycle checkpoints — pending GPU execution
 
 Fresh reference/candidate CanvasTargets exercise initialization without the matrix's deliberate Canvas poisoning, at 160 × 120 / DPR 1 and after resize to 200 × 144 / DPR 1.5:
 
 1. The first output is a transparent content-only clear. The reference calls the actual `StageRenderPipeline.renderFrame(true, false)`; the candidate clears its explicit target and publishes once. Every decoded linear and Canvas channel must be exactly zero, and both should submit twice.
-2. Both publish the filled source, wait for GPU completion and two RAFs, and verify a nonuniform visible source. Content-only rendering with `outgoingBackground` set must then preserve those pixels with zero submissions.
-3. Real scene/blur sources are changed to a distinctly different incoming HDR image. The candidate prepares its actual stage-display and glass passes offscreen without publishing. Its prepared linear pixels must change, while the outgoing Canvas must stay exact after a fence and two RAFs.
-4. A separate masked-output warmup exercises the final RenderPipeline with zero-area Canvas scissor. Its preservation assertion is independent from the no-publication case: a failure must be reported rather than assuming that both approaches preserve displayed pixels.
-5. Incoming content is published normally and compared exactly against the reference. It must visibly differ from the outgoing source. A final transparent clear must again zero all real pixel channels.
+2. Both publish the filled source. After GPU completion and two RAFs, Playwright captures the actual displayed canvases. Each screenshot must have a spatial RGB channel range greater than 20; a constant colored image does not satisfy this control. No later warm phase is released against an empty baseline.
+3. A second fence/two-RAF checkpoint performs no rendering and must preserve each source screenshot exactly. Content-only rendering with `outgoingBackground` set follows at its own checkpoint, again with exact retained pixels and zero submissions.
+4. Real scene/blur sources are changed to a distinctly different incoming HDR image. The candidate prepares its actual stage-display and glass passes offscreen without publishing. Its prepared linear pixels must change. After a fence/two RAFs, both displayed outgoing canvases must still match their own baseline exactly.
+5. A separate masked-output warmup exercises the final RenderPipeline with zero-area Canvas scissor. Its exact screenshot error and `preserved` result are recorded as a **diagnostic candidate**, with `acceptedRetentionPath: false`. It is not part of the advertised no-publication retention contract and may fail independently. The untouched reference must remain exact. A passing overall proof must not be described as establishing masked-publish retention unless this separate result also has error zero.
+6. Incoming content is published normally, then captured at another fence/two-RAF checkpoint and compared exactly against the reference. Both must visibly differ from the outgoing source. A final transparent clear must again zero all real linear/immediate Canvas channels and match the initial clear's compositor screenshots.
+
+The query `?lifecycle-checkpoints=1` enables the fixture-only handshake. Each phase exposes a monotonically increasing ID, name and dimensions. One ID-specific release advances it; stale or duplicate releases cannot unlock a later phase. Unmount rejects the pending wait. The getter/release functions perform no rendering or pixel copy. The test records all sixteen phase observations and 32 raw PNGs across the two sizes before applying the retained-pixel assertions; a failed source positive control is saved immediately and stops before warmup. PNG decoding supports Chromium's non-interlaced 8-bit RGB/RGBA output and all five scanline filters; its channel/range comparisons run entirely in Node. This avoids touching the WebGPU canvas while measuring displayed retention.
 
 The allocation diagnostic reads only Map membership for `_frameBufferTargets` in installed Three r186. `Renderer.js:463` constructs a `Map`; its getter uses `.get` at line 1571, inserts at line 1601 and deletes on target disposal at line 1595. The proof validates `Map` and a callable `has`, then invokes the builtin `Map.prototype.has` with that map. It never calls the allocating `_getFrameBufferTarget()` method, obtains a private target, changes the map, or disposes an internal target directly. Missing/unknown diagnostic shape throws instead of reporting success. The reference is a positive control: its ordinary Canvas output must create an implicit entry. The candidate must have none after clear, scene/panel publication, readback, offscreen/masked warmup and resize. Public CanvasTarget disposal must remove the reference entry. This proves only the isolated sequence; production catalogue preparation still needs the ownership treatment in the integration sketch.
 
@@ -68,7 +71,7 @@ After a coordinated package/demo build, the isolated command is:
 npx.cmd --no-install playwright test --config playwright.background-layer-output.config.ts
 ```
 
-The config owns port 4205 and writes `.artifacts/background-layer-output`. The test saves the complete row JSON before asserting pixel/count results, plus both Frosted PNGs and their channel comparison.
+The config owns port 4205 and writes `.artifacts/background-layer-output`. The test saves the complete row JSON before asserting pixel/count results, the incremental `lifecycle-dom-checkpoints.json` and raw phase PNGs, plus both Frosted PNGs and their channel comparison. Immediate buffer values and compositor observations are named separately in protocol v4.
 
 Preparation checks on 2026-11-01: `npm run check --workspace @spatial-elements/demo-sveltekit` completed with zero errors and zero warnings; `playwright test --config playwright.background-layer-output.config.ts --list` loaded exactly one test.
 
@@ -91,7 +94,13 @@ The corrected readback reports actual linear alpha extrema of 0.998046875 to 1.1
 
 Protocol v3's first run (runner 22079, build 27554 / 60deaac) remains under `.artifacts/background-layer-output-v3-27554-60deaac`. It failed closed with `Three r186 implicit-target presence diagnostic unavailable`: the fixture incorrectly required a WeakMap, whereas the installed renderer owns a Map. No lifecycle result was produced, so this is neither an allocation failure nor a passing retention proof. Source now checks the actual Map shape; future errors preserve their stack in the result JSON, and the test evaluates the captured terminal state immediately instead of retrying an already terminal error as though it could become ready.
 
-The corrected v3 lifecycle and allocation assertions remain pending. Exact linear, Canvas and Frosted DOM comparison limits remain zero.
+The corrected Map diagnostic ran on build 28778 / eff4f75; raw evidence is under `.artifacts/background-layer-output-v3-28778-eff4f75`. All four transparent clears matched exactly, produced genuinely zero linear/Canvas channels and submitted 2 / 2. All fourteen presence observations found no candidate implicit target; the reference created its entry, and public disposal removed it. The eighteen original matrix rows still had exact linear/Canvas agreement and no GPU errors.
+
+The retention proof nevertheless failed its positive control: after the first ordinary source publication, a GPU fence and two RAFs, `sourceCanvasRgbRange` was zero for both sizes. No warm draw had occurred yet. Later held-pixel differences of zero therefore compare empty Canvas2D observations and are not retention evidence. The prepared offscreen linear image did change (maximum difference 3.3828125 / 3.388671875), and immediate incoming publication again matched exactly, but these facts cannot repair the missing valid displayed baseline. This failed run remains preserved. Actual compositor screenshots at explicit before/after checkpoints, including a no-op paint control, are needed; no tolerance should be widened to bypass the positive control.
+
+Exact linear, Canvas and Frosted DOM comparison limits remain zero. No production integration follows from these partial lifecycle observations.
+
+Protocol v4 source checks on 2026-11-01: four CPU cases pass for the PNG decoder and phase ownership; the demo reports zero Svelte errors/warnings; the isolated strict TypeScript check of the E2E, shared PNG helper and checkpoint API passes; Playwright listing loads one case. The build and actual checkpoint screenshot execution are still pending. These checks do not validate displayed retention.
 
 ## Preliminary integration decision
 
