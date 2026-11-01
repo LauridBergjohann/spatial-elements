@@ -1,12 +1,12 @@
 # Catalog warm-output context: compatibility review
 
-Initial read-only findings, 2026-11-01; the optional implementation checkpoint is recorded below. There is no active production output change or performance result. References below describe the installed `three@0.186.1` (`node_modules/three/package.json:3`); its `./webgpu` export is `build/three.webgpu.js` (line 18). Recheck these internals when the dependency changes.
+Initial read-only findings, 2026-11-01; the optional implementation and subsequent isolated GPU checkpoint are recorded below. The three-mode proof passes on demo `13943` / borrowed runtime `6f2c7eb` / proof `be63a54`, run `88391`. This is not full Stage integration or a performance result. References below describe the installed `three@0.186.1` (`node_modules/three/package.json:3`); its `./webgpu` export is `build/three.webgpu.js` (line 18). Recheck these internals when the dependency changes.
 
 ## Current output and readiness contract
 
 `StageExperience.scheduleStagedPreparation()` calls the catalog preparation through the existing serialized preparation gate. In `packages/core/src/catalog/CatalogSpatialElementLayer.ts`, `prepareStagedNavigation()` has two explicit `setRenderTarget(null)` calls (lines 1081 and 1100). The first warms rear/front/fade passes; the second warms the focused outline's Canvas variant. Handoff models are then rendered in the restored outer destination. Glass, geometry fade, outline, depth blur and ground helpers otherwise return to their borrowed destination.
 
-An explicit scratch target can therefore keep this call chain's draws and clears away from the Background Canvas. It must not be the retained Background layer itself: intermediate preparation writes would replace owned color/depth pixels even if no final output was published. Offscreen captures still need real pixels; a zero-area scissor is not a substitute for preparing those captures.
+An explicit scratch target can therefore keep this call chain's draws and clears away from the Background Canvas. Uncontrolled borrowing of the retained Background target is forbidden: intermediate preparation writes replace its color/depth pixels even if no final output is published. The later controlled owner capability below explicitly invalidates those pixels, forbids publication and requires a complete rebuild; it is a distinct contract, not an exception for ordinary arbitrary borrowing. Offscreen captures still need real pixels; a zero-area scissor is not a substitute for preparing those captures.
 
 However, productive catalog output still uses separate Canvas bands: `StageRenderPipeline.renderCarouselRear()` (line 291) selects the rear Canvas, and `renderForegroundLayer()` (line 885) selects the foreground Canvas for front actors and handoff. Replacing the two warmup destinations alone would warm different persistent render-object owners:
 
@@ -57,7 +57,7 @@ Finally cover resize/DPR, target replacement, freeze/cancel while the fence is p
 
 Catalog preparation, readiness queries and diagnostics can receive the same optional context. Only its outer scratch destination selects Canvas-semantic fade/outline/ground-resolve owners; nested captures retain their ordinary owners. Target viewport/scissor and renderer/scene state are restored synchronously before the fence. Readiness includes the unique context generation/profile and requires a current owner after the fence; disposal, resize and stale profiles cannot publish readiness. Ground pixel-cache keys remain independent of the outer output profile, so a subsequent normal draw can reuse the same valid pixels.
 
-CPU checks establish these ownership, restoration and invalidation rules, not shader equivalence or zero GPU creation on the first productive frame. The real GPU compatibility proof remains a separate gate. The scratch target is full drawing-buffer size: this is acceptable for the isolated proof, but it must not become an additional permanent allocation beside the output bands. Production integration still needs a bounded scratch lifetime with separately justified post-release readiness, or an empirically proven smaller target. Neither exists here; `dispose()` explicitly invalidates this context's readiness. No memory or speed improvement is claimed.
+CPU checks establish these ownership, restoration and invalidation rules, not shader equivalence or zero GPU creation on the first productive frame. The separate GPU result is recorded below. The independent scratch target is full drawing-buffer size: this is acceptable for the isolated proof, but it must not become an additional permanent allocation beside the output bands. Its `dispose()` explicitly invalidates readiness; no post-release-readiness shortcut or smaller-target equivalence is implemented. The later borrowed capability avoids a second scratch target by sharing the explicit owner's storage under a stricter contract. Full Stage allocation and performance still require integration evidence.
 
 ## Optional borrowed-storage checkpoint
 
@@ -67,4 +67,33 @@ The context delegates its synchronous preparation scope to `handle.borrow()`. Th
 
 Readiness requires both the lease's target identity/generation/current predicate and the context's original renderer/Canvas profile. The checks also run after the existing GPU fence. Resize, fallback, owner disposal, context disposal, changed profiles and source freeze cannot publish stale readiness or submit late warm draws. A fresh output composition does not change the lease generation. Context disposal removes its listeners and invalidates its readiness; it never resizes or disposes borrowed storage.
 
-The new 18 CPU cases use the real output owner and real catalog preparation/fence code. Together with the existing context, preparation and owner suites, 101 tests pass; Core `tsc --noEmit` also passes. This establishes the ownership and memory boundary only. Reusing the output allocation avoids an extra scratch allocation in this optional path, but preserving retained Canvas pixels, first-focus/moving GPU allocations and integration with the complete Stage still require the separate real-GPU proof. No Stage integration, output change or performance result is implied.
+The new 18 CPU cases use the real output owner and real catalog preparation/fence code. Together with the existing context, preparation and owner suites, 101 tests pass; Core `tsc --noEmit` also passes. They establish the ownership boundary; the following GPU run separately tests actual pixels and first-use resources. Reusing the output allocation avoids an extra scratch target in this optional factory, not a demonstrated reduction of the complete Stage's live GPU memory.
+
+## Isolated GPU checkpoint: borrowed runtime 6f2c7eb
+
+Demo `13943`, proof `be63a54`, run `88391` completed **4/4, exit 0**. See the
+[full result and boundaries](catalog-warm-output-proof.md#borrowed-owner-and-displayed-scenes-verified-build-13943)
+and [preserved artifacts](../../../.artifacts/catalog-borrowed-scene-13943-be63a54).
+Legacy, independent scratch and borrowed modes each cover List plus frosted and
+glass Carousel at 960 × 640, DPR 1.
+
+- All 36 measured first Focus/Moving windows, before and after the real High plus
+  Low-fade preparation intervention, have zero GPU creations. Warmup allocations
+  are recorded separately; they are not claimed absent.
+- Scratch and borrowed each preserve all twelve Background checkpoints exactly,
+  with positive source range 192 and no implicit Background allocation. Legacy
+  creates its existing implicit output and records Background changes; retention
+  is not certified for that control.
+- All three borrowed rows identify the same actual output-owner target and
+  refuse publication of scratch contents. Synchronous restore, fence readiness,
+  stale-fence rejection and permanent resize/resize-back invalidation pass.
+- All 24 full displayed-scene comparisons of scratch/borrowed against legacy
+  have zero channel error. Movement witnesses are positive in every mode
+  (List 184; both Carousels 182), so equality is not a stationary/empty-scene pass.
+- GPU-validation and page-error arrays are empty for all modes.
+
+The proof still uses a bounded independent High intervention, not the complete
+Stage refinement graph. It does not establish internal depth-image equality,
+other DPRs, a full resize/reprepare pixel matrix, arbitrary custom shaders,
+production cancellation behavior or frame-time improvement. Experimental Stage
+wiring and its own read-only diagnostics remain a separate integration gate.
