@@ -206,7 +206,8 @@ export class StageExperience {
 	/** Use only already submitted source resources during the pre-route movement. */
 	beginStagedDetailMotion(source: CatalogGeometryEndpoint, fit: LayoutRect, targetOptions?: StagedDockTargetOptions) {
 		if (!this.catalogLayer || this.spatialCapture || this.catalogHandoff) return false;
-		if (!this.catalogLayer.isStagedDetailReady(source.spatialElementId, source.occurrence, this.renderer)) return false;
+		if (this.pipeline.backgroundOutputHeld || !this.catalogLayer.isStagedDetailReady(source.spatialElementId, source.occurrence,
+			this.renderer, this.pipeline.ensureCatalogWarmOutputContext())) return false;
 		const target = this.catalogLayer.getStagedDetailTarget(source.spatialElementId, source.occurrence, fit,
 			{ width: window.innerWidth, height: window.innerHeight }, targetOptions, this.renderer.coordinateSystem);
 		if (!target || !this.catalogLayer.capture(source.spatialElementId, source.occurrence)) return false;
@@ -713,6 +714,7 @@ export class StageExperience {
 			this.renderer.dispose();
 			return;
 		}
+		this.pipeline.initializeBackgroundOutput();
 
 		this.backgroundCanvas.className = 'stage-webgpu-background';
 		this.container.appendChild(this.backgroundCanvas);
@@ -1265,13 +1267,14 @@ export class StageExperience {
 
 	private scheduleStagedPreparation() {
 		if (this.disposed || this.stagedPreparationIdle || this.catalogHandoff || this.scrollActive ||
-			this.catalogPresentation.active || !this.catalogLayer?.needsStagedPreparation(this.renderer)) return;
+			this.catalogPresentation.active || this.pipeline.backgroundOutputHeld ||
+			!this.catalogLayer?.needsStagedPreparation(this.renderer, this.pipeline.ensureCatalogWarmOutputContext())) return;
 		const prepare = () => {
 			this.stagedPreparationIdle = 0;
-			if (this.disposed || this.catalogHandoff || this.scrollActive || this.catalogPresentation.active) return;
+			if (this.disposed || this.catalogHandoff || this.scrollActive || this.catalogPresentation.active || this.pipeline.backgroundOutputHeld) return;
 			void this.preparationGate.run(() => {
-				if (this.disposed || this.catalogHandoff || this.scrollActive || this.catalogPresentation.active) return;
-				return this.catalogLayer?.prepareStagedNavigation(this.renderer);
+				if (this.disposed || this.catalogHandoff || this.scrollActive || this.catalogPresentation.active || this.pipeline.backgroundOutputHeld) return;
+				return this.catalogLayer?.prepareStagedNavigation(this.renderer, this.pipeline.ensureCatalogWarmOutputContext());
 			}, this.stagedPreparationAbort.signal).catch(() => {
 				// Early navigation remains unavailable; ordinary routing still works.
 			}).finally(() => {
@@ -2141,7 +2144,7 @@ export class StageExperience {
 
 	/** Returns Low-band and glass-compositor counters without scheduling rendering. */
 	getCarouselStats() {
-		return this.catalogLayer?.getStats(this.renderer) ?? null;
+		return this.catalogLayer?.getStats(this.renderer, this.pipeline.peekCatalogWarmOutputContext()) ?? null;
 	}
 
 	/** Query-gated snapshot: no new frame state, DOM measurements, scheduling or settling. */
@@ -2194,6 +2197,7 @@ export class StageExperience {
 			resizes: this.pipeline.renderTargetSetResizes,
 			warmups: this.pipeline.renderTargetSetWarmups,
 			inactiveScrollWarmups: this.pipeline.deferredScrollWarmups,
+			backgroundOutput: this.pipeline.getBackgroundOutputStats(),
 			activeScale: this.pipeline.activeRenderTargets?.scale ?? 0
 		};
 	}
