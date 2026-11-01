@@ -13,7 +13,12 @@
 			dispose = proof.dispose;
 			if (!active) { dispose(); return; }
 			Object.assign(window, { __backgroundLayerProof: proof.result }); state = 'ready';
-		}, error => { if (active) { Object.assign(window, { __backgroundLayerProof: { error: String(error) } }); state = 'error'; } });
+		}, error => {
+			if (active) {
+				Object.assign(window, { __backgroundLayerProof: { error: String(error), stack: error instanceof Error ? error.stack ?? null : null } });
+				state = 'error';
+			}
+		});
 		return () => { active = false; dispose?.(); };
 	});
 </script>

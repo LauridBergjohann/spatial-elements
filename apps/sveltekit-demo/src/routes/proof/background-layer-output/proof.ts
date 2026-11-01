@@ -177,17 +177,20 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 		const before = state(), beforePort = ports.backgroundCanvasTarget;
 		// Diagnostic only: .has() neither allocates nor returns/mutates a private target.
 		// Never call _getFrameBufferTarget(), whose lookup may allocate the very buffer being tested.
-		const implicitTargets = (renderer as unknown as { _frameBufferTargets?: WeakMap<object, unknown> })._frameBufferTargets;
-		if (!(implicitTargets instanceof WeakMap)) throw new Error('Three r186 implicit-target presence diagnostic unavailable');
+		// Renderer.js:463 constructs a Map (not DataMap's internal WeakMap).
+		const implicitTargets = (renderer as unknown as { _frameBufferTargets?: Map<object, unknown> })._frameBufferTargets;
+		if (!(implicitTargets instanceof Map) || typeof implicitTargets.has !== 'function')
+			throw new Error(`Three r186 implicit-target presence diagnostic unavailable: expected Map.has, received ${Object.prototype.toString.call(implicitTargets)}`);
+		const hasImplicit = (output: THREE.CanvasTarget): boolean => Map.prototype.has.call(implicitTargets, output);
 		const container = document.createElement('div'); container.style.display = 'flex';
 		container.dataset.backgroundLifecycleProof = ''; document.body.appendChild(container);
 		const freshCanvases = [document.createElement('canvas'), document.createElement('canvas')];
 		freshCanvases.forEach(canvas => container.appendChild(canvas));
 		const freshOutputs = freshCanvases.map(canvas => new THREE.CanvasTarget(canvas));
-		const initialImplicit = freshOutputs.map(output => implicitTargets.has(output));
+		const initialImplicit = freshOutputs.map(hasImplicit);
 		const presence: { phase: string; width: number; height: number; dpr: number; reference: boolean; candidate: boolean }[] = [];
 		const observe = (phase: string) => presence.push({ phase, width, height, dpr,
-			reference: implicitTargets.has(freshOutputs[0]), candidate: implicitTargets.has(freshOutputs[1]) });
+			reference: hasImplicit(freshOutputs[0]), candidate: hasImplicit(freshOutputs[1]) });
 		const clearRows: { phase: string; width: number; height: number; dpr: number; referenceSubmits: number; candidateSubmits: number;
 			maxLinearError: number; maxCanvasError: number; maxLinearZeroError: number; maxCanvasZeroError: number; flagsRestored: boolean }[] = [];
 		const heldRows: { width: number; height: number; dpr: number; sourceCanvasError: number; sourceCanvasRgbRange: number; skippedReferenceSubmits: number; skippedCandidateSubmits: number;
@@ -291,8 +294,8 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement])
 			restore(before); ports.backgroundCanvasTarget = beforePort;
 			freshOutputs.forEach(output => output.dispose()); container.remove();
 		}
-		return { initialImplicit, presence, clearRows, heldRows, disposedImplicit: freshOutputs.map(output => implicitTargets.has(output)),
-			implicitDiagnostic: 'Three r186 _frameBufferTargets.has(CanvasTarget) only; no lookup allocation, get, set, delete or private target mutation' };
+		return { initialImplicit, presence, clearRows, heldRows, disposedImplicit: freshOutputs.map(hasImplicit),
+			implicitDiagnostic: 'Three r186 _frameBufferTargets Map; builtin Map.has only; no lookup allocation, get, set, delete or private target mutation' };
 	};
 	const dispose = () => {
 		restoreSubmit?.(); device?.removeEventListener('uncapturederror', onGpuError);

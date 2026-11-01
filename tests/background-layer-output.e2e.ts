@@ -5,8 +5,10 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 	const errors: string[] = []; page.on('pageerror', error => errors.push(String(error)));
 	await page.goto('/proof/background-layer-output');
 	const status = page.locator('[data-background-layer-proof-state]');
-	await expect(status).not.toHaveAttribute('data-background-layer-proof-state', 'preparing', { timeout: 90000 });
+	await expect(status).toHaveAttribute('data-background-layer-proof-state', /^(ready|error)$/, { timeout: 90000 });
+	const terminalState = await status.getAttribute('data-background-layer-proof-state');
 	const proof = await page.evaluate(() => (window as unknown as { __backgroundLayerProof: {
+		error?: string; stack?: string | null;
 		protocol: string;
 		rows: { mode: string; alpha: number; eligible: boolean; width: number; height: number; dpr: number; maxLinearError: number; maxCanvasError: number; minAlpha: number; maxAlpha: number; hdrMax: number;
 			referenceMinAlpha: number; referenceMaxAlpha: number; readbackLayout: { width: number; height: number; pixelValues: number };
@@ -22,7 +24,7 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 		errors: string[]; failureStateRestored: boolean; recoveryCanvasError: number; linearReadback: string; memory: unknown;
 	} }).__backgroundLayerProof);
 	await writeFile(testInfo.outputPath('background-layer-output.json'), JSON.stringify(proof, null, 2));
-	await expect(status).toHaveAttribute('data-background-layer-proof-state', 'ready');
+	expect(terminalState, proof.error ? `${proof.error}\n${proof.stack ?? ''}` : undefined).toBe('ready');
 	expect(proof.protocol).toBe('background-layer-output-v3');
 	expect(errors).toEqual([]); expect(proof.errors).toEqual([]); expect(proof.rows).toHaveLength(18);
 	expect(proof.readbackControls).toHaveLength(2);

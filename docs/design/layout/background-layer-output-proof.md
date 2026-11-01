@@ -1,6 +1,6 @@
 # Isolated Background-layer output proof
 
-Status: **protocol v2 passed** on demo build 39337 / proof revision a94344e. The first failed run remains documented below. Protocol v3 now adds transparent clear, outgoing-pixel retention and a read-only allocation diagnostic; those additions have **not yet been built or browser-tested**. This is still an experiment, not an accepted production rendering change. No production rendering path selects its candidate.
+Status: **protocol v2 passed** on demo build 39337 / proof revision a94344e. Protocol v3 adds transparent clear, outgoing-pixel retention and a read-only allocation diagnostic. Its first execution on build 27554 failed at an incorrectly typed diagnostic availability check before the lifecycle cases; that fixture error is corrected in source and the rerun is pending. This is still an experiment, not an accepted production rendering change. No production rendering path selects its candidate.
 
 The experiment asks whether the existing opaque Background canvas can accumulate its ordered linear draws in one explicit target, then perform the output transform once. It does not combine the Background, Foreground or Carousel Rear layers, change glass sampling sources, cache model pixels, or batch GPU submissions.
 
@@ -22,7 +22,7 @@ Three's WebGPU `copyTextureToBuffer()` returns mapped data with 256-byte row ali
 
 An opaque Background canvas does not imply that its linear intermediate alpha is always one. Real `LiquidGlassPanel` uses additive blending for its sheen; Three's WebGPU additive alpha factors are One/One. Thus linear alpha may exceed one before `RenderOutputNode` clamps it. Protocol v2 retains exact four-channel reference comparison, records both paths' alpha extrema, and requires alpha one only when the panels are hidden. No pixel tolerance is widened.
 
-`Scene.onAfterRender` is not used as a supposed pre-output hook: in this Three version it is invoked **after** `_renderOutput`. No private renderer field is read or mutated to obtain the linear image. Access to the existing WebGPU device is confined to the diagnostic submit counter, error scopes and queue fence. The counter immediately forwards the same command buffers to the original `GPUQueue.submit`; it never delays or combines submissions. Protocol v3's separate allocation diagnostic only reads presence in the version-specific `_frameBufferTargets` WeakMap, as described below.
+`Scene.onAfterRender` is not used as a supposed pre-output hook: in this Three version it is invoked **after** `_renderOutput`. No private renderer field is read or mutated to obtain the linear image. Access to the existing WebGPU device is confined to the diagnostic submit counter, error scopes and queue fence. The counter immediately forwards the same command buffers to the original `GPUQueue.submit`; it never delays or combines submissions. Protocol v3's separate allocation diagnostic only reads presence in the version-specific `_frameBufferTargets` Map, as described below.
 
 Canvas output is copied synchronously into a 2D canvas and compared independently from the linear data. The actual Frosted DOM surfaces receive a third, separate screenshot comparison. All three comparisons initially require exact equality; a failure must be diagnosed rather than silently widening the tolerance.
 
@@ -52,7 +52,7 @@ Fresh reference/candidate CanvasTargets exercise initialization without the matr
 4. A separate masked-output warmup exercises the final RenderPipeline with zero-area Canvas scissor. Its preservation assertion is independent from the no-publication case: a failure must be reported rather than assuming that both approaches preserve displayed pixels.
 5. Incoming content is published normally and compared exactly against the reference. It must visibly differ from the outgoing source. A final transparent clear must again zero all real pixel channels.
 
-The allocation diagnostic reads only `_frameBufferTargets.has(CanvasTarget)` in installed Three r186. It never calls the allocating `_getFrameBufferTarget()` method, obtains a private target, changes the map, or disposes an internal target directly. Missing/unknown diagnostic shape throws instead of reporting success. The reference is a positive control: its ordinary Canvas output must create an implicit entry. The candidate must have none after clear, scene/panel publication, readback, offscreen/masked warmup and resize. Public CanvasTarget disposal must remove the reference entry. This proves only the isolated sequence; production catalogue preparation still needs the ownership treatment in the integration sketch.
+The allocation diagnostic reads only Map membership for `_frameBufferTargets` in installed Three r186. `Renderer.js:463` constructs a `Map`; its getter uses `.get` at line 1571, inserts at line 1601 and deletes on target disposal at line 1595. The proof validates `Map` and a callable `has`, then invokes the builtin `Map.prototype.has` with that map. It never calls the allocating `_getFrameBufferTarget()` method, obtains a private target, changes the map, or disposes an internal target directly. Missing/unknown diagnostic shape throws instead of reporting success. The reference is a positive control: its ordinary Canvas output must create an implicit entry. The candidate must have none after clear, scene/panel publication, readback, offscreen/masked warmup and resize. Public CanvasTarget disposal must remove the reference entry. This proves only the isolated sequence; production catalogue preparation still needs the ownership treatment in the integration sketch.
 
 ## Memory accounting
 
@@ -89,7 +89,9 @@ The v2 decoder's three CPU cases pass, the demo typecheck reports zero errors an
 
 The corrected readback reports actual linear alpha extrema of 0.998046875 to 1.17578125 across visible glass rows, identical in both paths; all hidden-glass pixels retain alpha one. The DPR 1.5 control confirms exactly 17200 padding values are excluded. The two final Frosted screenshots were also visually inspected. No tolerance was widened and no old failed result was discarded or reclassified.
 
-Protocol v3's new lifecycle and allocation assertions remain pending. Exact linear, Canvas and Frosted DOM comparison limits remain zero.
+Protocol v3's first run (runner 22079, build 27554 / 60deaac) remains under `.artifacts/background-layer-output-v3-27554-60deaac`. It failed closed with `Three r186 implicit-target presence diagnostic unavailable`: the fixture incorrectly required a WeakMap, whereas the installed renderer owns a Map. No lifecycle result was produced, so this is neither an allocation failure nor a passing retention proof. Source now checks the actual Map shape; future errors preserve their stack in the result JSON, and the test evaluates the captured terminal state immediately instead of retrying an already terminal error as though it could become ready.
+
+The corrected v3 lifecycle and allocation assertions remain pending. Exact linear, Canvas and Frosted DOM comparison limits remain zero.
 
 ## Preliminary integration decision
 
