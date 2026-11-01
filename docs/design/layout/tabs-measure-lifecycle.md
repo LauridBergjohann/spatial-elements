@@ -35,9 +35,26 @@ its actual callbacks using deterministic scheduling/DOM ports. It covers the
 initial tick after a cleared binding, queued callbacks before/after cleanup,
 detached/reconnected nodes, observer cleanup, the font-before-tick ownership gap,
 and unchanged connected measurement/deduplication. It does not emulate Svelte or
-replace the real normal-motion and reduced-motion Wera rapid-Back cases. Browser
-verification of this lifecycle fix must be recorded separately.
+replace the real normal-motion and reduced-motion Wera rapid-Back cases.
 
 Source checkpoint: all seven focused CPU cases pass. The SvelteKit source check
 reports zero errors and zero warnings. No package build or browser test was run
 for this checkpoint.
+
+## Production browser follow-up
+
+Both private Wera rapid-Back cases now pass on Examples build `82285` against
+framework checkpoint `52c342e`, including tab fix `83ea019` and fullscreen-order
+fix `6e79c9a` (run `89730`, exit 0). Normal and reduced motion both request Back
+at the first product URL commit, retain all eight item records and selected-link
+focus, and complete the additional Back/Forward roundtrips with identical opaque
+entry state, unchanged history length and no page errors. The assertions and
+ordinary focus test were not weakened.
+
+Evidence remains in the private host at
+`.artifacts/layout-regression-82285-83ea019-fast-back`. The preceding two failing
+`039b8e2` traces remain separate. This targeted two-case result is not a repeated
+full private visual suite. The separate fullscreen capture/exit cases also pass
+2/2 on demo build `39337` (run `3553`); their projection and resize evidence is
+recorded in the [capture contract](synchronous-navigation-capture.md), not inferred
+from these private rapid-Back tests.

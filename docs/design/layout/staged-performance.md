@@ -7,14 +7,25 @@ not establish smooth animation or a latency percentile.
 
 ## Current verified boundary
 
+The current source checkpoint `52c342e`, including tabs `83ea019` and fullscreen
+ordering `6e79c9a`, passes **936/936 units in 119 files** (run `46764`) and all
+workspace checks with **0 errors / 0 warnings** (run `97989`). Package build
+`67527`, demo build `39337` and Examples build `82285` each exit successfully.
+The two fullscreen browser cases also pass on demo build `39337` (run `3553`,
+exit 0): retained fallback pose is within 1 CSS pixel before binding/movement,
+and native exit plus resize leaves a usable destination. The final
+tarball-consumer check is still pending; the complete public navigation matrix
+below remains tied to its earlier runtime rather than being claimed again for
+this checkpoint.
+
 Runtime `8873f41`, demo build `10039` (pixel-proof fixture `6a2ed1f`), passes
 **914/914 unit tests in 116 files**, all workspace checks with **0 errors / 0 warnings**,
 and the complete **24/24 public production navigation matrix** (run `27302`, exit 0).
 The [StageDisplay proof](stage-display-clear.md), recorded in `13be2b4`, has 24
 exact linear HalfFloat and final Canvas comparisons with no GPU validation errors.
 Its twelve standard cases use 2 submissions instead of 4; twelve fallback cases
-remain 4 versus 4. These counts isolate one display call. **The actual pacing
-impact of StageDisplay has not yet been measured.**
+remain 4 versus 4. These counts isolate one display call. A subsequent unprofiled
+cohort includes StageDisplay, but does not isolate its effect on navigation pacing.
 
 Evidence: `.artifacts/layout-display-clear-units.log`,
 `.artifacts/layout-display-clear-check.log`,
@@ -22,17 +33,31 @@ Evidence: `.artifacts/layout-display-clear-units.log`,
 `.artifacts/layout-display-clear-resize-demo-build.log`,
 `.artifacts/staged-production-10039-8873f41`, and
 `.artifacts/stage-display-clear-10039-6a2ed1f`.
-Examples `6938b45` also built successfully with framework `8873f41` in build
-`44157`. Private run `6701` completed with **4/6 passed, exit 1**. One failure
-is an ambiguous selected-h3 selector caused by a tooltip. The other is a real
-rapid-Back regression: the Carousel URL retains detail DOM, with
-`Cannot read properties of undefined (reading 'entries')` in
-`CarouselSection.orderedItems`. List-prop/snippet lifetime is under investigation;
-this is not classified as mere focus loss. No successful new private overall
-verification is claimed.
+Examples `6938b45` built with framework `8873f41` in build `44157`; private run
+`6701` retained its **4/6 passed, exit 1** result. The ambiguous tooltip selector
+was corrected in Examples `d557914`. The real stale-data/Carousel-snippet failure
+was traced to Kit's asynchronous `onNavigate` hold and corrected by synchronous
+source capture in `039b8e2`. The same six ordinary carousel/header cases now pass
+**6/6** on Examples build `20223` / framework `039b8e2` (run `16117`).
 
-The latest unprofiled cohort remains the four diagnostic samples on build
-`36109` / `be72259` below. Neither n=1, profiled traces, pixel equivalence nor
+The two additional immediate-Back tests in Examples `be739a1` are separate: on
+that runtime both restore the correct URL, all eight items, focus and history
+length, but fail their strict empty-error assertion on a null tab-measurement
+binding before reaching the subsequent complete roundtrip-state comparisons.
+The failed traces remain in the private host's
+`.artifacts/layout-regression-039b8e2-fast-back`. Follow-up `83ea019` passes seven
+focused lifecycle units. Its two production retests now pass on Examples build
+`82285` / framework checkpoint `52c342e` (run `89730`, exit 0), including all
+subsequent Back/Forward state comparisons and empty page errors. Evidence is in
+the private host's `.artifacts/layout-regression-82285-83ea019-fast-back`.
+Fullscreen ordering correction `6e79c9a` has 28/28 focused units and the two
+separate production browser passes recorded in the [capture contract](synchronous-navigation-capture.md).
+These results are not folded into the older 914-unit or 24-case totals.
+
+The latest unprofiled cohort is the four synthetic diagnostic samples on build
+`10026` / `039b8e2`, recorded below. All twelve start gates pass, but three
+calibrations are unstable and raw approximately 50ms frame gaps remain. Neither
+n=1, profiled traces, pixel equivalence nor
 functional passes satisfy the repeated performance gate. General activation
 (step 14f) remains open and the feature stays opt-in through `?stagedNavigation=1`.
 Historical raw data and failed results remain unchanged.
@@ -710,5 +735,50 @@ warmup from cleanup could redistribute work, not remove it. The already-deferred
 zoom block would need smaller real work units or proven redundant-pass removal.
 Reveal gates remain independent; shifted follow-on work is not relabelled as
 eliminated animation cost. Pixelproof and the public functional matrix pass on the
-new StageDisplay runtime. The private Back regression, pacing measurement, repeated acceptance,
-physical-device checks and general activation remain open.
+new StageDisplay runtime. Subsequent private retests and the next unprofiled
+cohort are recorded separately below; repeated acceptance, physical-device checks
+and general activation remain open.
+
+## StageDisplay and synchronous-capture follow-up: build 10026 / 039b8e2
+
+The unchanged v2 synthetic Hero cohort ran serially and unprofiled at 1440 × 1000,
+DPR 1, Chrome 156.0.8078.79, Windows / Intel Core i7-1065G7. Run `59216` completed
+all four start-latency cases with exit 0. There is one sample per source/temperature
+group, no retry and no discarded sample or calibration. The built runtime includes
+StageDisplay `8873f41` and synchronous ordinary capture `039b8e2`; it does not
+include the later fullscreen or tab-lifetime corrections.
+
+| Case | Motion | Submission | DOM observation | Raw Moving / Reveal | Stable calibration |
+| --- | ---: | ---: | ---: | --- | --- |
+| List cold | 68.6 ms | 82.0 ms | 88.2 ms | fail / fail | no |
+| List warm | 66.4 ms | 82.3 ms | 88.6 ms | pass / pass | no |
+| Carousel cold | 64.6 ms | 77.7 ms | 81.5 ms | fail / pass | no |
+| Carousel warm | 41.6 ms | 55.0 ms | 57.7 ms | fail / fail | yes |
+
+All twelve start gates are below 100ms. Every sample records zero GPU creation
+calls from click through movement and during reveal, with no validation errors.
+All acceptance-eligibility fields remain false: this is not a repeated percentile
+or frame-pacing acceptance run. In particular, warm List's passing raw frame gates
+do not compensate for its unstable blank-document calibration.
+
+Warm Carousel has a stable calibration but retains an internal 49.9ms moving gap
+and 50.0ms reveal gap. Cold Carousel retains an internal 50.0ms moving gap. Cold
+List retains an 83.3ms boundary gap with 39.3ms inside movement, plus internal
+50.1ms and 50.0ms reveal gaps. These failures remain failures under the original
+raw thresholds; no boundary is moved and no sample is relabelled or discarded.
+
+Visible waiting/binding between movement and reveal is approximately 3.10s / 2.47s
+for cold/warm List and 1.91s / 1.33s for cold/warm Carousel. Later recorded
+LongFrame scripts are 55.7ms for cold List and 59.1ms for cold Carousel, including
+14.4ms / 13.3ms forced layout. The other two samples have no recorded post-reveal
+LongFrame; that does not establish an absence of follow-on work. The earlier
+cleanup/zoom audit remains a separate profiled observation on its own revision.
+
+Evidence: [summary](../../../.artifacts/staged-performance-10026-039b8e2-v2-hero1440-synthetic-n1/summary.md),
+[compact data](../../../.artifacts/staged-performance-10026-039b8e2-v2-hero1440-synthetic-n1/compact.json),
+and [complete analyzer output](../../../.artifacts/staged-performance-10026-039b8e2-v2-hero1440-synthetic-n1-analysis.json).
+Original measurements and calibration timestamps remain in all four test
+directories. This cohort is not pooled with trusted Pointer/Enter samples or any
+earlier runtime. It establishes neither a StageDisplay-specific improvement nor
+p95 acceptance; general activation remains blocked pending the required repeated
+measurements and device checks.
