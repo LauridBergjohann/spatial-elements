@@ -1,6 +1,6 @@
 # Isolated Background-layer output proof
 
-Status: **protocol v4 passed** on demo build `91647` / proof revision `b5a522a`, using runtime `960483f` (run `62798`, exit 0). The integer-bound fixture preserves strict full-image equality. The earlier v2 success, v3 observation failure and first v4 clip failure remain documented below. This remains an experiment; production integration depends on the evidence and ownership gates, not additional user permission. No production rendering path selects its candidate.
+Status: **protocol v4 passed** on demo build `91647` / proof revision `b5a522a`, using runtime `960483f` (run `62798`, exit 0). Protocol v5 now substitutes the actual `BackgroundLayerOutput` owner and adds destructive-scratch/lifetime checks; its browser execution is pending. The integer-bound fixture preserves strict full-image equality. The earlier v2 success, v3 observation failure and first v4 clip failure remain documented below. This remains an experiment; production integration depends on the evidence and ownership gates, not additional user permission. No production rendering path selects its candidate.
 
 The experiment asks whether the existing opaque Background canvas can accumulate its ordered linear draws in one explicit target, then perform the output transform once. It does not combine the Background, Foreground or Carousel Rear layers, change glass sampling sources, cache model pixels, or batch GPU submissions.
 
@@ -35,6 +35,8 @@ not production ownership, first-use readiness or a navigation pacing improvement
 The route `/proof/background-layer-output` uses the actual `StageRenderPipeline` and `LiquidGlassPanel` implementations. A nonuniform HDR scene capture and the pipeline's separate blur captures are prepared once per size. Both paths read those same textures. One regular glass panel uses the stage camera; an overlapping minimap glass panel uses its own off-axis camera. Their depth clears and rendering order come from the unchanged `renderBackgroundPanels()` method. Small depth-tested witnesses inside those groups make the depth-clear ordering observable.
 
 The reference calls `renderStageDisplay()` and `renderBackgroundPanels()` on a CanvasTarget. The candidate draws the same linear stage-display quad and the same panel sequence into a separate RGBA16F target with four MSAA samples and depth. A public Three `RenderPipeline` samples that target with `screenUV` and applies the final output transformation. The target is never a glass input, so the experiment introduces no read/write feedback with `sceneCapture` or its blur textures.
+
+From protocol v5 onward, `BackgroundLayerOutput` owns that actual candidate target and output pipeline. The fixture calls its `compose()` with the existing display quad and unchanged panel callback, and calls `clearTransparent()` for content-only clear. It no longer reimplements these candidate operations. Public readback observes `getRenderTargets()[0]`. The independent HDR readback control uses a separate diagnostic target.
 
 The final transformation remains Three's `RenderOutputNode`: unpremultiply, tone mapping, output color conversion, then premultiply. The candidate does not convert intermediate results to eight-bit color or mix already tone-mapped images. Its public renderer state is restored in `finally`, including canvas/targets, viewport/scissor, clear values, automatic-clear flags, tone mapping, exposure, output color space and XR enablement.
 
@@ -85,11 +87,25 @@ The lifecycle pair uses a separate white screenshot surface at integer CSS coord
 
 The allocation diagnostic reads only Map membership for `_frameBufferTargets` in installed Three r186. `Renderer.js:463` constructs a `Map`; its getter uses `.get` at line 1571, inserts at line 1601 and deletes on target disposal at line 1595. The proof validates `Map` and a callable `has`, then invokes the builtin `Map.prototype.has` with that map. It never calls the allocating `_getFrameBufferTarget()` method, obtains a private target, changes the map, or disposes an internal target directly. Missing/unknown diagnostic shape throws instead of reporting success. The reference is a positive control: its ordinary Canvas output must create an implicit entry. The candidate must have none after clear, scene/panel publication, readback, offscreen/masked warmup and resize. Public CanvasTarget disposal must remove the reference entry. This proves only the isolated sequence; production catalogue preparation still needs the ownership treatment in the integration sketch.
 
+## Protocol v5 actual-owner extension — browser execution pending
+
+All eighteen existing linear/Canvas/state/submission comparisons and the v4 screenshot gates remain strict. The first three output configurations use the real explicit owner. The first conservative unsupported configuration selects terminal fallback; subsequent scissor/depth configurations and final Frosted output use the old Canvas path. The same owner is never re-created or switched back to explicit after fallback, even once supported settings return. A mode assertion per row and a final empty-target/terminal-mode assertion make this visible. The deliberate exception and successful complete-frame recovery now run **before** the terminal transition. Owner restoration is observed immediately after `compose()`/`clearTransparent()`, before the fixture's surrounding caller-selection restore can mask an error.
+
+The fresh lifecycle candidate has its own owner from its first transparent clear. At each size it captures a scratch capability and destructively clears that target to a distinct HDR color. A linear readback must demonstrate that the storage actually changed. Nested publication must throw; publication after the borrow must return false and submit zero GPU work. The displayed source must nevertheless remain exactly unchanged. A full offscreen compose then makes the contents valid without publishing; a subsequent allowed publication must again match the source exactly. These add three actual compositor checkpoints per size (`scratch-borrow`, `scratch-rebuilt-offscreen`, `scratch-republished`), bringing the total to 22 observations and 44 PNGs.
+
+Canvas resize must immediately invalidate the old capability, forbid publication until target resize and a complete rebuild, retain the same target object when resized, and keep the old capability stale while a new one becomes current. Final owner disposal must invalidate the last capability and release its target. The reference's implicit buffer and the candidate's absence thereof are still inspected solely with read-only `Map.has` observations.
+
+The known destructive zero-scissor publication remains a **separate Raw-Three diagnostic**: a fixture-owned `RenderPipeline` samples the owner target and publishes under the masked Canvas state. It is never an owner method or a production bypass. Its exact loss remains recorded as an excluded negative candidate; all owner retentions continue to require zero error. No masked-publication shortcut is added to `BackgroundLayerOutput`.
+
+V5 preparation checks pass: strict TypeScript for the proof/E2E/config against the current Core source, one case discovered by Playwright listing, and a clean diff whitespace check. The actual-owner browser proof is still pending; v4's passed fixture implementation is not automatically a pass for this replacement.
+
 ## Memory accounting
 
 The JSON reports the explicit target's physical size and logical attachment budget separately: 8 bytes per pixel for resolved RGBA16F, 32 bytes for four-sample color, and 16 bytes for four-sample Depth32. This is approximately 76.9 MiB at 1440 × 1000 physical pixels, before optional depth resolve and driver overhead; doubling both dimensions multiplies that budget by four.
 
 The proof intentionally retains both paths, so its target is additional memory. It does not claim that the existing internal Canvas framebuffer is reused or released. The shared scene/blur sources, readback targets and other proof resources are outside this stated candidate budget. A production design would have to measure any replacement versus addition explicitly.
+
+For v5 the reported explicit-target budget describes its allocation before terminal fallback, not a live-memory claim at the end of the test. Fallback has already released that owner target. The independent readback control and Raw-Three diagnostic are proof-only resources and remain excluded from the production estimate.
 
 ## Execution and evidence
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { screenUV, texture, uv, vec4 } from 'three/tsl';
 import { StageRenderPipeline, type StageRenderPorts } from '@spatial-elements/core/stage/StageRenderPipeline';
+import { BackgroundLayerOutput, type BackgroundOutputScratch } from '@spatial-elements/core/stage/BackgroundLayerOutput';
 import { LiquidGlassPanel, STAGE_TONE_MAPPING_EXPOSURE } from '@spatial-elements/core/stage/LiquidGlassPanel';
 import { DEFAULT_INTERACTION_THEME } from '@spatial-elements/core/stage/stageConstants';
 import type { StagePanelRuntime } from '@spatial-elements/core/stage/StagePanelRuntime';
@@ -35,10 +36,18 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 		catalogLayer: () => undefined
 	} as unknown as StageRenderPorts;
 	const pipeline = new StageRenderPipeline(ports);
-	const layer = new THREE.RenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4, depthBuffer: true, stencilBuffer: false });
-	layer.texture.colorSpace = THREE.LinearSRGBColorSpace;
-	layer.texture.generateMipmaps = false;
-	const finalOutput = new THREE.RenderPipeline(renderer, texture(layer.texture, screenUV));
+	// Independent readback control; actual candidate output belongs exclusively to the real owner.
+	const controlTarget = new THREE.RenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4, depthBuffer: true, stencilBuffer: false });
+	const owners = new Map<THREE.CanvasTarget, BackgroundLayerOutput>();
+	// Explicitly separate Raw-Three negative diagnostic, never a publication path of the owner.
+	const rawMaskedOutputs = new Map<THREE.CanvasTarget, THREE.RenderPipeline>();
+	const requireOwner = (output: THREE.CanvasTarget) => {
+		const existing = owners.get(output); if (existing) return existing;
+		const owner = BackgroundLayerOutput.create(renderer, output);
+		if (!owner) throw new Error('Supported proof output profile declined');
+		owners.set(output, owner); return owner;
+	};
+	const targetFor = (output: THREE.CanvasTarget) => owners.get(output)?.getRenderTargets()[0] ?? null;
 	const sourceMaterial = new THREE.NodeMaterial();
 	sourceMaterial.fragmentNode = vec4(uv().x.mul(3.5).add(0.02), uv().y.mul(1.6).add(0.03), uv().x.mul(uv().y).add(0.13), 1);
 	sourceMaterial.depthTest = sourceMaterial.depthWrite = sourceMaterial.toneMapped = false;
@@ -54,8 +63,9 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 	const rows: { mode: string; alpha: number; eligible: boolean; width: number; height: number; dpr: number;
 		maxLinearError: number; maxCanvasError: number; minAlpha: number; maxAlpha: number; hdrMax: number;
 		referenceMinAlpha: number; referenceMaxAlpha: number; readbackLayout: ReturnType<typeof unpackHalfFloatRgbaRows>['layout'];
-		referenceSubmits: number; candidateSubmits: number; panelDifference: number; flagsRestored: boolean }[] = [];
+		referenceSubmits: number; candidateSubmits: number; panelDifference: number; flagsRestored: boolean; ownerMode: string }[] = [];
 	const readbackControls: { layout: ReturnType<typeof unpackHalfFloatRgbaRows>['layout']; expected: number[]; maxError: number }[] = [];
+	const ownerRestorations: boolean[] = [];
 	const errors: string[] = [], checks: Promise<void>[] = [];
 	let device: GPUDevice | undefined, submits = 0, restoreSubmit: (() => void) | undefined;
 	let width = 160, height = 120, dpr = 1, mode = 'first';
@@ -82,31 +92,44 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 		return left instanceof THREE.Vector4 ? left.equals(right as THREE.Vector4) : left instanceof THREE.Color ? left.equals(right as THREE.Color) : left === right;
 	});
 	const eligible = () => ['first', 'repeat', 'resize-dpr'].includes(mode);
-	const draw = (candidate: boolean, fail = false, output = outputs[candidate ? 1 : 0], publish = true, maskOutput = false) => {
+	const draw = (candidate: boolean, fail = false, output = outputs[candidate ? 1 : 0], publish = true) => {
 		const before = state();
 		try {
 			ports.backgroundCanvasTarget = output;
 			renderer.setCanvasTarget(ports.backgroundCanvasTarget); renderer.setRenderTarget(null);
-			if (!candidate || !eligible()) {
+			const owner = candidate ? requireOwner(output) : undefined;
+			if (owner && !eligible()) owner.selectFallback();
+			if (!owner || owner.getStats().mode === 'fallback') {
 				pipeline.renderStageDisplay(); pipeline.renderBackgroundPanels();
 				return;
 			}
-			// Separate from sceneCapture and its blur textures: glass must never sample the attachment being written.
-			renderer.setRenderTarget(layer); renderer.setScissorTest(false); renderer.setClearColor(0xffffff, 1);
-			renderer.autoClear = renderer.autoClearColor = renderer.autoClearDepth = renderer.autoClearStencil = true;
-			pipeline.stageDisplayQuad!.render(renderer);
-			renderer.autoClear = false;
-			pipeline.renderBackgroundPanels();
-			if (fail) throw new Error('deliberate-after-panels');
-			if (!publish) return;
-			// The public RenderPipeline applies the same RenderOutputNode as Three's Canvas path.
-			// NoToneMapping/workingColorSpace is scoped internally; no nested output framebuffer is requested.
-			renderer.setRenderTarget(null);
-			if (maskOutput) { renderer.setScissor(0, 0, 0, 0); renderer.setScissorTest(true); }
-			finalOutput.render();
+			const ownerBefore = state();
+			try {
+				if (!owner.compose(pipeline.stageDisplayQuad!, () => {
+					pipeline.renderBackgroundPanels();
+					if (fail) throw new Error('deliberate-after-panels');
+				}, publish)) throw new Error('Explicit owner declined supported composition');
+			} finally {
+				// Observe the real owner's restoration before the fixture restores its caller selection.
+				ownerRestorations.push(sameState(ownerBefore, state()));
+			}
 		} finally { restore(before); }
 	};
-	const linearPixels = async (candidate: boolean, inputTarget = candidate && eligible() ? layer : null, output = outputs[candidate ? 1 : 0]) => {
+	const rawMaskedDraw = (output: THREE.CanvasTarget) => {
+		const before = state();
+		try {
+			draw(true, false, output, false);
+			let raw = rawMaskedOutputs.get(output);
+			if (!raw) {
+				const target = targetFor(output); if (!target) throw new Error('Raw diagnostic has no source target');
+				raw = new THREE.RenderPipeline(renderer, texture(target.texture, screenUV)); rawMaskedOutputs.set(output, raw);
+			}
+			renderer.setCanvasTarget(output); renderer.setRenderTarget(null);
+			renderer.setScissor(0, 0, 0, 0); renderer.setScissorTest(true); renderer.autoClear = false;
+			raw.render();
+		} finally { restore(before); }
+	};
+	const linearPixels = async (candidate: boolean, inputTarget = candidate ? targetFor(outputs[1]) : null, output = outputs[candidate ? 1 : 0]) => {
 		const before = state();
 		try {
 			renderer.setCanvasTarget(output);
@@ -124,10 +147,10 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 	const checkReadbackControl = async () => {
 		const before = state(), expected = [0.25, 0.5, 2, 1];
 		try {
-			renderer.setRenderTarget(layer); renderer.setScissorTest(false);
+			renderer.setRenderTarget(controlTarget); renderer.setScissorTest(false);
 			renderer.setClearColor(new THREE.Color().setRGB(expected[0], expected[1], expected[2]), expected[3]);
 			validate('readback-control/clear', () => renderer.clear());
-			const capture = await linearPixels(true, layer);
+			const capture = await linearPixels(true, controlTarget);
 			let maxError = 0;
 			for (let index = 0; index < capture.pixels.length; index++) maxError = Math.max(maxError, Math.abs(capture.pixels[index] - expected[index % 4]));
 			readbackControls.push({ layout: capture.layout, expected, maxError });
@@ -145,7 +168,9 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 			outputs[index].setScissorTest(false);
 		}
 		const w = Math.floor(width * dpr), h = Math.floor(height * dpr);
-		layer.setSize(w, h); readback.setSize(w, h);
+		controlTarget.setSize(w, h); readback.setSize(w, h);
+		const owner = owners.get(outputs[1]);
+		if (owner?.getStats().mode === 'explicit' && !owner.resize()) throw new Error('Owner resize failed');
 		framebuffer.dispose(); framebuffer = new THREE.FramebufferTexture(w, h); framebuffer.type = THREE.HalfFloatType;
 		const targets = pipeline.activeRenderTargets!; targets.sceneCapture.setSize(w, h);
 		for (const capture of targets.panelBlurCaptures.values()) {
@@ -166,8 +191,9 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 		renderer.setCanvasTarget(outputs[index]); renderer.setRenderTarget(null); renderer.setScissorTest(false);
 		renderer.setViewport(0, 0, width, height); renderer.setClearColor(0xff00ff, 1); renderer.setClearDepth(1);
 		renderer.autoClear = false; renderer.clear(); renderer.render(seedScene, camera);
-		if (index === 1) {
-			renderer.setRenderTarget(layer); renderer.clear(); renderer.render(seedScene, camera); renderer.setRenderTarget(null);
+		if (index === 1 && owners.get(outputs[1])?.getStats().mode === 'explicit') {
+			const scratch = owners.get(outputs[1])!.captureScratch();
+			if (!scratch?.borrow(() => { renderer.clear(); renderer.render(seedScene, camera); })) throw new Error('Candidate poison lease declined');
 		}
 		renderer.setScissor(3, 4, width - 12, height - 10); renderer.setScissorTest(mode === 'scissor');
 		if (mode === 'partial-viewport') renderer.setViewport(5, 6, width - 16, height - 18);
@@ -205,6 +231,11 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 			warmSubmits: number; warmStateRestored: boolean; preparedLinearDifference: number;
 			maskedWarmSubmits: number; maskedWarmStateRestored: boolean;
 			publishedImmediateCanvasError: number; publishedLinearError: number; immediateIncomingCanvasDifference: number }[] = [];
+		const scratchRows: { dpr: number; borrowed: boolean; stateRestored: boolean; nestedPublishRejected: boolean;
+			invalidPublishDeclined: boolean; invalidPublishSubmits: number; destructiveLinearDifference: number;
+			rebuildCompleted: boolean; republished: boolean; republishSubmits: number }[] = [];
+		const resizeGuards: { staleImmediately: boolean; blockedBeforeResize: boolean; resized: boolean; sameTarget: boolean; staleAfterResize: boolean; newHandleCurrent: boolean }[] = [];
+		let lifecycleOwner: BackgroundLayerOutput | undefined, lastScratch: BackgroundOutputScratch | undefined;
 		const paint = async () => { await device!.queue.onSubmittedWorkDone(); await new Promise(requestAnimationFrame); await new Promise(requestAnimationFrame); };
 		const presented = async (phase: string) => {
 			await paint();
@@ -219,8 +250,9 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 				renderer.setScissorTest(false); renderer.autoClear = false; outgoingBackground = held;
 				if (!candidate) { pipeline.renderFrame(true, false); return; }
 				if (held) return;
-				renderer.setRenderTarget(layer); renderer.setClearColor(0, 0); renderer.clear();
-				renderer.setRenderTarget(null); finalOutput.render();
+				const ownerBefore = state();
+				try { if (!requireOwner(freshOutputs[1]).clearTransparent()) throw new Error('Owner declined transparent clear'); }
+				finally { ownerRestorations.push(sameState(ownerBefore, state())); }
 			} finally { outgoingBackground = previousHeld; restore(previous); }
 		};
 		const compareClear = async (phase: string) => {
@@ -230,7 +262,7 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 				validate(`lifecycle/${phase}/${candidate}`, () => clearContentOnly(candidate));
 				const count = submits - start, restored = sameState(previous, state());
 				const pixels = canvasPixels(0, freshCanvases[candidate ? 1 : 0]);
-				const linear = await linearPixels(candidate, candidate ? layer : null, freshOutputs[candidate ? 1 : 0]);
+				const linear = await linearPixels(candidate, candidate ? targetFor(freshOutputs[1]) : null, freshOutputs[candidate ? 1 : 0]);
 				results.push({ count, restored, pixels, linear });
 			}
 			const [reference, candidate] = results;
@@ -249,6 +281,14 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 					freshCanvases[index].style.width = `${width}px`; freshCanvases[index].style.height = `${height}px`;
 					renderer.setScissorTest(false); renderer.setClearDepth(1);
 				}
+				if (lifecycleOwner && lastScratch) {
+					const target = lastScratch.target, staleImmediately = !lastScratch.isCurrent();
+					const blockedBeforeResize = !lifecycleOwner.publish(), resized = lifecycleOwner.resize();
+					resizeGuards.push({ staleImmediately, blockedBeforeResize, resized,
+						sameTarget: lifecycleOwner.getRenderTargets()[0] === target,
+						staleAfterResize: !lastScratch.isCurrent(), newHandleCurrent: lifecycleOwner.captureScratch()?.isCurrent() ?? false });
+				}
+				lifecycleOwner = requireOwner(freshOutputs[1]);
 				observe('before-first-output');
 				// The first candidate output is the transparent content-only clear, not a poisoned Canvas seed.
 				await compareClear('initial-transparent-clear');
@@ -257,7 +297,7 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 				for (const candidate of [false, true]) validate('lifecycle/publish-source', () => draw(candidate, false, freshOutputs[candidate ? 1 : 0]));
 				// Immediate Canvas-buffer data is separate from compositor screenshots after presentation.
 				const sourcePixels = freshCanvases.map(canvas => canvasPixels(0, canvas));
-				const sourceLinear = await linearPixels(true, layer, freshOutputs[1]);
+				const sourceLinear = await linearPixels(true, targetFor(freshOutputs[1]), freshOutputs[1]);
 				observe('published-source-and-readback');
 				await presented('published-source');
 				// Positive no-op control: another fence/paint opportunity with no GPU work.
@@ -265,6 +305,26 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 				const skipped: number[] = [];
 				for (const candidate of [false, true]) { const start = submits; validate('lifecycle/held-content-only', () => clearContentOnly(candidate, true)); skipped.push(submits - start); }
 				await presented('held-content-only');
+				lastScratch = lifecycleOwner.captureScratch();
+				if (!lastScratch) throw new Error('Current owner did not provide a scratch capability');
+				let nestedPublishRejected = false;
+				const beforeBorrow = state();
+				const borrowed = validate('lifecycle/destructive-scratch', () => lastScratch!.borrow(() => {
+					renderer.setClearColor(new THREE.Color().setRGB(3, 0.125, 2), 1); renderer.clear();
+					try { lifecycleOwner!.publish(); } catch (error) { nestedPublishRejected = String(error).includes('already in use'); }
+				}));
+				const borrowRestored = sameState(beforeBorrow, state()), invalidStart = submits;
+				const invalidPublishDeclined = !lifecycleOwner.publish(), invalidPublishSubmits = submits - invalidStart;
+				const destructive = await linearPixels(true, lastScratch.target, freshOutputs[1]);
+				await presented('scratch-borrow');
+				draw(true, false, freshOutputs[1], false);
+				const rebuildCompleted = lifecycleOwner.getStats().contentsValid;
+				await presented('scratch-rebuilt-offscreen');
+				const republishStart = submits, republished = lifecycleOwner.publish();
+				scratchRows.push({ dpr, borrowed, stateRestored: borrowRestored, nestedPublishRejected,
+					invalidPublishDeclined, invalidPublishSubmits, destructiveLinearDifference: difference(sourceLinear.pixels, destructive.pixels),
+					rebuildCompleted, republished, republishSubmits: submits - republishStart });
+				await presented('scratch-republished');
 				// Simulate incoming content preparation using the real separate scene/blur sources.
 				const stateBeforeSource = state();
 				try {
@@ -277,18 +337,18 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 				const warmState = state(), warmStart = submits;
 				validate('lifecycle/offscreen-warm', () => draw(true, false, freshOutputs[1], false));
 				const warmSubmits = submits - warmStart, warmStateRestored = sameState(warmState, state());
-				const prepared = await linearPixels(true, layer, freshOutputs[1]);
+				const prepared = await linearPixels(true, targetFor(freshOutputs[1]), freshOutputs[1]);
 				observe('offscreen-warm-and-readback');
 				await presented('offscreen-warm');
 				const maskedState = state(), maskedStart = submits;
-				validate('lifecycle/masked-output-warm', () => draw(true, false, freshOutputs[1], true, true));
+				validate('lifecycle/raw-masked-output-warm', () => rawMaskedDraw(freshOutputs[1]));
 				const maskedWarmSubmits = submits - maskedStart, maskedWarmStateRestored = sameState(maskedState, state());
 				observe('masked-output-warm');
 				await presented('masked-output-warm');
 				for (const candidate of [false, true]) validate('lifecycle/publish-incoming', () => draw(candidate, false, freshOutputs[candidate ? 1 : 0]));
 				const incomingPixels = freshCanvases.map(canvas => canvasPixels(0, canvas));
 				const incomingReference = await linearPixels(false, null, freshOutputs[0]);
-				const incomingCandidate = await linearPixels(true, layer, freshOutputs[1]);
+				const incomingCandidate = await linearPixels(true, targetFor(freshOutputs[1]), freshOutputs[1]);
 				heldRows.push({ width, height, dpr, sourceImmediateCanvasError: difference(sourcePixels[0], sourcePixels[1]),
 					skippedReferenceSubmits: skipped[0], skippedCandidateSubmits: skipped[1], warmSubmits, warmStateRestored,
 					preparedLinearDifference: difference(sourceLinear.pixels, prepared.pixels),
@@ -303,17 +363,22 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 			}
 		} finally {
 			restore(before); ports.backgroundCanvasTarget = beforePort;
+			rawMaskedOutputs.get(freshOutputs[1])?.dispose(); rawMaskedOutputs.delete(freshOutputs[1]);
+			lifecycleOwner?.dispose();
 			freshOutputs.forEach(output => output.dispose()); container.remove();
 		}
-		return { initialImplicit, presence, clearRows, heldRows, disposedImplicit: freshOutputs.map(hasImplicit), checkpointsEnabled: Boolean(checkpoint),
+		return { initialImplicit, presence, clearRows, heldRows, scratchRows, resizeGuards,
+			ownerDisposed: lifecycleOwner?.getStats().mode === 'disposed', disposedHandleInvalid: lastScratch ? !lastScratch.isCurrent() : false,
+			disposedImplicit: freshOutputs.map(hasImplicit), checkpointsEnabled: Boolean(checkpoint),
 			retentionObservation: 'Playwright compositor screenshots at released checkpoints only; no post-presentation Canvas2D copies',
 			implicitDiagnostic: 'Three r186 _frameBufferTargets Map; builtin Map.has only; no lookup allocation, get, set, delete or private target mutation' };
 	};
 	const dispose = () => {
 		restoreSubmit?.(); device?.removeEventListener('uncapturederror', onGpuError);
-		glass.forEach(panel => panel.dispose()); pipeline.dispose(); finalOutput.dispose(); sourceMaterial.dispose();
+		glass.forEach(panel => panel.dispose()); pipeline.dispose(); rawMaskedOutputs.forEach(output => output.dispose());
+		owners.forEach(owner => owner.dispose()); sourceMaterial.dispose();
 		seedGeometry.dispose(); seedMaterial.dispose(); witnessGeometry.dispose(); witnessMaterials.forEach(material => material.dispose());
-		layer.dispose(); readback.dispose(); framebuffer.dispose(); outputs.forEach(output => output.dispose());
+		controlTarget.dispose(); readback.dispose(); framebuffer.dispose(); outputs.forEach(output => output.dispose());
 		void renderer.dispose(); canvases.forEach(canvas => canvas.remove());
 	};
 	try {
@@ -336,6 +401,7 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 			runtimes.push({ glass: panel, group: panel.group, options: panel.options, surface: 'glass' } as StagePanelRuntime);
 		}
 		minimaps.set(1, { panelIndex: 1, viewportVisible: true, screenCamera: minimapCamera } as StageMinimapState);
+		let failureStateRestored = false, recoveryCanvasError = Infinity;
 		for (const next of ['first', 'repeat', 'resize-dpr', 'partial-viewport', 'scissor', 'clear-depth']) {
 			mode = next; width = ['first', 'repeat'].includes(mode) ? 160 : 200; height = ['first', 'repeat'].includes(mode) ? 120 : 144; dpr = ['first', 'repeat'].includes(mode) ? 1 : 1.5;
 			validate(`${mode}/resize-and-source`, resize);
@@ -367,26 +433,34 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 					maxLinearError: difference(reference.linear.pixels, candidate.linear.pixels), maxCanvasError: difference(reference.pixels, candidate.pixels),
 					referenceMinAlpha, referenceMaxAlpha, readbackLayout: candidate.linear.layout,
 					minAlpha, maxAlpha, hdrMax, referenceSubmits: reference.count, candidateSubmits: candidate.count,
-					flagsRestored: reference.restored && candidate.restored, panelDifference: baseline ? difference(baseline, candidate.pixels) : 0 });
+					flagsRestored: reference.restored && candidate.restored, panelDifference: baseline ? difference(baseline, candidate.pixels) : 0,
+					ownerMode: requireOwner(outputs[1]).getStats().mode });
 				baseline ??= candidate.pixels;
+			}
+			if (next === 'resize-dpr') {
+				// Exercise real-owner failure/recovery before its terminal fallback transition.
+				prepareOutput(1); const failedState = state(); let injectedFailure = false;
+				try { validate('deliberate-failure', () => draw(true, true)); } catch (error) { injectedFailure = String(error).includes('deliberate-after-panels'); }
+				failureStateRestored = injectedFailure && sameState(failedState, state()) && !requireOwner(outputs[1]).publish();
+				for (const candidate of [false, true]) { prepareOutput(candidate ? 1 : 0); validate('owner-recovered', () => draw(candidate)); }
+				recoveryCanvasError = difference(canvasPixels(0), canvasPixels(1));
 			}
 		}
 		const lifecycle = await runLifecycleProof();
 		mode = 'repeat'; width = 200; height = 144; dpr = 1.5; validate('final/resize', resize);
 		glass.forEach(panel => panel.setVisibilityAlpha(1));
-		prepareOutput(1); const failedState = state(); let injectedFailure = false;
-		try { validate('deliberate-failure', () => draw(true, true)); } catch (error) { injectedFailure = String(error).includes('deliberate-after-panels'); }
-		const failureStateRestored = injectedFailure && sameState(failedState, state());
 		// Keep the final real canvases alive for the separate actual Panel.svelte/Frosted DOM comparison.
+		// Restoring a supported profile must NOT reactivate the owner after terminal fallback.
 		for (const candidate of [false, true]) { prepareOutput(candidate ? 1 : 0); validate('recovered-final', () => draw(candidate)); }
-		const recoveryCanvasError = difference(canvasPixels(0), canvasPixels(1));
+		const finalCanvasError = difference(canvasPixels(0), canvasPixels(1));
+		const finalOwner = requireOwner(outputs[1]), fallbackStayedTerminal = finalOwner.getStats().mode === 'fallback' && finalOwner.getRenderTargets().length === 0;
 		await device.queue.onSubmittedWorkDone(); await Promise.all(checks);
-		const pixels = layer.width * layer.height;
-		const result = { protocol: 'background-layer-output-v4', rows, readbackControls, lifecycle, errors, failureStateRestored, recoveryCanvasError,
+		const dimensions = finalOwner.getStats(), pixels = dimensions.width * dimensions.height;
+		const result = { protocol: 'background-layer-output-v5-owner', rows, readbackControls, ownerRestorations, lifecycle, errors, failureStateRestored, recoveryCanvasError, finalCanvasError, fallbackStayedTerminal,
 			linearReadback: 'public copyFramebufferToTexture -> copyTextureToTexture -> RGBA/HalfFloat readRenderTargetPixelsAsync',
-			memory: { width: layer.width, height: layer.height, samples: layer.samples, resolvedColorBytes: pixels * 8,
+			memory: { width: dimensions.width, height: dimensions.height, samples: dimensions.samples, resolvedColorBytes: pixels * 8,
 				multisampledColorBytes: pixels * 8 * 4, multisampledDepth32Bytes: pixels * 4 * 4,
-				excludes: 'Optional depth resolve, original Three Canvas intermediates, source/blur/readback targets and driver overhead. This proof intentionally retains both paths.' },
+				excludes: 'Logical explicit allocation before terminal fallback, not live memory. Excludes optional depth resolve, Three Canvas intermediates, source/blur/control/readback targets and driver overhead.' },
 			limitations: ['Filled Background and empty transparent clear only; no Foreground/Rear or arbitrary transparent-layer claim.', 'Partial viewport/scissor/nonstandard clear depth use the unchanged Canvas fallback.',
 				'Frosted is actual DOM, not a GPU material; tested separately with the real Panel component.', 'Submission counts are not frame-time measurements.'] };
 		return { result, dispose };

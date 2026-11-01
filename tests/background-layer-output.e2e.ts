@@ -58,7 +58,7 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 				? { acceptedRetentionPath: false, preserved: Boolean(source && proofPngDifference(source[1], pixels[1]) === 0) } : null
 		};
 		observations.push(observation);
-		await writeFile(testInfo.outputPath('lifecycle-dom-checkpoints.json'), JSON.stringify({ protocol: 'background-lifecycle-dom-v1', observations }, null, 2));
+		await writeFile(testInfo.outputPath('lifecycle-dom-checkpoints.json'), JSON.stringify({ protocol: 'background-lifecycle-dom-v2-owner', observations }, null, 2));
 		for (let index = 0; index < canvasRects.length; index++) {
 			const rect = canvasRects[index];
 			expect(Object.values(rect).every(Number.isInteger), JSON.stringify(observation)).toBe(true);
@@ -84,21 +84,28 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 		protocol: string;
 		rows: { mode: string; alpha: number; eligible: boolean; width: number; height: number; dpr: number; maxLinearError: number; maxCanvasError: number; minAlpha: number; maxAlpha: number; hdrMax: number;
 			referenceMinAlpha: number; referenceMaxAlpha: number; readbackLayout: { width: number; height: number; pixelValues: number };
-			referenceSubmits: number; candidateSubmits: number; panelDifference: number; flagsRestored: boolean }[];
+			referenceSubmits: number; candidateSubmits: number; panelDifference: number; flagsRestored: boolean; ownerMode: string }[];
 		readbackControls: { maxError: number; layout: { width: number; height: number; pixelValues: number } }[];
+		ownerRestorations: boolean[];
 		lifecycle: { checkpointsEnabled: boolean; initialImplicit: boolean[]; disposedImplicit: boolean[]; presence: { phase: string; reference: boolean; candidate: boolean }[];
+			ownerDisposed: boolean; disposedHandleInvalid: boolean;
+			scratchRows: { dpr: number; borrowed: boolean; stateRestored: boolean; nestedPublishRejected: boolean; invalidPublishDeclined: boolean;
+				invalidPublishSubmits: number; destructiveLinearDifference: number; rebuildCompleted: boolean; republished: boolean; republishSubmits: number }[];
+			resizeGuards: { staleImmediately: boolean; blockedBeforeResize: boolean; resized: boolean; sameTarget: boolean; staleAfterResize: boolean; newHandleCurrent: boolean }[];
 			clearRows: { phase: string; referenceSubmits: number; candidateSubmits: number; maxLinearError: number; maxCanvasError: number;
 				maxLinearZeroError: number; maxCanvasZeroError: number; flagsRestored: boolean }[];
 			heldRows: { sourceImmediateCanvasError: number; skippedReferenceSubmits: number; skippedCandidateSubmits: number;
 				warmSubmits: number; warmStateRestored: boolean; preparedLinearDifference: number;
 				maskedWarmSubmits: number; maskedWarmStateRestored: boolean;
 				publishedImmediateCanvasError: number; publishedLinearError: number; immediateIncomingCanvasDifference: number }[] };
-		errors: string[]; failureStateRestored: boolean; recoveryCanvasError: number; linearReadback: string; memory: unknown;
+		errors: string[]; failureStateRestored: boolean; recoveryCanvasError: number; finalCanvasError: number; fallbackStayedTerminal: boolean; linearReadback: string; memory: unknown;
 	} }).__backgroundLayerProof);
 	await writeFile(testInfo.outputPath('background-layer-output.json'), JSON.stringify(proof, null, 2));
 	expect(terminalState, proof.error ? `${proof.error}\n${proof.stack ?? ''}` : undefined).toBe('ready');
-	expect(proof.protocol).toBe('background-layer-output-v4');
+	expect(proof.protocol).toBe('background-layer-output-v5-owner');
 	expect(errors).toEqual([]); expect(proof.errors).toEqual([]); expect(proof.rows).toHaveLength(18);
+	expect(proof.ownerRestorations.length).toBeGreaterThan(20);
+	expect(proof.ownerRestorations.every(value => value)).toBe(true);
 	expect(proof.readbackControls).toHaveLength(2);
 	for (const control of proof.readbackControls) {
 		expect(control.maxError, JSON.stringify(control)).toBe(0);
@@ -107,6 +114,17 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 	expect(proof.lifecycle.initialImplicit).toEqual([false, false]);
 	expect(proof.lifecycle.checkpointsEnabled).toBe(true);
 	expect(proof.lifecycle.disposedImplicit).toEqual([false, false]);
+	expect(proof.lifecycle.ownerDisposed).toBe(true); expect(proof.lifecycle.disposedHandleInvalid).toBe(true);
+	expect(proof.lifecycle.resizeGuards).toHaveLength(1);
+	for (const row of proof.lifecycle.resizeGuards) expect(row).toEqual({ staleImmediately: true, blockedBeforeResize: true,
+		resized: true, sameTarget: true, staleAfterResize: true, newHandleCurrent: true });
+	expect(proof.lifecycle.scratchRows).toHaveLength(2);
+	for (const row of proof.lifecycle.scratchRows) {
+		expect(row.borrowed).toBe(true); expect(row.stateRestored).toBe(true); expect(row.nestedPublishRejected).toBe(true);
+		expect(row.invalidPublishDeclined).toBe(true); expect(row.invalidPublishSubmits).toBe(0);
+		expect(row.destructiveLinearDifference).toBeGreaterThan(0.1);
+		expect(row.rebuildCompleted).toBe(true); expect(row.republished).toBe(true); expect(row.republishSubmits).toBe(1);
+	}
 	expect(proof.lifecycle.presence.length).toBeGreaterThan(8);
 	for (const sample of proof.lifecycle.presence) expect(sample.candidate, JSON.stringify(sample)).toBe(false);
 	expect(proof.lifecycle.presence.some(sample => sample.reference)).toBe(true);
@@ -126,8 +144,9 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 		expect(row.publishedImmediateCanvasError, JSON.stringify(row)).toBe(0); expect(row.publishedLinearError, JSON.stringify(row)).toBe(0);
 		expect(row.immediateIncomingCanvasDifference).toBeGreaterThan(10);
 	}
-	expect(observations).toHaveLength(16);
-	const expectedPhases = ['initial-transparent-clear', 'published-source', 'held-no-work', 'held-content-only', 'offscreen-warm', 'masked-output-warm', 'published-incoming', 'transparent-clear-after-content'];
+	expect(observations).toHaveLength(22);
+	const expectedPhases = ['initial-transparent-clear', 'published-source', 'held-no-work', 'held-content-only',
+		'scratch-borrow', 'scratch-rebuilt-offscreen', 'scratch-republished', 'offscreen-warm', 'masked-output-warm', 'published-incoming', 'transparent-clear-after-content'];
 	for (const key of sources.keys()) expect(observations.filter(row => `${row.width}x${row.height}@${row.dpr}` === key).map(row => row.phase)).toEqual(expectedPhases);
 	for (const row of observations) {
 		if (row.phase === 'masked-output-warm') {
@@ -137,7 +156,7 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 			continue;
 		}
 		expect(row.referenceCandidateError, JSON.stringify(row)).toBe(0);
-		if (['held-no-work', 'held-content-only', 'offscreen-warm'].includes(row.phase)) {
+		if (['held-no-work', 'held-content-only', 'scratch-borrow', 'scratch-rebuilt-offscreen', 'scratch-republished', 'offscreen-warm'].includes(row.phase)) {
 			expect(row.referenceSourceError, JSON.stringify(row)).toBe(0); expect(row.candidateSourceError, JSON.stringify(row)).toBe(0);
 		}
 		if (row.phase === 'published-incoming') {
@@ -160,8 +179,10 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 		if (row.alpha > 0 && row.mode !== 'clear-depth') expect(row.panelDifference, JSON.stringify(row)).toBeGreaterThan(10);
 		if (row.eligible && row.alpha > 0) expect(row.referenceSubmits - row.candidateSubmits, JSON.stringify(row)).toBe(4);
 		else expect(row.candidateSubmits, JSON.stringify(row)).toBe(row.referenceSubmits);
+		expect(row.ownerMode).toBe(row.eligible ? 'explicit' : 'fallback');
 	}
 	expect(proof.failureStateRestored).toBe(true); expect(proof.recoveryCanvasError).toBe(0);
+	expect(proof.finalCanvasError).toBe(0); expect(proof.fallbackStayedTerminal).toBe(true);
 	const surfaces = page.locator('[data-stage-panel-css-surface]');
 	await expect(surfaces).toHaveCount(2);
 	expect(await surfaces.evaluateAll(nodes => nodes.map(node => getComputedStyle(node, '::before').backdropFilter))).toEqual(['blur(5px)', 'blur(5px)']);
