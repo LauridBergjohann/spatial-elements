@@ -1,6 +1,6 @@
 # Background-layer output integration sketch
 
-Status: **design only; production integration awaits the technical evidence and ownership gates below**. The user has authorized autonomous implementation; these are engineering prerequisites, not a request for additional permission. The isolated proof is documented in [background-layer-output-proof.md](background-layer-output-proof.md). Protocol v2 passed on demo 39337 / proof revision a94344e with exact linear/Canvas/Frosted DOM agreement and 10→6 submissions in eligible visible-glass cases. Failed protocols remain preserved. The v4 screenshot run establishes separate offscreen retention and masked-publication findings, but its cross-canvas screenshot clip defect still needs correction and a fresh run; v2 alone is not production acceptance.
+Status: **design only; production integration awaits the technical evidence and ownership gates below**. The user has authorized autonomous implementation; these are engineering prerequisites, not a request for additional permission. The isolated [protocol v4 proof](background-layer-output-proof.md) passes on demo `91647` / proof `b5a522a` (run `62798`, exit 0): exact linear/Canvas/Frosted DOM agreement, offscreen retention and 10→6 submissions in eligible visible-glass cases. Masked publication demonstrably loses the retained source and is excluded. Failed earlier protocols remain preserved. Catalog warm-output compatibility and production ownership/readiness are still open.
 
 ## Decision and boundary
 

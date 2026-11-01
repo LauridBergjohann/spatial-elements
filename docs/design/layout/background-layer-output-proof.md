@@ -1,8 +1,34 @@
 # Isolated Background-layer output proof
 
-Status: **protocol v2 passed** on demo build 39337 / proof revision a94344e. Protocol v3 exposed an invalid post-presentation Canvas2D observation. Protocol v4's first real screenshot run on build 11873 now distinguishes exact offscreen retention from actual source loss after masked publication, but fails cross-canvas equality because the fractional screenshot clips include one unrelated row. The corrected integer-bound fixture still needs a fresh run. This remains an experiment; production integration depends on the evidence and ownership gates, not additional user permission. No production rendering path selects its candidate.
+Status: **protocol v4 passed** on demo build `91647` / proof revision `b5a522a`, using runtime `960483f` (run `62798`, exit 0). The integer-bound fixture preserves strict full-image equality. The earlier v2 success, v3 observation failure and first v4 clip failure remain documented below. This remains an experiment; production integration depends on the evidence and ownership gates, not additional user permission. No production rendering path selects its candidate.
 
 The experiment asks whether the existing opaque Background canvas can accumulate its ordered linear draws in one explicit target, then perform the output transform once. It does not combine the Background, Foreground or Carousel Rear layers, change glass sampling sources, cache model pixels, or batch GPU submissions.
+
+## Completed v4 checkpoint
+
+Artifacts: `.artifacts/background-layer-output-v4-91647-b5a522a`, including the
+complete JSON, 32 checkpoint PNGs, two Frosted screenshots and the runner log
+beside the directory. The source remains nonuniform (RGB ranges 220 / 225);
+all screenshot bounds and full image dimensions match the declared 160×120 and
+200×144 CSS rectangles exactly. No pixels are cropped or ignored.
+
+- All 18 linear/immediate Canvas matrix pairs have exact error 0; six eligible
+  glass cases use 6 rather than 10 submissions. Fallback counts are unchanged.
+- Both independent readback controls and all four transparent-clear cases pass
+  exactly. Clear submissions remain 2 / 2, with restored renderer state.
+- All 14 accepted source/hold/offscreen/incoming/clear screenshot pairs are
+  exactly equal. No-op, held content-only and offscreen preparation preserve
+  each source exactly across fence and paint. Incoming pixels are visibly different.
+- The two **unaccepted masked-publish diagnostics** still lose the source:
+  candidate error 220 / 225, candidate spatial range 0, reference unchanged.
+  Passing the suite does not approve that path; it records this negative result.
+- The candidate never acquires an implicit Background target in all 14 recorded
+  lifecycle observations. Public disposal removes the reference allocation.
+- Injected-failure restoration, recovery and the actual Frosted DOM comparison
+  pass (maximum screenshot channel error 0); GPU and page errors are empty.
+
+This establishes isolated output compatibility and the offscreen retention path,
+not production ownership, first-use readiness or a navigation pacing improvement.
 
 ## Reference and candidate
 
@@ -125,4 +151,4 @@ The masked-publication result is an actual compositor observation of source loss
 
 The measured ordered-output count supports investigating a Background-only integration after the complete corrected pixel/DOM proof passes: four saved submissions per frame with the two glass passes, without moving glass sampling, model rendering or depth clears. It proves no frame-time benefit; that requires a separate unprofiled comparison.
 
-Memory is the decisive integration constraint. A full-size explicit target must replace the implicit Background framebuffer rather than silently coexist with it. In the installed Three version, a Canvas `clear()` or draw under ACES/sRGB may allocate that implicit framebuffer. Current `renderFrame(contentOnly)`, `freezeBackground()`, `warmRenderTargetSets()` and `warmRevealFrame()` all contain such Background paths; replacing only the ordinary detail-frame output would therefore retain both allocations. There is no public API for borrowing or retiring one private intermediate while keeping its owner unchanged. The safe design must cover the Background layer from its first clear onward, including warmup, outgoing snapshot and content-only clear, or explicitly abandon and dispose the candidate when a conservative fallback is chosen. The existing sceneCapture and blur targets remain separate. Initialization, ownership, warmup readiness, fallback lifetime, resize and total attachment memory require review before production code is authorized.
+Memory is the decisive integration constraint. A full-size explicit target must replace the implicit Background framebuffer rather than silently coexist with it. In the installed Three version, a Canvas `clear()` or draw under ACES/sRGB may allocate that implicit framebuffer. Current `renderFrame(contentOnly)`, `freezeBackground()`, `warmRenderTargetSets()` and `warmRevealFrame()` all contain such Background paths; replacing only the ordinary detail-frame output would therefore retain both allocations. There is no public API for borrowing or retiring one private intermediate while keeping its owner unchanged. The safe design must cover the Background layer from its first clear onward, including warmup, outgoing snapshot and content-only clear, or explicitly abandon and dispose the candidate when a conservative fallback is chosen. The existing sceneCapture and blur targets remain separate. Initialization, ownership, warmup readiness, fallback lifetime, resize and total attachment memory require review before production integration.
