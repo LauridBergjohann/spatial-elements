@@ -37,6 +37,7 @@ async function expectUsableCarousel(page: Page) {
 	await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true);
 	const selected = page.locator('[data-carousel-item="column"]');
 	await expect(selected).toHaveClass(/selected/);
+	await expect(selected).toHaveAttribute('data-catalog-model-ready', '');
 	const link = selected.locator('.spatial-element-target');
 	await expect(link).toBeVisible();
 	expect(await link.evaluate(node => Boolean(node.closest('[inert]')))).toBe(false);

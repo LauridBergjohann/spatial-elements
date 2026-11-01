@@ -54,7 +54,7 @@ Jeder nummerierte Schritt endet mit einem funktionsfähigen, geprüften Stand. F
 **Commit:** `test: establish staged navigation timing and routing contract`
 
 - Bestehende Browser-Instrumentierung um Klick, erste sichtbare Bewegung, Bewegungsende, Datenbereitschaft, Route-Commit, Bindung und Übernahme ergänzen.
-- In einem isolierten Integrationstest nachweisen: frühes Navigationssignal startet die Quelle; das spätere `onNavigate` hält den Commit bis zum Bewegungsende zurück, ohne doppelte Navigation oder Deadlock. Frühe und späte Daten sowie supersedierende Navigation abdecken.
+- In einem isolierten Integrationstest nachweisen: frühes Navigationssignal startet die Quelle; ein öffentlicher Cancel/Preload/Goto-Adapter erlaubt genau einen Route-Commit nach dem Bewegungsende, ohne doppelte Navigation oder Deadlock. Frühe und späte Daten sowie supersedierende Navigation abdecken. Der ursprünglich vorgeschlagene `onNavigate`-Promise-Hold wurde in Schritt 14a wegen veralteter Commits bei Supersession verworfen; maßgeblich ist der geprüfte [Gate-Vertrag](design/layout/staged-navigation-gate.md). Der gewöhnliche Pfad sichert seine Quelle seit `039b8e2` [synchron in `onNavigate`](design/layout/synchronous-navigation-capture.md), ohne diesen Commit zu verzögern oder History zu replayen.
 - Keine privaten SvelteKit-Interna verwenden. Falls die öffentliche Integration das Gate nicht zuverlässig erlaubt, zuerst den Adapterentwurf korrigieren, bevor die Animation gebaut wird.
 - Zeit bis zur tatsächlichen Darstellung über Frame-/Bildprüfungen plausibilisieren; ein gesetztes Datenattribut allein ist kein Beleg für sichtbare Bewegung.
 

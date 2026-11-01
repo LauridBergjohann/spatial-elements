@@ -35,7 +35,9 @@ Chrome-channel production runs were performed serially on Windows. Viewports are
 
 The final public history matrix includes the pointer task-lifetime correction. The controls and private header runs were already green before that correction and are unaffected by its release timing.
 
-Header tests observe every frame of both the bounded-preparation fallback and the real transition. A warm run must contain more than five actual transition frames; it cannot pass merely because the transition was skipped. The 500ms production preparation limit is unchanged. Tests wait for the complete feedback lifetime: a missing transition attribute alone is insufficient when capture has fallen back but destination binding is still running.
+The recorded header runs observed every frame of both the former bounded-preparation fallback and the real transition. A warm run must contain more than five actual transition frames; it cannot pass merely because the transition was skipped. Tests wait for the complete feedback lifetime: a missing transition attribute alone is insufficient while destination binding is still running.
+
+The ordinary capture contract changed in `039b8e2`: source capture now completes synchronously inside `onNavigate`, before the route DOM can commit. It no longer waits for feedback paint or uses the former 500ms preparation timeout. Destination restoration remains asynchronous after Kit's navigation completion. This closes the stale-data race during immediate Back; see [synchronous source capture](synchronous-navigation-capture.md). The follow-up `83ea019` fixes the independent tab-measurement callback lifetime exposed by the new rapid-Back cases; see [tabs measurement lifetime](tabs-measure-lifecycle.md). These changes do not retroactively update the historical results above.
 
 ## Reproduction
 
@@ -51,4 +53,4 @@ In the private host, build against those same local packages and run its `playwr
 
 The private visual migration retains all 60 scenarios and all 25 named screenshot assertions. The initial 48 passing cases, successful targeted corrections and final two-case run provide coverage across successive coordinated checkpoints; this is not a claim that a second complete 60-case suite ran on the final build. The final private build and two cases use runtime `1b1aadd`, including fixed-overlay focus fix `6931b07`. The private repository's `docs/layout-migration.md` records the replaced assumptions, evidence paths and remaining authored-media data needs.
 
-Staged-navigation performance and cancellation gates remain separate. Rapid Back during unfinished destination binding is a separate cancellation case; this ordinary-history matrix waits for binding to complete before going Back.
+Staged-navigation performance and cancellation gates remain separate. The recorded ordinary-history matrix waits for binding to complete before going Back. Additional private Wera regressions now request Back immediately when the product URL commits, in normal and reduced motion; they require correct route data/DOM, focus, empty page errors and preserved Back/Forward entry state. Their production results must be recorded separately after the lifecycle correction, rather than inferred from the earlier matrix.
