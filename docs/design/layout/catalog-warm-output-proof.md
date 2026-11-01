@@ -70,3 +70,24 @@ still pending. The fixture now runs a distinct `warm-mode=legacy` control as wel
 as scratch: both require zero first-use creations. Exact Background retention and
 no implicit allocation remain mandatory for scratch; the legacy Canvas path's
 pixels/allocation are recorded separately and are not certified as offscreen.
+
+## Fog correction verified: build 45725 / 4e99674
+
+Run `22536` completed **2/2 cases, exit 0**, one scratch and one separate legacy
+control, on runtime `4e99674` / fixture `e39ff28`. Artifacts are retained under
+`.artifacts/catalog-warm-output-45725-4e99674`. Both modes cover List, frosted
+Carousel and glass Carousel. All **24 measured Focus/Moving resource windows**
+(before and after High intervention) now contain zero GPU creations. The
+previously failing two Carousel buffers are absent without an extra Low rewarm.
+
+Scratch additionally retains all twelve Background checkpoints exactly with
+source range 192, and never creates an implicit Background buffer. Both modes
+pass readiness, synchronous restoration, stale fence and resize guards, with no
+GPU-validation or page errors. The legacy control expects its existing implicit
+Background allocation and does not certify retained pixels. The earlier failing
+rows remain evidence; neither their counts nor the zero-creation gate changed.
+
+The package build `69098` and full unit run `91566` also pass on this source
+checkpoint (**1052 tests in 126 files**). This establishes the isolated Low-owner
+compatibility boundary. Full Stage integration, linear/depth target-image parity,
+bounded shared-output memory and unprofiled navigation pacing remain separate.
