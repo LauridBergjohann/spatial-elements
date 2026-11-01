@@ -3,6 +3,7 @@ import { texture, uniform } from 'three/tsl';
 import { gaussianBlur } from 'three/addons/tsl/display/GaussianBlurNode.js';
 import { gaussianTargets } from '../stage/renderTargetInventory.js';
 import { clearFullTarget, withRendererState } from '../stage/rendererState.js';
+import type { CatalogWarmOutputContext } from './CatalogWarmOutputContext.js';
 
 export interface BlurRect { left: number; top: number; width: number; height: number }
 
@@ -67,7 +68,7 @@ export class CatalogDepthBlur {
 	}
 	/** No allocation or Gaussian update: only the retained image and its linear opacity. */
 	drawResolved(renderer: THREE.WebGPURenderer, source: THREE.Texture, rect: BlurRect, opacity: number,
-		preserveCanvasScissor = false) {
+		preserveCanvasScissor = false, warmOutput?: CatalogWarmOutputContext) {
 		if (!this.resolvedTexture || !this.resolvedCanvasQuad || !this.resolvedOffscreenQuad) return false;
 		const destination = renderer.getRenderTarget();
 		const viewport = destination ? destination.viewport.clone() : renderer.getViewport(new THREE.Vector4());
@@ -77,7 +78,7 @@ export class CatalogDepthBlur {
 		try {
 			if (destination || !preserveCanvasScissor) renderer.setScissorTest(false);
 			this.setOutputViewport(renderer, destination, viewport, rect);
-			(destination ? this.resolvedOffscreenQuad : this.resolvedCanvasQuad).render(renderer);
+			(destination && !warmOutput?.usesCanvasOwner(destination) ? this.resolvedOffscreenQuad : this.resolvedCanvasQuad).render(renderer);
 		} finally {
 			if (destination) destination.viewport.copy(viewport); else renderer.setViewport(viewport);
 			renderer.setScissorTest(scissorTest);

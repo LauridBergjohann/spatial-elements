@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { CatalogDepthBlur, resolveDepthBlurRect, type BlurRect } from './CatalogDepthBlur.js';
 import { isMesh } from '../stage/stageSceneUtils.js';
+import type { CatalogWarmOutputContext } from './CatalogWarmOutputContext.js';
 
 /** Parallel light from above/right/front, projected onto the shared y=0 receiver. */
 export function carouselShadowProjection() {
@@ -214,12 +215,13 @@ export class CarouselGround {
 		}
 		return Number.isFinite(left) ? { left, top, width: right - left, height: bottom - top } : undefined;
 	}
-	draw(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera, opacity = 1, useCache = false, key = '', preparing = false) {
+	draw(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera, opacity = 1, useCache = false, key = '', preparing = false,
+		warmOutput?: CatalogWarmOutputContext) {
 		for (const entry of this.shadows.values()) {
 			entry.material.opacity = entry.opacity * opacity;
 			if (entry.material.opacity <= 0.001) continue;
 			if (useCache && this.matches(entry, camera, key, entry.cache?.state) &&
-				this.blur.drawResolved(renderer, entry.cache!.target.texture, entry.cache!.state!.rect, entry.material.opacity, preparing)) {
+				this.blur.drawResolved(renderer, entry.cache!.target.texture, entry.cache!.state!.rect, entry.material.opacity, preparing, warmOutput)) {
 				this.cacheDraws++; continue;
 			}
 			const bounds = this.bounds(entry, camera);

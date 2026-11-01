@@ -43,6 +43,7 @@ import { CarouselGlassCompositor } from './CarouselGlassCompositor.js';
 import { CarouselGround } from './CarouselGround.js';
 import { carouselProximity } from './carouselProximity.js';
 import { carouselSupport } from './carouselSupport.js';
+import type { CatalogWarmOutputContext } from './CatalogWarmOutputContext.js';
 
 interface Rect {
 	left: number;
@@ -200,8 +201,8 @@ export class CatalogSpatialElementLayer {
 				lift: actor.lift, deviceYaw: actor.deviceYaw, devicePitch: actor.devicePitch, deviceRoll: actor.deviceRoll,
 				materialReady: this.stagedMaterialReady(actor) })) };
 	}
-	getStats(renderer?: THREE.WebGPURenderer) {
-		const signature = renderer ? this.stagedSignature(renderer) : undefined;
+	getStats(renderer?: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
+		const signature = renderer && (!warmOutput || warmOutput.isCurrent(renderer)) ? this.stagedSignature(renderer, warmOutput) : undefined;
 		const stagedReady = (actor: CatalogActor) => Boolean(!this.stagedReadinessBlocked && signature &&
 			actor.rendered && actor.root.visible && this.desired.has(actor.key) && this.stagedMaterialReady(actor) &&
 			this.stagedPrepared.get(actor) === signature);
@@ -866,7 +867,7 @@ export class CatalogSpatialElementLayer {
 		return animating;
 	}
 
-	draw(renderer: THREE.WebGPURenderer, band: 'rear' | 'front') {
+	draw(renderer: THREE.WebGPURenderer, band: 'rear' | 'front', warmOutput?: CatalogWarmOutputContext) {
 		const width = window.innerWidth,
 			height = window.innerHeight;
 		const all = [...this.actors.values()].filter(
@@ -917,7 +918,7 @@ export class CatalogSpatialElementLayer {
 									actor.blur ?? 0, (camera) => renderer.render(this.scene, camera), rect);
 								if (actor.hover > 0 && actor.renderRect)
 									this.outline.render(renderer, this.carouselCamera, actor.model, actor.renderRect, rect,
-										actor.hover * (actor.materials[0]?.material.opacity ?? 1), this.interactionTheme());
+										actor.hover * (actor.materials[0]?.material.opacity ?? 1), this.interactionTheme(), warmOutput);
 								actor.root.visible = false;
 							}
 						} else {
@@ -939,7 +940,7 @@ export class CatalogSpatialElementLayer {
 					actor.card?.setAttribute('data-catalog-model-ready', '');
 				}
 			}
-		});
+		}, warmOutput);
 		for (const actor of all) actor.root.visible = true;
 		if (band === 'front' && this.handoff) this.renderHandoff(renderer);
 	}
@@ -953,13 +954,13 @@ export class CatalogSpatialElementLayer {
 		return this.glass.hasActivePanels() || (this.exitOpacity > 0 && this.hasCarousel());
 	}
 
-	renderRear(renderer: THREE.WebGPURenderer) {
+	renderRear(renderer: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
 		this.glass.render(renderer, this.carouselUiCamera, () => {
 			// The full per-shadow signature is valid during normal focus/hover frames too;
 			// any changed source/camera pose falls back to live rendering immediately.
 			this.ground.draw(renderer, this.carouselCamera, this.exitOpacity,
-				true, this.stagedSignature(renderer), this.stagedPreparing);
-			this.draw(renderer, 'rear');
+				true, this.stagedSignature(renderer), this.stagedPreparing, warmOutput);
+			this.draw(renderer, 'rear', warmOutput);
 		}, this.exitOpacity === 0);
 	}
 
@@ -1033,12 +1034,12 @@ export class CatalogSpatialElementLayer {
 		return createStagedDetailGeometry(actor.detailBounds, actor.detailFrame, actor.stage.camera ?? {}, viewport, fit, coordinateSystem);
 	}
 
-	private stagedSignature(renderer: THREE.WebGPURenderer) {
+	private stagedSignature(renderer: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
 		const size = renderer.getDrawingBufferSize(new THREE.Vector2());
-		return `${this.stagedWarmRevision}:${innerWidth}:${innerHeight}:${size.x}:${size.y}:${renderer.coordinateSystem}:${this.scene.environment?.uuid ?? ''}`;
+		return `${this.stagedWarmRevision}:${innerWidth}:${innerHeight}:${size.x}:${size.y}:${renderer.coordinateSystem}:${this.scene.environment?.uuid ?? ''}${warmOutput ? `:${warmOutput.profileKey}` : ''}`;
 	}
-	private stagedCandidates(renderer: THREE.WebGPURenderer) {
-		const signature = this.stagedSignature(renderer);
+	private stagedCandidates(renderer: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
+		const signature = this.stagedSignature(renderer, warmOutput);
 		return [...this.actors.values()].filter(actor => actor.rendered && actor.root.visible &&
 			this.stagedMaterialReady(actor) &&
 			this.stagedPrepared.get(actor) !== signature && this.stagedWarmFailed.get(actor) !== signature);
@@ -1049,24 +1050,26 @@ export class CatalogSpatialElementLayer {
 		return actor.materials.every(({ material, transparent, depthWrite }) =>
 			material.transparent === transparent && material.depthWrite === depthWrite);
 	}
-	needsStagedPreparation(renderer: THREE.WebGPURenderer) {
-		return !this.disposed && !this.stagedPreparing && !this.handoff && !this.stagedSourceFrozen &&
-			(this.stagedCandidates(renderer).length > 0 || (this.groundPoseSettled &&
+	needsStagedPreparation(renderer: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
+		return (!warmOutput || warmOutput.isCurrent(renderer)) && !this.disposed && !this.stagedPreparing && !this.handoff && !this.stagedSourceFrozen &&
+			(this.stagedCandidates(renderer, warmOutput).length > 0 || (this.groundPoseSettled &&
 				this.ground.needsCachePreparation(this.carouselCamera, this.stagedSignature(renderer))));
 	}
-	isStagedDetailReady(spatialElementId: string, occurrence: string | undefined, renderer: THREE.WebGPURenderer) {
+	isStagedDetailReady(spatialElementId: string, occurrence: string | undefined, renderer: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
 		const actor = [...this.actors.values()].find(item => item.spatialElementId === spatialElementId &&
 			this.desired.has(item.key) && (occurrence ? item.occurrence === occurrence :
 				!item.occurrence || item.card?.hasAttribute('data-catalog-selected')));
-		return Boolean(!this.stagedReadinessBlocked && actor?.rendered && actor.root.visible && this.stagedMaterialReady(actor) &&
-			this.stagedPrepared.get(actor) === this.stagedSignature(renderer));
+		return Boolean((!warmOutput || warmOutput.isCurrent(renderer)) && !this.stagedReadinessBlocked && actor?.rendered && actor.root.visible && this.stagedMaterialReady(actor) &&
+			this.stagedPrepared.get(actor) === this.stagedSignature(renderer, warmOutput));
 	}
 	/** Idle-only: warm the exact existing Low fade and handoff passes before a click can claim them. */
-	async prepareStagedNavigation(renderer: THREE.WebGPURenderer) {
-		if (!this.needsStagedPreparation(renderer)) return;
-		const actors = this.stagedCandidates(renderer), signature = this.stagedSignature(renderer);
+	async prepareStagedNavigation(renderer: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
+		if (!this.needsStagedPreparation(renderer, warmOutput)) return;
+		const actors = this.stagedCandidates(renderer, warmOutput), signature = this.stagedSignature(renderer, warmOutput);
+		// Ground pixels are independent of the outer composite profile. Preserve their live-draw key.
+		const groundSignature = this.stagedSignature(renderer);
 		const warmRear = actors.some(actor => Boolean(actor.pose)) || (this.groundPoseSettled &&
-			this.ground.needsCachePreparation(this.carouselCamera, signature));
+			this.ground.needsCachePreparation(this.carouselCamera, groundSignature));
 		this.stagedPreparing = true;
 		this.stagedReadinessBlocked = true;
 		const fog = this.scene.fog, environment = this.handoffScene.environment, handoffFog = this.handoffScene.fog;
@@ -1075,10 +1078,10 @@ export class CatalogSpatialElementLayer {
 		const hover = outlines.map(actor => actor.hover);
 		const handoffCamera = this.handoffCamera.clone();
 		try {
-			try { withRendererState(renderer, () => {
-				// Use the real CanvasTarget format. A zero-area scissor prevents this
-				// preparation from painting any source pixels; no hidden DOM canvas is needed.
-				renderer.setRenderTarget(null);
+			try { const draw = () => withRendererState(renderer, () => {
+				// The default keeps the real Canvas output variant. An opt-in scratch
+				// context retains Canvas-semantic owners without drawing to a Canvas.
+				renderer.setRenderTarget(warmOutput?.target ?? null);
 				renderer.setScissor(0, 0, 0, 0); renderer.setScissorTest(true);
 				// Exercise the actual output bands. A glass carousel renders its rear
 				// actors into an RGBA8 backdrop before compositing, and defocused seats
@@ -1089,18 +1092,18 @@ export class CatalogSpatialElementLayer {
 				// outline while idle so that pre-navigation frame cannot compile it.
 				for (const actor of outlines) actor.hover = Math.max(actor.hover, 0.5);
 				if (warmRear) {
-					if (this.groundPoseSettled) this.ground.prepareCaches(renderer, this.carouselCamera, signature);
-					this.renderRear(renderer);
+					if (this.groundPoseSettled) this.ground.prepareCaches(renderer, this.carouselCamera, groundSignature);
+					this.renderRear(renderer, warmOutput);
 					this.ground.prepareWindingVariants(renderer, this.carouselCamera);
 				}
-				this.draw(renderer, 'front');
+				this.draw(renderer, 'front', warmOutput);
 				// The fade pass warms offscreen output. The ordinary focused source
 				// needs the Canvas variant too, without submitting visible pixels.
 				for (const actor of outlines) {
-					renderer.setRenderTarget(null);
+					renderer.setRenderTarget(warmOutput?.target ?? null);
 					renderer.setScissor(0, 0, 0, 0); renderer.setScissorTest(true);
 					this.outline.render(renderer, this.carouselCamera, actor.model, actor.renderRect!, actor.clip!,
-						0.5, this.interactionTheme());
+						0.5, this.interactionTheme(), warmOutput);
 				}
 				this.handoffScene.environment = this.scene.environment;
 				for (const actor of actors) {
@@ -1121,7 +1124,7 @@ export class CatalogSpatialElementLayer {
 						model.matrixAutoUpdate = auto; model.matrix.copy(matrix); model.matrixWorldNeedsUpdate = true;
 					}
 				}
-			}); } finally {
+			}); if (warmOutput) warmOutput.borrow(renderer, draw); else draw(); } finally {
 				// Restore borrowed scene state before yielding to GPU completion; a
 				// normal render or fallback navigation can run while that wait is pending.
 				this.exitOpacity = exitOpacity;
@@ -1135,7 +1138,7 @@ export class CatalogSpatialElementLayer {
 			}
 			const device = (renderer.backend as unknown as { device?: GPUDevice }).device;
 			await device?.queue.onSubmittedWorkDone();
-			if (!this.disposed && !this.handoff && !this.stagedSourceFrozen && signature === this.stagedSignature(renderer)) {
+			if ((!warmOutput || warmOutput.isCurrent(renderer)) && !this.disposed && !this.handoff && !this.stagedSourceFrozen && signature === this.stagedSignature(renderer, warmOutput)) {
 				this.stagedWarmups++;
 				for (const actor of actors) if (this.actors.get(actor.key) === actor) this.stagedPrepared.set(actor, signature);
 			}

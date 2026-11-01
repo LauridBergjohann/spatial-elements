@@ -1,6 +1,6 @@
 # Catalog warm-output context: compatibility review
 
-Read-only findings, 2026-11-01. This is a proof proposal, not an implemented output change or a performance result. References below describe the installed `three@0.186.1` (`node_modules/three/package.json:3`); its `./webgpu` export is `build/three.webgpu.js` (line 18). Recheck these internals when the dependency changes.
+Initial read-only findings, 2026-11-01; the optional implementation checkpoint is recorded below. There is no active production output change or performance result. References below describe the installed `three@0.186.1` (`node_modules/three/package.json:3`); its `./webgpu` export is `build/three.webgpu.js` (line 18). Recheck these internals when the dependency changes.
 
 ## Current output and readiness contract
 
@@ -50,3 +50,11 @@ Use the real catalog owners with one explicit scratch-output context; compare ag
 Then perform the **first real focus/moving draw**, both immediately after warming and after intervening High preparation. Count all five existing GPU-creation categories, not only shader compilation: render pipelines, asynchronous render pipelines, shader modules, textures and buffers. This detects wrong owners, output-profile differences, cache eviction and first-use allocations. Verify that Background Canvas pixels remain unchanged and a read-only `_frameBufferTargets.has(backgroundCanvas)` diagnostic stays false; never allocate that diagnostic target through a lookup.
 
 Finally cover resize/DPR, target replacement, freeze/cancel while the fence is pending, and stale readiness rejection. If compile-only is explored, add controlled mutable-state changes during its actual asynchronous yields and compare the next productive draw. No production integration or speed claim follows until these distinct compatibility and first-use checks pass.
+
+## Optional implementation checkpoint
+
+`catalog/CatalogWarmOutputContext.ts` now provides an internal factory owning a separate scratch target. The production `scheduleStagedPreparation()` call is unchanged. The factory derives attachment type, samples, depth/stencil, working color space, physical dimensions and DPR from the renderer/Canvas; it conservatively accepts only the known WebGPU HalfFloat/4×, normal-depth, ACES/sRGB profile with a full viewport. Unsupported output targets, custom render callbacks, XR, MRT and other profiles decline. No `compileAsync` adapter is implemented.
+
+Catalog preparation, readiness queries and diagnostics can receive the same optional context. Only its outer scratch destination selects Canvas-semantic fade/outline/ground-resolve owners; nested captures retain their ordinary owners. Target viewport/scissor and renderer/scene state are restored synchronously before the fence. Readiness includes the unique context generation/profile and requires a current owner after the fence; disposal, resize and stale profiles cannot publish readiness. Ground pixel-cache keys remain independent of the outer output profile, so a subsequent normal draw can reuse the same valid pixels.
+
+CPU checks establish these ownership, restoration and invalidation rules, not shader equivalence or zero GPU creation on the first productive frame. The real GPU compatibility proof remains a separate gate. The scratch target is full drawing-buffer size: this is acceptable for the isolated proof, but it must not become an additional permanent allocation beside the output bands. Production integration still needs a bounded scratch lifetime with separately justified post-release readiness, or an empirically proven smaller target. Neither exists here; `dispose()` explicitly invalidates this context's readiness. No memory or speed improvement is claimed.

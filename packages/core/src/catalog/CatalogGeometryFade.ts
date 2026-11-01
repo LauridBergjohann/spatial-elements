@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { texture, uniform } from 'three/tsl';
 import { getRefinementSize } from '../stage/SpatialElementRefinement.js';
+import type { CatalogWarmOutputContext } from './CatalogWarmOutputContext.js';
 
 /** Fade the resolved image, never the individual opaque surfaces of a element. */
 export class CatalogGeometryFade {
@@ -13,7 +14,7 @@ export class CatalogGeometryFade {
 	private offscreenQuad?: THREE.QuadMesh;
 	private readonly alpha = uniform(1);
 
-	render(renderer: THREE.WebGPURenderer, opacity: number, draw: () => void) {
+	render(renderer: THREE.WebGPURenderer, opacity: number, draw: () => void, warmOutput?: CatalogWarmOutputContext) {
 		if (opacity >= 1) {
 			draw();
 			return;
@@ -57,7 +58,7 @@ export class CatalogGeometryFade {
 			renderer.setScissor(scissor);
 			renderer.setScissorTest(scissorTest);
 			this.alpha.value = opacity;
-			(destination ? this.offscreenQuad : this.quad)!.render(renderer);
+			(destination && !warmOutput?.usesCanvasOwner(destination) ? this.offscreenQuad : this.quad)!.render(renderer);
 		} finally {
 			renderer.setRenderTarget(destination);
 			renderer.setClearColor(color, clearAlpha);

@@ -4,6 +4,7 @@ import { createOutlineOpacity, createOutlineUniforms, isOutlineMesh } from '../s
 import { isMesh } from '../stage/stageSceneUtils.js';
 import type { StageInteractionTheme } from '../stage/stageTypes.js';
 import type { BlurRect } from './CatalogDepthBlur.js';
+import type { CatalogWarmOutputContext } from './CatalogWarmOutputContext.js';
 
 /** A shared, cropped silhouette target. Idle hover fades reuse its last mask. */
 export class CatalogModelOutline {
@@ -27,7 +28,7 @@ export class CatalogModelOutline {
 
 	render(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera,
 		model: THREE.Object3D, bounds: BlurRect, clip: BlurRect,
-		opacity: number, theme: StageInteractionTheme) {
+		opacity: number, theme: StageInteractionTheme, warmOutput?: CatalogWarmOutputContext) {
 		if (opacity <= 0.001) return;
 		const padding = Math.ceil(theme.outlineThickness * Math.max(1, theme.outlineGlowThickness) + 2);
 		const left = Math.max(0, clip.left, Math.floor(bounds.left - padding));
@@ -109,7 +110,7 @@ export class CatalogModelOutline {
 			if (destination) destination.viewport.copy(output);
 			else renderer.setViewport(output);
 			// Keep Canvas and offscreen color-space variants owned independently.
-			(destination ? this.offscreenQuad : this.quad)!.render(renderer);
+			(destination && !warmOutput?.usesCanvasOwner(destination) ? this.offscreenQuad : this.quad)!.render(renderer);
 			this.passes++;
 		} finally {
 			renderer.setRenderTarget(destination);

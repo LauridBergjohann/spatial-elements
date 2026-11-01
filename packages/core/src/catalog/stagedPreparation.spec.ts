@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { afterEach, expect, test, vi } from 'vitest';
 import { CatalogSpatialElementLayer } from './CatalogSpatialElementLayer.js';
+import { CatalogWarmOutputContext } from './CatalogWarmOutputContext.js';
 
 afterEach(() => vi.unstubAllGlobals());
 function fixture() {
@@ -33,10 +34,17 @@ function fixture() {
 	let finish!: () => void;
 	const complete = new Promise<void>(resolve => { finish = resolve; });
 	const queue = { onSubmittedWorkDone: vi.fn(() => complete) };
+	const canvas = new THREE.CanvasTarget({ width: 1440, height: 900, style: {} } as HTMLCanvasElement);
+	let target: THREE.RenderTarget | null = null;
 	const renderer = {
-		coordinateSystem: THREE.WebGPUCoordinateSystem, backend: { device: { queue } },
+		coordinateSystem: THREE.WebGPUCoordinateSystem, backend: { isWebGPUBackend: true, device: { queue } },
+		depth: true, stencil: false, samples: 4, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1,
+		outputColorSpace: THREE.SRGBColorSpace, xr: { isPresenting: false }, getOutputBufferType: () => THREE.HalfFloatType,
+		getMRT: () => null, getOutputRenderTarget: () => null, getRenderObjectFunction: () => null,
 		getDrawingBufferSize: (target: THREE.Vector2) => target.set(1440, 900),
-		getCanvasTarget: () => ({}), setCanvasTarget: vi.fn(), getRenderTarget: () => null, setRenderTarget: vi.fn(),
+		getPixelRatio: () => canvas.getPixelRatio(),
+		getCanvasTarget: () => canvas, setCanvasTarget: vi.fn(), getRenderTarget: () => target,
+		setRenderTarget: vi.fn((value: THREE.RenderTarget | null) => { target = value; }),
 		getClearColor: (target: THREE.Color) => target.set(0xffffff), getClearAlpha: () => 1, setClearColor: vi.fn(),
 		getViewport: (target: THREE.Vector4) => target.set(0, 0, 1440, 900), setViewport: vi.fn(),
 		getScissor: (target: THREE.Vector4) => target.set(0, 0, 1440, 900), getScissorTest: () => false,
@@ -229,4 +237,81 @@ test('failed preparation remains an ordinary-navigation fallback instead of retr
 	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer)).toBe(false);
 	expect(f.layer.needsStagedPreparation(f.renderer)).toBe(false);
 	expect(f.actor.model.parent).toBe(f.actor.view);
+});
+
+test('optional scratch warm draws never target Canvas and publish only their own current output profile after the fence', async () => {
+	const f = fixture(), context = CatalogWarmOutputContext.create(f.renderer, () => true)!;
+	context.target.viewport.set(2, 3, 100, 90); context.target.scissor.set(4, 5, 30, 20);
+	vi.mocked(f.renderer.render).mockImplementation(() => {
+		expect(f.renderer.getRenderTarget()).toBe(context.target);
+		expect(context.usesCanvasOwner(context.target)).toBe(true);
+		expect(context.target.scissorTest).toBe(true);
+		expect(f.layer.isStagedDetailReady('a', undefined, f.renderer, context)).toBe(false);
+	});
+	const work = f.layer.prepareStagedNavigation(f.renderer, context);
+	expect(f.renderer.render).toHaveBeenCalledTimes(2);
+	expect(f.front).toHaveBeenCalledWith(f.renderer, 'front', context);
+	expect(f.renderer.getRenderTarget()).toBeNull(); expect(f.actor.model.parent).toBe(f.actor.view);
+	expect(context.target.viewport.toArray()).toEqual([2, 3, 100, 90]);
+	expect(context.target.scissor.toArray()).toEqual([4, 5, 30, 20]); expect(context.target.scissorTest).toBe(false);
+	expect(context.usesCanvasOwner(context.target)).toBe(false);
+	f.finish(); await work;
+	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer, context)).toBe(true);
+	expect(f.layer.getStats(f.renderer, context).stagedPreparation.readyActors).toBe(1);
+	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer)).toBe(false);
+	const another = CatalogWarmOutputContext.create(f.renderer, () => true)!;
+	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer, another)).toBe(false);
+	another.dispose(); context.dispose();
+});
+
+test.each(['resize', 'dispose', 'owner', 'freeze', 'profile'] as const)('scratch %s during a pending fence rejects stale readiness without late draws', async cause => {
+	const f = fixture(); let current = true;
+	const context = CatalogWarmOutputContext.create(f.renderer, () => current)!;
+	const work = f.layer.prepareStagedNavigation(f.renderer, context);
+	const draws = vi.mocked(f.renderer.render).mock.calls.length;
+	if (cause === 'resize') { f.renderer.getCanvasTarget().setSize(1200, 900); f.renderer.getCanvasTarget().setSize(1440, 900); }
+	if (cause === 'dispose') context.dispose();
+	if (cause === 'owner') current = false;
+	if (cause === 'freeze') { f.layer.capture('a'); f.layer.freezeStagedSource(); }
+	if (cause === 'profile') f.renderer.toneMappingExposure = 2;
+	const parent = f.actor.model.parent;
+	f.finish(); await work;
+	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer, context)).toBe(false);
+	expect(f.renderer.render).toHaveBeenCalledTimes(draws); expect(f.actor.model.parent).toBe(parent);
+	expect(f.layer.getStats(f.renderer, context).stagedPreparation.preparing).toBe(false);
+	context.dispose();
+});
+
+test('scratch ground-only refresh preserves existing readiness after restore and the live ground pixel key', async () => {
+	const f = fixture(), context = CatalogWarmOutputContext.create(f.renderer, () => true)!;
+	Object.assign(f.actor, { pose: {} }); Object.assign(f.layer, { groundPoseSettled: true });
+	const ground = (f.layer as unknown as { ground: { prepareCaches: ReturnType<typeof vi.fn>; needsCachePreparation: ReturnType<typeof vi.fn> } }).ground;
+	const first = f.layer.prepareStagedNavigation(f.renderer, context); f.finish(); await first;
+	const pixelKey = ground.prepareCaches.mock.calls[0][2]; expect(pixelKey).not.toContain(context.profileKey);
+	let finish!: () => void;
+	f.queue.onSubmittedWorkDone.mockReturnValue(new Promise<void>(resolve => { finish = resolve; }));
+	ground.needsCachePreparation.mockReturnValue(true);
+	ground.prepareCaches.mockImplementation(() => {
+		expect(f.layer.isStagedDetailReady('a', undefined, f.renderer, context)).toBe(false);
+		ground.needsCachePreparation.mockReturnValue(false);
+	});
+	const refresh = f.layer.prepareStagedNavigation(f.renderer, context);
+	expect(ground.prepareCaches.mock.calls.at(-1)![2]).toBe(pixelKey);
+	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer, context)).toBe(true);
+	expect(f.layer.needsStagedPreparation(f.renderer, context)).toBe(false);
+	finish(); await refresh; context.dispose();
+});
+
+test('a scratch submission failure restores source and target state and does not retry the failed profile', async () => {
+	const f = fixture(), context = CatalogWarmOutputContext.create(f.renderer, () => true)!;
+	context.target.viewport.set(2, 3, 100, 90); context.target.scissor.set(4, 5, 30, 20);
+	vi.mocked(f.renderer.render).mockImplementation(() => { throw Error('scratch draw failed'); });
+	await expect(f.layer.prepareStagedNavigation(f.renderer, context)).rejects.toThrow('scratch draw failed');
+	expect(f.renderer.getRenderTarget()).toBeNull(); expect(f.actor.model.parent).toBe(f.actor.view);
+	expect(f.state.exitOpacity).toBe(1); expect(context.usesCanvasOwner(context.target)).toBe(false);
+	expect(context.target.viewport.toArray()).toEqual([2, 3, 100, 90]);
+	expect(context.target.scissor.toArray()).toEqual([4, 5, 30, 20]);
+	expect(f.layer.isStagedDetailReady('a', undefined, f.renderer, context)).toBe(false);
+	expect(f.layer.needsStagedPreparation(f.renderer, context)).toBe(false);
+	expect(f.queue.onSubmittedWorkDone).not.toHaveBeenCalled(); context.dispose();
 });
