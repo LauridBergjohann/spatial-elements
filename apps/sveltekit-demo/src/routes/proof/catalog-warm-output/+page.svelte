@@ -9,7 +9,9 @@
 		const checkpoints = createBackgroundCheckpoints();
 		const api = { getCurrent: checkpoints.getCurrent, release: checkpoints.release };
 		Object.assign(window, { __catalogWarmOutputCheckpoints: api });
-		void runCatalogWarmOutputProof(host, checkpoints.wait).then(result => {
+		void runCatalogWarmOutputProof(host, checkpoints.wait, evidence => {
+			if (active) Object.assign(window, { __catalogWarmOutputEvidence: evidence });
+		}).then(result => {
 			if (active) { Object.assign(window, { __catalogWarmOutputProof: result }); state = 'ready'; }
 		}, error => {
 			if (active) {

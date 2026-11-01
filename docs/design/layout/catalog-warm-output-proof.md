@@ -1,6 +1,6 @@
 # Isolated catalog warm-output compatibility proof
 
-Status: source preparation only, no browser result and no production opt-in. `/proof/catalog-warm-output` exercises the optional `CatalogWarmOutputContext` with actual `CatalogSpatialElementLayer` owners. The normal Stage call sites remain unchanged. Integration depends on correctness, lifetime and resource evidence; no further user permission is implied.
+Status: first browser run failed on a definite preview-size fixture bug; the corrected full matrix is pending. No production opt-in. `/proof/catalog-warm-output` exercises the optional `CatalogWarmOutputContext` with actual `CatalogSpatialElementLayer` owners. The normal Stage call sites remain unchanged. Integration depends on correctness, lifetime and resource evidence; no further user permission is implied.
 
 The initial matrix contains one List actor, a two-actor frosted Carousel and a two-actor glass Carousel at 960 × 640, DPR 1. It uses the existing demo Low and High GLBs through the real `SpatialElementAssetManager`, plus the actual HDR/PMREM preparation through `EnvironmentCache`. Catalogue model scenes, fade/outline/blur/ground helpers and glass compositor are not mocked. The small frosted summary is native CSS; it is not replaced by an invented GPU material.
 
@@ -23,3 +23,9 @@ npx.cmd --no-install playwright test --config playwright.catalog-warm-output.con
 ```
 
 The config owns port 4207. It saves every Background PNG, incremental `background-checkpoints.json`, and final or partial `catalog-warm-output.json`. A negative resource/readiness/pixel result remains a failure; thresholds are not widened to make the experimental context appear compatible.
+
+Initial source preparation checks: the strict TypeScript check of the proof, E2E and config passed against the new Core source via a temporary path-alias config; the Svelte route compiled for client and server without warnings; Playwright listing found exactly one case. These checks alone establish no pixel/resource result.
+
+The first browser run on demo 53394 / runtime 6b3a6b1 / proof c7424ec (runner 82703) failed and remains under `.artifacts/catalog-warm-output-53394-c7424ec`. All four List Background screenshots had retained error 0 and spatial RGB range 192. At the following `frosted/source` checkpoint, the rectangle assertion correctly rejected a 960 × 640 preview instead of 240 × 160. The fixture's preceding resize guards used `CanvasTarget.setSize()` with its default `updateStyle=true`, overwriting the independently declared preview CSS extent. Both guard calls now explicitly use `false`; the actual output resize/invalidation remains unchanged. No image crop, equality threshold or resource assertion is weakened.
+
+The run ended before final GPU/readiness rows were exported, so it does not establish that the List resource/readiness assertions passed. A read-only evidence snapshot is now exposed at each checkpoint and included if the harness exits early, preserving already collected rows and phase-labelled GPU calls. The corrected complete matrix still needs a fresh run.

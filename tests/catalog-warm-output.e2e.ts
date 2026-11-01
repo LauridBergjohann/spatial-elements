@@ -2,11 +2,11 @@ import { expect, test } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { decodeProofPng, proofPngDifference, proofPngRgbRange } from './helpers/proofPng';
 import type { BackgroundCheckpointApi } from '../apps/sveltekit-demo/src/routes/proof/background-layer-output/checkpoints';
-import type { CatalogWarmRow, WarmGpuCall } from '../apps/sveltekit-demo/src/routes/proof/catalog-warm-output/proof';
+import type { CatalogWarmEvidence, CatalogWarmRow, WarmGpuCall } from '../apps/sveltekit-demo/src/routes/proof/catalog-warm-output/proof';
 
 interface WarmProofResult { protocol: string; rows: CatalogWarmRow[]; calls: WarmGpuCall[]; gpuErrors: string[]; limits: string[]; error?: string; stack?: string }
 declare global {
-	interface Window { __catalogWarmOutputProof?: WarmProofResult; __catalogWarmOutputCheckpoints?: BackgroundCheckpointApi }
+	interface Window { __catalogWarmOutputProof?: WarmProofResult; __catalogWarmOutputCheckpoints?: BackgroundCheckpointApi; __catalogWarmOutputEvidence?: CatalogWarmEvidence }
 }
 
 test('real catalog scratch preparation preserves Background and prepares first Focus/Moving owners', async ({ page }, info) => {
@@ -59,7 +59,7 @@ test('real catalog scratch preparation preserves Background and prepares first F
 		}
 	} finally {
 		const proof = await page.evaluate(() => window.__catalogWarmOutputProof ?? {
-			error: 'Fixture did not complete', checkpoint: window.__catalogWarmOutputCheckpoints?.getCurrent()
+			error: 'Fixture did not complete', checkpoint: window.__catalogWarmOutputCheckpoints?.getCurrent(), evidence: window.__catalogWarmOutputEvidence
 		}).catch(error => ({ error: String(error) }));
 		await writeFile(info.outputPath('catalog-warm-output.json'), JSON.stringify({ proof, domRows, pageErrors }, null, 2));
 	}

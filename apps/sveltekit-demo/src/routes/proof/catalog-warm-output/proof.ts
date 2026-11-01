@@ -23,10 +23,11 @@ export interface CatalogWarmRow {
 	staleFenceRejected: boolean; resizeRejected: boolean; resizedBackStillRejected: boolean;
 	stats: ReturnType<CatalogSpatialElementLayer['getStats']>;
 }
+export interface CatalogWarmEvidence { protocol: string; phase: string; rows: CatalogWarmRow[]; calls: WarmGpuCall[]; gpuErrors: string[] }
 
 /** Real catalog owners and GLB loader, isolated from Stage orchestration; no production caller opts in. */
 export async function runCatalogWarmOutputProof(host: HTMLElement,
-	checkpoint: (point: Omit<BackgroundCheckpoint, 'id'>) => Promise<void>) {
+	checkpoint: (point: Omit<BackgroundCheckpoint, 'id'>) => Promise<void>, observe?: (evidence: CatalogWarmEvidence) => void) {
 	const renderer = new THREE.WebGPURenderer({ antialias: true });
 	const assets = new SpatialElementAssetManager(), environments = new EnvironmentCache(renderer, new PreparationGate());
 	const canvases = ['background', 'rear', 'front'].map((name, index) => {
@@ -49,7 +50,11 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 	const restoreMethods: (() => void)[] = [];
 	const onGpuError = (event: GPUUncapturedErrorEvent) => gpuErrors.push(event.error.message);
 	const paint = async () => { await device!.queue.onSubmittedWorkDone(); await new Promise(requestAnimationFrame); await new Promise(requestAnimationFrame); };
-	const presented = async (name: string) => { await paint(); await checkpoint({ phase: name, width: 240, height: 160, dpr: 1 }); };
+	const presented = async (name: string) => {
+		await paint();
+		observe?.({ protocol: 'catalog-warm-output-v1', phase, rows, calls, gpuErrors });
+		await checkpoint({ phase: name, width: 240, height: 160, dpr: 1 });
+	};
 	const select = (index: number) => {
 		renderer.setCanvasTarget(outputs[index]); renderer.setRenderTarget(null);
 		renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight);
@@ -199,9 +204,10 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 				const staleFenceRejected = !layer.isStagedDetailReady('column', undefined, renderer, context);
 				context.dispose(); context = CatalogWarmOutputContext.create(renderer, () => true);
 				if (!context) throw new Error('Resize guard context declined');
-				outputs[0].setSize(innerWidth + 1, innerHeight);
+				// Invalidate the physical output profile without replacing the independent preview CSS extent.
+				outputs[0].setSize(innerWidth + 1, innerHeight, false);
 				const resizeRejected = !context.isCurrent(renderer);
-				outputs[0].setSize(innerWidth, innerHeight);
+				outputs[0].setSize(innerWidth, innerHeight, false);
 				const resizedBackStillRejected = !context.isCurrent(renderer);
 				rows.push({ kind, actors: stats.actors.length, initialReady, readyBeforeFence, readyAfterFence, legacyReadyAfterScratch,
 					stateRestoredSynchronously: restored, scratchStateRestored: targetRestored,
