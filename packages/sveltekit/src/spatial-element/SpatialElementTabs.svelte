@@ -15,7 +15,7 @@
 		activeSectionId?: string;
 		sections: SpatialElementSectionNavigationItem[];
 	} = $props();
-	let anchorElement: HTMLDivElement;
+	let anchorElement: HTMLDivElement | null | undefined;
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
 	const radii = $derived(resolveSpatialThemeRadii(theme));
@@ -29,12 +29,15 @@
 		let disposed = false;
 
 		const measure = () => {
-			measureFrame = 0;
-			const frame = anchorElement.querySelector<HTMLElement>('[data-stage-panel-fallback]');
-			tabList ??= anchorElement.querySelector<HTMLElement>('[data-spatial-element-tab-list]');
+			// bind:this can already be cleared while a queued measurement still owns
+			// this callback. Cleanup cancels pending RAFs, but is not a DOM lease.
+			const anchor = anchorElement;
+			if (disposed || !anchor?.isConnected) return;
+			const frame = anchor.querySelector<HTMLElement>('[data-stage-panel-fallback]');
+			tabList ??= anchor.querySelector<HTMLElement>('[data-spatial-element-tab-list]');
 			const links = tabList?.querySelector<HTMLElement>('[data-spatial-element-tab-links]');
 			if (!frame || !tabList || !links) return;
-			if (getComputedStyle(anchorElement).display === 'none') return;
+			if (getComputedStyle(anchor).display === 'none') return;
 
 			let linksWidth = links.scrollWidth;
 			if (linksWidth < 1) {
@@ -68,14 +71,17 @@
 			if (naturalWidth === measuredNaturalWidth) return;
 			measuredNaturalWidth = naturalWidth;
 
-			anchorElement.style.setProperty('--spatial-element-tabs-natural-width', `${measuredNaturalWidth}px`);
-			anchorElement.toggleAttribute('data-spatial-element-tabs-measured', true);
+			anchor.style.setProperty('--spatial-element-tabs-natural-width', `${measuredNaturalWidth}px`);
+			anchor.toggleAttribute('data-spatial-element-tabs-measured', true);
 			window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
 		};
 
 		const scheduleMeasure = () => {
 			if (disposed || measureFrame) return;
-			measureFrame = requestAnimationFrame(measure);
+			measureFrame = requestAnimationFrame(() => {
+				measureFrame = 0;
+				measure();
+			});
 		};
 
 		void tick().then(() => {
