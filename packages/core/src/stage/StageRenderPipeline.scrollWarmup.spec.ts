@@ -54,15 +54,20 @@ function fixture() {
 		invalidate() { current = false; }, dispose() { glass.dispose(); pipeline.dispose(); borrowedTarget.dispose(); } };
 }
 
-test('warms one inactive set, masks real canvas contexts and restores every borrowed state', () => {
+test('warms only the inactive offscreen set, never draws Canvas and restores every borrowed state', () => {
 	const f = fixture();
+	const display = vi.spyOn(f.pipeline, 'renderStageDisplay');
+	const panels = vi.spyOn(f.pipeline, 'renderBackgroundPanels');
 	const token = f.token(); expect(token).toBeDefined();
 	expect(f.pipeline.warmInactiveScrollTargetSet(token)).toBe(true);
 	expect(f.sourceDraw).toHaveBeenCalledOnce();
+	expect(f.draws).toHaveLength(2); // Scroll scene and its blur resolve only.
 	expect(f.draws.filter(draw => draw.target === f.full.sceneCapture)).toHaveLength(0);
-	expect(f.draws.filter(draw => draw.target === null).length).toBeGreaterThanOrEqual(2);
-	expect(f.draws.filter(draw => draw.target === null).every(draw => draw.masked && !draw.auto)).toBe(true);
+	expect(f.draws.filter(draw => draw.target === null)).toHaveLength(0);
+	expect(f.draws.every(draw => !draw.masked && !draw.auto)).toBe(true);
+	expect(display).not.toHaveBeenCalled(); expect(panels).not.toHaveBeenCalled();
 	expect(f.renderer.clearDepth).not.toHaveBeenCalled();
+	expect(f.pipeline.deferredScrollWarmups).toBe(1);
 	expect(f.pipeline.activeRenderTargets).toBe(f.full);
 	expect(f.view.stageCaptureTexture.value).toBe(f.full.sceneCapture.texture);
 	expect(f.view.stageBlurTexture.value).toBe(f.pipeline.getPanelBlurTexture(f.glass.options));
@@ -101,7 +106,7 @@ test.each(['owner', 'resize', 'target-size', 'target-replacement', 'settings', '
 		f.dispose();
 	});
 
-test.each(['added-node', 'shader-node', 'scene-mesh', 'callback'])('custom %s graphs never certify canvas masking', custom => {
+test.each(['added-node', 'shader-node', 'scene-mesh', 'callback'])('custom %s graphs retain the conservative fallback', custom => {
 	const f = fixture();
 	if (custom === 'added-node') f.glass.group.add(new THREE.Mesh(new THREE.PlaneGeometry(), new THREE.MeshBasicNodeMaterial()));
 	if (custom === 'shader-node') {
@@ -125,16 +130,17 @@ test('supported alpha, texture and size setters keep the constructor-owned panel
 	f.dispose();
 });
 
-test.each(['source', 'panel'])('restores active target, flags and panel visibility after %s failure', failure => {
+test.each(['source', 'blur'])('restores active target, flags and panel visibility after %s failure', failure => {
 	const f = fixture(), token = f.token();
 	if (failure === 'source') f.sourceDraw.mockImplementation(() => { throw new Error('source failed'); });
-	else f.renderer.render.mockImplementation(() => { if (!f.renderer.getRenderTarget()) throw new Error('panel failed'); });
+	else f.renderer.render.mockImplementationOnce(() => {}).mockImplementationOnce(() => { throw new Error('blur failed'); });
 	expect(() => f.pipeline.warmInactiveScrollTargetSet(token)).toThrow(`${failure} failed`);
 	expect(f.pipeline.activeRenderTargets).toBe(f.full);
 	expect(f.renderer.autoClear).toBe(true);
 	expect(f.renderer.getRenderTarget()).toBe(f.borrowedTarget);
 	expect(f.renderer.getCanvasTarget()).toBe(f.borrowedCanvas);
 	expect(f.glass.group.visible).toBe(true);
+	expect(f.pipeline.deferredScrollWarmups).toBe(0);
 	expect(f.pipeline.warmInactiveScrollTargetSet(token)).toBe(false);
 	f.dispose();
 });

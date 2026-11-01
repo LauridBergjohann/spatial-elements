@@ -3,7 +3,7 @@ import { writeFile } from 'node:fs/promises';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
 
 // Functional eligibility/zoom evidence, deliberately separate from performance cohorts.
-for (const view of ['list', 'carousel']) test(`${view} uses masked scroll warming on its real Low-only Hero and keeps zoom usable`, async ({ page }, info) => {
+for (const view of ['list', 'carousel']) test(`${view} uses offscreen-only scroll warming on its real Low-only Hero and keeps zoom usable`, async ({ page }, info) => {
 	const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
 	let release!: () => void;
 	const heldHigh = new Promise<void>(resolve => { release = resolve; });
@@ -17,14 +17,14 @@ for (const view of ['list', 'carousel']) test(`${view} uses masked scroll warmin
 			: page.locator('[data-carousel-item="column"] .spatial-element-target');
 		await link.hover();
 		await expect.poll(() => page.evaluate(() => window.__stageVisualTest?.getCarouselStats()?.actors.some(actor => actor.spatialElementId === 'column' && actor.stagedReady) ?? false)).toBe(true);
-		const before = await page.evaluate(() => window.__stageVisualTest!.getRenderTargetStats().maskedScrollWarmups);
+		const before = await page.evaluate(() => window.__stageVisualTest!.getRenderTargetStats().inactiveScrollWarmups);
 		await link.click();
 		await expect(page).toHaveURL(/\/demo\/elements\/column$/);
 		await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getNavigationTimings().early?.revealed ?? 0)).toBeGreaterThan(0);
-		await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getRenderTargetStats().maskedScrollWarmups)).toBeGreaterThan(before);
+		await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getRenderTargetStats().inactiveScrollWarmups)).toBeGreaterThan(before);
 		const hit = await page.evaluate(() => ({ stats: window.__stageVisualTest!.getRenderTargetStats(),
 			presentation: window.__stageVisualTest!.getCatalogPresentation(), timings: window.__stageVisualTest!.getNavigationTimings() }));
-		expect(hit.stats.maskedScrollWarmups - before).toBe(1);
+		expect(hit.stats.inactiveScrollWarmups - before).toBe(1);
 		release();
 		const minimapPasses = await page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().minimapSceneRenderPasses);
 		await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.6, azimuth: 25 }, 60));

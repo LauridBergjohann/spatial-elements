@@ -115,7 +115,7 @@ export class StageRenderPipeline {
 	private readonly preparedZoomViews = new WeakSet<StageMinimapState>();
 	private disposed = false;
 	private warmConfiguration = 0;
-	private maskedScrollWarmups = 0;
+	private inactiveScrollWarmups = 0;
 	private renderSettings = resolveStageRenderSettings();
 	/** Retain the last DETAIL background while its geometry is owned by a transition. */
 	freezeBackground() {
@@ -687,15 +687,12 @@ export class StageRenderPipeline {
 				renderer.setRenderTarget(this.scrollQualityTargets!.sceneCapture);
 				this.ports.renderStage();
 				this.renderPanelBlurCaptures(this.scrollQualityTargets!, true);
-				renderer.setRenderTarget(null);
-				renderer.setScissor(new THREE.Vector4(0, 0, 0, 0));
-				renderer.setScissorTest(true);
-				renderer.autoClear = false;
-				// renderStageDisplay clears attachments; zero scissor does not mask clears.
-				this._stageDisplayQuad!.render(renderer);
-				this.renderBackgroundPanels(false);
+				// Full reveal already drew the same display/panel materials and Canvas
+				// contexts. Scroll only replaces their sampled textures with matching
+				// types/filters. Keep preparation entirely offscreen; it must not
+				// acquire or publish another Canvas output texture.
 				this._renderTargetSetWarmups++;
-				this.maskedScrollWarmups++;
+				this.inactiveScrollWarmups++;
 			});
 			return true;
 		} finally {
@@ -899,7 +896,7 @@ export class StageRenderPipeline {
 		for (const entry of this.ports.contentSecondaries()) entry.capture.render(this.ports.renderer);
 		this.ports.spatialCapture()?.render(this.ports.renderer);
 	}
-	renderBackgroundPanels(clearDepth = true) {
+	renderBackgroundPanels() {
 		return withVisibility(
 			this.ports.panelRuntimes().map((panel) => panel.group),
 			() => {
@@ -928,7 +925,7 @@ export class StageRenderPipeline {
 				});
 
 				if (hasVisibleRegularPanel) {
-					if (clearDepth) this.ports.renderer.clearDepth();
+					this.ports.renderer.clearDepth();
 					this.ports.renderer.render(this.ports.panelScene, this.ports.panelCamera);
 					this._panelSceneRenderPasses += 1;
 				}
@@ -942,7 +939,7 @@ export class StageRenderPipeline {
 						}
 					});
 
-					if (clearDepth) this.ports.renderer.clearDepth();
+					this.ports.renderer.clearDepth();
 					this.ports.renderer.render(this.ports.panelScene, active.screenCamera);
 					this._panelSceneRenderPasses += 1;
 				});
@@ -1234,7 +1231,7 @@ export class StageRenderPipeline {
 	get renderTargetSetWarmups() {
 		return this._renderTargetSetWarmups;
 	}
-	get deferredScrollWarmups() { return this.maskedScrollWarmups; }
+	get deferredScrollWarmups() { return this.inactiveScrollWarmups; }
 	get stageModelRenderPasses() {
 		return this._stageModelRenderPasses;
 	}

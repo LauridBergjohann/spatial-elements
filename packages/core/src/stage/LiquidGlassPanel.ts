@@ -223,7 +223,8 @@ export class LiquidGlassPanel {
 		this.group.add(...this.shadowLayers.map(({ mesh }) => mesh), backdrop, depthTint, sheen);
 		this.setVisibilityAlpha(1);
 		// Capture only our final constructor-owned graph. Public group customizations
-		// remain supported by normal rendering, but cannot certify masked warm draws.
+		// remain supported by normal rendering, but conservatively reject reuse of
+		// completed Full preparation for the inactive Scroll warmup.
 		const nodes: { node: THREE.Object3D; children: THREE.Object3D[]; before: THREE.Object3D['onBeforeRender']; after: THREE.Object3D['onAfterRender'] }[] = [];
 		const materials: { mesh: THREE.Mesh; material: THREE.Material; version: number;
 			before: THREE.Material['onBeforeRender']; compile: THREE.Material['onBeforeCompile']; roots: [string, unknown][] }[] = [];

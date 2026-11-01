@@ -2193,7 +2193,7 @@ export class StageExperience {
 			creations: this.pipeline.renderTargetSetCreations,
 			resizes: this.pipeline.renderTargetSetResizes,
 			warmups: this.pipeline.renderTargetSetWarmups,
-			maskedScrollWarmups: this.pipeline.deferredScrollWarmups,
+			inactiveScrollWarmups: this.pipeline.deferredScrollWarmups,
 			activeScale: this.pipeline.activeRenderTargets?.scale ?? 0
 		};
 	}

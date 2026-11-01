@@ -40,7 +40,7 @@ test.each(['navigation', 'page', 'dispose'])('queued warming does not run after 
 	expect(prepare).not.toHaveBeenCalled();
 });
 
-test.each([true, false])('a completed reveal token uses the masked path only while valid (%s)', async valid => {
+test.each([true, false])('a completed reveal token uses the offscreen-only path only while valid (%s)', async valid => {
 	const { stage, prepare, frame } = fixture();
 	const token = {};
 	stage.deferredScrollWarmup = token;
