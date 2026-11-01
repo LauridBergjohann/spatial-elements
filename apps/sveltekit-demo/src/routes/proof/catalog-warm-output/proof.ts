@@ -2,6 +2,7 @@ import * as THREE from 'three/webgpu';
 import { screenUV, texture, uv, vec4 } from 'three/tsl';
 import { CatalogSpatialElementLayer } from '@spatial-elements/core/catalog/CatalogSpatialElementLayer';
 import { CatalogWarmOutputContext } from '@spatial-elements/core/catalog/CatalogWarmOutputContext';
+import { BackgroundLayerOutput } from '@spatial-elements/core/stage/BackgroundLayerOutput';
 import { SpatialElementAssetManager } from '@spatial-elements/core/catalog/assets/SpatialElementAssetManager';
 import { EnvironmentCache } from '@spatial-elements/core/catalog/EnvironmentCache';
 import { PreparationGate } from '@spatial-elements/core/catalog/PreparationGate';
@@ -13,6 +14,7 @@ import { overview } from '$lib/catalog';
 import type { BackgroundCheckpoint } from '../background-layer-output/checkpoints';
 
 export interface WarmGpuCall { method: string; phase: string; label: string }
+export type CatalogWarmMode = 'scratch' | 'legacy' | 'borrowed';
 export interface CatalogWarmRow {
 	kind: string; actors: number; initialReady: boolean; readyBeforeFence: boolean; readyAfterFence: boolean;
 	legacyReadyAfterScratch: boolean; stateRestoredSynchronously: boolean; scratchStateRestored: boolean;
@@ -20,15 +22,17 @@ export interface CatalogWarmRow {
 	firstFocusCreates: WarmGpuCall[]; firstMovingCreates: WarmGpuCall[];
 	afterHighFocusCreates: WarmGpuCall[]; afterHighMovingCreates: WarmGpuCall[];
 	focusObserved: boolean[]; captureAccepted: boolean[]; scratchDistinct: boolean; warmCreates: number;
+	sharedOwnerTarget: boolean | null; scratchPublicationRejected: boolean | null;
 	staleFenceRejected: boolean; resizeRejected: boolean; resizedBackStillRejected: boolean;
 	stats: ReturnType<CatalogSpatialElementLayer['getStats']>;
 }
-export interface CatalogWarmEvidence { protocol: string; warmMode: 'scratch' | 'legacy'; phase: string; rows: CatalogWarmRow[]; calls: WarmGpuCall[]; gpuErrors: string[] }
+export interface CatalogWarmEvidence { protocol: string; warmMode: CatalogWarmMode; phase: string; rows: CatalogWarmRow[]; calls: WarmGpuCall[]; gpuErrors: string[] }
 
 /** Real catalog owners and GLB loader, isolated from Stage orchestration; no production caller opts in. */
 export async function runCatalogWarmOutputProof(host: HTMLElement,
 	checkpoint: (point: Omit<BackgroundCheckpoint, 'id'>) => Promise<void>, observe?: (evidence: CatalogWarmEvidence) => void) {
-	const warmMode = new URLSearchParams(location.search).get('warm-mode') === 'legacy' ? 'legacy' : 'scratch';
+	const requestedMode = new URLSearchParams(location.search).get('warm-mode');
+	const warmMode: CatalogWarmMode = requestedMode === 'legacy' || requestedMode === 'borrowed' ? requestedMode : 'scratch';
 	const renderer = new THREE.WebGPURenderer({ antialias: true });
 	const assets = new SpatialElementAssetManager(), environments = new EnvironmentCache(renderer, new PreparationGate());
 	const canvases = ['background', 'rear', 'front'].map((name, index) => {
@@ -45,6 +49,11 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 	seedMaterial.fragmentNode = vec4(uv().x.mul(2.5).add(0.05), uv().y.mul(1.8).add(0.1), uv().x.mul(uv().y).add(0.2), 1);
 	seedMaterial.depthTest = seedMaterial.depthWrite = seedMaterial.toneMapped = false;
 	const seed = new THREE.QuadMesh(seedMaterial), publish = new THREE.RenderPipeline(renderer, texture(background.texture, screenUV));
+	const displayMaterial = new THREE.NodeMaterial();
+	displayMaterial.fragmentNode = texture(background.texture, screenUV);
+	displayMaterial.depthTest = displayMaterial.depthWrite = displayMaterial.toneMapped = false;
+	const display = new THREE.QuadMesh(displayMaterial);
+	let outputOwner: BackgroundLayerOutput | undefined;
 	const calls: WarmGpuCall[] = [], gpuErrors: string[] = [], rows: CatalogWarmRow[] = [];
 	let phase = 'initialize', device: GPUDevice | undefined, layer: CatalogSpatialElementLayer | undefined;
 	let context: CatalogWarmOutputContext | undefined, semantic: HTMLElement | undefined;
@@ -59,6 +68,17 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 	const select = (index: number) => {
 		renderer.setCanvasTarget(outputs[index]); renderer.setRenderTarget(null);
 		renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight);
+	};
+	const publishSource = () => {
+		select(0);
+		if (outputOwner) {
+			if (!outputOwner.resize() || !outputOwner.compose(display, () => {})) throw new Error('Background owner could not rebuild its source');
+		} else publish.render();
+	};
+	const createWarmContext = (current: () => boolean) => {
+		if (!outputOwner) return CatalogWarmOutputContext.create(renderer, current);
+		const handle = outputOwner.captureScratch();
+		return handle && CatalogWarmOutputContext.createBorrowed(renderer, handle, current);
 	};
 	const state = () => ({ canvas: renderer.getCanvasTarget(), target: renderer.getRenderTarget(), output: renderer.getOutputRenderTarget(),
 		viewport: renderer.getViewport(new THREE.Vector4()), scissor: renderer.getScissor(new THREE.Vector4()), test: renderer.getScissorTest(),
@@ -124,7 +144,12 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 		if (!(implicit instanceof Map)) throw new Error('Three r186 implicit-buffer diagnostic unavailable');
 		const backgroundHasImplicit = () => Map.prototype.has.call(implicit, outputs[0]);
 		select(0); renderer.setRenderTarget(background); renderer.setClearColor(0, 1); renderer.clear(); seed.render(renderer);
-		renderer.setRenderTarget(null); publish.render();
+		renderer.setRenderTarget(null);
+		if (warmMode === 'borrowed') {
+			outputOwner = BackgroundLayerOutput.create(renderer, outputs[0]);
+			if (!outputOwner) throw new Error('Borrowed Background owner profile declined');
+		}
+		publishSource();
 		const envLease = environments.acquire('/assets/demo/studio.hdr');
 		const environment = await envLease.ready;
 		try {
@@ -140,11 +165,11 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 					select(2); renderer.setClearColor(0, 0); renderer.clear(); layer!.draw(renderer, 'front'); select(0);
 				};
 				update(); draw(); await paint(); update(); draw(); await paint();
-				context = CatalogWarmOutputContext.create(renderer, () => true);
+				context = createWarmContext(() => true);
 				if (!context) throw new Error(`Scratch output profile unexpectedly declined: ${kind}`);
 				// The separate legacy control exercises the unchanged Canvas warm caller.
 				// Its Background allocation/retention is recorded, not certified as an offscreen path.
-				const warmContext = warmMode === 'scratch' ? context : undefined;
+				const warmContext = warmMode !== 'legacy' ? context : undefined;
 				const initialReady = layer.isStagedDetailReady('column', undefined, renderer, warmContext);
 				await presented(`${kind}/source`); await presented(`${kind}/source-idle`);
 				const before = state(), targetViewport = context.target.viewport.clone(), targetScissor = context.target.scissor.clone(), targetTest = context.target.scissorTest;
@@ -158,6 +183,7 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 				const warmCreates = calls.length - warmStart;
 				const readyAfterFence = layer.isStagedDetailReady('column', undefined, renderer, warmContext);
 				const legacyReadyAfterScratch = layer.isStagedDetailReady('column', undefined, renderer);
+				const scratchPublicationRejected = outputOwner ? !outputOwner.publish() : null;
 				await presented(`${kind}/after-warm`);
 				const focusObserved: boolean[] = [], captureAccepted: boolean[] = [];
 				const exercise = async (prefix: string) => {
@@ -165,6 +191,7 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 					dom.focus.focus({ preventScroll: true }); update(); draw(); await device!.queue.onSubmittedWorkDone();
 					focusObserved.push(dom.focus.matches(':focus-visible') && (kind === 'list' || layer!.getStats().actors.some(actor => actor.spatialElementId === 'column' && actor.hover > 0)));
 					const focusCreates = calls.slice(focusStart);
+					await presented(`${prefix}/focus`);
 					const target = layer!.getStagedDetailTarget('column', undefined, { x: 100, y: 180, width: 420, height: 400 }, { width: innerWidth, height: innerHeight });
 					if (!target) throw new Error('Existing actor has no canonical handoff target');
 					const panel = dom.selectedSummary && captureCarouselElement(dom.selectedSummary);
@@ -175,6 +202,7 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 					if (panel && !layer!.setStagedPanel(dom.selectedCard, panel.corners, panel.width, panel.height)) throw new Error('Existing glass ownership was not retained');
 					layer!.setHandoffTarget({ ...target, progress: 0.25 }); update(); draw(); await device!.queue.onSubmittedWorkDone();
 					const movingCreates = calls.slice(movingStart);
+					await presented(`${prefix}/moving`);
 					phase = prefix + '/restore'; layer!.finishHandoff(); layer!.finishStagedPanel(); layer!.setExitOpacity(1, false); dom.focus.blur();
 					for (let i = 0; i < 80 && update(); i++) { /* deterministic source settling, outside measured draws */ }
 					draw(); await paint();
@@ -202,11 +230,11 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 				const stats = layer.getStats(renderer, warmContext);
 				// The actual asynchronous fence must reject a generation invalidated before its completion.
 				context.dispose(); let current = true;
-				context = CatalogWarmOutputContext.create(renderer, () => current);
+				context = createWarmContext(() => current);
 				if (!context) throw new Error('Replacement context declined');
 				phase = `${kind}/stale-fence`; const stale = layer.prepareStagedNavigation(renderer, context); current = false; await stale;
 				const staleFenceRejected = !layer.isStagedDetailReady('column', undefined, renderer, context);
-				context.dispose(); context = CatalogWarmOutputContext.create(renderer, () => true);
+				context.dispose(); context = createWarmContext(() => true);
 				if (!context) throw new Error('Resize guard context declined');
 				// Invalidate the physical output profile without replacing the independent preview CSS extent.
 				outputs[0].setSize(innerWidth + 1, innerHeight, false);
@@ -219,10 +247,12 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 					firstFocusCreates: first.focusCreates, firstMovingCreates: first.movingCreates,
 					afterHighFocusCreates: afterHigh.focusCreates, afterHighMovingCreates: afterHigh.movingCreates,
 					focusObserved, captureAccepted, scratchDistinct: context.target !== background, warmCreates,
+					sharedOwnerTarget: outputOwner ? outputOwner.getRenderTargets().length === 1 && context.target === outputOwner.getRenderTargets()[0] : null,
+					scratchPublicationRejected,
 					staleFenceRejected, resizeRejected, resizedBackStillRejected, stats });
 				context.dispose(); context = undefined; layer.dispose(); layer = undefined; semantic.remove(); semantic = undefined;
 				// Resize invalidated the published backing texture: restore the legitimate source for the next case.
-				select(0); publish.render();
+				publishSource();
 			}
 		} finally { envLease.release(); }
 		await device.queue.onSubmittedWorkDone();
@@ -237,7 +267,7 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 	} finally {
 		context?.dispose(); layer?.dispose(); semantic?.remove();
 		restoreMethods.reverse().forEach(restore => restore()); device?.removeEventListener('uncapturederror', onGpuError);
-		environments.dispose(); assets.dispose(); publish.dispose(); seedMaterial.dispose(); background.dispose();
+		environments.dispose(); assets.dispose(); outputOwner?.dispose(); publish.dispose(); displayMaterial.dispose(); seedMaterial.dispose(); background.dispose();
 		outputs.forEach(output => output.dispose()); canvases.forEach(canvas => canvas.remove()); void renderer.dispose();
 	}
 }

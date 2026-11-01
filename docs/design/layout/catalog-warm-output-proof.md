@@ -91,3 +91,22 @@ The package build `69098` and full unit run `91566` also pass on this source
 checkpoint (**1052 tests in 126 files**). This establishes the isolated Low-owner
 compatibility boundary. Full Stage integration, linear/depth target-image parity,
 bounded shared-output memory and unprofiled navigation pacing remain separate.
+
+## Next combined owner and displayed-scene gate
+
+The fixture additionally supports `warm-mode=borrowed`, using the real
+`BackgroundLayerOutput` target through `createBorrowed()` instead of allocating
+an independent scratch target. It checks exact target identity, refused
+publication after scratch writes, source retention, all first-use creation gates,
+and the same fence/resize rules. The separate retained source texture is an input
+to complete output composition, not an extra scratch attachment.
+
+Each mode now pauses at the actual first Focus/Moving draws before and after
+High. Screenshots retain the full 960×640 scene with its real DOM overlays; only
+the independent Background diagnostic preview and status label are hidden for
+these scene comparisons. The unchanged Background checkpoints remain separate.
+A following serial case compares all 24 scratch/borrowed images against legacy
+with zero channel tolerance. A movement witness below the diagnostic overlays
+requires actual changed scene pixels. This adds displayed-image compatibility,
+not a readback assertion on every internal depth attachment. These added gates
+are source/typechecked only until their new GPU run is recorded.
