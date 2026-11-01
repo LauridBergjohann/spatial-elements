@@ -4,6 +4,8 @@ export interface BackgroundCheckpoint {
 	width: number;
 	height: number;
 	dpr: number;
+	/** Actual owner state for checkpoints whose DOM comparison must precede terminal fallback. */
+	ownerMode?: string;
 }
 
 /** Fixture-only handshake. Its reader/release API performs no render or canvas copy. */

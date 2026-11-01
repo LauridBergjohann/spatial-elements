@@ -444,6 +444,9 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 				failureStateRestored = injectedFailure && sameState(failedState, state()) && !requireOwner(outputs[1]).publish();
 				for (const candidate of [false, true]) { prepareOutput(candidate ? 1 : 0); validate('owner-recovered', () => draw(candidate)); }
 				recoveryCanvasError = difference(canvasPixels(0), canvasPixels(1));
+				// Observe actual Frosted DOM over the explicit owner before the terminal fallback.
+				await device.queue.onSubmittedWorkDone(); await new Promise(requestAnimationFrame); await new Promise(requestAnimationFrame);
+				await checkpoint?.({ phase: 'owner-frosted', width, height, dpr, ownerMode: requireOwner(outputs[1]).getStats().mode });
 			}
 		}
 		const lifecycle = await runLifecycleProof();

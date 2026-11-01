@@ -44,7 +44,7 @@
 </div>
 
 <style>
-	.outputs { display: flex; gap: 20px; align-items: start; }
+	.outputs { position: fixed; left: 8px; top: 100px; display: flex; gap: 20px; align-items: start; }
 	.output { position: relative; isolation: isolate; width: 160px; height: 120px; overflow: hidden; }
 	.output :global(canvas) { position: absolute; inset: 0; display: block; }
 	.frosted { position: absolute; width: 90px; height: 36px; left: 17px; bottom: 11px; font: 11px/20px Arial, sans-serif; color: #182030; }

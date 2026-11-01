@@ -21,6 +21,7 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 	await page.goto('/proof/background-layer-output?lifecycle-checkpoints=1');
 	const status = page.locator('[data-background-layer-proof-state]');
 	const observations: CheckpointObservation[] = [];
+	let frostedOwner: { ownerMode: string | undefined; maxChannelError: number; width: number; height: number } | undefined;
 	const sources = new Map<string, [ProofPng, ProofPng]>(), initialClears = new Map<string, [ProofPng, ProofPng]>();
 	let lastId = 0;
 	while (true) {
@@ -31,6 +32,24 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 		}, lastId, { timeout: 90000 });
 		const point = await page.evaluate(() => (window as unknown as { __backgroundLayerCheckpoints?: BackgroundCheckpointApi }).__backgroundLayerCheckpoints?.getCurrent());
 		if (!point) break;
+		if (point.phase === 'owner-frosted') {
+			expect(point.ownerMode).toBe('explicit');
+			const surfaces = page.locator('[data-stage-panel-css-surface]'); await expect(surfaces).toHaveCount(2);
+			expect(await surfaces.evaluateAll(nodes => nodes.map(node => getComputedStyle(node, '::before').backdropFilter))).toEqual(['blur(5px)', 'blur(5px)']);
+			await page.evaluate(async () => { await document.fonts.ready; await new Promise(requestAnimationFrame); await new Promise(requestAnimationFrame); });
+			const images = [];
+			for (const side of ['reference', 'candidate']) {
+				const host = page.locator(`[data-background-layer-${side}]`);
+				const rect = await host.boundingBox();
+				expect(rect && Object.values(rect).every(Number.isInteger), JSON.stringify(rect)).toBe(true);
+				const png = await host.screenshot(); await writeFile(testInfo.outputPath(`${side}-frosted-owner.png`), png);
+				images.push(decodeProofPng(png));
+			}
+			frostedOwner = { ownerMode: point.ownerMode, maxChannelError: proofPngDifference(images[0], images[1]), width: images[0].width, height: images[0].height };
+			await writeFile(testInfo.outputPath('frosted-owner-dom-comparison.json'), JSON.stringify(frostedOwner, null, 2));
+			expect(await page.evaluate(id => (window as unknown as { __backgroundLayerCheckpoints: BackgroundCheckpointApi }).__backgroundLayerCheckpoints.release(id), point.id)).toBe(true);
+			lastId = point.id; continue;
+		}
 		const key = `${point.width}x${point.height}@${point.dpr}`, prefix = `${point.id}-${key}-${point.phase}`;
 		const screenshots = [], canvasRects = [];
 		for (const side of ['reference', 'candidate']) {
@@ -103,6 +122,7 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 	await writeFile(testInfo.outputPath('background-layer-output.json'), JSON.stringify(proof, null, 2));
 	expect(terminalState, proof.error ? `${proof.error}\n${proof.stack ?? ''}` : undefined).toBe('ready');
 	expect(proof.protocol).toBe('background-layer-output-v5-owner');
+	expect(frostedOwner).toEqual({ ownerMode: 'explicit', maxChannelError: 0, width: 200, height: 144 });
 	expect(errors).toEqual([]); expect(proof.errors).toEqual([]); expect(proof.rows).toHaveLength(18);
 	expect(proof.ownerRestorations.length).toBeGreaterThan(20);
 	expect(proof.ownerRestorations.every(value => value)).toBe(true);
@@ -191,6 +211,6 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 	const candidate = await page.locator('[data-background-layer-candidate]').screenshot();
 	await writeFile(testInfo.outputPath('reference-frosted.png'), reference); await writeFile(testInfo.outputPath('candidate-frosted.png'), candidate);
 	const domDifference = proofPngDifference(decodeProofPng(reference), decodeProofPng(candidate));
-	await writeFile(testInfo.outputPath('frosted-dom-comparison.json'), JSON.stringify({ maxChannelError: domDifference }, null, 2));
+	await writeFile(testInfo.outputPath('frosted-dom-comparison.json'), JSON.stringify({ phase: 'terminal-fallback', maxChannelError: domDifference }, null, 2));
 	expect(domDifference).toBe(0);
 });
