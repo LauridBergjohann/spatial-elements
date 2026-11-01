@@ -29,7 +29,7 @@ export async function runDeferredScrollWarmupProof(host: HTMLElement) {
 	sourceMaterial.depthTest = sourceMaterial.depthWrite = sourceMaterial.toneMapped = false;
 	const source = new THREE.QuadMesh(sourceMaterial);
 	let sceneDraws = 0;
-	const ports = { renderer, backgroundCanvasTarget: output, panelScene, camera, panelCamera: camera,
+	const ports = { renderer, container: host, backgroundCanvasTarget: output, panelScene, camera, panelCamera: camera,
 		interactionTheme: () => DEFAULT_INTERACTION_THEME, fallbackPanelOptions: () => options,
 		panelRuntimes: () => runtimes, minimaps: () => views,
 		frame: () => ({ outgoingBackground: false }),
@@ -49,7 +49,7 @@ export async function runDeferredScrollWarmupProof(host: HTMLElement) {
 	const creates: { method: string; phase: string }[] = [];
 	let phase = 'initialize', device: GPUDevice | undefined;
 	const restoreMethods: (() => void)[] = [];
-	const rows: { dpr: number; used: boolean; sourceDraws: number; colorError: number; canvasError: number;
+	const rows: { dpr: number; used: boolean; sourceDraws: number; colorError: number; canvasError: number; durableCanvasError: number;
 		depthWitnessError: number; depthWitnessControl: number; scrollError: number; scrollCanvasError: number;
 		fullError: number; fullCanvasError: number; firstScrollCreates: { method: string; phase: string }[];
 		stateRestored: boolean; resizeRejected: boolean; pixelRange: number }[] = [];
@@ -145,6 +145,13 @@ export async function runDeferredScrollWarmupProof(host: HTMLElement) {
 			const used = validate('candidate-warm', () => pipeline.warmInactiveScrollTargetSet(token));
 			const sourceDrawCount = sceneDraws - beforeDraws, stateRestored = sameState(beforeState, state());
 			const after = await capture();
+			// A synchronous Canvas read alone does not establish presentation durability.
+			// Cross a GPU fence and browser paint opportunities without any Canvas redraw.
+			await device.queue.onSubmittedWorkDone();
+			await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+			snapshot.width = canvas.width; snapshot.height = canvas.height;
+			ctx.drawImage(canvas, 0, 0);
+			const durablePixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 			// No reseed after candidate warm. The first real scroll draw must already have its resources.
 			const firstCreate = creates.length;
 			validate('first-scroll', () => render(true));
@@ -169,6 +176,7 @@ export async function runDeferredScrollWarmupProof(host: HTMLElement) {
 			for (let i = 0; i < before.pixels.length; i += 4) { min = Math.min(min, before.pixels[i]); max = Math.max(max, before.pixels[i]); }
 			rows.push({ dpr, used, sourceDraws: sourceDrawCount, stateRestored, resizeRejected, firstScrollCreates,
 				colorError: difference(before.linear, after.linear), canvasError: difference(before.pixels, after.pixels),
+				durableCanvasError: difference(before.pixels, durablePixels),
 				depthWitnessError: difference(depthCandidate.linear, depthControl.linear), depthWitnessControl: difference(depthControl.linear, erasedDepth.linear),
 				scrollError: difference(candidateScroll.linear, referenceScroll.linear), scrollCanvasError: difference(candidateScroll.pixels, referenceScroll.pixels),
 				fullError: difference(candidateFull.linear, referenceFull.linear), fullCanvasError: difference(candidateFull.pixels, referenceFull.pixels), pixelRange: max - min });

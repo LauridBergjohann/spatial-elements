@@ -10,7 +10,10 @@
 			Object.assign(window, { __deferredScrollWarmupProof: result }); state = 'ready';
 		}, error => {
 			if (!active) return;
-			Object.assign(window, { __deferredScrollWarmupProof: { error: String(error) } }); state = 'error';
+			const failure = { error: String(error), stack: error instanceof Error ? error.stack : undefined };
+			Object.assign(window, { __deferredScrollWarmupProof: failure });
+			console.error('Deferred scroll warmup proof failed', failure.error, failure.stack);
+			state = 'error';
 		});
 		return () => { active = false; };
 	});

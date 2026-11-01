@@ -44,8 +44,13 @@ binding and classic navigation retain their existing warmup path.
 
 Code review required one additional internal `LiquidGlassPanel` ownership guard:
 the constructor records its final mesh/material identities, material versions,
-shader-node roots and callbacks. Customized public groups/graphs remain supported
-by normal rendering, but are ineligible for masked warming. The pipeline also
+shader-node roots and callbacks. Replacing those objects/root nodes, changing a
+material version, adding children or replacing callbacks rejects masked warming;
+normal rendering still accepts customization. This is not a recursive proof of
+every internal TSL node: in-place mutation/monkey-patching inside an original
+shader graph without a root or material-version change is outside this contract.
+Ordinary uniform changes, including alpha, backdrop texture and visual size,
+remain allowed. The pipeline also
 checks its controlled Scene tree, callbacks and override material, draw hooks,
 and in-place panel-runtime replacement. These checks run at token capture/use,
 not on every visible frame. The query-gated target statistics expose
