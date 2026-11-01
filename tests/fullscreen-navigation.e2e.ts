@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
 
 async function openFullscreenHero(page: Page, native: boolean) {
@@ -78,7 +79,9 @@ test('Back captures the visible fallback-fullscreen pose before restoring inline
 			const before = project(source.projection, point), after = project(held.capture!.projection, point);
 			return { point, before, after, error: Math.hypot(before[0] - after[0], before[1] - after[1]) };
 		});
-		await info.attach('fullscreen-source-projection', { body: JSON.stringify({ source, held, points }, null, 2), contentType: 'application/json' });
+		const evidence = info.outputPath('fullscreen-source-projection.json');
+		await writeFile(evidence, JSON.stringify({ source, held, points }, null, 2));
+		await info.attach('fullscreen-source-projection', { path: evidence, contentType: 'application/json' });
 		for (const point of points) expect(point.error, JSON.stringify(points)).toBeLessThanOrEqual(1);
 		await expect(page.locator('.stage')).not.toHaveAttribute('data-stage-fullscreen', '');
 	} finally {
