@@ -1,0 +1,25 @@
+# Isolated catalog warm-output compatibility proof
+
+Status: source preparation only, no browser result and no production opt-in. `/proof/catalog-warm-output` exercises the optional `CatalogWarmOutputContext` with actual `CatalogSpatialElementLayer` owners. The normal Stage call sites remain unchanged. Integration depends on correctness, lifetime and resource evidence; no further user permission is implied.
+
+The initial matrix contains one List actor, a two-actor frosted Carousel and a two-actor glass Carousel at 960 × 640, DPR 1. It uses the existing demo Low and High GLBs through the real `SpatialElementAssetManager`, plus the actual HDR/PMREM preparation through `EnvironmentCache`. Catalogue model scenes, fade/outline/blur/ground helpers and glass compositor are not mocked. The small frosted summary is native CSS; it is not replaced by an invented GPU material.
+
+Three separately owned CanvasTargets represent Background, Rear and Foreground. A nonuniform HDR image is legitimately published once on Background through an explicit source target and a public `RenderPipeline`, avoiding its implicit linear framebuffer. The independent Background preview sits at integer CSS coordinates (8,8), with a 240 × 160 screenshot extent. It is not a cloned canvas: Playwright captures the actual displayed WebGPU canvas. A checkpoint pauses after GPU completion and two RAFs for source, no-op, after warm and after High intervention. PNG decoding runs in Node. Exact retained pixel difference is required; Canvas2D copies are never used to infer retention.
+
+The new scratch context is created against the full Background output profile. Its target is separately owned and must not alias the retained source. Public renderer state and the scratch target's own viewport/scissor are compared synchronously immediately after `prepareStagedNavigation()` returns its pending promise. Readiness must still be false before that promise finishes, true with the current scratch profile after its real GPU fence, and false without the opt-in profile. Read-only builtin `Map.has` observes the installed Three r186 implicit-buffer map; the proof never calls its allocating getter or mutates internal targets.
+
+After warming, the first focus and first moving draws use the real Rear/Foreground Canvas destinations and ordinary production owner selection (no warm context passed to productive draws). Focus goes through the actual DOM focus event and must be observed by the actor. Moving uses the actual capture, source freeze, fade and handoff target APIs. All five GPU creation categories—render pipeline, asynchronous render pipeline, shader module, texture and buffer—are counted from before each first operation through its GPU fence. Every measured creation list must remain empty. Initialization, scratch warming, restoration and High work retain separate labels in the complete raw call list; they are not silently discarded from the evidence.
+
+The High intervention is deliberately narrow: it loads a real demo High GLB, renders it with the same environment into an independent four-sample HalfFloat target, then calls the actual `layer.renderForPreparation(renderer)` in that target. The latter borrows the existing Low fade owner, as the productive High-warm chain does; an unrelated High clone alone would miss owner-cache interference. It fences and disposes the temporary High instance/target. The same first-focus and first-moving check then repeats without rewarming the Low source. This still does **not** prove the complete Stage High/refinement owner graph, which remains a follow-up case.
+
+The final guards start another genuine preparation and invalidate its owner before the fence resolves; stale readiness must remain false. Resizing the source Canvas invalidates its context permanently, including resizing back. All context, catalogue, environment, asset and GPU resources are owned by the fixture and released in `finally`; checkpoint teardown rejects a held phase.
+
+Still open after this initial matrix: DPR 1.5/2, resize then successful reprepare plus pixel comparison, explicit renderer exceptions, arbitrary transmission/custom node materials, a full Stage High/refinement intervention, scratch linear/depth witness comparisons, and matching final visible output against a separately prepared legacy layer. This proof must not be described as closing those broader pixel or lifecycle questions merely because no resources are created on its first draws. No frame-time or memory-improvement claim follows from creation counts.
+
+After a coordinated package/demo build, the single isolated test command is:
+
+```powershell
+npx.cmd --no-install playwright test --config playwright.catalog-warm-output.config.ts
+```
+
+The config owns port 4207. It saves every Background PNG, incremental `background-checkpoints.json`, and final or partial `catalog-warm-output.json`. A negative resource/readiness/pixel result remains a failure; thresholds are not widened to make the experimental context appear compatible.
