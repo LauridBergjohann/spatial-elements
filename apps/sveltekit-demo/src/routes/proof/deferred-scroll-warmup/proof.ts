@@ -12,11 +12,17 @@ const difference = (a: ArrayLike<number>, b: ArrayLike<number>) => {
 	let max = 0; for (let i = 0; i < a.length; i++) max = Math.max(max, Math.abs(a[i] - b[i])); return max;
 };
 
-/** Actual runtime API; readbacks and controlled depth witnesses are fixture-only. */
-export async function runDeferredScrollWarmupProof(host: HTMLElement) {
+export type ScrollWarmupCheckpoint = 'source' | 'source-idle' | 'after-warm' | 'retained' |
+	'candidate-scroll' | 'candidate-full' | 'reference-scroll' | 'reference-full';
+
+/** Actual runtime API; screenshot checkpoints and depth witnesses are fixture-only. */
+export async function runDeferredScrollWarmupProof(
+	host: HTMLElement,
+	checkpoint: (name: ScrollWarmupCheckpoint, dpr: number) => Promise<void>
+) {
 	const renderer = new THREE.WebGPURenderer({ antialias: true });
 	const canvas = document.createElement('canvas'), output = new THREE.CanvasTarget(canvas);
-	const snapshot = document.createElement('canvas'), ctx = snapshot.getContext('2d', { willReadFrequently: true })!;
+	canvas.dataset.scrollWarmupCanvas = '';
 	const camera = new THREE.PerspectiveCamera(45, 4 / 3, 1, 1000); camera.position.z = 200;
 	const miniCamera = camera.clone();
 	const panelScene = new THREE.Scene(), runtimes: StagePanelRuntime[] = [], views = new Map<number, StageMinimapState>();
@@ -49,10 +55,10 @@ export async function runDeferredScrollWarmupProof(host: HTMLElement) {
 	const creates: { method: string; phase: string }[] = [];
 	let phase = 'initialize', device: GPUDevice | undefined;
 	const restoreMethods: (() => void)[] = [];
-	const rows: { dpr: number; used: boolean; sourceDraws: number; colorError: number; canvasError: number; durableCanvasError: number;
-		depthWitnessError: number; depthWitnessControl: number; scrollError: number; scrollCanvasError: number;
-		fullError: number; fullCanvasError: number; firstScrollCreates: { method: string; phase: string }[];
-		stateRestored: boolean; resizeRejected: boolean; pixelRange: number }[] = [];
+	const rows: { dpr: number; used: boolean; sourceDraws: number; colorError: number;
+		depthWitnessError: number; depthWitnessControl: number; scrollError: number;
+		fullError: number; firstScrollCreates: { method: string; phase: string }[];
+		stateRestored: boolean; resizeRejected: boolean }[] = [];
 	const onGpuError = (event: GPUUncapturedErrorEvent) => gpuErrors.push(event.error.message);
 	const validate = <T>(name: string, draw: () => T) => {
 		phase = name; device!.pushErrorScope('validation');
@@ -71,8 +77,6 @@ export async function runDeferredScrollWarmupProof(host: HTMLElement) {
 	});
 	const capture = async () => {
 		phase = 'readback';
-		snapshot.width = canvas.width; snapshot.height = canvas.height;
-		ctx.drawImage(canvas, 0, 0); const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 		const target = renderer.getRenderTarget();
 		try {
 			renderer.setRenderTarget(null); renderer.copyFramebufferToTexture(framebuffer);
@@ -80,8 +84,12 @@ export async function runDeferredScrollWarmupProof(host: HTMLElement) {
 			const raw = await renderer.readRenderTargetPixelsAsync(readback, 0, 0, readback.width, readback.height);
 			if (!(raw instanceof Uint16Array)) throw new Error('Expected RGBA HalfFloat/Uint16Array');
 			const unpacked = unpackHalfFloatRgbaRows(raw, readback.width, readback.height);
-			return { linear: Array.from(unpacked.pixels, value => THREE.DataUtils.fromHalfFloat(value)), pixels };
+			return Array.from(unpacked.pixels, value => THREE.DataUtils.fromHalfFloat(value));
 		} finally { renderer.setRenderTarget(target); }
+	};
+	const fenceAndPaint = async () => {
+		await device!.queue.onSubmittedWorkDone();
+		await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 	};
 	const render = (scroll: boolean) => {
 		pipeline.setScrollRenderQuality(scroll);
@@ -141,25 +149,31 @@ export async function runDeferredScrollWarmupProof(host: HTMLElement) {
 			if (!token) throw new Error('Controlled fixture unexpectedly ineligible');
 			await device.queue.onSubmittedWorkDone();
 			validate('color-depth-seed', seedOutput);
+			await checkpoint('source', dpr);
+			// Control the presentation measurement itself without any intervening draw.
+			await fenceAndPaint();
+			await checkpoint('source-idle', dpr);
 			const before = await capture(), beforeState = state(), beforeDraws = sceneDraws;
 			const used = validate('candidate-warm', () => pipeline.warmInactiveScrollTargetSet(token));
 			const sourceDrawCount = sceneDraws - beforeDraws, stateRestored = sameState(beforeState, state());
+			await checkpoint('after-warm', dpr);
 			const after = await capture();
-			// A synchronous Canvas read alone does not establish presentation durability.
-			// Cross a GPU fence and browser paint opportunities without any Canvas redraw.
-			await device.queue.onSubmittedWorkDone();
-			await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-			snapshot.width = canvas.width; snapshot.height = canvas.height;
-			ctx.drawImage(canvas, 0, 0);
-			const durablePixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+			// No Canvas redraw/reseed: the harness reads the presented DOM pixels,
+			// not an expired WebGPU drawing buffer through drawImage(canvas).
+			await fenceAndPaint();
+			await checkpoint('retained', dpr);
 			// No reseed after candidate warm. The first real scroll draw must already have its resources.
 			const firstCreate = creates.length;
 			validate('first-scroll', () => render(true));
-			const firstScrollCreates = creates.slice(firstCreate), candidateScroll = await capture();
-			validate('candidate-full', () => render(false)); const candidateFull = await capture();
+			const firstScrollCreates = creates.slice(firstCreate);
+			await checkpoint('candidate-scroll', dpr); const candidateScroll = await capture();
+			validate('candidate-full', () => render(false));
+			await checkpoint('candidate-full', dpr); const candidateFull = await capture();
 			validate('reference-warm', () => pipeline.warmRenderTargetSets());
-			validate('reference-scroll', () => render(true)); const referenceScroll = await capture();
-			validate('reference-full', () => render(false)); const referenceFull = await capture();
+			validate('reference-scroll', () => render(true));
+			await checkpoint('reference-scroll', dpr); const referenceScroll = await capture();
+			validate('reference-full', () => render(false));
+			await checkpoint('reference-full', dpr); const referenceFull = await capture();
 			// Independent depth witness: candidate warm must not erase the near left-side seed.
 			validate('depth-seed', seedOutput);
 			const depthToken = pipeline.captureDeferredScrollWarmup(() => true)!;
@@ -172,17 +186,14 @@ export async function runDeferredScrollWarmupProof(host: HTMLElement) {
 			const stale = pipeline.captureDeferredScrollWarmup(() => true)!;
 			pipeline.resizeRenderTargets();
 			const resizeRejected = !pipeline.warmInactiveScrollTargetSet(stale);
-			let min = 255, max = 0;
-			for (let i = 0; i < before.pixels.length; i += 4) { min = Math.min(min, before.pixels[i]); max = Math.max(max, before.pixels[i]); }
 			rows.push({ dpr, used, sourceDraws: sourceDrawCount, stateRestored, resizeRejected, firstScrollCreates,
-				colorError: difference(before.linear, after.linear), canvasError: difference(before.pixels, after.pixels),
-				durableCanvasError: difference(before.pixels, durablePixels),
-				depthWitnessError: difference(depthCandidate.linear, depthControl.linear), depthWitnessControl: difference(depthControl.linear, erasedDepth.linear),
-				scrollError: difference(candidateScroll.linear, referenceScroll.linear), scrollCanvasError: difference(candidateScroll.pixels, referenceScroll.pixels),
-				fullError: difference(candidateFull.linear, referenceFull.linear), fullCanvasError: difference(candidateFull.pixels, referenceFull.pixels), pixelRange: max - min });
+				colorError: difference(before, after),
+				depthWitnessError: difference(depthCandidate, depthControl), depthWitnessControl: difference(depthControl, erasedDepth),
+				scrollError: difference(candidateScroll, referenceScroll), fullError: difference(candidateFull, referenceFull) });
 		}
 		await device.queue.onSubmittedWorkDone(); await Promise.all(pendingErrors);
-		return { rows, gpuErrors, creates, readback: 'RGBA/HalfFloat/Uint16Array', diagnosticOnly: true };
+		return { protocol: 'offscreen-scroll-warmup-v3-dom-checkpoints', rows, gpuErrors, creates,
+			readback: 'RGBA/HalfFloat/Uint16Array', diagnosticOnly: true };
 	} finally {
 		for (const restore of restoreMethods) restore(); device?.removeEventListener('uncapturederror', onGpuError);
 		glass.forEach(panel => panel.dispose()); pipeline.dispose(); sourceMaterial.dispose();

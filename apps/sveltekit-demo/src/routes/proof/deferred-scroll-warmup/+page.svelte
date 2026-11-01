@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { runDeferredScrollWarmupProof } from './proof';
+	import { createScrollWarmupCheckpoints } from './checkpoints';
 	let host: HTMLDivElement;
 	let state = $state('preparing');
 	onMount(() => {
 		let active = true;
-		void runDeferredScrollWarmupProof(host).then(result => {
+		const checkpoints = createScrollWarmupCheckpoints();
+		const api = { getCurrent: checkpoints.getCurrent, release: checkpoints.release };
+		Object.assign(window, { __deferredScrollWarmupCheckpoints: api });
+		void runDeferredScrollWarmupProof(host, checkpoints.wait).then(result => {
 			if (!active) return;
 			Object.assign(window, { __deferredScrollWarmupProof: result }); state = 'ready';
 		}, error => {
@@ -15,7 +19,11 @@
 			console.error('Deferred scroll warmup proof failed', failure.error, failure.stack);
 			state = 'error';
 		});
-		return () => { active = false; };
+		return () => {
+			active = false; checkpoints.dispose();
+			if (Reflect.get(window, '__deferredScrollWarmupCheckpoints') === api)
+				Reflect.deleteProperty(window, '__deferredScrollWarmupCheckpoints');
+		};
 	});
 </script>
 
