@@ -4,6 +4,8 @@ import { decodeProofPng, proofPngDifference, proofPngRgbRange, type ProofPng } f
 import type { BackgroundCheckpoint, BackgroundCheckpointApi } from '../apps/sveltekit-demo/src/routes/proof/background-layer-output/checkpoints';
 
 interface CheckpointObservation extends BackgroundCheckpoint {
+	canvasRects: { x: number; y: number; width: number; height: number }[];
+	screenshotSizes: { width: number; height: number }[];
 	referenceCandidateError: number;
 	referenceRgbRange: number;
 	candidateRgbRange: number;
@@ -30,9 +32,13 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 		const point = await page.evaluate(() => (window as unknown as { __backgroundLayerCheckpoints?: BackgroundCheckpointApi }).__backgroundLayerCheckpoints?.getCurrent());
 		if (!point) break;
 		const key = `${point.width}x${point.height}@${point.dpr}`, prefix = `${point.id}-${key}-${point.phase}`;
-		const screenshots = [];
+		const screenshots = [], canvasRects = [];
 		for (const side of ['reference', 'candidate']) {
-			const png = await page.locator(`[data-background-lifecycle-canvas="${side}"]`).screenshot();
+			const canvas = page.locator(`[data-background-lifecycle-canvas="${side}"]`);
+			canvasRects.push(await canvas.evaluate(node => {
+				const { x, y, width, height } = node.getBoundingClientRect(); return { x, y, width, height };
+			}));
+			const png = await canvas.screenshot();
 			await writeFile(testInfo.outputPath(`${prefix}-${side}.png`), png);
 			screenshots.push(decodeProofPng(png));
 		}
@@ -41,7 +47,8 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 		if (point.phase === 'published-source') sources.set(key, pixels);
 		const source = sources.get(key), initial = initialClears.get(key);
 		const observation: CheckpointObservation = {
-			...point, referenceCandidateError: proofPngDifference(...pixels),
+			...point, canvasRects, screenshotSizes: pixels.map(({ width, height }) => ({ width, height })),
+			referenceCandidateError: proofPngDifference(...pixels),
 			referenceRgbRange: proofPngRgbRange(pixels[0]), candidateRgbRange: proofPngRgbRange(pixels[1]),
 			referenceSourceError: source ? proofPngDifference(source[0], pixels[0]) : null,
 			candidateSourceError: source ? proofPngDifference(source[1], pixels[1]) : null,
@@ -52,6 +59,16 @@ test('experimental Background layer preserves real glass, output and Frosted DOM
 		};
 		observations.push(observation);
 		await writeFile(testInfo.outputPath('lifecycle-dom-checkpoints.json'), JSON.stringify({ protocol: 'background-lifecycle-dom-v1', observations }, null, 2));
+		for (let index = 0; index < canvasRects.length; index++) {
+			const rect = canvasRects[index];
+			expect(Object.values(rect).every(Number.isInteger), JSON.stringify(observation)).toBe(true);
+			expect({ width: rect.width, height: rect.height }).toEqual({ width: point.width, height: point.height });
+			expect(observation.screenshotSizes[index]).toEqual({ width: point.width, height: point.height });
+		}
+		if (point.phase === 'initial-transparent-clear') {
+			expect(observation.referenceRgbRange, JSON.stringify(observation)).toBe(0);
+			expect(observation.candidateRgbRange, JSON.stringify(observation)).toBe(0);
+		}
 		// Never prepare another source against an unproved, empty displayed baseline.
 		if (point.phase === 'published-source') {
 			expect(observation.referenceRgbRange, JSON.stringify(observation)).toBeGreaterThan(20);

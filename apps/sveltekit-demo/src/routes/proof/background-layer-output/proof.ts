@@ -183,7 +183,11 @@ export async function runBackgroundLayerProof(hosts: [HTMLElement, HTMLElement],
 		if (!(implicitTargets instanceof Map) || typeof implicitTargets.has !== 'function')
 			throw new Error(`Three r186 implicit-target presence diagnostic unavailable: expected Map.has, received ${Object.prototype.toString.call(implicitTargets)}`);
 		const hasImplicit = (output: THREE.CanvasTarget): boolean => Map.prototype.has.call(implicitTargets, output);
-		const container = document.createElement('div'); container.style.display = 'flex';
+		// Keep the complete Canvas bounds on integer CSS pixels and away from unrelated output.
+		// A natural-flow fractional top made locator screenshots include one row of the preceding
+		// canvas when Chromium rounded its clip. Do not crop pixels or relax image equality.
+		const container = document.createElement('div');
+		container.style.cssText = 'position: fixed; left: 8px; top: 400px; display: flex; background: white; isolation: isolate;';
 		container.dataset.backgroundLifecycleProof = ''; document.body.appendChild(container);
 		const freshCanvases = [document.createElement('canvas'), document.createElement('canvas')];
 		freshCanvases.forEach((canvas, index) => {

@@ -1,6 +1,6 @@
 # Isolated Background-layer output proof
 
-Status: **protocol v2 passed** on demo build 39337 / proof revision a94344e. Protocol v3 added transparent clear, outgoing-pixel retention and a read-only allocation diagnostic. Its corrected execution on build 28778 exposed an invalid post-presentation Canvas2D observation before retention could be established. The positive control correctly failed. Protocol v4 now prepares explicit compositor-screenshot checkpoints; its GPU execution is pending. This is still an experiment, not an accepted production rendering change. No production rendering path selects its candidate.
+Status: **protocol v2 passed** on demo build 39337 / proof revision a94344e. Protocol v3 exposed an invalid post-presentation Canvas2D observation. Protocol v4's first real screenshot run on build 11873 now distinguishes exact offscreen retention from actual source loss after masked publication, but fails cross-canvas equality because the fractional screenshot clips include one unrelated row. The corrected integer-bound fixture still needs a fresh run. This remains an experiment; production integration depends on the evidence and ownership gates, not additional user permission. No production rendering path selects its candidate.
 
 The experiment asks whether the existing opaque Background canvas can accumulate its ordered linear draws in one explicit target, then perform the output transform once. It does not combine the Background, Foreground or Carousel Rear layers, change glass sampling sources, cache model pixels, or batch GPU submissions.
 
@@ -42,7 +42,7 @@ A deliberate exception after the candidate's panel draws checks renderer-state r
 
 Protocol v2 covers a filled Background with an opaque stage-display fragment and varied glass opacity. Protocol v3 adds an empty transparent clear only; neither establishes arbitrary transparent-layer composition, Foreground/Rear output, custom nested renderer callbacks, arbitrary GLTF transmission contexts or production readiness. A future integration needs its own resource lifetime, idle warmup, resize/cancel and memory review.
 
-## Protocol v4 lifecycle checkpoints — pending GPU execution
+## Protocol v4 lifecycle checkpoints
 
 Fresh reference/candidate CanvasTargets exercise initialization without the matrix's deliberate Canvas poisoning, at 160 × 120 / DPR 1 and after resize to 200 × 144 / DPR 1.5:
 
@@ -54,6 +54,8 @@ Fresh reference/candidate CanvasTargets exercise initialization without the matr
 6. Incoming content is published normally, then captured at another fence/two-RAF checkpoint and compared exactly against the reference. Both must visibly differ from the outgoing source. A final transparent clear must again zero all real linear/immediate Canvas channels and match the initial clear's compositor screenshots.
 
 The query `?lifecycle-checkpoints=1` enables the fixture-only handshake. Each phase exposes a monotonically increasing ID, name and dimensions. One ID-specific release advances it; stale or duplicate releases cannot unlock a later phase. Unmount rejects the pending wait. The getter/release functions perform no rendering or pixel copy. The test records all sixteen phase observations and 32 raw PNGs across the two sizes before applying the retained-pixel assertions; a failed source positive control is saved immediately and stops before warmup. PNG decoding supports Chromium's non-interlaced 8-bit RGB/RGBA output and all five scanline filters; its channel/range comparisons run entirely in Node. This avoids touching the WebGPU canvas while measuring displayed retention.
+
+The lifecycle pair uses a separate white screenshot surface at integer CSS coordinates. The harness records both Canvas rectangles and PNG dimensions and requires exact integer positions and the declared CSS extent. Its initial transparent-clear screenshots must be spatially uniform. These checks prevent fractional locator clips from adding neighboring content; they do not crop the measured image or relax any pixel comparison.
 
 The allocation diagnostic reads only Map membership for `_frameBufferTargets` in installed Three r186. `Renderer.js:463` constructs a `Map`; its getter uses `.get` at line 1571, inserts at line 1601 and deletes on target disposal at line 1595. The proof validates `Map` and a callable `has`, then invokes the builtin `Map.prototype.has` with that map. It never calls the allocating `_getFrameBufferTarget()` method, obtains a private target, changes the map, or disposes an internal target directly. Missing/unknown diagnostic shape throws instead of reporting success. The reference is a positive control: its ordinary Canvas output must create an implicit entry. The candidate must have none after clear, scene/panel publication, readback, offscreen/masked warmup and resize. Public CanvasTarget disposal must remove the reference entry. This proves only the isolated sequence; production catalogue preparation still needs the ownership treatment in the integration sketch.
 
@@ -100,7 +102,24 @@ The retention proof nevertheless failed its positive control: after the first or
 
 Exact linear, Canvas and Frosted DOM comparison limits remain zero. No production integration follows from these partial lifecycle observations.
 
-Protocol v4 source checks on 2026-11-01: four CPU cases pass for the PNG decoder and phase ownership; the demo reports zero Svelte errors/warnings; the isolated strict TypeScript check of the E2E, shared PNG helper and checkpoint API passes; Playwright listing loads one case. The build and actual checkpoint screenshot execution are still pending. These checks do not validate displayed retention.
+Before the first v4 run, four CPU cases passed for the PNG decoder and phase ownership; the demo reported zero Svelte errors/warnings; the isolated strict TypeScript check of the E2E, shared PNG helper and checkpoint API passed; Playwright listing loaded one case. These source checks do not validate displayed retention.
+
+The first v4 browser execution (runner 37588, demo 11873 / 8f726a1) failed and is preserved under `.artifacts/background-layer-output-v4-11873-8f726a1`. All sixteen checkpoints were captured. The trace records the first lifecycle pair at `top=233.875`, directly below the earlier matrix canvases ending at that same fractional coordinate. PNGs are therefore 160 × 121 rather than 160 × 120; the resized pair is 200 × 145 rather than 200 × 144. An offline localization of initial-clear, published-source and published-incoming comparisons at both sizes finds every differing pixel in row zero, with maximum channel error 81. That row contains the preceding output; its horizontal offset differs between the two clips. The full screenshots remain failing data: no pixels were discarded and no result was reclassified as a pass. The fixture correction places the complete lifecycle surface at integer coordinates and adds the extent/uniform-clear checks described above.
+
+The same run supplies independent, useful observations despite that cross-canvas clip defect:
+
+| v4 observation on 11873 | Recorded result |
+| --- | --- |
+| All 18 linear/immediate Canvas matrix comparisons | Exact error 0, GPU errors empty |
+| Four transparent clears | All real linear/immediate Canvas channels zero; 2 / 2 submissions |
+| Candidate implicit-target observations / public disposal | No candidate implicit target; reference entry created and removed on disposal |
+| Source screenshots | Nonuniform, spatial RGB ranges 220 and 225 |
+| No-work, held content-only and offscreen warm, each against its own source screenshot | Exact retained error 0 in both canvases at both sizes |
+| Offscreen prepared linear change | Maximum difference 3.3828125 / 3.388671875; renderer state restored |
+| Masked final-output publication | Candidate differs from source by 220 / 225 and exactly matches its initial transparent clear; untouched reference retained with error 0 |
+| Subsequent normal incoming publication | Linear/immediate Canvas error 0; displayed image visibly changed; cross-canvas screenshot difference remains confined to the unrelated first row |
+
+The masked-publication result is an actual compositor observation of source loss, not the earlier invalid Canvas2D inference. It remains a negative diagnostic candidate and must not be used as an invisible warmup. Pure offscreen preparation leaves the presented image unchanged in these recorded phases. The overall proof remains failed until a fresh complete run with valid clips passes; Frosted DOM comparison was not reached in this run.
 
 ## Preliminary integration decision
 
