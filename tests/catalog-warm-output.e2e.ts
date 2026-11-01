@@ -4,15 +4,15 @@ import { decodeProofPng, proofPngDifference, proofPngRgbRange } from './helpers/
 import type { BackgroundCheckpointApi } from '../apps/sveltekit-demo/src/routes/proof/background-layer-output/checkpoints';
 import type { CatalogWarmEvidence, CatalogWarmRow, WarmGpuCall } from '../apps/sveltekit-demo/src/routes/proof/catalog-warm-output/proof';
 
-interface WarmProofResult { protocol: string; rows: CatalogWarmRow[]; calls: WarmGpuCall[]; gpuErrors: string[]; limits: string[]; error?: string; stack?: string }
+interface WarmProofResult { protocol: string; warmMode: 'scratch' | 'legacy'; rows: CatalogWarmRow[]; calls: WarmGpuCall[]; gpuErrors: string[]; limits: string[]; error?: string; stack?: string }
 declare global {
 	interface Window { __catalogWarmOutputProof?: WarmProofResult; __catalogWarmOutputCheckpoints?: BackgroundCheckpointApi; __catalogWarmOutputEvidence?: CatalogWarmEvidence }
 }
 
-test('real catalog scratch preparation preserves Background and prepares first Focus/Moving owners', async ({ page }, info) => {
+for (const warmMode of ['scratch', 'legacy'] as const) test(`real catalog ${warmMode} preparation prepares first Focus/Moving owners`, async ({ page }, info) => {
 	const pageErrors: string[] = []; page.on('pageerror', error => pageErrors.push(String(error)));
 	const domRows: { kind: string; phase: string; width: number; height: number; maxError: number; sourceRgbRange: number }[] = [];
-	await page.goto('/proof/catalog-warm-output');
+	await page.goto(`/proof/catalog-warm-output?warm-mode=${warmMode}`);
 	try {
 		for (const kind of ['list', 'frosted', 'glass']) {
 			let source: ReturnType<typeof decodeProofPng> | undefined;
@@ -40,14 +40,15 @@ test('real catalog scratch preparation preserves Background and prepares first F
 		await expect(page.locator('[data-catalog-warm-proof-state]')).toHaveAttribute('data-catalog-warm-proof-state', /^(ready|error)$/, { timeout: 90000 });
 		const proof = await page.evaluate(() => window.__catalogWarmOutputProof!);
 		expect(proof.error, proof.stack ?? proof.error).toBeUndefined();
-		expect(proof.protocol).toBe('catalog-warm-output-v1'); expect(proof.rows).toHaveLength(3);
+		expect(proof.protocol).toBe('catalog-warm-output-v1'); expect(proof.warmMode).toBe(warmMode); expect(proof.rows).toHaveLength(3);
 		expect(pageErrors).toEqual([]); expect(proof.gpuErrors).toEqual([]);
 		for (const row of proof.rows) {
 			expect(row.actors).toBe(row.kind === 'list' ? 1 : 2);
 			expect(row.initialReady, JSON.stringify(row)).toBe(false); expect(row.readyBeforeFence).toBe(false);
-			expect(row.readyAfterFence, JSON.stringify(row)).toBe(true); expect(row.legacyReadyAfterScratch).toBe(false);
+			expect(row.readyAfterFence, JSON.stringify(row)).toBe(true); expect(row.legacyReadyAfterScratch).toBe(warmMode === 'legacy');
 			expect(row.stateRestoredSynchronously).toBe(true); expect(row.scratchStateRestored).toBe(true);
-			expect(row.backgroundImplicitBefore).toBe(false); expect(row.backgroundImplicitAfter).toBe(false);
+			if (warmMode === 'scratch') expect(row.backgroundImplicitBefore).toBe(false);
+			expect(row.backgroundImplicitAfter).toBe(warmMode === 'legacy');
 			expect(row.scratchDistinct).toBe(true); expect(row.warmCreates).toBeGreaterThan(0);
 			expect(row.focusObserved).toEqual([true, true]); expect(row.captureAccepted).toEqual([true, true]);
 			for (const key of ['firstFocusCreates', 'firstMovingCreates', 'afterHighFocusCreates', 'afterHighMovingCreates'] as const)
@@ -55,7 +56,10 @@ test('real catalog scratch preparation preserves Background and prepares first F
 			expect(row.staleFenceRejected).toBe(true); expect(row.resizeRejected).toBe(true); expect(row.resizedBackStillRejected).toBe(true);
 		}
 		for (const row of domRows) {
-			expect(row.width).toBe(240); expect(row.height).toBe(160); expect(row.maxError, JSON.stringify(row)).toBe(0);
+			expect(row.width).toBe(240); expect(row.height).toBe(160);
+			// Exact retention remains mandatory for scratch. The separate legacy control
+			// measures first-use resources and records its Canvas pixels without certifying retention.
+			if (warmMode === 'scratch') expect(row.maxError, JSON.stringify(row)).toBe(0);
 		}
 	} finally {
 		const proof = await page.evaluate(() => window.__catalogWarmOutputProof ?? {

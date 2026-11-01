@@ -55,3 +55,18 @@ texture creation accompanies them. GPU-validation and page-error arrays are
 empty. These buffers still violate the unchanged zero-creation gate; the suite
 is not accepted. Whether the same intervention also affects the legacy warm
 path and which owner rebuilds its bindings require further attribution.
+
+The subsequent source/CPU attribution identifies a pre-existing Fog mismatch in
+`CatalogSpatialElementLayer.renderForPreparation()`: it rendered Carousel meshes
+using the List scene fog. Productive Carousel draws explicitly use no fog.
+Installed Three includes the fog node in its dynamic cache key, so this replaces
+the same mesh/material/context render owner and releases its bindings. A change
+between ordinary perspective cameras alone does not change that key. The new
+`catalogPreparationOwners.spec.ts` uses actual installed `RenderObjects` and
+`NodeManager` classes to reproduce the old replacement without any scratch
+context, and verifies the separated List/Carousel draw variants preserve owners.
+The focused 27-case run and Core typecheck pass; the actual GPU regression is
+still pending. The fixture now runs a distinct `warm-mode=legacy` control as well
+as scratch: both require zero first-use creations. Exact Background retention and
+no implicit allocation remain mandatory for scratch; the legacy Canvas path's
+pixels/allocation are recorded separately and are not certified as offscreen.

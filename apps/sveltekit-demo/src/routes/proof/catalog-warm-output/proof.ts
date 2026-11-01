@@ -23,11 +23,12 @@ export interface CatalogWarmRow {
 	staleFenceRejected: boolean; resizeRejected: boolean; resizedBackStillRejected: boolean;
 	stats: ReturnType<CatalogSpatialElementLayer['getStats']>;
 }
-export interface CatalogWarmEvidence { protocol: string; phase: string; rows: CatalogWarmRow[]; calls: WarmGpuCall[]; gpuErrors: string[] }
+export interface CatalogWarmEvidence { protocol: string; warmMode: 'scratch' | 'legacy'; phase: string; rows: CatalogWarmRow[]; calls: WarmGpuCall[]; gpuErrors: string[] }
 
 /** Real catalog owners and GLB loader, isolated from Stage orchestration; no production caller opts in. */
 export async function runCatalogWarmOutputProof(host: HTMLElement,
 	checkpoint: (point: Omit<BackgroundCheckpoint, 'id'>) => Promise<void>, observe?: (evidence: CatalogWarmEvidence) => void) {
+	const warmMode = new URLSearchParams(location.search).get('warm-mode') === 'legacy' ? 'legacy' : 'scratch';
 	const renderer = new THREE.WebGPURenderer({ antialias: true });
 	const assets = new SpatialElementAssetManager(), environments = new EnvironmentCache(renderer, new PreparationGate());
 	const canvases = ['background', 'rear', 'front'].map((name, index) => {
@@ -52,7 +53,7 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 	const paint = async () => { await device!.queue.onSubmittedWorkDone(); await new Promise(requestAnimationFrame); await new Promise(requestAnimationFrame); };
 	const presented = async (name: string) => {
 		await paint();
-		observe?.({ protocol: 'catalog-warm-output-v1', phase, rows, calls, gpuErrors });
+		observe?.({ protocol: 'catalog-warm-output-v1', warmMode, phase, rows, calls, gpuErrors });
 		await checkpoint({ phase: name, width: 240, height: 160, dpr: 1 });
 	};
 	const select = (index: number) => {
@@ -141,18 +142,21 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 				update(); draw(); await paint(); update(); draw(); await paint();
 				context = CatalogWarmOutputContext.create(renderer, () => true);
 				if (!context) throw new Error(`Scratch output profile unexpectedly declined: ${kind}`);
-				const initialReady = layer.isStagedDetailReady('column', undefined, renderer, context);
+				// The separate legacy control exercises the unchanged Canvas warm caller.
+				// Its Background allocation/retention is recorded, not certified as an offscreen path.
+				const warmContext = warmMode === 'scratch' ? context : undefined;
+				const initialReady = layer.isStagedDetailReady('column', undefined, renderer, warmContext);
 				await presented(`${kind}/source`); await presented(`${kind}/source-idle`);
 				const before = state(), targetViewport = context.target.viewport.clone(), targetScissor = context.target.scissor.clone(), targetTest = context.target.scissorTest;
 				const implicitBefore = backgroundHasImplicit(), warmStart = calls.length;
 				phase = `${kind}/warm`;
-				const warming = layer.prepareStagedNavigation(renderer, context);
+				const warming = layer.prepareStagedNavigation(renderer, warmContext);
 				const restored = equal(before, state());
 				const targetRestored = context.target.viewport.equals(targetViewport) && context.target.scissor.equals(targetScissor) && context.target.scissorTest === targetTest;
-				const readyBeforeFence = layer.isStagedDetailReady('column', undefined, renderer, context);
+				const readyBeforeFence = layer.isStagedDetailReady('column', undefined, renderer, warmContext);
 				await warming;
 				const warmCreates = calls.length - warmStart;
-				const readyAfterFence = layer.isStagedDetailReady('column', undefined, renderer, context);
+				const readyAfterFence = layer.isStagedDetailReady('column', undefined, renderer, warmContext);
 				const legacyReadyAfterScratch = layer.isStagedDetailReady('column', undefined, renderer);
 				await presented(`${kind}/after-warm`);
 				const focusObserved: boolean[] = [], captureAccepted: boolean[] = [];
@@ -195,7 +199,7 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 				finally { select(0); high.dispose(); lease.release(); highTarget.dispose(); }
 				await presented(`${kind}/after-high`);
 				const afterHigh = await exercise(`${kind}/after-high`);
-				const stats = layer.getStats(renderer, context);
+				const stats = layer.getStats(renderer, warmContext);
 				// The actual asynchronous fence must reject a generation invalidated before its completion.
 				context.dispose(); let current = true;
 				context = CatalogWarmOutputContext.create(renderer, () => current);
@@ -222,13 +226,13 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 			}
 		} finally { envLease.release(); }
 		await device.queue.onSubmittedWorkDone();
-		return { protocol: 'catalog-warm-output-v1', rows, calls, gpuErrors,
+		return { protocol: 'catalog-warm-output-v1', warmMode, rows, calls, gpuErrors,
 			limits: ['960x640, DPR1 only', 'High intervention includes a real GLB/environment draw and existing layer.renderForPreparation Low-fade owner in an independent 4x HalfFloat target, not the full Stage refinement owner graph.',
 				'No forced renderer exception, repeated resize/reprepare pixel matrix, transmission-material or arbitrary custom callback coverage yet.',
 				'Counts establish first-use compatibility only; this is not a frame-time benchmark.'] };
 	} catch (error) {
 		const failure = error instanceof Error ? error : new Error(String(error));
-		Object.assign(failure, { evidence: { protocol: 'catalog-warm-output-v1', phase, rows, calls, gpuErrors } });
+		Object.assign(failure, { evidence: { protocol: 'catalog-warm-output-v1', warmMode, phase, rows, calls, gpuErrors } });
 		throw failure;
 	} finally {
 		context?.dispose(); layer?.dispose(); semantic?.remove();
