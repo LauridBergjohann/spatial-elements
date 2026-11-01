@@ -56,16 +56,17 @@ function navigation(type: 'link' | 'goto' | 'popstate' = 'link') {
 function sourceFixture() {
 	const feedback = deferred();
 	const readPainted = vi.fn(() => feedback.promise);
+	const order: string[] = [];
 	let sourceMounted = true, owned = false;
-	const snapshot = vi.fn(() => { expect(sourceMounted).toBe(true); owned = true; return false; });
-	const releasePage = vi.fn(() => { expect(owned).toBe(true); });
+	const snapshot = vi.fn(() => { expect(sourceMounted).toBe(true); owned = true; order.push('capture'); return false; });
+	const releasePage = vi.fn(() => { expect(owned).toBe(true); order.push('release'); });
 	const ports = {
-		fullscreenController: { setFullscreen: vi.fn() },
+		fullscreenController: { setFullscreen: vi.fn(() => { order.push('leave'); }) },
 		navigationFeedback: { get painted() { return readPainted(); } },
 		transition: { capture: snapshot }, experience: { releasePage },
 		pageSignature: () => 'source-signature', setZoomFocusState: vi.fn(), restingZoomFocus: {}
 	};
-	return { ports, readPainted, feedback, snapshot, releasePage,
+	return { ports, readPainted, feedback, snapshot, releasePage, order,
 		commitDom() { sourceMounted = false; expect(owned).toBe(true); } };
 }
 function routerFixture(onCapture: (navigation: unknown) => undefined) {
@@ -88,6 +89,8 @@ test.each(['link', 'goto', 'popstate'] as const)(
 		expect(source.snapshot).toHaveBeenCalledExactlyOnceWith(nav.value.from.url, nav.value.to.url, type);
 		expect(source.readPainted).not.toHaveBeenCalled();
 		expect(source.releasePage).toHaveBeenCalledOnce();
+		expect(source.order).toEqual(['capture', 'release', 'leave']);
+		expect(source.ports.fullscreenController.setFullscreen).toHaveBeenCalledExactlyOnceWith(false);
 		expect(router.ports.disableScrollHandling).toHaveBeenCalledOnce();
 		expect(router.ports.onRestored).not.toHaveBeenCalled();
 		source.commitDom();
@@ -106,16 +109,69 @@ test('synchronous capture preserves the same-page reuse owner instead of releasi
 	expect(capture.captureNavigation(navigation().value)).toBeUndefined();
 	expect(capture.state()).toMatchObject({ reuseCatalogPage: true, retainedPageSignature: 'source-signature' });
 	expect(source.releasePage).not.toHaveBeenCalled();
+	expect(source.ports.fullscreenController.setFullscreen).toHaveBeenCalledExactlyOnceWith(false);
 });
 
 test('an already held staged presentation commits synchronously without a second classic capture', () => {
 	const source = sourceFixture(), nav = navigation();
-	const commit = vi.fn(), releasePage = vi.fn();
+	const commit = vi.fn(() => { source.order.push('commit'); }),
+		releasePage = vi.fn(() => { source.order.push('release'); });
 	const capture = captureFactory({ ...source.ports, experience: { releasePage },
 		earlyTransition: { phase: 'held', destination: nav.value.to.url.href, commit } });
 	expect(capture.captureNavigation(nav.value)).toBeUndefined();
 	expect(commit).toHaveBeenCalledOnce(); expect(releasePage).toHaveBeenCalledOnce();
 	expect(source.snapshot).not.toHaveBeenCalled(); expect(source.readPainted).not.toHaveBeenCalled();
+	expect(source.order).toEqual(['commit', 'release', 'leave']);
+});
+
+test('the retained fullscreen pose is secured before leaving can refit the source camera or DOM', () => {
+	const source = sourceFixture();
+	let liveProjection = 'visible-fullscreen-pose', retainedProjection: string | undefined;
+	source.snapshot.mockImplementation(() => {
+		retainedProjection = liveProjection;
+		source.order.push('capture');
+		return false;
+	});
+	source.releasePage.mockImplementation(() => { source.order.push('release'); });
+	source.ports.fullscreenController.setFullscreen.mockImplementation(() => {
+		expect(source.order).toEqual(['capture', 'release']);
+		liveProjection = 'refitted-inline-pose';
+	});
+	expect(captureFactory(source.ports).captureNavigation(navigation('popstate').value)).toBeUndefined();
+	expect(retainedProjection).toBe('visible-fullscreen-pose');
+	expect(liveProjection).toBe('refitted-inline-pose');
+});
+
+test.each(['capture', 'release', 'held commit'] as const)(
+	'fullscreen exits and the original %s error reaches the bridge fallback', async failure => {
+		const source = sourceFixture(), nav = navigation('popstate'), error = new Error(`${failure} failed`);
+		const fail = () => { throw error; };
+		if (failure === 'capture') source.snapshot.mockImplementation(fail);
+		if (failure === 'release') source.releasePage.mockImplementation(fail);
+		const capture = captureFactory({ ...source.ports, ...(failure === 'held commit' ? {
+			earlyTransition: { phase: 'held', destination: nav.value.to.url.href, commit: fail }
+		} : {}) });
+		let caught: unknown;
+		const router = routerFixture(nav => {
+			try { return capture.captureNavigation(nav); }
+			catch (error) { caught = error; throw error; }
+		});
+		expect(router.hook(nav.value)).toBeUndefined();
+		expect(caught).toBe(error);
+		expect(source.ports.fullscreenController.setFullscreen).toHaveBeenCalledExactlyOnceWith(false);
+		expect(router.ports.interruptVisuals).toHaveBeenCalledOnce();
+		nav.complete.resolve(); await flush();
+		expect(router.ports.onRestored).toHaveBeenCalledExactlyOnceWith(nav.value);
+		router.restoring.resolve(); await flush();
+		expect(router.ports.controller.endNavigation).toHaveBeenCalledOnce();
+	});
+
+test('an already destroyed Stage still leaves fullscreen without capturing or releasing another page', () => {
+	const source = sourceFixture();
+	expect(captureFactory({ ...source.ports, destroyed: true }).captureNavigation(navigation().value)).toBeUndefined();
+	expect(source.snapshot).not.toHaveBeenCalled();
+	expect(source.releasePage).not.toHaveBeenCalled();
+	expect(source.ports.fullscreenController.setFullscreen).toHaveBeenCalledExactlyOnceWith(false);
 });
 
 test('a failed synchronous capture releases visuals and still restores the real committed destination', async () => {

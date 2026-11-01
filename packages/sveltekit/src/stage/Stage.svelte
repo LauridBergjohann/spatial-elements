@@ -511,33 +511,38 @@
 		return candidate?.handle;
 	}
 	function captureNavigation(navigation: OnNavigate): undefined {
-		fullscreenController?.setFullscreen(false);
-		navigationTimings = { dataReady: performance.now(), captured: 0, restoring: 0, bound: 0 };
-		const generation = ++navigationGeneration;
-		if (earlyTransition?.phase === 'held' && navigation.to?.url.href === earlyTransition.destination) {
-			earlyTransition.commit();
-			reuseCatalogPage = false;
+		try {
+			navigationTimings = { dataReady: performance.now(), captured: 0, restoring: 0, bound: 0 };
+			const generation = ++navigationGeneration;
+			if (earlyTransition?.phase === 'held' && navigation.to?.url.href === earlyTransition.destination) {
+				earlyTransition.commit();
+				reuseCatalogPage = false;
+				navigationTimings.captured = performance.now();
+				experience?.releasePage();
+				setZoomFocusState(restingZoomFocus);
+				return;
+			}
+			// Snapshot the still-mounted source synchronously. Waiting for feedback to
+			// paint here would hold Kit after its URL update but before its DOM commit.
+			// Feedback stays nonblocking; destination/GPU preparation follows commit.
+			if (destroyed || generation !== navigationGeneration) return;
+			reuseCatalogPage = Boolean(
+				navigation.from &&
+				navigation.to &&
+				transition?.capture(navigation.from.url, navigation.to.url, navigation.type)
+			);
 			navigationTimings.captured = performance.now();
+			if (reuseCatalogPage) {
+				retainedPageSignature = pageSignature();
+				return;
+			}
 			experience?.releasePage();
 			setZoomFocusState(restingZoomFocus);
-			return;
+		} finally {
+			// Leaving fullscreen refits the live camera and restores source DOM/scroll.
+			// Retain its visible pose and release page bindings before that mutation.
+			fullscreenController?.setFullscreen(false);
 		}
-		// Snapshot the still-mounted source synchronously. Waiting for feedback to
-		// paint here would hold Kit after its URL update but before its DOM commit.
-		// Feedback stays nonblocking; destination/GPU preparation follows commit.
-		if (destroyed || generation !== navigationGeneration) return;
-		reuseCatalogPage = Boolean(
-			navigation.from &&
-			navigation.to &&
-			transition?.capture(navigation.from.url, navigation.to.url, navigation.type)
-		);
-		navigationTimings.captured = performance.now();
-		if (reuseCatalogPage) {
-			retainedPageSignature = pageSignature();
-			return;
-		}
-		experience?.releasePage();
-		setZoomFocusState(restingZoomFocus);
 	}
 
 	async function settleInterruptedPresentation(generation: number, rebind = false) {
