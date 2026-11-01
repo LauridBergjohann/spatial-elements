@@ -39,3 +39,16 @@ test.each(['navigation', 'page', 'dispose'])('queued warming does not run after 
 	frame();
 	expect(prepare).not.toHaveBeenCalled();
 });
+
+test.each([true, false])('a completed reveal token uses the masked path only while valid (%s)', async valid => {
+	const { stage, prepare, frame } = fixture();
+	const token = {};
+	stage.deferredScrollWarmup = token;
+	stage.pipeline.warmInactiveScrollTargetSet = vi.fn(() => valid);
+	stage.scheduleZoomPreparation(); frame(); frame(); await Promise.resolve();
+	expect(stage.pipeline.warmInactiveScrollTargetSet).toHaveBeenCalledExactlyOnceWith(token);
+	expect(stage.pipeline.warmRenderTargetSets).toHaveBeenCalledTimes(valid ? 0 : 1);
+	expect(stage.deferredScrollWarmup).toBeUndefined();
+	expect(prepare).toHaveBeenCalledOnce();
+	expect(stage.requestRender).toHaveBeenCalledOnce();
+});

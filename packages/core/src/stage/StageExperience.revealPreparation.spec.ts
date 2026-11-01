@@ -33,6 +33,56 @@ function fixture() {
 	return { stage, presentation, applied, finish };
 }
 
+function scrollWarmFixture() {
+	const f = fixture(), stage = f.stage;
+	Object.assign(stage, { deferredZoomPreparation: true, pageModelReady: true, detailMedia: 'minimap',
+		scene: new THREE.Scene(), backgroundScene: new THREE.Scene() });
+	Object.assign(stage.presentation, { model: new THREE.Group(), assetInstance: {} });
+	stage.pipeline.captureDeferredScrollWarmup = vi.fn((current: () => boolean) => ({ current }));
+	return f;
+}
+
+test('the scroll warm snapshot precedes the fence and is only published after successful reveal preparation', async () => {
+	const { stage, finish } = scrollWarmFixture();
+	const result = stage.prepareStagedReveal();
+	expect(stage.pipeline.captureDeferredScrollWarmup).toHaveBeenCalledOnce();
+	expect(stage.pipeline.captureDeferredScrollWarmup.mock.invocationCallOrder[0]).toBeLessThan(
+		stage.renderer.backend.device.queue.onSubmittedWorkDone.mock.invocationCallOrder[0]);
+	expect(stage.deferredScrollWarmup).toBeUndefined();
+	finish(); await expect(result).resolves.toBe(true);
+	expect(stage.deferredScrollWarmup.current()).toBe(true);
+});
+
+test.each(['high adoption', 'model replacement', 'refinement', 'environment', 'abort'])(
+	'scroll warming cannot certify a changed %s owner after reveal', async reason => {
+		const { stage, finish } = scrollWarmFixture(), abort = new AbortController();
+		const result = stage.prepareStagedReveal(abort.signal); finish(); await result;
+		const token = stage.deferredScrollWarmup;
+		if (reason === 'high adoption') stage.presentation.highInstance = {};
+		if (reason === 'model replacement') stage.presentation.model = new THREE.Group();
+		if (reason === 'refinement') stage.presentation.refinement = {};
+		if (reason === 'environment') stage.scene.environment = new THREE.Texture();
+		if (reason === 'abort') abort.abort();
+		expect(token.current()).toBe(false);
+	});
+
+test('ready but unadopted High does not invalidate the current Low owner', async () => {
+	const { stage, finish } = scrollWarmFixture();
+	const result = stage.prepareStagedReveal(); finish(); await result;
+	stage.presentation.readiness.entry = { highState: 'ready' };
+	expect(stage.deferredScrollWarmup.current()).toBe(true);
+});
+
+test.each(['direct', 'dock', 'refining'])('the %s path does not create the new scroll certificate', async mode => {
+	const { stage, finish } = scrollWarmFixture();
+	if (mode === 'direct') stage.deferredZoomPreparation = false;
+	if (mode === 'dock') stage.catalogDockTarget = true;
+	if (mode === 'refining') stage.presentation.refinement = {};
+	const result = stage.prepareStagedReveal(); finish(); await result;
+	expect(stage.pipeline.captureDeferredScrollWarmup).not.toHaveBeenCalled();
+	expect(stage.deferredScrollWarmup).toBeUndefined();
+});
+
 test('reveal warms fractional and endpoint owners and restores hidden state before its GPU fence', async () => {
 	const { stage, presentation, applied, finish } = fixture();
 	const result = stage.prepareStagedReveal();

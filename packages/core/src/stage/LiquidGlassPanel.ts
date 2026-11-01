@@ -141,6 +141,7 @@ export class LiquidGlassPanel {
 	private readonly depthMaterial: THREE.MeshBasicMaterial;
 	private readonly sheenMaterial: THREE.MeshBasicMaterial;
 	private readonly backdropProjection: ReturnType<typeof createBackdropProjectionUniforms>;
+	private readonly ownedRenderGraph: () => boolean;
 
 	constructor(backdropTexture: THREE.Texture, options: LiquidGlassPanelOptions = {}) {
 		this.options = resolveLiquidGlassPanelOptions(options);
@@ -221,7 +222,29 @@ export class LiquidGlassPanel {
 
 		this.group.add(...this.shadowLayers.map(({ mesh }) => mesh), backdrop, depthTint, sheen);
 		this.setVisibilityAlpha(1);
+		// Capture only our final constructor-owned graph. Public group customizations
+		// remain supported by normal rendering, but cannot certify masked warm draws.
+		const nodes: { node: THREE.Object3D; children: THREE.Object3D[]; before: THREE.Object3D['onBeforeRender']; after: THREE.Object3D['onAfterRender'] }[] = [];
+		const materials: { mesh: THREE.Mesh; material: THREE.Material; version: number;
+			before: THREE.Material['onBeforeRender']; compile: THREE.Material['onBeforeCompile']; roots: [string, unknown][] }[] = [];
+		this.group.traverse(node => {
+			nodes.push({ node, children: [...node.children], before: node.onBeforeRender, after: node.onAfterRender });
+			if (!(node instanceof THREE.Mesh)) return;
+			const material = node.material as THREE.Material;
+			const values = material as unknown as Record<string, unknown>;
+			materials.push({ mesh: node, material, version: material.version, before: material.onBeforeRender,
+				compile: material.onBeforeCompile, roots: Object.keys(values).filter(key => key.endsWith('Node')).map(key => [key, values[key]]) });
+		});
+		this.ownedRenderGraph = () => nodes.every(({ node, children, before, after }) =>
+			node.onBeforeRender === before && node.onAfterRender === after && node.children.length === children.length &&
+			children.every((child, i) => node.children[i] === child)) &&
+			materials.every(({ mesh, material, version, before, compile, roots }) => mesh.material === material &&
+				material.version === version && material.onBeforeRender === before && material.onBeforeCompile === compile &&
+				roots.every(([key, value]) => (material as unknown as Record<string, unknown>)[key] === value));
 	}
+
+	/** Internal warmup eligibility; normal rendering still accepts customized groups. */
+	hasOwnedRenderGraph() { return this.ownedRenderGraph(); }
 
 	setVisibilityAlpha(alpha: number) {
 		const scale = THREE.MathUtils.clamp(alpha * this.options.opacity, 0, 1);

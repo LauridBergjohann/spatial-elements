@@ -26,6 +26,7 @@ import {
 import type { Mesh, Object3D } from 'three';
 import {
 	inverseAcesToneMapping,
+	LiquidGlassPanel,
 	STAGE_TONE_MAPPING_EXPOSURE,
 	type LiquidGlassPanelOptions
 } from './LiquidGlassPanel.js';
@@ -46,6 +47,12 @@ interface StageRenderTargetSet {
 	scale: number;
 	sceneCapture: THREE.RenderTarget;
 	panelBlurCaptures: Map<number, PanelBlurCapture>;
+}
+/** Internal proof of the exact target/configuration which completed reveal warming. */
+export interface DeferredScrollWarmup {
+	readonly owner: StageRenderPipeline;
+	readonly current: () => boolean;
+	used: boolean;
 }
 const SCROLL_RENDER_SCALE = 0.82;
 
@@ -107,6 +114,8 @@ export class StageRenderPipeline {
 	private readonly measuredBackdropSeeds = new WeakMap<THREE.RenderTarget, string>();
 	private readonly preparedZoomViews = new WeakSet<StageMinimapState>();
 	private disposed = false;
+	private warmConfiguration = 0;
+	private maskedScrollWarmups = 0;
 	private renderSettings = resolveStageRenderSettings();
 	/** Retain the last DETAIL background while its geometry is owned by a transition. */
 	freezeBackground() {
@@ -399,6 +408,7 @@ export class StageRenderPipeline {
 		return material;
 	}
 	disposeSceneCapture() {
+		this.warmConfiguration++;
 		this.disposeRenderTargetSet(this.fullQualityTargets);
 		this.disposeRenderTargetSet(this.scrollQualityTargets);
 		this.stageDisplayMaterial?.dispose();
@@ -410,6 +420,7 @@ export class StageRenderPipeline {
 		this.stageDisplayTextureNode = undefined;
 	}
 	createSceneCapture() {
+		this.warmConfiguration++;
 		const blurKeys = new Set(
 			this.ports.fallbackPanelOptions().map((options) => this.getPanelBlurKey(options))
 		);
@@ -480,6 +491,7 @@ export class StageRenderPipeline {
 		targets.panelBlurCaptures.clear();
 	}
 	resizeRenderTargets() {
+		this.warmConfiguration++;
 		const width = window.innerWidth;
 		const height = window.innerHeight;
 		const pixelRatio = this.getFullPixelRatio();
@@ -529,6 +541,7 @@ export class StageRenderPipeline {
 		);
 	}
 	setRenderSettings(settings?: StageRenderSettings) {
+		this.warmConfiguration++;
 		this.renderSettings = resolveStageRenderSettings(settings);
 	}
 	getRenderSettings() {
@@ -588,6 +601,106 @@ export class StageRenderPipeline {
 			});
 		} finally {
 			this.activateRenderTargetSet(previousTargets);
+		}
+	}
+	/** Capture immediately after reveal's real warm draws, before its GPU fence.
+	 * The facade publishes this only after that fence and its page-owner check.
+	 */
+	captureDeferredScrollWarmup(ownerIsCurrent: () => boolean): DeferredScrollWarmup | undefined {
+		const renderer = this.ports.renderer, full = this.fullQualityTargets, scroll = this.scrollQualityTargets;
+		if (this.disposed || !full || !scroll || this._activeRenderTargets !== full || !this._stageDisplayQuad || !this.stageDisplayMaterial ||
+			!(renderer.backend as unknown as { isWebGPUBackend?: boolean }).isWebGPUBackend ||
+			renderer.xr.enabled || renderer.getOutputRenderTarget() || renderer.getMRT() || renderer.getRenderObjectFunction() ||
+			this.ports.panelScene.background || this.ports.panelScene.overrideMaterial ||
+			!ownerIsCurrent()) return;
+		const epoch = this.warmConfiguration, canvas = this.ports.backgroundCanvasTarget,
+			quad = this._stageDisplayQuad, display = this.stageDisplayMaterial, displayVersion = display.version;
+		const width = window.innerWidth, height = window.innerHeight, dpr = window.devicePixelRatio;
+		const canvasSize = canvas.getDrawingBufferSize(new THREE.Vector2()), canvasViewport = canvas.getViewport(new THREE.Vector4()),
+			canvasRatio = canvas.getPixelRatio(), currentSize = new THREE.Vector2(), currentViewport = new THREE.Vector4();
+		const tone = renderer.toneMapping, exposure = renderer.toneMappingExposure, space = renderer.outputColorSpace;
+		const panels = [...this.ports.panelRuntimes()], views = [...this.ports.minimaps().values()];
+		const panelOwners = panels.map(panel => ({ panel, glass: panel.glass, group: panel.group, projection: panel.projectionRoot, options: panel.options, surface: panel.surface }));
+		const materials: { mesh: THREE.Mesh; material: THREE.Material; version: number }[] = [];
+		const groups: { node: THREE.Object3D; children: THREE.Object3D[] }[] = [];
+		const allowed = new Set<THREE.Object3D>([this.ports.panelScene]);
+		for (const panel of panels) {
+			for (let node: THREE.Object3D | null = panel.group; node && node !== this.ports.panelScene; node = node.parent) allowed.add(node);
+			if (!panel.glass) continue;
+			if (!(panel.glass instanceof LiquidGlassPanel) || !panel.glass.hasOwnedRenderGraph()) return;
+			let supported = true;
+			panel.group.traverse(node => {
+				allowed.add(node);
+				groups.push({ node, children: [...node.children] });
+				if (!isMesh(node)) return;
+				const material = node.material;
+				if (Array.isArray(material) || !(material instanceof THREE.MeshBasicMaterial || material instanceof THREE.MeshBasicNodeMaterial) ||
+					node.onBeforeRender !== THREE.Object3D.prototype.onBeforeRender || node.onAfterRender !== THREE.Object3D.prototype.onAfterRender) {
+					supported = false; return;
+				}
+				materials.push({ mesh: node, material, version: material.version });
+			});
+			if (!supported) return;
+		}
+		let controlledScene = true;
+		this.ports.panelScene.traverse(node => {
+			if ((!allowed.has(node) && !(node instanceof THREE.Light && !node.castShadow)) ||
+				node.onBeforeRender !== THREE.Object3D.prototype.onBeforeRender || node.onAfterRender !== THREE.Object3D.prototype.onAfterRender)
+				controlledScene = false;
+			groups.push({ node, children: [...node.children] });
+		});
+		if (!controlledScene) return;
+		const targets = [full, scroll].flatMap(set => [set.sceneCapture, ...[...set.panelBlurCaptures.values()].map(capture => capture.target)])
+			.map(target => ({ target, width: target.width, height: target.height }));
+		return { owner: this, used: false, current: () => !this.disposed && ownerIsCurrent() && this.warmConfiguration === epoch &&
+			this.fullQualityTargets === full && this.scrollQualityTargets === scroll && this._activeRenderTargets === full &&
+			this._stageDisplayQuad === quad && quad.material === display && display.version === displayVersion && this.ports.backgroundCanvasTarget === canvas &&
+			window.innerWidth === width && window.innerHeight === height && window.devicePixelRatio === dpr &&
+			canvas.getPixelRatio() === canvasRatio && canvas.getDrawingBufferSize(currentSize).equals(canvasSize) && canvas.getViewport(currentViewport).equals(canvasViewport) &&
+			!renderer.xr.enabled && !renderer.getOutputRenderTarget() && !renderer.getMRT() && !renderer.getRenderObjectFunction() &&
+			!this.ports.panelScene.background && !this.ports.panelScene.overrideMaterial &&
+			renderer.toneMapping === tone && renderer.toneMappingExposure === exposure && renderer.outputColorSpace === space &&
+			!this.ports.frame().outgoingBackground &&
+			panels.length === this.ports.panelRuntimes().length && panels.every((panel, i) => panel === this.ports.panelRuntimes()[i]) &&
+			panelOwners.every(({ panel, glass, group, projection, options, surface }) => panel.glass === glass && panel.group === group &&
+				panel.projectionRoot === projection && panel.options === options && panel.surface === surface && (!glass || glass.hasOwnedRenderGraph())) &&
+			views.length === this.ports.minimaps().size && views.every(view => this.ports.minimaps().get(view.panelIndex) === view) &&
+			materials.every(({ mesh, material, version }) => mesh.material === material && material.version === version) &&
+			groups.every(({ node, children }) => node.onBeforeRender === THREE.Object3D.prototype.onBeforeRender &&
+				node.onAfterRender === THREE.Object3D.prototype.onAfterRender && node.children.length === children.length && children.every((child, i) => node.children[i] === child)) &&
+			targets.every(({ target, width, height }) => target.width === width && target.height === height) };
+	}
+	/** Warm only inactive Scroll resources without writing Canvas color/depth.
+	 * A stale token performs no mutation; the caller retains the complete warm path.
+	 */
+	warmInactiveScrollTargetSet(token: DeferredScrollWarmup): boolean {
+		if (token.owner !== this || token.used || !token.current()) return false;
+		token.used = true;
+		const previous = this._activeRenderTargets!, renderer = this.ports.renderer;
+		const autoClear = renderer.autoClear;
+		try {
+			withRendererState(renderer, () => {
+				renderer.autoClear = false;
+				this.activateRenderTargetSet(this.scrollQualityTargets!);
+				renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
+				renderer.setScissorTest(false);
+				renderer.setRenderTarget(this.scrollQualityTargets!.sceneCapture);
+				this.ports.renderStage();
+				this.renderPanelBlurCaptures(this.scrollQualityTargets!, true);
+				renderer.setRenderTarget(null);
+				renderer.setScissor(new THREE.Vector4(0, 0, 0, 0));
+				renderer.setScissorTest(true);
+				renderer.autoClear = false;
+				// renderStageDisplay clears attachments; zero scissor does not mask clears.
+				this._stageDisplayQuad!.render(renderer);
+				this.renderBackgroundPanels(false);
+				this._renderTargetSetWarmups++;
+				this.maskedScrollWarmups++;
+			});
+			return true;
+		} finally {
+			renderer.autoClear = autoClear;
+			this.activateRenderTargetSet(previous);
 		}
 	}
 	/** Warm the bound DETAIL's actual reveal passes while its DOM remains hidden.
@@ -693,6 +806,7 @@ export class StageRenderPipeline {
 	}
 	/** Allocate changed blur settings without replacing the scene capture or model resources. */
 	syncPanelBlurCaptures() {
+		this.warmConfiguration++;
 		const keys = new Set(this.ports.fallbackPanelOptions().map((options) => this.getPanelBlurKey(options)));
 		if (!this._activeRenderTargets && keys.size) this.createSceneCapture();
 		for (const targets of [this.fullQualityTargets, this.scrollQualityTargets]) {
@@ -785,7 +899,7 @@ export class StageRenderPipeline {
 		for (const entry of this.ports.contentSecondaries()) entry.capture.render(this.ports.renderer);
 		this.ports.spatialCapture()?.render(this.ports.renderer);
 	}
-	renderBackgroundPanels() {
+	renderBackgroundPanels(clearDepth = true) {
 		return withVisibility(
 			this.ports.panelRuntimes().map((panel) => panel.group),
 			() => {
@@ -814,7 +928,7 @@ export class StageRenderPipeline {
 				});
 
 				if (hasVisibleRegularPanel) {
-					this.ports.renderer.clearDepth();
+					if (clearDepth) this.ports.renderer.clearDepth();
 					this.ports.renderer.render(this.ports.panelScene, this.ports.panelCamera);
 					this._panelSceneRenderPasses += 1;
 				}
@@ -828,7 +942,7 @@ export class StageRenderPipeline {
 						}
 					});
 
-					this.ports.renderer.clearDepth();
+					if (clearDepth) this.ports.renderer.clearDepth();
 					this.ports.renderer.render(this.ports.panelScene, active.screenCamera);
 					this._panelSceneRenderPasses += 1;
 				});
@@ -1120,6 +1234,7 @@ export class StageRenderPipeline {
 	get renderTargetSetWarmups() {
 		return this._renderTargetSetWarmups;
 	}
+	get deferredScrollWarmups() { return this.maskedScrollWarmups; }
 	get stageModelRenderPasses() {
 		return this._stageModelRenderPasses;
 	}

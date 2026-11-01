@@ -5,7 +5,7 @@ import type {
 import { describeRenderTargets } from './renderTargetInventory.js';
 import { DeviceGeometryMotion } from './DeviceGeometryMotion.js';
 import { isDeviceOrientationPaused, getListDeviceYaw, getListDevicePitch, getListDeviceRoll, retainListDeviceOrientation, subscribeListDeviceYaw, pauseDeviceOrientationForScroll, holdDeviceOrientationForTransition } from '../catalog/listDeviceOrientation.js';
-import { StageRenderPipeline } from './StageRenderPipeline.js';
+import { StageRenderPipeline, type DeferredScrollWarmup } from './StageRenderPipeline.js';
 import { PanelPresentationController } from './PanelPresentationController.js';
 import { MinimapController } from './MinimapController.js';
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
@@ -243,6 +243,7 @@ export class StageExperience {
 		return held;
 	}
 	private deferredZoomPreparation = false;
+	private deferredScrollWarmup?: DeferredScrollWarmup;
 	private zoomPreparationFrame = 0;
 	private catalogLayerAnimating = false;
 	private stagedPreparationIdle = 0;
@@ -837,6 +838,7 @@ export class StageExperience {
 		cancelAnimationFrame(this.zoomPreparationFrame);
 		this.zoomPreparationFrame = 0;
 		this.deferredZoomPreparation = false;
+		this.deferredScrollWarmup = undefined;
 		this.pageBinding.invalidate();
 		this.pageModelReady = false;
 		this.presentation.cancelRequests();
@@ -1130,6 +1132,8 @@ export class StageExperience {
 		let prepared = true;
 		let succeeded = false;
 		let ticket: import('./SpatialElementRefinement.js').SceneEndpointTicket | undefined;
+		let scrollWarmup: DeferredScrollWarmup | undefined;
+		this.deferredScrollWarmup = undefined;
 		try {
 			try {
 				// List/Card does not necessarily flush after binding. Adopt only already-ready
@@ -1147,6 +1151,14 @@ export class StageExperience {
 					this.catalogBackgroundReveal.value = opacity;
 					this.updatePanelPointerInteraction(0);
 					if (!this.pipeline.warmRevealFrame()) { prepared = false; break; }
+				}
+				if (prepared && this.deferredZoomPreparation && !this.catalogDockTarget && !this.refinement) {
+					const model = this.model, low = this.presentation.assetInstance, high = this.highInstance,
+						environment = this.scene.environment, background = this.backgroundScene.background;
+					scrollWarmup = this.pipeline.captureDeferredScrollWarmup(() =>
+						!this.disposed && !signal?.aborted && this.pageBinding.isCurrent(generation) && this.pageModelReady && this.detailMediaActive &&
+						this.model === model && this.presentation.assetInstance === low && this.highInstance === high && !this.refinement &&
+						this.scene.environment === environment && this.backgroundScene.background === background && this.pageBackground === pageBackground);
 				}
 				// Shader/target warm-up is finished. Only now capture final endpoint pixels.
 				if (prepared && this.catalogHandoff && this.catalogMotionComplete && !this.catalogDockTarget &&
@@ -1177,6 +1189,7 @@ export class StageExperience {
 			if (this.disposed || signal?.aborted || !this.pageBinding.isCurrent(generation) || this.stagedSceneCacheOwner !== owner) return false;
 			// A live Low/High write during the fence invalidates its ticket even with the same page generation.
 			ticket?.commit();
+			this.deferredScrollWarmup = scrollWarmup;
 			succeeded = true;
 			return true;
 		} finally {
@@ -1234,8 +1247,11 @@ export class StageExperience {
 				this.zoomPreparationFrame = 0;
 				if (this.disposed || !this.pageBinding.isCurrent(generation) || this.catalogPresentation.active) return;
 				this.deferredZoomPreparation = false;
+				const scrollWarmup = this.deferredScrollWarmup;
+				this.deferredScrollWarmup = undefined;
 				void (async () => {
-					this.pipeline.warmRenderTargetSets();
+					if (!scrollWarmup || !this.pipeline.warmInactiveScrollTargetSet(scrollWarmup))
+						this.pipeline.warmRenderTargetSets();
 					await this.pipeline.prepareZoomEffects();
 					if (!this.disposed && this.pageBinding.isCurrent(generation)) this.requestRender();
 				})().catch(error => {
@@ -2177,6 +2193,7 @@ export class StageExperience {
 			creations: this.pipeline.renderTargetSetCreations,
 			resizes: this.pipeline.renderTargetSetResizes,
 			warmups: this.pipeline.renderTargetSetWarmups,
+			maskedScrollWarmups: this.pipeline.deferredScrollWarmups,
 			activeScale: this.pipeline.activeRenderTargets?.scale ?? 0
 		};
 	}
