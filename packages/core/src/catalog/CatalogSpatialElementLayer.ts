@@ -966,7 +966,24 @@ export class CatalogSpatialElementLayer {
 
 	/** Warm the existing Low material passes in an offscreen preparation target. */
 	renderForPreparation(renderer: THREE.WebGPURenderer) {
-		this.geometryFade.render(renderer, 0.5, () => renderer.render(this.scene, this.camera));
+		const visible = [...this.actors.values()].filter(actor => actor.root.visible);
+		this.geometryFade.render(renderer, 0.5, () => {
+			const fog = this.scene.fog;
+			try {
+				// Three shares a mesh/material/context owner across cameras. Rendering a
+				// Carousel mesh with List fog replaces its live no-fog owner and bindings.
+				for (const actor of visible) actor.root.visible = !actor.pose;
+				if (visible.some(actor => !actor.pose)) renderer.render(this.scene, this.camera);
+				for (const actor of visible) actor.root.visible = Boolean(actor.pose);
+				if (visible.some(actor => actor.pose)) {
+					this.scene.fog = null;
+					renderer.render(this.scene, this.carouselCamera);
+				}
+			} finally {
+				this.scene.fog = fog;
+				for (const actor of visible) actor.root.visible = true;
+			}
+		});
 	}
 
 	/** Applies only to outgoing list actors; the shared handoff geometry keeps its authored alpha. */
