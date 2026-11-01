@@ -389,6 +389,13 @@ Ein Schritt gilt erst als fertig, wenn seine Abnahme erfüllt ist. Eintragen: Fr
 
 ### Aktueller Messcheckpoint
 
+Die vollständige gemeinsame Produktionsmatrix ist zusätzlich auf Demo `91647`
+mit Runtime `960483f` bestanden: **24/24**, Run `17707`, Exit 0, Artefakte
+`.artifacts/staged-production-91647-960483f`. Sie umfasst beide Scene-Cache-Hits,
+Liste/Carousel → Hero/Dock/3XL, langsame Antworten, Reduced Motion, Quelle-/Ziel-
+Abbruch, schnelles Back und Fehlerfall. Dieser Build enthält den geprüften
+Offscreen-Scroll-Warmup, aber noch keinen optionalen CatalogWarmOutputContext.
+
 Der isolierte n1-Lauf auf Demo `11873` / Runtime `960483f` (Run `76630`, Exit 0)
 erfüllt erneut alle zwölf Startgates: DOM-Reaktion 64,7/41,5ms für Liste kalt/warm
 und 55,5/38,4ms für Carousel kalt/warm. Bewegungs-/Reveal-Framegates bleiben offen,

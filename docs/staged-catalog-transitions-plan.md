@@ -180,6 +180,11 @@ Der frühere vollständige Framework-Integrationsnachweis gilt für `8873f41`: *
 
 Die [Cleanup-/Zoom-Auswertung](../.artifacts/staged-gpu-trace-36109-be72259-carousel-cold/cleanup-zoom-audit.md) dokumentiert Anschlusslast außerhalb des Reveal: profiliert 69,006ms Cleanup und später 173,503ms optionale Zoom-Vorbereitung. Sie wird nicht als eingesparte Animationsarbeit umetikettiert.
 
+Neuester vollständiger Funktionscheckpoint: **24/24 gemeinsam** auf Demo
+`91647` / Runtime `960483f` (Run `17707`, Exit 0), Artefakte
+`.artifacts/staged-production-91647-960483f`. Der Offscreen-Scroll-Warmup ist
+enthalten, der folgende optionale CatalogWarmOutputContext noch nicht.
+
 Neuester Messcheckpoint: Demo `11873` / Runtime `960483f`, Run `76630`, Exit 0,
 vier diagnostische n1-Startlatenzfälle. DOM-Reaktion 64,7/41,5ms für Liste kalt/warm
 und 55,5/38,4ms für Carousel kalt/warm; alle zwölf Startgates erfüllt. Die rohen
