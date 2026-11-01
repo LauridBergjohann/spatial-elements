@@ -17,7 +17,7 @@ No GPU submission batching, private Three framebuffer access, model snapshot sub
 
 ## Proposed owner and API
 
-Add one long-lived Background output owner to `StageRenderPipeline`, either as a private helper or a small internal class. It owns one RGBA16F render target with the validated MSAA/depth configuration and one public Three `RenderPipeline` for the final output transform. It does not own scene/blur inputs, schedule frames or control navigation.
+The isolated internal `BackgroundLayerOutput` class now implements the proposed owner, with [its explicit lease and lifecycle contract](background-output-owner.md). It is not connected to `StageRenderPipeline` or `StageExperience`; the actual class still needs the independent pixel/resource proof. During later integration, keep one long-lived owner in `StageRenderPipeline`. It owns one RGBA16F render target with the validated MSAA/depth configuration and one public Three `RenderPipeline` for the final output transform. It does not own scene/blur inputs, schedule frames or control navigation.
 
 Conceptually it needs these operations:
 
@@ -57,6 +57,8 @@ A separate design must prepare the required variants without drawing into a pres
 
 This path is why changing only ordinary detail output would leave both linear Background allocations alive even if the new output itself never requests the implicit one.
 
+The new output-owner capability is a separate candidate for avoiding a second persistent scratch allocation: a synchronous destructive lease invalidates the owned output pixels before any work, forbids publication during the lease and permits subsequent publication only after a complete rebuild or transparent clear. This does not authorize uncontrolled borrowing of a retained target. The visible image must remain solely in the unchanged Canvas, and no reader may sample the invalid output. The standalone Catalog context and its proof remain independent; borrowed-factory integration requires the [owner's additional retention and repair checks](background-output-owner.md).
+
 ## Conservative fallback
 
 Initially enable only the backend and output configuration exercised by the completed proof: WebGPU, validated color format/MSAA/depth settings, full viewport and ordinary output state. Keep the old path for unsupported configurations such as foreign MRT/OutputRenderTarget, XR, reversed/nonstandard depth or an unproved viewport/scissor mode.
@@ -84,13 +86,13 @@ Maintain one output target, resize it in place, and report its dimensions/sample
 
 ## Missing proof and acceptance work
 
-Before production implementation:
+Evidence before production integration:
 
 1. Preserve protocol v2's completed strict linear/Canvas/Frosted DOM comparisons and independent padded-readback controls. Exact comparison limits remain zero.
-2. Complete protocol v4's checkpoint-based transparent content-only clear and retained outgoing Canvas cases, including hidden warmup without publication and the read-only allocation diagnostic. The filled-Hero comparison does not establish these cases. The masked-publish checkpoint remains a separate diagnostic candidate, not an accepted retention path merely because the offscreen path passes.
-3. Review initialization and fallback ownership, including the catalogue preparation context described above.
+2. Protocol v4's corrected integer-bound fixture passed on demo `91647` / proof `b5a522a`, run `62798`: checkpoint-based transparent clear, retained outgoing Canvas, pure offscreen preparation and the read-only allocation diagnostic. Masked publication remains a separately recorded failing candidate and is excluded.
+3. The isolated owner now has CPU lifecycle/lease checks. Review initialization and fallback ownership, and repeat the strict GPU proof using that actual class, including the catalogue preparation context described above. The standalone proof's pass does not substitute for this implementation check.
 
-On build 28778, the Background v3 positive control exposed an observation limitation: a Canvas2D copy of a WebGPU canvas after a fence and two RAFs was empty even with no intervening warm draw. Consequently its later zero-difference values do not prove retained display pixels; a before/after comparison crossing a readback await cannot alone attribute a 255-channel difference to warmup. Protocol v4 on 11873 uses actual compositor screenshots and a no-op paint control instead. Each canvas retained its own source exactly through no-op, held content-only and pure offscreen preparation. The masked final-output draw then visibly replaced the candidate source with its initial transparent-clear appearance (error 220 / 225 against source), while the untouched reference stayed exact. This negative masked-publication finding survives the separate cross-canvas screenshot defect: a fractional clip included one unrelated row, so overall equality still failed. A corrected integer-bound fixture needs a fresh run; masked Canvas publication must not be treated as invisible preparation.
+On build 28778, the Background v3 positive control exposed an observation limitation: a Canvas2D copy of a WebGPU canvas after a fence and two RAFs was empty even with no intervening warm draw. Consequently its later zero-difference values do not prove retained display pixels; a before/after comparison crossing a readback await cannot alone attribute a 255-channel difference to warmup. Protocol v4 on 11873 used actual compositor screenshots and a no-op paint control instead. Each canvas retained its own source exactly through no-op, held content-only and pure offscreen preparation. The masked final-output draw then visibly replaced the candidate source with its initial transparent-clear appearance (error 220 / 225 against source), while the untouched reference stayed exact. This negative masked-publication finding survived the separate cross-canvas screenshot defect: a fractional clip included one unrelated row, so overall equality still failed. The corrected integer-bound fixture subsequently passed on `91647` in run `62798`; both historical observations remain archived. Masked Canvas publication must not be treated as invisible preparation.
 
 During integration after these evidence and ownership gates are met:
 
