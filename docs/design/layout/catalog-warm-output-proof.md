@@ -28,4 +28,30 @@ Initial source preparation checks: the strict TypeScript check of the proof, E2E
 
 The first browser run on demo 53394 / runtime 6b3a6b1 / proof c7424ec (runner 82703) failed and remains under `.artifacts/catalog-warm-output-53394-c7424ec`. All four List Background screenshots had retained error 0 and spatial RGB range 192. At the following `frosted/source` checkpoint, the rectangle assertion correctly rejected a 960 × 640 preview instead of 240 × 160. The fixture's preceding resize guards used `CanvasTarget.setSize()` with its default `updateStyle=true`, overwriting the independently declared preview CSS extent. Both guard calls now explicitly use `false`; the actual output resize/invalidation remains unchanged. No image crop, equality threshold or resource assertion is weakened.
 
-The run ended before final GPU/readiness rows were exported, so it does not establish that the List resource/readiness assertions passed. A read-only evidence snapshot is now exposed at each checkpoint and included if the harness exits early, preserving already collected rows and phase-labelled GPU calls. The corrected complete matrix still needs a fresh run.
+The run ended before final GPU/readiness rows were exported, so it does not establish that the List resource/readiness assertions passed. A read-only evidence snapshot is now exposed at each checkpoint and included if the harness exits early, preserving already collected rows and phase-labelled GPU calls. The corrected complete observations follow below.
+
+## First complete observations: build 64392 / ed98ea3
+
+Runtime `6b3a6b1`, run `26290`, **exit 1**. All three case rows were captured in
+`.artifacts/catalog-warm-output-64392-ed98ea3`. The preview resize defect from
+build `53394` is fixed; the original failed run remains archived separately.
+
+List, frosted Carousel and glass Carousel all preserve the actual nonuniform
+Background (RGB range 192) exactly through no-op, scratch warmup and High
+intervention. All twelve checkpoint PNGs have the declared 240×160 bounds.
+No implicit Background target is created; synchronous renderer/target restore,
+ready-after-fence, stale-fence rejection and resize invalidation all pass.
+
+| GPU creation phase | List | Frosted Carousel | Glass Carousel |
+| --- | ---: | ---: | ---: |
+| First Focus after scratch | 0 | 0 | 0 |
+| First Moving after scratch | 0 | 0 | 0 |
+| Focus after High / Low-fade preparation | 0 | **1 buffer** | **1 buffer** |
+| Moving after High / Low-fade preparation | 0 | 0 | 0 |
+
+The buffers are labelled `bindingBuffer68_object_(vertex,fragment,compute)` and
+`bindingBuffer145_object_(vertex,fragment,compute)`. No shader, pipeline or
+texture creation accompanies them. GPU-validation and page-error arrays are
+empty. These buffers still violate the unchanged zero-creation gate; the suite
+is not accepted. Whether the same intervention also affects the legacy warm
+path and which owner rebuilds its bindings require further attribution.
