@@ -13,10 +13,21 @@ workspace checks with **0 errors / 0 warnings** (run `97989`). Package build
 `67527`, demo build `39337` and Examples build `82285` each exit successfully.
 The two fullscreen browser cases also pass on demo build `39337` (run `3553`,
 exit 0): retained fallback pose is within 1 CSS pixel before binding/movement,
-and native exit plus resize leaves a usable destination. The final
-tarball-consumer check is still pending; the complete public navigation matrix
-below remains tied to its earlier runtime rather than being claimed again for
-this checkpoint.
+and native exit plus resize leaves a usable destination. The isolated packed
+consumer also passes (run `76173`, exit 0): 460 Core and 118 Svelte allowlisted
+files, independent temporary installation, automatically installed Three peer,
+Core import without DOM/GPU, Svelte check 0/0 and SSR production build.
+
+This used offline npm with the workspace cache after an initial global-cache
+`EPERM` and an aborted network retry with `EACCES`; neither failed attempt is
+reported as a successful consumer run. Evidence:
+`.artifacts/layout-history-fixes-package-consumer-offline.log`, temporary consumer
+`spatial-elements-consumer-be4kMc`. These are the already built history-fix package
+bytes (Svelte runtime `83ea019`, Core `8873f41`, source checkpoint `52c342e`), not
+the subsequent deferred-warmup work in progress. Release metadata, six release
+tests, boundaries, generated layout and Wiki 13-page/31-image validation also
+pass (run `92806`, exit 0). The complete public navigation matrix below remains
+tied to its earlier runtime rather than being claimed again for this checkpoint.
 
 Runtime `8873f41`, demo build `10039` (pixel-proof fixture `6a2ed1f`), passes
 **914/914 unit tests in 116 files**, all workspace checks with **0 errors / 0 warnings**,
