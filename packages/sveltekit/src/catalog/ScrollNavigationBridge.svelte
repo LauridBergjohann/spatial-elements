@@ -41,7 +41,8 @@
 		onStart?: () => void;
 		/** Starts only a source-only transition whose destination is already known. */
 		onEarlyStart?: (navigation: BeforeNavigate) => EarlyNavigationHandle | undefined;
-		onCapture?: (navigation: OnNavigate) => void | Promise<void>;
+		/** Must retain the outgoing presentation before returning; never hold Kit's commit. */
+		onCapture?: (navigation: OnNavigate) => undefined;
 		onInterrupt?: () => void;
 		/** Cancel only a still-owned visual handoff after route commit; retain destination binding. */
 		onInterruptCommitted?: (reason: EarlyNavigationCancelReason) => boolean;
@@ -63,7 +64,6 @@
 		}
 	});
 	onDestroy(() => disconnectSections?.());
-	const PREPARATION_LIMIT_MS = 500;
 	let generation = 0;
 	let pendingNavigation = false;
 	let focusRevision = 0;
@@ -110,7 +110,6 @@
 				controller: VirtualScrollController;
 				token: object;
 				complete?: Promise<void>;
-				releasePreparation?: () => void;
 				committed: boolean;
 				interrupted: boolean;
 		  }
@@ -147,7 +146,6 @@
 		earlyReplayComplete = undefined;
 		if (active) {
 			active.controller.endNavigation(active.token);
-			active.releasePreparation?.();
 		}
 		active = undefined;
 		pendingNavigation = false;
@@ -354,7 +352,7 @@
 			});
 	});
 
-	onNavigate(async (navigation) => {
+	onNavigate((navigation) => {
 		const destination = navigation.to;
 		if (!destination) return;
 		const owner = controller;
@@ -371,41 +369,20 @@
 		const token = {};
 		const epoch = ++generation;
 		owner.beginNavigation(token);
-		let releasePreparation!: () => void;
-		const interrupted = new Promise<boolean>((resolve) => {
-			releasePreparation = () => resolve(false);
-		});
 		const binding: NonNullable<typeof active> = {
-			controller: owner, token, complete: navigation.complete, releasePreparation,
+			controller: owner, token, complete: navigation.complete,
 			committed: false, interrupted: false
 		};
 		active = binding;
-		let preparationTimer: ReturnType<typeof setTimeout> | undefined;
 		try {
-			const preparation = onCapture?.(navigation);
-			if (preparation) {
-				const prepared = await Promise.race([
-					Promise.resolve(preparation).then(() => true),
-					interrupted,
-					new Promise<boolean>((resolve) => {
-						preparationTimer = setTimeout(() => resolve(false), PREPARATION_LIMIT_MS);
-					})
-				]);
-				if (!prepared) {
-					if (epoch !== generation) return;
-					interruptVisuals();
-				}
-			}
+			onCapture?.(navigation);
 		} catch {
 			if (epoch !== generation) return;
 			interruptVisuals();
-		} finally {
-			if (preparationTimer !== undefined) clearTimeout(preparationTimer);
-			if (active?.token === token) active.releasePreparation = undefined;
 		}
 		if (epoch !== generation || !owner.active) return;
-		// The finite preparation above holds the outgoing DOM. A visual failure still
-		// restores the committed page; a superseded preparation never suppresses its successor.
+		// Source ownership is secured in this call stack. Return no promise to Kit:
+		// a visual failure still restores the committed page through the same owner.
 		disableScrollHandling();
 
 		// Do not return this promise: SvelteKit must commit before it can complete.

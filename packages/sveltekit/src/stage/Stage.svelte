@@ -510,7 +510,7 @@
 		earlyTransition = candidate;
 		return candidate?.handle;
 	}
-	async function captureNavigation(navigation: OnNavigate) {
+	function captureNavigation(navigation: OnNavigate): undefined {
 		fullscreenController?.setFullscreen(false);
 		navigationTimings = { dataReady: performance.now(), captured: 0, restoring: 0, bound: 0 };
 		const generation = ++navigationGeneration;
@@ -522,7 +522,9 @@
 			setZoomFocusState(restingZoomFocus);
 			return;
 		}
-		await navigationFeedback?.painted;
+		// Snapshot the still-mounted source synchronously. Waiting for feedback to
+		// paint here would hold Kit after its URL update but before its DOM commit.
+		// Feedback stays nonblocking; destination/GPU preparation follows commit.
 		if (destroyed || generation !== navigationGeneration) return;
 		reuseCatalogPage = Boolean(
 			navigation.from &&
