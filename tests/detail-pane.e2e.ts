@@ -84,9 +84,37 @@ test('3XL real WebGPU geometry stays fixed while pane DOM clips, grows and cross
 	// No separately projected summary may escape the native pane clip.
 	expect(await page.locator('[data-spatial-summary-root]').evaluate(node => Boolean(node.closest('[data-spatial-detail-pane-body]')))).toBe(true);
 	const savedScroll = await page.evaluate(() => scrollY);
-	await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 1 }));
+	// Every pane region shares the same continuous UI focus, not a late binary slide.
+	await page.evaluate(() => {
+		(window as any).__paneZoomFrames = [];
+		const sample = () => {
+			const root = document.querySelector<HTMLElement>('[data-spatial-element-root]')!;
+			const css = getComputedStyle(root);
+			(window as any).__paneZoomFrames.push({
+				opacity: Number(css.getPropertyValue('--spatial-pane-focus-opacity')),
+				x: parseFloat(css.getPropertyValue('--spatial-pane-focus-x')),
+				blur: parseFloat(css.getPropertyValue('--spatial-pane-focus-blur'))
+			});
+			if (!(window as any).__stopPaneZoomFrames) requestAnimationFrame(sample);
+		};
+		requestAnimationFrame(sample);
+	});
+	// Drive the real damped wheel path: setView intentionally installs an instant pose.
+	await page.mouse.move(fitAfter.x + fitAfter.width / 2, fitAfter.y + fitAfter.height / 2);
+	await page.mouse.wheel(0, -1600);
+	await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getState().focus)).toBeGreaterThan(0.01);
+	// The authored dolly range can require more than one wheel gesture to clear UI.
+	for (let step = 0; step < 6 && await page.evaluate(() => window.__stageVisualTest!.getState().uiFocus < 0.98); step++) {
+		await page.mouse.wheel(0, -1600);
+		await page.waitForTimeout(120);
+	}
 	await expect(page.locator('[data-spatial-detail-pane-body]')).toHaveAttribute('inert', '');
-	await expect.poll(async () => (await page.locator('[data-spatial-detail-pane-body]').boundingBox())!.x).toBeGreaterThanOrEqual(2455);
+	await expect(page.locator('[data-spatial-detail-pane-body]')).toHaveCSS('opacity', '0');
+	await expect(page.locator('[data-spatial-detail-pane-header]')).toHaveCSS('opacity', '0');
+	await expect(page.locator('[data-spatial-detail-pane-surface]')).toHaveCSS('opacity', '0');
+	const zoomFrames = await page.evaluate(() => { (window as any).__stopPaneZoomFrames = true; return (window as any).__paneZoomFrames as { opacity: number; x: number; blur: number }[]; });
+	await info.attach('pane-zoom-frames', { body: JSON.stringify(zoomFrames), contentType: 'application/json' });
+	expect(zoomFrames.some(frame => frame.opacity > 0.05 && frame.opacity < 0.95 && frame.x > 1 && frame.blur > 0.1)).toBe(true);
 	await page.evaluate(() => window.__stageVisualTest!.reset());
 	await expect(page.locator('[data-spatial-detail-pane-body]')).not.toHaveAttribute('inert', '');
 	await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(savedScroll, 0);

@@ -287,6 +287,7 @@
 		transform: translateY(var(--spatial-pane-fixed-compensation, 0px));
 	}
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-pane-title-row { display: flex; align-items: center; gap: 16px; height: 46px; padding-inline: 16px; }
+	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-pane-heading .breadcrumbs { width: 100%; }
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-pane-title { min-width: 0; flex: 1; margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-pane-eyebrow { margin: 0; font-size: 14px; line-height: 20px; white-space: nowrap; }
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-pane-action { visibility: hidden; display: grid; place-items: center; flex: none; width: 40px; height: 40px; padding: 0; border: 0; border-radius: var(--spatial-element-control-radius); color: var(--spatial-element-on-accent); background: var(--spatial-element-accent); cursor: pointer; }
@@ -302,12 +303,25 @@
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-clipped] .spatial-element-pane-surface,
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-clipped] .spatial-element-pane-heading,
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-clipped] .spatial-element-pane-submenu-shell {
-		translate: var(--spatial-pane-horizontal-offset, 0px) 0;
-		transition: translate 220ms ease;
+		opacity: var(--spatial-pane-focus-opacity, 1);
+		transform-origin: 50% var(--spatial-pane-focus-origin-y, 50%);
+	}
+	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-zooming] .spatial-element-pane-body,
+	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-zooming] .spatial-element-pane-surface,
+	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-zooming] .spatial-element-pane-heading,
+	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-zooming] .spatial-element-pane-submenu-shell {
+		filter: blur(var(--spatial-pane-focus-blur, 0px));
+	}
+	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-zooming] .spatial-element-pane-body {
+		transform: translate(var(--spatial-pane-focus-x, 0px), var(--spatial-pane-focus-y, 0px)) scale(var(--spatial-pane-focus-scale, 1));
+	}
+	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-zooming] .spatial-element-pane-surface,
+	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-zooming] .spatial-element-pane-heading,
+	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-zooming] .spatial-element-pane-submenu-shell {
+		transform: translate(var(--spatial-pane-focus-x, 0px), calc(var(--spatial-pane-fixed-compensation, 0px) + var(--spatial-pane-focus-y, 0px))) scale(var(--spatial-pane-focus-scale, 1));
 	}
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-content .spatial-element-tabs-anchor { position: fixed; top: calc(100svh - var(--spatial-pane-bottom)); left: calc(var(--spatial-pane-left) + var(--spatial-pane-width) / 2); width: max-content; max-width: var(--spatial-pane-width); height: 44px; margin: 0; transform: translate(-50%, var(--spatial-pane-fixed-compensation, 0px)); }
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-tabs] .spatial-element-tabs-anchor { visibility: hidden; pointer-events: none; }
-	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-hidden] { --spatial-pane-horizontal-offset: calc(50vw - 8px); }
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-hidden] .spatial-element-pane-body,
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-hidden] .spatial-element-pane-surface,
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow])[data-spatial-detail-pane-hidden] .spatial-element-pane-heading,

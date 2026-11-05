@@ -12,7 +12,7 @@
 
 <nav
 	use:mouseHover
-	class="breadcrumbs spatial-grid-scope"
+	class="breadcrumbs spatial-grid-scope spatial-content-width"
 	data-stage-dom-content
 	aria-label="Breadcrumb"
 	data-catalog-transition-dom={transition}
@@ -33,9 +33,8 @@
 <style>
 	.breadcrumbs {
 		box-sizing: border-box;
-		width: 100%;
 		height: var(--spatial-breadcrumb-height);
-		margin: 0;
+		margin-block: 0;
 		padding-inline: var(--spatial-grid-gap, 12px);
 		overflow-x: auto;
 		overflow-y: hidden;

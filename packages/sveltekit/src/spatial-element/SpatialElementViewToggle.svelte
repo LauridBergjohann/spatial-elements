@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { getContext } from 'svelte';
-	import { PanelsTopLeft, Maximize } from 'lucide-svelte';
+	import SpatialViewIcon from './SpatialViewIcon.svelte';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
 	import ButtonGroup from '../stage/ButtonGroup.svelte';
 	import { useSpatialTheme } from './brandContext.js';
@@ -49,7 +49,6 @@
 	transitionGroup="enter"
 >
 	{#snippet content(item)}
-		{#if item.value === 'detail'}<PanelsTopLeft size={21} strokeWidth={1.8} aria-hidden="true" />
-		{:else}<Maximize size={21} strokeWidth={1.8} aria-hidden="true" />{/if}
+		<SpatialViewIcon kind={item.value === 'detail' ? 'detail' : 'fullscreen'} />
 	{/snippet}
 </ButtonGroup>

@@ -101,7 +101,10 @@
 		justify-items: start;
 		overflow-x: auto;
 		overflow-y: hidden;
-		overscroll-behavior: contain;
+		/* Keep horizontal swipes in the rail, but let vertical gestures scroll
+		 * the document, including when this rail has no vertical overflow. */
+		overscroll-behavior-x: contain;
+		overscroll-behavior-y: auto;
 		pointer-events: auto;
 	}
 

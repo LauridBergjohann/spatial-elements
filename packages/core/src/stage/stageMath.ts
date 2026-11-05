@@ -409,7 +409,7 @@ export function getBoxCorners(bounds: THREE.Box3) {
 
 /** Computes the camera-facing travel used to clear panels during close-up zoom. */
 export function getPanelFocusOffset(
-	options: Required<LiquidGlassPanelOptions>,
+	options: Pick<Required<LiquidGlassPanelOptions>, 'width' | 'height' | 'position'>,
 	focus: number,
 	viewportWidth: number,
 	viewportHeight: number
@@ -437,7 +437,7 @@ export function getPanelFocusOffset(
 
 /** Chooses the least disruptive edge toward which a focused panel should travel. */
 export function getPanelFocusDirection(
-	options: Required<LiquidGlassPanelOptions>,
+	options: Pick<Required<LiquidGlassPanelOptions>, 'width' | 'height' | 'position'>,
 	normalizedX: number,
 	normalizedY: number
 ) {
@@ -463,7 +463,7 @@ export function getPanelFocusOpacity(focus: number) {
 }
 
 /** Returns CSS content blur at a normalized stage focus level. */
-export function getPanelFocusBlur(focus: number, options: Required<LiquidGlassPanelOptions>) {
+export function getPanelFocusBlur(focus: number, options: Pick<Required<LiquidGlassPanelOptions>, 'width' | 'height'>) {
 	const shortSide = Math.max(Math.min(options.width, options.height), 1);
 	const sizeScale = THREE.MathUtils.clamp(Math.sqrt(shortSide / 240), 0.34, 1);
 	return PANEL_FOCUS_MAX_BLUR * sizeScale * getPanelFocusProgress(focus);

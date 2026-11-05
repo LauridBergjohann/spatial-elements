@@ -88,7 +88,8 @@
 		}
 	});
 	$effect(() => {
-		paneController?.setHidden(Boolean(stageContext?.isFullscreen?.()) || (stageContext?.getZoomFocus?.() ?? 0) >= 0.999);
+		paneController?.setFocus(stageContext?.getZoomUiFocus?.() ?? stageContext?.getZoomFocus?.() ?? 0,
+			Boolean(stageContext?.isFullscreen?.()));
 	});
 	function invokePaneAction() {
 		mainElement.querySelector<HTMLElement>('[data-spatial-detail-pane-body] [data-catalog-rich-shared="primary-action"]')?.click();

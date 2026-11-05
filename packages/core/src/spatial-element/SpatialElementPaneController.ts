@@ -1,6 +1,23 @@
 import { resolveDetailLayout, type ResponsiveLayoutInput } from './responsiveLayout.js';
 import { STAGE_PANEL_LAYOUT_EVENT } from '../stage/panelContext.js';
 import { getStageVisualScrollPosition, STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame, syncStageScrollToNative } from '../stage/scrollFrame.js';
+import { getPanelFocusBlur, getPanelFocusOffset, getPanelFocusOpacity, getPanelFocusPerspectiveOffset, getPerspectiveDistance } from '../stage/stageMath.js';
+import { PANEL_CAMERA_FOV, PANEL_FOCUS_PERSPECTIVE_MAX_SCALE } from '../stage/stageConstants.js';
+
+/** The native pane uses the same focus curve and camera-facing motion as panels. */
+export function resolvePaneFocusPresentation(rect: { x: number; y: number; width: number; height: number },
+	viewport: { width: number; height: number }, focus: number) {
+	const position = { x: rect.x + rect.width / 2 - viewport.width / 2,
+		y: viewport.height / 2 - rect.y - rect.height / 2 };
+	const options = { width: rect.width, height: rect.height, position };
+	const offset = getPanelFocusOffset(options, focus, viewport.width, viewport.height);
+	const distance = getPerspectiveDistance(viewport.height, PANEL_CAMERA_FOV);
+	const perspective = getPanelFocusPerspectiveOffset({ x: position.x + offset.x, y: position.y + offset.y }, offset.z, distance);
+	return { x: offset.x + perspective.x, y: -offset.y - perspective.y,
+		scale: Math.min(PANEL_FOCUS_PERSPECTIVE_MAX_SCALE, Math.max(1, distance / Math.max(distance - offset.z, 1))),
+		opacity: getPanelFocusOpacity(focus), blur: getPanelFocusBlur(focus, options),
+		pivotY: rect.y + rect.height / 2 };
+}
 
 /** One document coordinate system; clipping changes paint and hit testing only. */
 export function resolvePaneScrollClip(bodyTop: number, bodyHeight: number, viewportTop: number, viewportBottom: number, scrollY: number) {
@@ -26,6 +43,8 @@ export class SpatialElementPaneController {
 	private bodyHeight = 0;
 	private scrollY = 0;
 	private hidden = false;
+	private focus = 0;
+	private focusPose = { x: 0, y: 0, scale: 1, opacity: 1, blur: 0, pivotY: 0 };
 	private savedScroll?: { x: number; y: number };
 	private actionBottom = Infinity;
 	private sectionPositions: { element: HTMLElement; top: number }[] = [];
@@ -71,6 +90,11 @@ export class SpatialElementPaneController {
 			syncStageScrollToNative();
 			this.savedScroll = undefined;
 		}
+	}
+
+	setFocus(focus: number, fullscreen = false) {
+		this.focus = fullscreen ? 1 : Math.max(0, Math.min(1, Number.isFinite(focus) ? focus : 0));
+		this.paintFocus();
 	}
 
 	destroy() {
@@ -128,20 +152,22 @@ export class SpatialElementPaneController {
 			this.schedule();
 		}
 		const rect = this.body.getBoundingClientRect();
-		const bodyHeightChanged = Math.abs(this.bodyHeight - rect.height) > 0.5;
-		this.bodyTop = rect.top + this.scrollY;
-		this.bodyHeight = rect.height;
+		// A breakpoint can remove the paint transform before this resize callback.
+		if (this.layout?.composition !== 'split') this.focusPose = { x: 0, y: 0, scale: 1, opacity: 1, blur: 0, pivotY: 0 };
+		const bodyHeightChanged = Math.abs(this.bodyHeight - rect.height / this.focusPose.scale) > 0.5;
+		this.bodyTop = this.neutralY(rect.top) + this.scrollY;
+		this.bodyHeight = rect.height / this.focusPose.scale;
 		this.sectionPositions = Array.from(this.body.querySelectorAll<HTMLElement>('[data-spatial-element-tab-target]'))
-			.map(element => ({ element, top: element.getBoundingClientRect().top + this.scrollY }));
+			.map(element => ({ element, top: this.neutralY(element.getBoundingClientRect().top) + this.scrollY }));
 		const action = this.body.querySelector<HTMLElement>('[data-catalog-rich-shared="primary-action"]');
-		this.actionBottom = action ? action.getBoundingClientRect().bottom + this.scrollY : Infinity;
+		this.actionBottom = action ? this.neutralY(action.getBoundingClientRect().bottom) + this.scrollY : Infinity;
 		this.readingTop = this.layout?.pane?.body.y ?? (Number.parseFloat(getComputedStyle(this.root).getPropertyValue('--spatial-element-section-scroll-offset')) || 0);
 		const summaryReady = this.layout?.composition !== 'split' || Boolean(this.body.querySelector('[data-spatial-summary-root]'));
 		if (!metricsChanged && !bodyHeightChanged && summaryReady && this.restoreAnchor && this.restoreAnchor.element.isConnected) {
 			const anchor = this.restoreAnchor;
 			this.restoreAnchor = undefined;
 			this.resizeAnchor = undefined;
-			const y = Math.max(0, anchor.element.getBoundingClientRect().top + this.scrollY + anchor.offset - this.readingTop);
+			const y = Math.max(0, this.neutralY(anchor.element.getBoundingClientRect().top) + this.scrollY + anchor.offset - this.readingTop);
 			window.scrollTo({ top: y, behavior: 'instant' });
 			syncStageScrollToNative();
 			this.scrollY = getStageVisualScrollPosition().scrollY;
@@ -151,6 +177,7 @@ export class SpatialElementPaneController {
 	}
 
 	private paint() {
+		this.paintFocus();
 		const pane = this.layout?.pane;
 		if (!pane || !this.body) {
 			this.root.removeAttribute('data-spatial-detail-pane-clipped');
@@ -164,6 +191,35 @@ export class SpatialElementPaneController {
 		this.body.style.clipPath = `inset(${clip.top}px 0 ${clip.bottom}px 0 round 0 0 var(--spatial-element-panel-radius) var(--spatial-element-panel-radius))`;
 		this.root.toggleAttribute('data-spatial-detail-pane-clipped', true);
 		this.root.toggleAttribute('data-spatial-detail-pane-action', this.actionBottom - this.scrollY <= pane.body.y);
+	}
+
+	/** Measurements remain in document coordinates while the pane moves in paint. */
+	private neutralY(y: number) {
+		const { scale, pivotY, y: offset } = this.focusPose;
+		return pivotY + (y - pivotY - offset) / scale;
+	}
+
+	private paintFocus() {
+		const pane = this.layout?.pane;
+		const metrics = this.readMetrics();
+		this.focusPose = pane && metrics ? resolvePaneFocusPresentation(pane.surface, metrics, this.focus)
+			: { x: 0, y: 0, scale: 1, opacity: 1, blur: 0, pivotY: 0 };
+		const pose = this.focusPose;
+		this.root.toggleAttribute('data-spatial-detail-pane-zooming', Boolean(pane && this.focus > 0.001));
+		this.setHidden(Boolean(pane && pose.opacity < 0.12));
+		const values = { '--spatial-pane-focus-x': `${pose.x}px`, '--spatial-pane-focus-y': `${pose.y}px`,
+			'--spatial-pane-focus-scale': String(pose.scale), '--spatial-pane-focus-opacity': String(pose.opacity),
+			'--spatial-pane-focus-blur': `${pose.blur}px` };
+		for (const [name, value] of Object.entries(values)) {
+			if (this.root.style.getPropertyValue(name) !== value) this.root.style.setProperty(name, value);
+		}
+		if (!pane || !this.body) return;
+		this.body.style.setProperty('--spatial-pane-focus-origin-y', `${pose.pivotY - this.bodyTop + this.scrollY}px`);
+		for (const region of this.regions) {
+			const top = region.hasAttribute('data-spatial-detail-pane-submenu-shell') ? pane.surface.y + pane.surface.height
+				: region.hasAttribute('data-spatial-detail-pane-header') || region.hasAttribute('data-spatial-detail-pane-surface') ? pane.surface.y : undefined;
+			if (top !== undefined) region.style.setProperty('--spatial-pane-focus-origin-y', `${pose.pivotY - top}px`);
+		}
 	}
 
 	private readonly handleFocus = (event: FocusEvent) => {
