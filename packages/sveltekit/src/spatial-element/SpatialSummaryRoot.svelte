@@ -43,7 +43,7 @@
    use:catalogViewLink={{ spatialElementId: model.current.spatialElement.id, targetPresentation: model.current.carousel.item.targetPresentation }}
    aria-label={`More information: ${model.current.spatialElement.title}`}
    data-catalog-focus-key={`catalog:${JSON.stringify([model.current.spatialElement.brandId, model.current.spatialElement.id, model.current.carousel.occurrence, 'carousel.front'])}`}>
-   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10" /></svg>
   </a>
  {/if}
 {/if}
@@ -52,7 +52,7 @@
  .spatial-summary-query {
   container: spatial-summary / inline-size; width: 100%; min-width: 0; pointer-events: auto;
   max-height: max(0px, calc(var(--spatial-detail-summary-max-height, 100000px) - var(--spatial-summary-content-inset, 0px) * 2 - var(--spatial-summary-height-reserve, 0px)));
-  overflow: auto; overscroll-behavior: contain;
+  overflow: auto; overscroll-behavior: auto;
  }
  :global(.spatial-summary-island[data-presentation-mode='carousel']) { height: 100%; border-radius: var(--carousel-panel-radius, 14px); opacity: var(--carousel-panel-opacity, 1); }
  .spatial-summary-surface {
@@ -72,6 +72,7 @@
   :global(.spatial-summary-island[data-presentation-mode='carousel']) { height: auto; padding: var(--spatial-summary-content-inset); }
   .compact-copy { display: none; }
   .full-summary { display: block; position: relative; }
-  .section-information { display: block; position: relative; height: 32px; line-height: 32px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--spatial-element-accent); }
+  /* Optional section navigation belongs outside the shared property surface. */
+  .section-information { display: block; position: absolute; top: calc(100% + 8px); left: 0; right: 0; height: 32px; line-height: 32px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--spatial-element-accent); }
  }
 </style>

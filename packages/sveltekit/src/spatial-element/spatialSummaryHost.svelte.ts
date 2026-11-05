@@ -39,6 +39,7 @@ export class SpatialSummaryHostController {
  private records = new Map<string, SummaryRecord>();
  private roots = new Set<SummaryRecord>();
  private placements = new WeakMap<HTMLElement, Placement>();
+ private pendingModels = new Map<string, { model: SpatialPresentationModel }>();
  private disposed = false;
  constructor(readonly content: () => SpatialSummarySnippet, readonly contexts: Map<unknown, unknown>) {}
  attach(slot: HTMLElement, key: string, context: SpatialSummaryContext) {
@@ -50,9 +51,16 @@ export class SpatialSummaryHostController {
  private attachModel(slot: HTMLElement, key: string, initial: SpatialPresentationModel) {
   let active = true;
   const placement: Placement = {};
+  // A slot's reactive context can change before its deferred Svelte root mounts
+  // (for example the carousel's SSR width is replaced by the mobile viewport).
+  // Keep those updates with the incoming placement, not an older held record.
+  const pending = { model: initial };
+  this.pendingModels.set(key, pending);
+  const forgetPending = () => { if (this.pendingModels.get(key) === pending) this.pendingModels.delete(key); };
   this.placements.set(slot, placement);
   queueMicrotask(() => {
-   if (!active || this.disposed) return;
+   if (!active || this.disposed) { forgetPending(); return; }
+   try {
    const previous = this.records.get(key);
    if (previous && !previous.held) throw new Error(`Duplicate presentation occurrence: ${key}`);
    let root = slot.querySelector<HTMLElement>('[data-spatial-presentation-root]');
@@ -64,7 +72,8 @@ export class SpatialSummaryHostController {
     slot.append(root);
    }
    root.dataset.spatialPresentationKey = key;
-   const model = $state(initial);
+   const model = $state(pending.model);
+   pending.model = model;
    if (model.kind === 'summary') {
     root.style.setProperty('--spatial-summary-content-inset', `${model.current.contentInset}px`);
     root.dataset.presentationMode = model.current.mode;
@@ -86,12 +95,19 @@ export class SpatialSummaryHostController {
    placement.release = owner.release;
    this.records.set(key, record);
    this.roots.add(record);
+   } finally { forgetPending(); }
   });
-  return () => { active = false; placement.release?.(); this.placements.delete(slot); };
+  return () => { active = false; forgetPending(); placement.release?.(); this.placements.delete(slot); };
  }
  update(key: string, context: SpatialSummaryContext) { untrack(() => this.updateModel(key, 'summary', context)); }
  updateCard(key: string, context: SpatialCardContext) { untrack(() => this.updateModel(key, 'card', context)); }
  private updateModel(key: string, kind: SummaryRecord['kind'], context: PresentationContext) {
+  const pending = this.pendingModels.get(key);
+  if (pending?.model.kind === kind) {
+   if (pending.model.kind === 'summary') pending.model.current = context as SpatialSummaryContext;
+   else pending.model.current = context as SpatialCardContext;
+   return;
+  }
   const record = this.records.get(key);
   if (!record || record.kind !== kind) return;
   if (record.frozen) { record.frozen.pending = context; return; }
@@ -200,6 +216,7 @@ export class SpatialSummaryHostController {
   this.disposed = true;
   for (const record of this.roots) record.owner.release();
   this.records.clear();
+  this.pendingModels.clear();
   this.roots.clear();
  }
 }

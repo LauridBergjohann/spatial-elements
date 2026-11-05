@@ -42,6 +42,7 @@
 			role: 'summary-surface'
 		}}
 		pointerReactive={false}
+		focusReactive={!nativeContent}
 		transitionGroup="shared"
 		class="spatial-element-panel"
 		shape={{ ...theme.panelShape, radius: radii.panel, contentInset }}

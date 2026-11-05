@@ -184,7 +184,6 @@
 	<div
 		class="summary"
 		class:has-eyebrow={Boolean(spatialElement.eyebrow)}
-		class:has-section-link={Boolean(spatialElement.summary?.sectionLink)}
 		style:--summary-content-inset={`${contentInset}px`}
 		hidden={interactive && pose.panelOpacity < 0.001}
 		inert={interactive && !selected}
@@ -335,7 +334,6 @@
 	[data-carousel-fit-anchor] { position: absolute; left: var(--spatial-carousel-fit-left); top: var(--spatial-carousel-title-reserve); width: var(--spatial-carousel-fit-width); height: var(--spatial-carousel-fit-height); pointer-events: none; }
 	@media (min-width: 840px) {
 		.summary { top: calc(var(--spatial-carousel-fit-height) / 2); height: auto; max-height: var(--spatial-carousel-fit-height); padding: 0; transform: translateY(-50%); }
-		.summary.has-section-link { --spatial-summary-height-reserve: 32px; }
 	}
 	@media (prefers-reduced-motion: reduce) {
 		img { transition: none; }

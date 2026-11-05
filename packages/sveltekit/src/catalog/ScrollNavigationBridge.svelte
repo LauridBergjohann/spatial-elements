@@ -30,6 +30,7 @@
 	} from '@spatial-elements/core/stage/VirtualScrollController';
 	import { subscribeStageScrollFrame, syncStageScrollToNative } from '@spatial-elements/core/stage/scrollFrame';
 	import { resolveCatalogIntent } from '@spatial-elements/core/catalog/catalogRecipes';
+	import { catalogTransitionViewportChanged, readCatalogTransitionViewport } from '@spatial-elements/core/catalog/catalogTransitionViewport';
 
 	interface EntryState {
 		id: string;
@@ -315,7 +316,13 @@
 		};
 		const interrupt = () => interruptInput('interaction');
 		const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') interrupt(); };
-		const resize = () => interruptInput('resize');
+		let viewport = readCatalogTransitionViewport();
+		const resize = () => {
+			const current = readCatalogTransitionViewport();
+			const changed = catalogTransitionViewportChanged(viewport, current);
+			viewport = current;
+			if (changed) interruptInput('resize');
+		};
 		window.addEventListener('keydown', keydown);
 		window.addEventListener('wheel', interrupt, { passive: true });
 		window.addEventListener('touchmove', interrupt, { passive: true });

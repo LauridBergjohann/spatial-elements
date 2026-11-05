@@ -8,6 +8,7 @@
 <svelte:element this={context.heading} class="heading" id={context.heading === 'h1' ? 'spatial-element-title' : undefined}
 	use:endpoint={context.address('title')}>{context.spatialElement.title}</svelte:element>
 <label>Configuration note<textarea bind:value={note}></textarea></label>
+<output hidden data-retained-note>{note}</output>
 <p>The field and its component remain the same when this summary becomes the detail presentation.</p>
 <style>
 	p { margin: 0 0 8px; }

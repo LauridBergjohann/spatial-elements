@@ -99,5 +99,7 @@ export interface StageContext {
 	isFullscreen?(): boolean;
 	/** Current camera zoom focus, from the fitted detail view (0) to close-up (1). */
 	getZoomFocus?(): number;
+	/** Damped UI focus shared by panels and the document-scrolled detail pane. */
+	getZoomUiFocus?(): number;
 	setFullscreen?(fullscreen: boolean): void;
 }

@@ -27,6 +27,7 @@
 	import { StageFullscreenController } from '@spatial-elements/core/stage/StageFullscreenController';
 	import ScrollNavigationBridge from '../catalog/ScrollNavigationBridge.svelte';
 	import { startStagedCatalogNavigation, type InterruptedCatalogPresentation } from '../catalog/stagedCatalogNavigation.js';
+	import { prepareCatalogSummaryTransfer } from '../catalog/catalogSummaryTransfer.js';
 	import type { EarlyNavigationCancelReason } from '@spatial-elements/core/catalog/EarlyNavigationCoordinator';
 	import { NavigationFeedback } from '@spatial-elements/core/catalog/NavigationFeedback';
 	import { CatalogTransition } from '@spatial-elements/core/catalog/CatalogTransition';
@@ -178,6 +179,7 @@
 	let transition: CatalogTransition | undefined;
 	let earlyTransition: ReturnType<typeof startStagedCatalogNavigation>;
 	let interruptedPresentation: InterruptedCatalogPresentation | undefined;
+	let summaryTransfer: ReturnType<typeof prepareCatalogSummaryTransfer>;
 	let lastEarlyTimings: NonNullable<typeof earlyTransition>['timings'] | undefined;
 	let initialized: Promise<void> | undefined;
 	let navigationGeneration = 0;
@@ -236,6 +238,7 @@
 		},
 		isFullscreen: () => fullscreen,
 		getZoomFocus: () => zoomFocusState.focus,
+		getZoomUiFocus: () => zoomFocusState.uiFocus,
 		setFullscreen: (active) => fullscreenController?.setFullscreen(active)
 	});
 
@@ -257,6 +260,7 @@
 		if (navigator.gpu) virtualScroll.start();
 		navigationFeedback = new NavigationFeedback(stage);
 		transition = new CatalogTransition(stage, catalogEndpoints, {
+			diagnose: reason => { if (visualTestController) stage.dataset.catalogTransitionDecision = reason; },
 			captureContentGeometry: (endpoint, secondary) =>
 				experience?.captureContentGeometry(endpoint.spatialElementId, secondary) ?? false,
 			prepareContentParticipants: (pairs) => experience?.prepareContentParticipants(pairs),
@@ -402,6 +406,7 @@
 			navigationFeedback?.end();
 			earlyTransition?.cancel('destroyed');
 			interruptedPresentation?.cancel(); interruptedPresentation = undefined;
+			summaryTransfer?.cancel(); summaryTransfer = undefined;
 			transition?.dispose();
 			document.documentElement.classList.remove('stage-route');
 			document.body.classList.remove('stage-route');
@@ -485,6 +490,7 @@
 	function supersedeNavigation(destination: URL) {
 		if (earlyTransition?.destination !== destination.href) earlyTransition?.cancel('superseded');
 		interruptedPresentation?.cancel(); interruptedPresentation = undefined;
+		summaryTransfer?.cancel(); summaryTransfer = undefined;
 		navigationFeedback?.end();
 		navigationGeneration += 1;
 		transition?.supersede(destination);
@@ -526,6 +532,10 @@
 			// paint here would hold Kit after its URL update but before its DOM commit.
 			// Feedback stays nonblocking; destination/GPU preparation follows commit.
 			if (destroyed || generation !== navigationGeneration) return;
+			summaryTransfer?.cancel();
+			summaryTransfer = navigation.from && navigation.to && presentationHost
+				? prepareCatalogSummaryTransfer({ from: navigation.from.url, to: navigation.to.url,
+					type: navigation.type, endpoints: catalogEndpoints, host: presentationHost }) : undefined;
 			reuseCatalogPage = Boolean(
 				navigation.from &&
 				navigation.to &&
@@ -533,9 +543,11 @@
 			);
 			navigationTimings.captured = performance.now();
 			if (reuseCatalogPage) {
+				summaryTransfer?.cancel(); summaryTransfer = undefined;
 				retainedPageSignature = pageSignature();
 				return;
 			}
+			summaryTransfer?.hold();
 			experience?.releasePage();
 			setZoomFocusState(restingZoomFocus);
 		} finally {
@@ -559,6 +571,17 @@
 	async function restoreNavigation() {
 		navigationTimings.restoring = performance.now();
 		const generation = navigationGeneration;
+		await tick();
+		if (destroyed || generation !== navigationGeneration) return;
+		// Preserve the real Svelte instance before page binding measures the new
+		// summary. This also applies when GPU motion is disabled or declined.
+		const transferredSlot = summaryTransfer?.adopt(); summaryTransfer = undefined;
+		if (transferredSlot) {
+			await tick();
+			if (destroyed || generation !== navigationGeneration) return;
+			transferredSlot.dispatchEvent(new Event('spatial-summary-measure'));
+			await tick();
+		}
 		await initialized;
 		await tick();
 		if (destroyed || generation !== navigationGeneration || !experience) return;

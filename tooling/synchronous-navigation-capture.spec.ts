@@ -25,8 +25,10 @@ function compile(body: string) {
 }
 const captureFactory = compile(`
  const { fullscreenController, navigationFeedback, transition, experience, pageSignature,
-   setZoomFocusState, restingZoomFocus, earlyTransition, destroyed = false } = ports;
- let navigationTimings, navigationGeneration = 0, reuseCatalogPage = false, retainedPageSignature;
+   setZoomFocusState, restingZoomFocus, earlyTransition, destroyed = false,
+   presentationHost, catalogEndpoints, prepareCatalogSummaryTransfer = () => undefined } = ports;
+ let navigationTimings, navigationGeneration = 0, reuseCatalogPage = false, retainedPageSignature,
+   summaryTransfer = ports.summaryTransfer;
  ${capture.getText(stage)}
  return { captureNavigation, state: () => ({ navigationTimings, reuseCatalogPage, retainedPageSignature }) };
 `);
@@ -110,6 +112,31 @@ test('synchronous capture preserves the same-page reuse owner instead of releasi
 	expect(capture.state()).toMatchObject({ reuseCatalogPage: true, retainedPageSignature: 'source-signature' });
 	expect(source.releasePage).not.toHaveBeenCalled();
 	expect(source.ports.fullscreenController.setFullscreen).toHaveBeenCalledExactlyOnceWith(false);
+});
+
+test('the real summary is retained before snapshotting and held only after its decorative source has been captured', () => {
+	const source = sourceFixture(), nav = navigation();
+	const transfer = { hold: vi.fn(() => source.order.push('hold summary')), cancel: vi.fn() };
+	const prepare = vi.fn(() => { source.order.push('retain summary'); return transfer; });
+	const host = {}, endpoints = {};
+	const capture = captureFactory({ ...source.ports, presentationHost: host, catalogEndpoints: endpoints,
+		prepareCatalogSummaryTransfer: prepare });
+	expect(capture.captureNavigation(nav.value)).toBeUndefined();
+	expect(prepare).toHaveBeenCalledExactlyOnceWith({ from: nav.value.from.url, to: nav.value.to.url,
+		type: 'link', endpoints, host });
+	expect(source.order).toEqual(['retain summary', 'capture', 'hold summary', 'release', 'leave']);
+	expect(transfer.cancel).not.toHaveBeenCalled();
+});
+
+test('same-page scene reuse releases the speculative summary claim without reparenting its source', () => {
+	const source = sourceFixture(); source.snapshot.mockReturnValue(true);
+	const transfer = { hold: vi.fn(), cancel: vi.fn() };
+	const capture = captureFactory({ ...source.ports, presentationHost: {}, catalogEndpoints: {},
+		prepareCatalogSummaryTransfer: () => transfer });
+	expect(capture.captureNavigation(navigation().value)).toBeUndefined();
+	expect(transfer.cancel).toHaveBeenCalledOnce();
+	expect(transfer.hold).not.toHaveBeenCalled();
+	expect(source.releasePage).not.toHaveBeenCalled();
 });
 
 test('an already held staged presentation commits synchronously without a second classic capture', () => {
