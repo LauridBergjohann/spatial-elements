@@ -928,3 +928,27 @@ Evidence: [explicit-owner analyzer output](../../../.artifacts/staged-performanc
 and [separate default-path analyzer output](../../../.artifacts/staged-performance-84797-ceeef8f-default-hero1440-n1-analysis.json).
 Their sibling directories preserve the original samples and calibration
 timestamps; the runner logs remain beside them.
+
+### First-frame boundary in the default cold Carousel sample
+
+The 53.9 ms script spans 7165.0–7218.9 ms and reports
+`TimerHandler:setTimeout`, with no source URL/function or usable character
+position. It includes adapter entry at 7169.2 ms, `firstMotion` at 7194.9 ms and
+`firstSubmitted` at 7215.9 ms. The built `BvzH5TBY.js` executes geometry/panel
+updates, presentation and `flushCatalogFrame()` synchronously between those last
+two markers, without an await: **21.0 ms** belongs to that first-frame region.
+There are **25.7 ms** between adapter entry and motion, plus 4.2 ms before entry
+and 3.0 ms after submission within the same recorded script. Its 2.1 ms forced
+layout total cannot be assigned to one of those subregions from this record.
+
+The source was idle at click, without a scheduled render frame or catalog
+animation. The module response ends at 7170.3 ms and the data response at
+7169.0 ms, before motion starts. Network completion does not identify JavaScript
+evaluation timing, but independent preload promise jobs cannot interleave the
+observed synchronous first-frame region. The available evidence therefore
+points to first-frame preparation/render submission as the next profiling
+boundary; it does not establish preload evaluation as the cause of the gap.
+The built Kit chunk contains a RAF→timer→navigation path consistent with the
+reported invoker, but the missing stack/source information prevents assigning
+that anonymous script directly to it. These observations do not attribute the
+whole 49.9 ms RAF gap to the 3.9 ms of recorded overlapping script.
