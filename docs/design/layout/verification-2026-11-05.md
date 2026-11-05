@@ -156,3 +156,23 @@ capture, and comparisons with the older sequential diagnostic establish no
 causal timing gain. Repeated calibrated pacing and Android/iOS/Surface checks
 remain open. This follow-up does not rerun or relabel the earlier private
 Examples/package-consumer evidence; both experimental switches remain opt-in.
+
+## Final host integration and diagnostic follow-up
+
+Examples `048c512` was subsequently rebuilt against freshly packed Core
+`68b62f3` / SvelteKit `6b52039`: `build:local` run `62098` passes, exit 0.
+The installer verifies actual tarball copies and a single shared Core resolution;
+package manifests and lockfiles are unchanged. The Examples typecheck run
+`53219` also passes with 0 errors and 0 warnings. Private commit `10a7848`
+records these checks in `docs/layout-migration.md`. This updates build/type
+evidence only; it does not relabel the earlier private browser or independent
+package-consumer results.
+
+The [final diagnostic follow-up](staged-performance.md#current-runtime-trace-and-explicit-output-follow-up)
+records trace `72134` and a separate explicit-output n=1 cohort `63480`, both on
+the unchanged Demo `3058` / Core `68b62f3`. The trace distinguishes render CPU
+work from downstream service/swap pressure without claiming hardware GPU
+execution times. The unprofiled cohort again meets all twelve start gates, but
+passes only 3/4 Moving and 1/4 Reveal raw gates; two calibrations are unstable.
+No samples or thresholds are changed. These diagnostics do not enable either
+experimental path or complete steps 14f and 16.

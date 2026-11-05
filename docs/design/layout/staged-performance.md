@@ -993,3 +993,79 @@ The sibling `staged-performance-3058-68b62f3-default-hero1440-n1` directory
 preserves every measurement, calibration timestamp and sample. Runner and
 analyzer logs remain beside it. No threshold, sample, wait or measurement
 protocol was changed for this run.
+
+## Current-runtime trace and explicit-output follow-up
+
+Diagnostic run `72134` traced one cold Carousel navigation on the unchanged
+Demo `3058` / Core `68b62f3`, with CPU sampling and phase snapshots, without
+queue fences or altered presentation. NavigationStart correlates trace and
+profile clocks; trace/user markers agree within 0.094 ms. Actual positive CPU
+sample intervals have a 1.586 ms median despite a requested 1 ms interval.
+This profiled, headless diagnostic is separate from acceptance measurements.
+
+Moving records **371 submissions / 401.8 ms**, with main-task union 251.9 ms;
+Reveal records **415 / 363.7 ms**, with main-task union 308.6 ms. The four
+Moving double-period RAF intervals contain only 8.8–16.0 ms main-task work.
+Page-compositor records contain **5 Moving / 8 Reveal dropped-frame markers**;
+the Moving doubles and later Reveal series coincide with Viz swap throttling
+at `pending_swaps = max_pending_swaps = 1`. Early Reveal also has 20–26.7 ms
+render callbacks and main-thread waiting. This supports mixed rendering and
+downstream service/presentation pressure, not a hardware-GPU-bound finding or
+physical display measurement. First motion to first submission remains
+**19.4 ms**; the first required source capture still occurs. Repeated source
+depth-blur captures are absent after that first Moving frame.
+
+Full diagnostic evidence and limitations: [CPU/RAF/submission report](../../../.artifacts/staged-gpu-trace-3058-68b62f3-carousel-cold/offlinediagnostic.md)
+and [GPU/Viz report](../../../.artifacts/staged-gpu-trace-3058-68b62f3-carousel-cold/gpu-viz-timeline.md),
+each with its machine-readable analysis beside it.
+
+The bounded follow-up, run `63480`, then completed **4/4 cases, exit 0** on
+the same runtime with explicit Background output enabled. It is an unprofiled
+synthetic Hero cohort, 1440 × 1000 / DPR 1, one sample per case, with unchanged
+`staged-performance-v2` gates, waits and sampling protocol. Analyzer exit 0
+confirms analysis completion, not pacing acceptance.
+
+| Case | Motion | Submission | DOM observation | Raw Moving / Reveal | Stable calibration |
+| --- | ---: | ---: | ---: | --- | --- |
+| List cold | 59.5 ms | 66.5 ms | 69.7 ms | pass / pass | no |
+| List warm | 43.8 ms | 51.1 ms | 54.0 ms | pass / fail | yes |
+| Carousel cold | 33.1 ms | 49.9 ms | 54.6 ms | pass / fail | yes |
+| Carousel warm | 20.0 ms | 35.3 ms | 40.1 ms | fail / fail | no |
+
+All **twelve start gates pass**, with empty instrumented GPU-creation windows
+and no validation errors. Source/end diagnostics in all cases show an active
+explicit owner, no implicit Background target, one matching target, a current
+catalog profile and the same target texture across navigation. These snapshots
+are ownership evidence, not per-RAF instrumentation. Raw pacing is **3/4 Moving,
+1/4 Reveal**. There are no phase-boundary violations. Internal failures are:
+
+- Warm List Reveal: **66.6 ms**, 7339.4–7406.0 ms, with a 28.9 ms overlapping
+  `FrameRequestCallback` script (`t`, `DKgc_l4m.js`), no forced layout. The script
+  overlap does not explain the entire gap.
+- Cold Carousel Reveal: **33.6 ms**, 8591.5–8625.1 ms, against 33.4 ms; its
+  `two-period-borderline` diagnostic label does not turn the raw failure into a pass.
+- Warm Carousel Moving: **33.3 / 33.3 / 33.4 / 33.3 ms** at 5629.8–5663.1,
+  5729.9–5763.2, 5763.2–5796.6 and 5930.0–5963.3 ms; Reveal: **33.6 ms** at
+  7163.2–7196.8 ms. Its original 16.6 ms budget sets the unchanged two-budget
+  threshold to **33.2 ms**. None of these Carousel failures has recorded script overlap.
+
+Cold List and warm Carousel calibration are unstable, including first idle
+intervals of **150.0 ms** and **6.1 ms**, respectively. Both samples and their
+raw budgets remain unchanged; warm Carousel's 33.3 ms source cadence cannot
+relax its gate. The other two calibrations are stable. Motion-end to Reveal
+remains 1.464 / 1.156 s for cold/warm List and 1.108 / 1.062 s for cold/warm
+Carousel. Every acceptance-eligibility field remains false at n=1.
+
+Compared descriptively with default run `50252`, starts are lower in three
+cases and higher for warm List; raw Moving remains 3/4 while Reveal changes
+from 2/4 to 1/4. Sequential n=1 cohorts, different calibration outcomes and
+different failure locations establish neither a causal gain nor regression.
+The explicit owner remains experimental. No further cohort or architecture
+change follows from these results: the next evidence needed is a separate
+calibration-start diagnosis and correlated CPU/service profiling before another
+rendering change, followed by calibrated repetition and physical-device checks.
+
+Evidence: [explicit-owner analysis](../../../.artifacts/staged-performance-3058-68b62f3-owner-hero1440-n1-analysis.json)
+and the separate [default analysis](../../../.artifacts/staged-performance-3058-68b62f3-default-hero1440-n1-analysis.json).
+Their sibling sample directories and runner/analyzer logs preserve both cohorts;
+no failed sample, timing boundary or threshold was adjusted.
