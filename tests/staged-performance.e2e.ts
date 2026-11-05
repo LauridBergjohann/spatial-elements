@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { cpus, platform, release } from 'node:os';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
@@ -12,6 +12,26 @@ const width = Number(process.env.SPATIAL_PERFORMANCE_WIDTH ?? 1440);
 if (!Number.isInteger(width) || width < 320) throw new Error('SPATIAL_PERFORMANCE_WIDTH must be an integer >= 320');
 const percentile = (values: number[], fraction: number) => [...values].sort((a, b) => a - b)[Math.ceil(values.length * fraction) - 1];
 const measurementProtocol = 'staged-performance-v2';
+const backgroundOutputVariant = process.env.SPATIAL_PERFORMANCE_BACKGROUND_OUTPUT === '1' ? 'explicit-owner' : 'default';
+const backgroundOutputEnabled = backgroundOutputVariant === 'explicit-owner';
+
+async function snapshotBackgroundOutput(page: Page) {
+	return page.evaluate(() => {
+		const stats = window.__stageVisualTest!.getRenderTargetStats();
+		return { owner: stats.backgroundOutput,
+			matchingTargetCount: stats.targets.filter(target => target.id === stats.backgroundOutput.targetTextureId).length };
+	});
+}
+
+function validateBackgroundOutput(snapshot: Awaited<ReturnType<typeof snapshotBackgroundOutput>> | null) {
+	expect.soft(snapshot?.owner.requested).toBe(true);
+	expect.soft(snapshot?.owner.initialized).toBe(true);
+	expect.soft(snapshot?.owner.mode).toBe('explicit');
+	expect.soft(snapshot?.owner.implicitBackgroundTarget, 'Missing diagnostics do not establish absence of an implicit Background target').toBe(false);
+	expect.soft(snapshot?.owner.targetTextureId).toEqual(expect.any(String));
+	expect.soft(snapshot?.owner.targetTextureId).not.toBe('');
+	expect.soft(snapshot?.matchingTargetCount).toBe(1);
+}
 type Activation = 'synthetic' | 'pointer' | 'enter';
 const activation = (process.env.SPATIAL_PERFORMANCE_ACTIVATION ?? 'synthetic') as Activation;
 if (!['synthetic', 'pointer', 'enter'].includes(activation)) throw new Error('SPATIAL_PERFORMANCE_ACTIVATION must be synthetic, pointer or enter');
@@ -24,7 +44,7 @@ type ActivationObservation = {
 };
 
 for (const view of ['list', 'carousel'] as const) for (const temperature of temperatures) {
-	test(`${width}px ${view} to ${endpoint}: ${samples} ${temperature} data and module navigations${activation === 'synthetic' ? '' : ` [trusted ${activation}]`}`, async ({ browser, baseURL }, testInfo) => {
+	test(`${width}px ${view} to ${endpoint}: ${samples} ${temperature} data and module navigations${activation === 'synthetic' ? '' : ` [trusted ${activation}]`}${backgroundOutputEnabled ? ' [background explicit-owner]' : ''}`, async ({ browser, baseURL }, testInfo) => {
 		const results: { latency: number; submitted: number; observedDomChange: number; budget: number; gaps: number[]; timings: unknown; requests: { name: string; start: number; duration: number }[] }[] = [];
 		for (let sample = 0; sample < samples; sample++) {
 			const context = await browser.newContext({ baseURL, viewport: { width, height: 1000 } });
@@ -75,12 +95,14 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of temp
 					}
 					Object.assign(window, { performanceWork: work });
 				});
-				await page.goto(`/staged/categories/${view}?stage-test=1&stagedNavigation=1`);
+				await page.goto(`/staged/categories/${view}?stage-test=1&stagedNavigation=1${backgroundOutputEnabled ? '&stage-background-output=1' : ''}`);
 				await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
 				const link = view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first()
 					: page.locator('[data-carousel-item="column"] .spatial-element-target');
 				if (endpoint === 'hero') await link.evaluate((node: HTMLAnchorElement) => { const url = new URL(node.href); url.hash = ''; node.href = url.href; });
 				await expect.poll(() => page.evaluate(() => window.__stageVisualTest?.getCarouselStats()?.actors.some(actor => actor.spatialElementId === 'column' && actor.stagedReady) ?? false)).toBe(true);
+				// Read once outside the measured interval; never add owner inspection to RAF sampling.
+				const backgroundOutputSource = backgroundOutputEnabled ? await snapshotBackgroundOutput(page) : null;
 				if (temperature === 'warm') {
 					const data = page.waitForResponse(response => response.url().includes('/staged/elements/column/__data.json'));
 					await link.hover();
@@ -188,13 +210,22 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of temp
 						gpuCalls: work.gpuCalls.filter(entry => entry.time >= timings.started && entry.time <= timings.revealed),
 						requests: performance.getEntriesByType('resource').filter(entry => entry.name.includes('/__data.json') || entry.name.includes('/nodes/')).map(entry => ({ name: entry.name, start: entry.startTime - timings.started, duration: entry.duration })) };
 				});
-				Object.assign(result, { sourceActivity, idleCalibration, measurementProtocol, activation, activationObservation });
+				const backgroundOutputEvidence = backgroundOutputEnabled
+					? { source: backgroundOutputSource, end: await snapshotBackgroundOutput(page) } : null;
+				Object.assign(result, { sourceActivity, idleCalibration, measurementProtocol, activation, activationObservation,
+					backgroundOutputVariant, backgroundOutputEvidence });
 				results.push(result);
 				if (profiler) {
 					const { profile } = await profiler.send('Profiler.stop');
 					await writeFile(testInfo.outputPath(`cpu-${sample}.json`), JSON.stringify({ profileStart, clockMetrics, timings: result.timings, profile }));
 				}
 				const previousErrors = testInfo.errors.length;
+				if (backgroundOutputEvidence) {
+					validateBackgroundOutput(backgroundOutputEvidence.source);
+					validateBackgroundOutput(backgroundOutputEvidence.end);
+					expect.soft(backgroundOutputEvidence.end.owner.targetTextureId, 'The Background owner must retain the same target across navigation')
+						.toBe(backgroundOutputEvidence.source?.owner.targetTextureId);
+				}
 				if (activation !== 'synthetic') {
 					expect.soft(activationObservation?.isTrusted).toBe(true);
 					expect.soft(Number.isFinite(activationObservation?.clickObservedAt)).toBe(true);
@@ -221,11 +252,11 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of temp
 				expect.soft(result.gpuCalls.filter(call => call.time <= result.timings.motionEnded)).toEqual([]);
 				expect.soft(result.gpuCalls.filter(call => call.time >= result.timings.revealStarted && call.time <= result.timings.revealEnded)).toEqual([]);
 				Object.assign(result, { validationErrors: testInfo.errors.slice(previousErrors).map(error => error.message) });
-				await writeFile(testInfo.outputPath('samples.json'), JSON.stringify({ view, endpoint, temperature, samples, measurementProtocol, activation,
+				await writeFile(testInfo.outputPath('samples.json'), JSON.stringify({ view, endpoint, temperature, samples, measurementProtocol, activation, backgroundOutputVariant,
 					completedSamples: results.length, profiled: Boolean(process.env.SPATIAL_PERFORMANCE_PROFILE), results }, null, 2));
 			} finally { await context.close(); }
 		}
-		const report = { view, endpoint, temperature, samples, measurementProtocol, activation, completedSamples: results.length, profiled: Boolean(process.env.SPATIAL_PERFORMANCE_PROFILE), userAgent: browser.version(),
+		const report = { view, endpoint, temperature, samples, measurementProtocol, activation, backgroundOutputVariant, completedSamples: results.length, profiled: Boolean(process.env.SPATIAL_PERFORMANCE_PROFILE), userAgent: browser.version(),
 			machine: { platform: platform(), release: release(), cpu: cpus()[0]?.model }, viewport: { width, height: 1000, deviceScaleFactor: 1 },
 			firstMotionP95: percentile(results.map(result => result.latency), 0.95),
 			firstSubmitP95: percentile(results.map(result => result.submitted), 0.95),

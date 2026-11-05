@@ -836,3 +836,29 @@ with all original measurements and calibration timestamps in the sibling
 `staged-performance-11873-960483f-v2-hero1440-synthetic-n1` directory and the
 runner log beside it. This is a revision-bound diagnostic, not a percentile
 acceptance run. The general activation gate and physical-device checks remain open.
+
+## Explicit Background output experiment protocol
+
+Set `SPATIAL_PERFORMANCE_BACKGROUND_OUTPUT=1` to run the existing performance
+harness with the additional `stage-background-output=1` query flag. Without that
+environment setting, navigation and the default renderer path are unchanged.
+The experiment adds `[background explicit-owner]` to test names and records
+`backgroundOutputVariant` as `explicit-owner` in both reports and individual
+samples; ordinary new runs record `default`. Keep the variants in separate
+artifact directories and compare only matching runtime, build, viewport, input
+and temperature cohorts.
+
+The experiment records the owner once at source readiness and once after the
+measurement probe has stopped. It performs no owner reads per animation frame
+and adds no settling wait. Both snapshots must show an initialized explicit
+owner, `implicitBackgroundTarget: false`, exactly one inventoried output target
+and the same nonempty target ID across navigation. Missing diagnostics fail
+validation. Validation failures remain in the complete sample set. The analyzer
+rejects mixed, unknown or mismatched report/sample variant labels; historical
+unlabelled data remains `legacy-unspecified` rather than being inferred as a
+control run.
+
+The `staged-performance-v2` protocol, calibration, raw latency/frame/resource
+gates, twenty-sample default and trusted-input separation remain unchanged. This
+section defines an experiment only; it records no measured performance outcome
+and does not enable the renderer experiment or staged navigation by default.

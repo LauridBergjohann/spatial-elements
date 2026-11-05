@@ -14,6 +14,7 @@ const statistics = values => ({ count: values.length, p50: percentile(values, 0.
 const roundoff = 1e-7; // Only absorb binary floating-point roundoff, not a frame-time tolerance.
 const measurementProtocolVersion = 'staged-performance-v2';
 const activationKinds = new Set(['synthetic', 'pointer', 'enter']);
+const backgroundOutputVariants = new Set(['default', 'explicit-owner']);
 const cadenceProtocol = Object.freeze({
   version: 'cadence-diagnostic-v1', timestampCount: 121,
   periodMinMs: 16, periodMaxMs: 17.5,
@@ -169,6 +170,18 @@ function activationCohort(input, samples) {
     latencyClock: 'click-event-timestamp', inputLatencyDiagnosticOnly: true };
 }
 
+/** A renderer experiment must never be silently pooled with the default path. */
+function backgroundOutputCohort(input, samples) {
+  const declared = input.backgroundOutputVariant ?? null;
+  const variants = new Set(samples.map(sample => sample.backgroundOutputVariant ?? null));
+  if (declared !== null && !backgroundOutputVariants.has(declared)) throw new Error('Unknown Background output variant.');
+  if ([...variants].some(variant => variant !== null && !backgroundOutputVariants.has(variant))) throw new Error('Unknown sample Background output variant.');
+  if (variants.size > 1) throw new Error('Mixed Background output variants cannot form one performance cohort.');
+  if (samples.some(sample => (sample.backgroundOutputVariant ?? null) !== declared)) throw new Error('Report and sample Background output variants must match; missing labels cannot be inferred.');
+  if (declared === null && samples.some(sample => sample.backgroundOutputEvidence != null)) throw new Error('Unlabelled Background output evidence cannot be treated as a legacy cohort.');
+  return declared ?? 'legacy-unspecified';
+}
+
 function assessActivation(sample) {
   const kind = sample.activation ?? 'legacy-unspecified';
   const observation = sample.activationObservation ?? null;
@@ -297,6 +310,8 @@ export function analyzeSample(sample, index = 0) {
   return {
     index, timings: t, firstMotionMs: latency('firstMotion'), firstSubmitMs: latency('firstSubmitted'), observedDomChangeMs: observedDomChange,
     activation: assessActivation(sample),
+    backgroundOutputVariant: sample.backgroundOutputVariant ?? 'legacy-unspecified',
+    backgroundOutputEvidence: sample.backgroundOutputEvidence ?? null,
     inputPreparation: analyzeInputPreparation(sample),
     motionDurationMs: moving ? moving.end - moving.start : null,
     revealDurationMs: reveal ? reveal.end - reveal.start : null,
@@ -328,6 +343,7 @@ export function analyzeReport(input, { source = '', profiled = false } = {}) {
   const samples = Array.isArray(input) ? input : input.results;
   if (!Array.isArray(samples)) throw new Error(`${source}: expected samples[] or a measurements report with results[].`);
   const cohort = activationCohort(input, samples);
+  const backgroundOutputVariant = backgroundOutputCohort(input, samples);
   const results = samples.map(analyzeSample);
   const expected = Number.isInteger(input.samples) ? input.samples : null;
   const values = key => results.map(result => result[key]).filter(finite);
@@ -352,6 +368,7 @@ export function analyzeReport(input, { source = '', profiled = false } = {}) {
   return {
     source, view: input.view ?? null, endpoint: input.endpoint ?? null, temperature: input.temperature ?? null,
     activation: cohort.kind, activationCohort: cohort,
+    backgroundOutputVariant,
     activationEvidence: { validSamples: results.filter(result => result.activation.valid).length, validForAllSamples: validActivation },
     viewport: input.viewport ?? null, browser: input.userAgent ?? input.browser ?? null, machine: input.machine ?? null,
     expectedSamples: expected, actualSamples: results.length, profiled,
@@ -680,6 +697,30 @@ async function selfTest() {
   assert.equal(syntheticReport.results[0].inputPreparation.status, 'not-applicable');
   assert.equal(cohortReport('pointer', { ...pressWork, inputPreparation: { ...pressWork.inputPreparation, start: -1 } })
     .results[0].inputPreparation.status, 'invalid');
+
+  // Variant labels are independent from the v2 measurement protocol and raw gates.
+  const defaultOutput = { ...synthetic, backgroundOutputVariant: 'default', backgroundOutputEvidence: null };
+  const explicitOutput = { ...synthetic, backgroundOutputVariant: 'explicit-owner',
+    backgroundOutputEvidence: { source: { owner: { targetTextureId: 'output' } }, end: { owner: { targetTextureId: 'output' } } } };
+  const outputReport = (variant, value) => analyzeReport({ activation: 'synthetic', temperature: 'warm',
+    backgroundOutputVariant: variant, samples: 20, results: Array(20).fill(value) });
+  assert.equal(syntheticReport.backgroundOutputVariant, 'legacy-unspecified');
+  for (const value of [defaultOutput, explicitOutput]) {
+    const report = outputReport(value.backgroundOutputVariant, value);
+    assert.equal(report.backgroundOutputVariant, value.backgroundOutputVariant);
+    assert.equal(report.results[0].backgroundOutputVariant, value.backgroundOutputVariant);
+    assert.deepEqual(report.results[0].backgroundOutputEvidence, value.backgroundOutputEvidence);
+    assert.deepEqual(report.gates, syntheticReport.gates);
+  }
+  assert.throws(() => analyzeReport({ activation: 'synthetic', backgroundOutputVariant: 'explicit-owner', samples: 2,
+    results: [explicitOutput, defaultOutput] }), /Mixed Background output/);
+  assert.throws(() => analyzeReport({ activation: 'synthetic', backgroundOutputVariant: 'default', samples: 2,
+    results: [defaultOutput, synthetic] }), /Mixed Background output/);
+  assert.throws(() => outputReport('explicit-owner', defaultOutput), /variants must match/);
+  assert.throws(() => outputReport(undefined, explicitOutput), /variants must match/);
+  assert.throws(() => outputReport('unknown', defaultOutput), /Unknown Background output variant/);
+  assert.throws(() => outputReport('default', { ...defaultOutput, backgroundOutputVariant: 'unknown' }), /Unknown sample Background output variant/);
+  assert.throws(() => outputReport(undefined, { ...synthetic, backgroundOutputEvidence: explicitOutput.backgroundOutputEvidence }), /Unlabelled Background output/);
   process.stdout.write('Staged-performance attribution checks passed.\n');
 }
 
@@ -713,6 +754,7 @@ async function main(args) {
       'DOM observation must exist for every sample. Validation failures and missing validation records cannot establish acceptance.',
       'Nearest-rank percentiles retain every sample. Fewer than 20 or profiled samples cannot establish latency acceptance.',
       'Activation cohorts remain separate: synthetic Cold/Warm, trusted pointer Warm and trusted Enter Warm. Mixed or mismatched report/sample labels are rejected; unlabelled historical files stay legacy-unspecified.',
+      'Background output variants remain separate: default and explicit-owner report/sample labels must match. Mixed, unknown or mismatched labels are rejected; historical unlabelled reports stay legacy-unspecified. Source/end owner snapshots are validation evidence, never per-RAF instrumentation or a change to raw gates.',
       'Trusted input requires recorded trusted input-start and click events, plus pointer-up for mouse. Raw v2 gates remain click-based; input-start latencies are separate diagnostics and never change those thresholds.',
       'inputPreparation retains GPU calls in [trusted input start, Click) and raw overlapping Long Animation Frames, with script overlap attributed separately. This preparation work never enters Click-based gates.'
     ], reports
