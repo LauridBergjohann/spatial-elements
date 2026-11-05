@@ -1,6 +1,6 @@
 # Isolated Background-layer output proof
 
-Status: **protocol v4 passed** on demo build `91647` / proof revision `b5a522a`, using runtime `960483f` (run `62798`, exit 0). Protocol v5 now substitutes the actual `BackgroundLayerOutput` owner and adds destructive-scratch/lifetime checks; its browser execution is pending. The integer-bound fixture preserves strict full-image equality. The earlier v2 success, v3 observation failure and first v4 clip failure remain documented below. This remains an experiment; production integration depends on the evidence and ownership gates, not additional user permission. No production rendering path selects its candidate.
+Status: **protocol v5 passed** on demo build `13943` / proof revision `f2ecd8c`, using the actual `BackgroundLayerOutput` owner (run `29322`, exit 0). This adds destructive-scratch/lifetime checks to the earlier v4 fixture result. The integer-bound fixture preserves strict full-image equality. Earlier successful and failed runs remain documented below. The new [query-gated Stage integration](background-output-stage-integration.md) is a separate experiment whose browser gate remains pending; ordinary applications do not select this candidate.
 
 The experiment asks whether the existing opaque Background canvas can accumulate its ordered linear draws in one explicit target, then perform the output transform once. It does not combine the Background, Foreground or Carousel Rear layers, change glass sampling sources, cache model pixels, or batch GPU submissions.
 
@@ -87,7 +87,7 @@ The lifecycle pair uses a separate white screenshot surface at integer CSS coord
 
 The allocation diagnostic reads only Map membership for `_frameBufferTargets` in installed Three r186. `Renderer.js:463` constructs a `Map`; its getter uses `.get` at line 1571, inserts at line 1601 and deletes on target disposal at line 1595. The proof validates `Map` and a callable `has`, then invokes the builtin `Map.prototype.has` with that map. It never calls the allocating `_getFrameBufferTarget()` method, obtains a private target, changes the map, or disposes an internal target directly. Missing/unknown diagnostic shape throws instead of reporting success. The reference is a positive control: its ordinary Canvas output must create an implicit entry. The candidate must have none after clear, scene/panel publication, readback, offscreen/masked warmup and resize. Public CanvasTarget disposal must remove the reference entry. This proves only the isolated sequence; production catalogue preparation still needs the ownership treatment in the integration sketch.
 
-## Protocol v5 actual-owner extension — browser execution pending
+## Protocol v5 actual-owner extension
 
 All eighteen existing linear/Canvas/state/submission comparisons and the v4 screenshot gates remain strict. The first three output configurations use the real explicit owner. The first conservative unsupported configuration selects terminal fallback; subsequent scissor/depth configurations and final Frosted output use the old Canvas path. The same owner is never re-created or switched back to explicit after fallback, even once supported settings return. A mode assertion per row and a final empty-target/terminal-mode assertion make this visible. The deliberate exception and successful complete-frame recovery now run **before** the terminal transition. Owner restoration is observed immediately after `compose()`/`clearTransparent()`, before the fixture's surrounding caller-selection restore can mask an error.
 
@@ -99,7 +99,45 @@ Canvas resize must immediately invalidate the old capability, forbid publication
 
 The known destructive zero-scissor publication remains a **separate Raw-Three diagnostic**: a fixture-owned `RenderPipeline` samples the owner target and publishes under the masked Canvas state. It is never an owner method or a production bypass. Its exact loss remains recorded as an excluded negative candidate; all owner retentions continue to require zero error. No masked-publication shortcut is added to `BackgroundLayerOutput`.
 
-V5 preparation checks pass: strict TypeScript for the proof/E2E/config against the current Core source, one case discovered by Playwright listing, and a clean diff whitespace check. The actual-owner browser proof is still pending; v4's passed fixture implementation is not automatically a pass for this replacement.
+V5 preparation checks pass: strict TypeScript for the proof/E2E/config against the current Core source, one case discovered by Playwright listing, and a clean diff whitespace check. The separate actual-owner browser result is recorded below; v4's earlier pass was not reused as evidence for this replacement.
+
+### Actual owner verified on demo 13943 / f2ecd8c
+
+The browser reported **1/1 passed in 17.3 seconds** on demo `13943`, checkpoint
+`f2ecd8c`. Complete raw data remains under
+`.artifacts/background-output-owner-v5-13943-f2ecd8c`. This result uses
+`BackgroundLayerOutput` itself, rather than the preceding fixture-only candidate.
+
+- All **18** linear and immediate Canvas comparisons have exact error **0**:
+  nine real-owner rows, then nine terminal-fallback rows. Six visible-panel owner
+  cases submit **10 → 6**; three hidden-panel cases remain **2 → 2**. Fallback
+  cases retain **4 → 4** or **12 → 12**. These are submission counts, not timings.
+- Both independent HDR/readback controls remain exact, including all **17,200**
+  padding values excluded at DPR 1.5. All **34** immediate owner-state observations
+  are restored. Injected failure restoration succeeds, the following complete
+  redraw has error **0**, and fallback remains terminal.
+- The explicit-owner Frosted checkpoint reports `ownerMode: explicit`, a full
+  **200 × 144** screenshot and error **0**. The final terminal-fallback Frosted
+  comparison is independently exact; it is not substituted for that owner check.
+- All **22** lifecycle checkpoints are archived as **44** PNGs. The **20** accepted
+  reference/candidate pairs are exact. Source spatial ranges are **220 / 225**;
+  no-work, held content-only, destructive scratch borrow, complete offscreen
+  rebuild, republish and later offscreen warming retain each source exactly.
+- Scratch actually changes the linear target by **2.9690704345703125 /
+  2.9741668701171875**. Nested publication is rejected; post-borrow publication
+  declines with **0** submissions. A complete rebuild permits the subsequent
+  **1**-submission publication, whose displayed pixels again match the source.
+- All **14** lifecycle presence observations report no implicit candidate target.
+  The reference creates its expected implicit target; public disposal removes it.
+  Resize invalidates the old capability immediately, preserves target identity,
+  and provides a new current capability. Disposal invalidates the final handle.
+  GPU-validation errors remain empty.
+
+The two excluded Raw-Three masked publications still lose the visible source by
+**220 / 225** channels and match the initial transparent clear. Their
+`acceptedRetentionPath: false` result is unchanged. This passing owner proof
+does not endorse masked Canvas warming or establish Stage-level navigation,
+shared Catalog borrowing, total memory usage or frame-pacing acceptance.
 
 ## Memory accounting
 

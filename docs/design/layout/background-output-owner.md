@@ -1,10 +1,12 @@
 # Background output owner and controlled scratch lease
 
-Status: **isolated internal implementation, not connected to StageExperience or
-StageRenderPipeline**. The independent [Background output proof](background-layer-output-proof.md)
-validated the rendering sequence on demo `91647` / proof `b5a522a`, run `62798`.
-That evidence does not yet validate this new class. Its actual implementation
-must pass the same GPU pixel, retention and resource checks before integration.
+Status: **actual owner GPU proof passed; ordinary application activation remains
+off**. The [Background output proof](background-layer-output-proof.md) separately
+validates this class on demo `13943` / checkpoint `f2ecd8c` (1/1 passed). Its
+evidence includes strict linear/presented pixels, destructive lease retention,
+rebuild/publication, restoration, resize, disposal and terminal fallback. The
+new query-gated [Stage integration check](background-output-stage-proof.md) is a
+separate, still unexecuted gate; the isolated pass is not a navigation acceptance.
 
 `packages/core/src/stage/BackgroundLayerOutput.ts` owns one full-output-size
 RGBA16F, four-sample, depth-enabled target and one public Three `RenderPipeline`.
@@ -75,9 +77,10 @@ Diagnostic target inventory is read-only. Glass and minimaps continue sampling
 their distinct scene/blur inputs, so neither ordinary composition nor scratch
 work introduces feedback from the attachment being written.
 
-This is a candidate for a later borrowed Catalog warm context. The existing
-standalone `CatalogWarmOutputContext` proof remains unchanged and independently
-owns its scratch. No borrowed factory or production lifetime is activated here.
+`CatalogWarmOutputContext.createBorrowed()` is a separate internal consumer of
+this capability. Its standalone-scratch and borrowed-owner GPU comparisons are
+documented independently in the [Catalog proof](catalog-warm-output-proof.md).
+The owner does not activate that consumer or schedule a production lifetime.
 
 ## State and failures
 
@@ -116,9 +119,14 @@ terminal fallback, and the final output's attachment identity. Core type checkin
 is also required. They cannot establish
 GPU equivalence or visible Canvas retention.
 
-The next proof must run this actual class against the unchanged reference:
-exact linear and presented-pixel equality, retained source through destructive
-borrow plus fence/two RAFs, complete repaired publication, transparent clear,
-injected error recovery, resize and no first-use resource surprises. Stage-level
-Cancel/Back, held outgoing backgrounds and route binding follow only after that
-isolated gate. No frame-time improvement is claimed by this implementation.
+The actual-class browser gate passed on demo `13943` / `f2ecd8c`: all 18
+linear/Canvas pairs and both Frosted comparisons are exact, as are all 20 accepted
+lifecycle screenshot pairs. Both destructive leases changed the target while
+retaining the displayed source; invalid publication submitted no work and a
+complete rebuild repaired publication. Fourteen read-only presence observations
+found no candidate implicit target. The separately excluded masked-publish
+diagnostic still fails with errors 220 / 225.
+
+Stage-level Cancel/Back, held outgoing backgrounds, route binding, full-size
+memory accounting and first-use resources still need their own integration gate.
+No frame-time improvement is claimed by the isolated pixel/submission result.
