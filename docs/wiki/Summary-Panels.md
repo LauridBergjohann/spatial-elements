@@ -44,7 +44,11 @@ The framework already applies `contentInset`; do not add it a second time to the
 
 The framework knows the summary's width and anchor. Text determines a detail summary's natural height. Wide flow detail summaries cap local overflow to the hero area; mobile and 3XL detail summaries contribute their real height to document flow. Custom content can use container queries to choose one, two or three internal columns based on the actual summary width.
 
+The default summary defines its own 24px body line height so moving from a Section into the detail layer does not change its height. Custom snippets should likewise own their typography instead of depending on styles inherited from the surrounding page. The heading and primary action have their own explicit type rules.
+
 Compact carousel summaries are different: below 840px they show framework-owned title/eyebrow strips of 40px or 66px and hide the full custom-summary content. Do not put an essential action exclusively in that hidden compact presentation.
+
+From M through 2XL, carousel and detail use the same property content and natural panel height. An optional `summary.sectionLink` is navigation below the carousel surface; it adds no row or reserved height to the shared panel. The arrow at the top right opens the detail page. Overflow inside a tall panel chains back to document scrolling at its boundaries, including touch gestures.
 
 Height can change when a font or late content arrives. Those changes trigger layout invalidation; they are not a reason to measure every frame. Keep media dimensions reserved when possible. Arbitrary external font changes during an animation are still a real layout change and must be tested rather than assumed invisible.
 
@@ -52,6 +56,6 @@ Height can change when a font or late content arrives. Those changes trigger lay
 
 The persistent host gives a summary a lifetime beyond a route's placement node. Placement and ownership are different responsibilities: manually reparenting a route-owned Svelte subtree does not prevent the route from destroying it.
 
-The isolated `/proof/persistent-summary` fixture demonstrates DOM identity, input value, focus, effects and exactly one cleanup across ownership changes. Production detail composition uses the same persistent-root approach. Staged-navigation handoff builds on that lifecycle contract; it needs its own cancellation and loading tests in addition to the layout proof.
+The isolated `/proof/persistent-summary` fixture demonstrates DOM identity, input value, focus, effects and exactly one cleanup across ownership changes. Production carousel-to-detail and detail-to-carousel navigation retain the live summary independently of visual-transition eligibility, including reduced motion. The ordinary transition captures its decorative actors first, holds the live root through route teardown, then adopts that root before measuring the destination panel. Staged-navigation handoff uses the same host with its own motion and cancellation lifecycle.
 
 This separation keeps the user's ongoing interaction intact and avoids rendering two copies of the same form during a visual handoff.

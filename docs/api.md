@@ -32,7 +32,7 @@ All fields are flat. See [SpatialElementData TSDoc](../packages/core/src/spatial
 | action | Absent | { label, href?, ariaLabel?, semanticId? }. With href renders a link; without it renders a button. The host owns business behavior. |
 | background | { blurriness: 0.2, tint: '#b6deff', tintIntensity: 0.3 } | HDR background presentation; independent of model lighting and theme.background. Supply the full settings object when overriding. |
 | model | Imported pose/materials | Optional rotation {x,y,z} in radians, excludeMeshes (exact mesh names), materialOverrides (physical material settings keyed by mesh name). Excluded context meshes remain visible on the main stage but do not determine fit, picking, outlines or minimaps. |
-| camera | Automatic fit | azimuth/elevation in degrees, fitPadding in CSS pixels, fitScale as a multiplier. |
+| camera | Automatic fit | azimuth/elevation in degrees, fitPadding in CSS pixels, fitScale as a multiplier. On detail pages, enlargement may consume padding but stays inside the media fit rectangle so the media rail and summary remain clear. |
 | fallbackImage | Absent | Poster URL for loading, SSR and unavailable WebGPU. Recommended. |
 | fallbackImageSize | Absent | Actual poster pixel dimensions [width,height], not physical model dimensions. |
 | breadcrumbs | [] | { label, href? }; entries without href are plain text. |
@@ -185,7 +185,7 @@ on narrow cards to retain the text budget. Full title text remains accessible th
 detail link and tooltip. See [authoring](authoring.md) for examples and [layout migration](layout-migration.md)
 for appearance and sizing changes.
 
-getSpatialListItems(elements, basePath) derives links and includes summary and flat assets automatically. List entries can customize summary.sectionLink to point at an authored detail section. Use itemKey to distinguish repeated copies of the same element within one section; internal pose/occurrence fields are assigned by the adapter. findSpatialElement(elements, id) returns the matching document or undefined; the host decides how to render a 404.
+getSpatialListItems(elements, basePath) derives links and includes summary and flat assets automatically. List entries can customize summary.sectionLink to point at an authored detail section; this optional link sits below the carousel surface and does not change the shared property panel's content or height. Use itemKey to distinguish repeated copies of the same element within one section; internal pose/occurrence fields are assigned by the adapter. findSpatialElement(elements, id) returns the matching document or undefined; the host decides how to render a 404.
 
 Keep ordinary anchor links and supply all required data through route load functions. Current transition route patterns and deployment requirements are documented in [Getting started](getting-started.md).
 

@@ -2,6 +2,8 @@
 
 `SpatialElementPage` combines one media fit, a media rail, a natural-height summary and ordinary sections. The same layout resolver supplies CSS and the renderer. A model is fitted using its full 3D bounds, including depth; projecting a near corner must not push it outside the allocated fit rectangle.
 
+The detail fit rectangle is a containment boundary. `camera.fitPadding` reserves space inside it, and `camera.fitScale` can reduce that padding when enlarging an element. Enlargement stops at the rectangle's edges; older magnification values cannot move the resting geometry under the media rail or summary. A smaller `fitScale` still leaves more space around the model. Interactive zoom deliberately leaves this resting fit while the surrounding interface clears away.
+
 ## Flow layouts: XS through 2XL
 
 XS and S place the media rail horizontally below the model, followed by the summary. M and wider place a vertical rail at the left and the summary beside the model. Content follows the hero; the section submenu appears from M. Natural panel height is bounded by the hero where appropriate, with local summary overflow rather than arbitrary global height assumptions.
@@ -17,6 +19,8 @@ XS and S place the media rail horizontally below the model, followed by the summ
 | 3XL | Usable height − 112 | 138 | Inside the right pane |
 
 Safe areas and the usable viewport are applied before resolving these rectangles. The 2XL rail also respects its 7% viewport-width limit and minimum outside inset. The media itself preserves aspect ratio; these heights describe the allocation, not a stretched model or image.
+
+Vertical swipes over the rail and properties panel can continue scrolling the document. The horizontal rail confines its horizontal scroll direction; a summary with overflowing content scrolls locally until its edge, then passes the gesture to the page. Breadcrumbs use the centered content width in flow layouts and the pane width in 3XL. Detail and fullscreen controls use the dedicated box icons from the layout design.
 
 ## Seven sizes in the public demo
 
@@ -67,6 +71,8 @@ These are individual WebGPU screenshots of `/demo/elements/column`, all at 900 C
 ## Docking while reading
 
 Scrolling a flow detail page brings a compact header into view and moves the existing minimap into it. The header is 76px at XS/S, 80px at M and 86px from L. The section submenu is absent at XS/S, 40px at M and 44px from L.
+
+The docked model's projected upper edge aligns with the viewport's safe top edge. Its fit square may extend above the header, but its geometry does not get clipped there. Hover enlargement and device rotation recompute this alignment from the live 3D pose; the model grows downward. If enlargement reaches beyond the safe left edge, only the necessary horizontal correction is applied, without reducing the model or its hover motion. The correction blends into the normal scroll morph, and the prepared navigation endpoint uses the same geometry.
 
 There is exactly one live section-navigation element. Its ownership moves from the source panel into the dock; it is not duplicated into separately focusable desktop/mobile versions. Link identity, horizontal scroll and keyboard focus survive the move. Returning restores it to the source position. When route teardown has already detached that source, the controller uses an ordinary DOM move rather than an invalid state-preserving atomic move.
 

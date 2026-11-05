@@ -11,6 +11,7 @@ Precedence: the author's explicit corrections, then this consolidated contract, 
 - [Content layout](content-layout.md): container grids, typography, cards, section backgrounds, radii and authoring contracts.
 - [Detail layout](detail-layout.md): shell, hero, rail, summary, docking, zoom, carousel and ultra-wide composition.
 - [Validation cases](validation.md): fixtures, measurable invariants and acceptance scenarios.
+- [Device-review corrections](detail-feedback-corrections.md): mobile return transitions, live summary ownership, touch scrolling, hero/dock bounds and continuous 3XL pane zoom.
 - [Staged reveal opacity](staged-dom-reveal.md): local DOM paint ownership, ordinary-transition fallback and cleanup during the experimental forward path.
 
 ## Decision record
