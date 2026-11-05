@@ -75,6 +75,7 @@ export interface StagePanelRegistration {
 	getMinimapDockProgress(): number;
 	/** Returns the viewport-space top edge used to anchor the rendered model. */
 	getMinimapModelTop(): number | undefined;
+	getMinimapModelLeft?(): number | undefined;
 }
 
 export interface StageViewportRegistration {

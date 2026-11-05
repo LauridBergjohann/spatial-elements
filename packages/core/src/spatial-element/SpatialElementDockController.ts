@@ -75,8 +75,10 @@ export class SpatialElementDockController {
 	private minimapOriginalDockProgress: string | null = null;
 	private minimapOriginalModelScale: string | null = null;
 	private minimapOriginalModelTop: string | null = null;
+	private minimapOriginalModelLeft: string | null = null;
 	private minimapDock?: SpatialElementDockRect;
 	private minimapViewportTop = 0;
+	private minimapViewportLeft = 0;
 	private tabsDock?: SpatialElementDockRect;
 	private dockedMinimapModelScale = 1;
 	private stickyHeaderBottom = 0;
@@ -161,6 +163,7 @@ export class SpatialElementDockController {
 			'data-stage-minimap-model-scale'
 		);
 		this.minimapOriginalModelTop = this.minimapFrame.getAttribute('data-stage-minimap-model-top');
+		this.minimapOriginalModelLeft = this.minimapFrame.getAttribute('data-stage-minimap-model-left');
 		this.stickyTabsOriginalStyle = this.stickyTabs?.getAttribute('style') ?? null;
 		this.tabsOriginalSurfaceOpacity =
 			this.tabsFrame?.style.getPropertyValue('--stage-panel-surface-opacity') ?? '';
@@ -202,6 +205,8 @@ export class SpatialElementDockController {
 		this.restoreMinimapDockProgress();
 		this.restoreMinimapModelScale();
 		this.restoreMinimapModelTop();
+		if (this.minimapOriginalModelLeft === null) this.minimapFrame?.removeAttribute('data-stage-minimap-model-left');
+		else this.minimapFrame?.setAttribute('data-stage-minimap-model-left', this.minimapOriginalModelLeft);
 		this.restoreHeaderPresentation();
 		this.setHeaderActive(false);
 		this.setPaneTabsActive(false);
@@ -257,14 +262,17 @@ export class SpatialElementDockController {
 		this.setMinimapSurfaceOpacity(decorationOpacity);
 		const minimapRect = toRect(this.minimapFrame.getBoundingClientRect());
 		const tabsWidth = this.sourceTabsList?.querySelector<HTMLElement>(TABS_LINKS)?.scrollWidth ?? 0;
-		const geometry = resolveSpatialElementDockLayout(this.readLayoutMetrics?.() ?? {
+		const metrics = this.readLayoutMetrics?.() ?? {
 			width: window.innerWidth, height: window.innerHeight,
 			scrollbarWidth: Math.max(0, window.innerWidth - (document.documentElement?.clientWidth ?? window.innerWidth))
-		}, tabsWidth);
+		};
+		const geometry = resolveSpatialElementDockLayout(metrics, tabsWidth);
+		this.minimapViewportLeft = Math.max(Number.isFinite(metrics.safeArea?.left) ? metrics.safeArea!.left! : 0, 0);
 		// The fixed 3XL pane owns its header and submenu separately (step 10).
 		if (!geometry) {
 			this.applyState(false);
 			this.setMinimapModelTop(undefined);
+			this.minimapFrame.removeAttribute('data-stage-minimap-model-left');
 			if (!this.tabsInPane) this.setTabsActive(false);
 			this.setPaneTabsActive(true);
 			this.applyMinimapPresentation(0);
@@ -382,6 +390,7 @@ export class SpatialElementDockController {
 		// model follows this top edge through the same continuous dock morph,
 		// including its hover and sensor pose, instead of being clipped by it.
 		this.setMinimapModelTop(this.minimapViewportTop);
+		this.minimapFrame.setAttribute('data-stage-minimap-model-left', this.minimapViewportLeft.toFixed(3));
 		if (docked) this.updateDepartingContentClipping();
 		else if (changed) this.restoreDepartingContentClipping();
 		if (changed || dockLayoutChanged) {

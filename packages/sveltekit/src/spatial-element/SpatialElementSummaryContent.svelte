@@ -103,6 +103,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
+		/* The same live panel can leave a Section for the stage's detail layer. */
+		line-height: 24px;
 		pointer-events: auto;
 	}
 

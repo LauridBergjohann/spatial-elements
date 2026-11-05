@@ -57,3 +57,25 @@ export function getMinimapTopAlignmentOffset(
 	}
 	return Number.isFinite(offset) ? offset : 0;
 }
+
+/** Smallest camera-right translation that keeps every projected corner inside the safe left edge. */
+export function getMinimapLeftAlignmentOffset(
+	points: readonly THREE.Vector3[], modelMatrix: THREE.Matrix4, camera: THREE.PerspectiveCamera,
+	viewportWidth: number, left: number
+) {
+	const projection = new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+	const right = new THREE.Vector4(1, 0, 0, 0).applyMatrix4(camera.matrixWorld);
+	const direction = right.clone().applyMatrix4(projection);
+	const transform = projection.multiply(modelMatrix);
+	const targetX = left * 2 / Math.max(viewportWidth, 1) - 1;
+	const slope = direction.x - targetX * direction.w;
+	let offset = 0;
+	if (Number.isFinite(slope) && slope > 0.000001) {
+		const point = new THREE.Vector4();
+		for (const bound of points) {
+			point.set(bound.x, bound.y, bound.z, 1).applyMatrix4(transform);
+			if (point.w > 0) offset = Math.max(offset, (targetX * point.w - point.x) / slope);
+		}
+	}
+	return new THREE.Vector3(right.x, right.y, right.z).multiplyScalar(Number.isFinite(offset) ? offset : 0);
+}

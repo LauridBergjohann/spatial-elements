@@ -139,6 +139,8 @@ export interface StagePanelTarget {
 	getMinimapDockProgress?: () => number;
 	/** Reads the viewport-space top edge used to anchor the rendered model. */
 	getMinimapModelTop?: () => number | undefined;
+	/** Minimum viewport-space model edge; only corrects dock overflow, never normal centering. */
+	getMinimapModelLeft?: () => number | undefined;
 }
 
 /** Identifies the DOM region used to frame the main element camera. */

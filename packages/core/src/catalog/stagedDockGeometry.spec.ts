@@ -129,7 +129,7 @@ test.each(parityCases)('CPU descriptor equals mounted minimap matrices and proje
 		renderer: { coordinateSystem: panelCamera.coordinateSystem } as THREE.WebGPURenderer,
 		camera, panelCamera, panelScene: new THREE.Scene(), panel: () => panel,
 		target: () => ({ getMinimapDockProgress: () => progress, getMinimapModelScale: () => presentationScale,
-			getMinimapModelTop: () => dock.header.top } as StagePanelTarget),
+			getMinimapModelTop: () => dock.header.top, getMinimapModelLeft: () => input.layout.safeArea?.left ?? 0 } as StagePanelTarget),
 		sensorRotation: () => sensor,
 		spatialElement: () => ({ model: low, low, camera: input.camera, restCamera: camera.quaternion,
 			restModel, hasControls: false, center: input.center }),
@@ -161,6 +161,7 @@ test.each(parityCases)('CPU descriptor equals mounted minimap matrices and proje
 			owner.updateMinimapDisplayModel(view, dock.minimap.width, dock.minimap.height, 0);
 			owner.syncMinimapProjection(view, dock.minimap.width, dock.minimap.height);
 			expect(owner.getProjectedMinimapModelRect(view)!.y).toBeCloseTo(dock.header.top, 7);
+			expect(owner.getProjectedMinimapModelRect(view)!.x).toBeGreaterThanOrEqual((input.layout.safeArea?.left ?? 0) - 0.000001);
 		}
 		// Leaving the rail starts continuously; small progress makes a small change.
 		view.layer.rotation.set(0, 0, 0); view.layer.position.y -= 180;

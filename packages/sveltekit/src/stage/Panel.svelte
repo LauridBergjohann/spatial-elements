@@ -94,6 +94,7 @@
 		getMinimapDockProgress,
 		getMinimapModelScale,
 		getMinimapModelTop,
+		getMinimapModelLeft,
 		getSurface: () => resolvedSurface,
 		getSurfaceOpacity,
 		getOptions: getPanelOptions
@@ -170,6 +171,11 @@
 	/** Reads the dock-controlled viewport anchor independently of model scale. */
 	function getMinimapModelTop() {
 		const value = Number.parseFloat(frameElement?.dataset.stageMinimapModelTop ?? '');
+		return Number.isFinite(value) ? value : undefined;
+	}
+
+	function getMinimapModelLeft() {
+		const value = Number.parseFloat(frameElement?.dataset.stageMinimapModelLeft ?? '');
 		return Number.isFinite(value) ? value : undefined;
 	}
 

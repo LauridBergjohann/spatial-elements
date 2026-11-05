@@ -51,7 +51,7 @@ import {
 } from './stageMath.js';
 import {
 	getMinimapDockedQuaternion, getMinimapModelFitScale, getMinimapModelRadius, getMinimapRestQuaternion,
-	getMinimapTopAlignmentOffset
+	getMinimapTopAlignmentOffset, getMinimapLeftAlignmentOffset
 } from './minimap/MinimapModelGeometry.js';
 import {
 	addMinimapBlurLights,
@@ -765,6 +765,16 @@ export class MinimapController {
 		minimap.displayModel.position.y += getMinimapTopAlignmentOffset(minimap.modelBoundsPoints,
 			minimap.displayModel.matrixWorld, minimap.screenCamera, window.innerHeight, top, minimap.layer.matrixWorld);
 		minimap.displayModel.updateWorldMatrix(true, true);
+		const safeLeft = this.ports.target(minimap.panelIndex)?.getMinimapModelLeft?.() ?? 0;
+		const shift = getMinimapLeftAlignmentOffset(minimap.modelBoundsPoints, minimap.displayModel.matrixWorld,
+			minimap.screenCamera, window.innerWidth, safeLeft);
+		if (shift.lengthSq() > 0) {
+			// Camera-right leaves projected Y and depth unchanged, even when the panel tilts.
+			const local = new THREE.Vector4(shift.x, shift.y, shift.z, 0)
+				.applyMatrix4(minimap.layer.matrixWorld.clone().invert());
+			minimap.displayModel.position.add(new THREE.Vector3(local.x, local.y, local.z));
+			minimap.displayModel.updateWorldMatrix(true, true);
+		}
 	}
 	getProjectedMinimapModelRect(minimap: StageMinimapState) {
 		minimap.layer.updateWorldMatrix(true, false);
