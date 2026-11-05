@@ -7,80 +7,56 @@ not establish smooth animation or a latency percentile.
 
 ## Current verified boundary
 
-The fully verified source checkpoint `52c342e`, including tabs `83ea019` and fullscreen
-ordering `6e79c9a`, passes **936/936 units in 119 files** (run `46764`) and all
-workspace checks with **0 errors / 0 warnings** (run `97989`). Package build
-`67527`, demo build `39337` and Examples build `82285` each exit successfully.
-The complete public production matrix also passes **24/24 together** on demo
-`39337` / runtime `83ea019` (run `98004`, exit 0), with artifacts in
-`.artifacts/staged-production-39337-83ea019`. This is a new complete run, separate
-from the earlier `8873f41` matrix and the targeted private/fullscreen cases.
-The two fullscreen browser cases also pass on demo build `39337` (run `3553`,
-exit 0): retained fallback pose is within 1 CSS pixel before binding/movement,
-and native exit plus resize leaves a usable destination. The isolated packed
-consumer also passes (run `76173`, exit 0): 460 Core and 118 Svelte allowlisted
-files, independent temporary installation, automatically installed Three peer,
-Core import without DOM/GPU, Svelte check 0/0 and SSR production build.
+The [2026-11-05 checkpoint](verification-2026-11-05.md) records the current
+revision-bound software/package evidence. Core `ceeef8f` with test-fixture
+correction `1e24787` passes **1084/1084 units in 128 files** (run `56198`).
+Core and Demo typechecks passed in run `45014`; after the diagnostic-default
+correction `6b52039`, the adapter's own check passes with **0 errors / 0 warnings**
+(run `22957`). The original incomplete-default failure is not retroactively
+changed into a passing workspace command.
 
-This used offline npm with the workspace cache after an initial global-cache
-`EPERM` and an aborted network retry with `EACCES`; neither failed attempt is
-reported as a successful consumer run. Evidence:
-`.artifacts/layout-history-fixes-package-consumer-offline.log`, temporary consumer
-`spatial-elements-consumer-be4kMc`. These are the already built history-fix package
-bytes (Svelte runtime `83ea019`, Core `8873f41`, source checkpoint `52c342e`), not
-the subsequent deferred-warmup work in progress. Release metadata, six release
-tests, boundaries, generated layout and Wiki 13-page/31-image validation also
-pass (run `92806`, exit 0). The earlier results below retain their own revisions.
+Demo `84797` / Core `ceeef8f` passes the complete ordinary-output staged
+navigation matrix **24/24** (run `31172`) and the separate experimental Stage
+output matrix **5/5** (run `71682`, proof `1235e47`). The latter verifies
+retained Background pixels, observed ownership and first-use resource windows,
+not complete legacy/candidate image parity or frame pacing. See the
+[Stage proof](background-output-stage-proof.md). The demo build produced complete
+Vite/Svelte output, but its native-warning shell exit 1 is not relabelled as
+build exit 0.
 
-The subsequent deferred-scroll-warmup commit `60deaac` has 76 focused unit passes,
-type checks and successful package build `23283`; its demo build `27554` is in
-progress and browser acceptance is not yet established. The 936-unit, 24-case,
-package-consumer and performance evidence above does not certify that later
-runtime. No warmup performance benefit is inferred from its source or unit checks.
+The independent packed consumer passes (run `15579`, exit 0): **468 Core / 118
+Svelte allowlisted files**, automatic Three peer installation, Core import
+without DOM/GPU, Svelte check and SSR production build. The targeted private
+production suite also passes **8/8** (run `32997`, Examples `7db5c77`, build
+`71912`), covering headers, Carousel controls/focus/mouse and both immediate-Back
+motion settings. These packed-consumer/private builds contain adapter `6b52039`;
+the two Demo browser matrices used its preceding built bytes. The private run
+is not a full 60-case visual rerun or an experimental-output performance proof.
+Release metadata, boundaries, generated layout and Wiki validation pass in run
+`27805`, with 13 Markdown pages and 31 images exported locally, not published.
 
-Runtime `8873f41`, demo build `10039` (pixel-proof fixture `6a2ed1f`), passes
-**914/914 unit tests in 116 files**, all workspace checks with **0 errors / 0 warnings**,
-and the complete **24/24 public production navigation matrix** (run `27302`, exit 0).
-The [StageDisplay proof](stage-display-clear.md), recorded in `13be2b4`, has 24
-exact linear HalfFloat and final Canvas comparisons with no GPU validation errors.
-Its twelve standard cases use 2 submissions instead of 4; twelve fallback cases
-remain 4 versus 4. These counts isolate one display call. A subsequent unprofiled
-cohort includes StageDisplay, but does not isolate its effect on navigation pacing.
+The latest unprofiled evidence consists of [two separate n=1 synthetic
+cohorts](#background-output-diagnostic-build-84797--ceeef8f) on that same Demo/Core:
+explicit owner `82024` and default control `80413`. All starts are below 100 ms
+and GPU-creation windows are empty, but the owner fails two Reveal gates with
+33.5–33.7 ms internal gaps, while the control has a 49.9 ms Moving gap. Both
+cold-List calibrations are unstable. These observations establish neither a
+percentile acceptance nor a causal speedup/regression. No failed sample,
+calibration or raw gate is discarded or relaxed.
 
-Evidence: `.artifacts/layout-display-clear-units.log`,
-`.artifacts/layout-display-clear-check.log`,
-`.artifacts/layout-display-clear-package-build.log`,
-`.artifacts/layout-display-clear-resize-demo-build.log`,
-`.artifacts/staged-production-10039-8873f41`, and
-`.artifacts/stage-display-clear-10039-6a2ed1f`.
-Examples `6938b45` built with framework `8873f41` in build `44157`; private run
-`6701` retained its **4/6 passed, exit 1** result. The ambiguous tooltip selector
-was corrected in Examples `d557914`. The real stale-data/Carousel-snippet failure
-was traced to Kit's asynchronous `onNavigate` hold and corrected by synchronous
-source capture in `039b8e2`. The same six ordinary carousel/header cases now pass
-**6/6** on Examples build `20223` / framework `039b8e2` (run `16117`).
+Earlier complete checkpoints remain historical: `8873f41` (914 units and 24
+navigation cases), `52c342e` with runtime `83ea019` (936 units, 24 navigation
+cases and consumer `76173`), and `960483f` (978 units, three focused offscreen
+warmup cases and 24 navigation cases on Demo `91647`). Their evidence remains in
+the [implementation plan](../../layout-system-implementation-plan.md),
+[capture contract](synchronous-navigation-capture.md),
+[offscreen warmup proof](deferred-scroll-warmup.md) and the earlier cohorts below.
+No historical failure or success is reassigned to newer runtime bytes.
 
-The two additional immediate-Back tests in Examples `be739a1` are separate: on
-that runtime both restore the correct URL, all eight items, focus and history
-length, but fail their strict empty-error assertion on a null tab-measurement
-binding before reaching the subsequent complete roundtrip-state comparisons.
-The failed traces remain in the private host's
-`.artifacts/layout-regression-039b8e2-fast-back`. Follow-up `83ea019` passes seven
-focused lifecycle units. Its two production retests now pass on Examples build
-`82285` / framework checkpoint `52c342e` (run `89730`, exit 0), including all
-subsequent Back/Forward state comparisons and empty page errors. Evidence is in
-the private host's `.artifacts/layout-regression-82285-83ea019-fast-back`.
-Fullscreen ordering correction `6e79c9a` has 28/28 focused units and the two
-separate production browser passes recorded in the [capture contract](synchronous-navigation-capture.md).
-These results are not folded into the older 914-unit or 24-case totals.
-
-The latest unprofiled cohort is the four synthetic diagnostic samples on build
-`10026` / `039b8e2`, recorded below. All twelve start gates pass, but three
-calibrations are unstable and raw approximately 50ms frame gaps remain. Neither
-n=1, profiled traces, pixel equivalence nor
-functional passes satisfy the repeated performance gate. General activation
-(step 14f) remains open and the feature stays opt-in through `?stagedNavigation=1`.
-Historical raw data and failed results remain unchanged.
+General activation (step 14f), calibrated repeated measurements and physical
+Android/iOS/Surface checks remain open. Early navigation still requires
+`?stagedNavigation=1`; shared Background output additionally requires
+`stage-test=1&stage-background-output=1`.
 
 ## Reproduce
 
