@@ -268,6 +268,7 @@ export class CatalogSpatialElementLayer {
 	private stagedPanel?: { card: HTMLElement; matrix: THREE.Matrix4 };
 	private stagedPanelOpacity = 1;
 	private stagedSourceFrozen = false;
+	private stagedSourceCapture?: { front: object; rear: object; signature?: string };
 	private groundPoseSettled = false;
 	private stagedPreparing = false;
 	private stagedReadinessBlocked = false;
@@ -320,6 +321,7 @@ export class CatalogSpatialElementLayer {
 		this.invalidate();
 	};
 	private readonly resize = () => {
+		this.stagedSourceCapture = undefined;
 		this.stagedWarmRevision++;
 		this.layoutDirty = true;
 		this.queueDirty = true;
@@ -372,6 +374,7 @@ export class CatalogSpatialElementLayer {
 	};
 	private readonly motionChange = () => this.invalidate();
 	setPageBackground(value: string) {
+		this.stagedSourceCapture = undefined;
 		(this.scene.fog as THREE.Fog).color.set(value);
 
 		this.invalidate();
@@ -410,6 +413,7 @@ export class CatalogSpatialElementLayer {
 
 	async setSpatialElements(brandId: string, spatialElements: SpatialListItem[]) {
 		if (this.disposed) return;
+		this.stagedSourceCapture = undefined;
 		this.cancelActivationFocusRequest();
 		const generation = ++this.generation;
 		this.layoutObserver.disconnect();
@@ -500,6 +504,7 @@ export class CatalogSpatialElementLayer {
 					const actor = this.createActor(key, brandId, spatialElement.id, getSpatialElementScene(spatialElement), instance);
 					actor.occurrence = spatialElement.occurrence;
 					actor.pose = spatialElement.pose;
+					this.stagedSourceCapture = undefined;
 					this.actors.set(key, actor);
 					this.scene.add(actor.root);
 					this.layoutDirty = true;
@@ -940,7 +945,7 @@ export class CatalogSpatialElementLayer {
 					actor.card?.setAttribute('data-catalog-model-ready', '');
 				}
 			}
-		}, warmOutput);
+		}, warmOutput, this.frozenSourceForBand(band, warmOutput));
 		for (const actor of all) actor.root.visible = true;
 		if (band === 'front' && this.handoff) this.renderHandoff(renderer);
 	}
@@ -1004,6 +1009,7 @@ export class CatalogSpatialElementLayer {
 					: !item.occurrence || item.card?.hasAttribute('data-catalog-selected'))
 		);
 		if (!actor?.rendered || !actor.root.visible) return false;
+		this.stagedSourceCapture = undefined;
 		this.finishHandoff();
 		this.handoffPoint = undefined;
 		actor.model.updateWorldMatrix(true, true);
@@ -1168,7 +1174,26 @@ export class CatalogSpatialElementLayer {
 			this.stagedReadinessBlocked = false;
 		}
 	}
-	freezeStagedSource() { this.stagedSourceFrozen = true; }
+	freezeStagedSource() {
+		this.stagedSourceFrozen = true;
+		this.stagedSourceCapture = { front: {}, rear: {} };
+	}
+	private frozenSourceForBand(band: 'front' | 'rear', warmOutput?: CatalogWarmOutputContext) {
+		const capture = this.stagedSourceCapture;
+		if (!this.stagedSourceFrozen || !capture || this.stagedPreparing || warmOutput) return;
+		// Frozen actors keep their pose, but projection, HDR or outline settings can
+		// still change through the stage. Any such change ends reuse for this freeze.
+		const fog = this.scene.fog as THREE.Fog | null;
+		const signature = JSON.stringify([window.innerWidth, window.innerHeight,
+			this.scene.environment?.uuid, this.scene.environment?.version, this.scene.environmentIntensity,
+			fog?.color.getHex(), fog?.near, fog?.far, this.interactionTheme()]);
+		if (capture.signature !== undefined && capture.signature !== signature) {
+			this.stagedSourceCapture = undefined;
+			return;
+		}
+		capture.signature = signature;
+		return capture[band];
+	}
 
 	/** Move the existing glass mesh with the actual DOM quad, without resizing its resources. */
 	setStagedPanel(card: HTMLElement, corners: CssProjectionQuad, width: number, height: number) {
@@ -1184,7 +1209,10 @@ export class CatalogSpatialElementLayer {
 		return true;
 	}
 	setStagedPanelOpacity(opacity: number) { this.stagedPanelOpacity = THREE.MathUtils.clamp(opacity, 0, 1); this.invalidate(); }
-	finishStagedPanel() { this.stagedPanel = undefined; this.stagedSourceFrozen = false; this.stagedPanelOpacity = 1; this.invalidate(); }
+	finishStagedPanel() {
+		this.stagedPanel = undefined; this.stagedSourceFrozen = false; this.stagedSourceCapture = undefined;
+		this.stagedPanelOpacity = 1; this.invalidate();
+	}
 
 	/** Last submitted geometry position; diagnostics never advance animation or read DOM layout. */
 	setDestinationSpatialElement(spatialElementId?: string) {
@@ -1253,6 +1281,7 @@ export class CatalogSpatialElementLayer {
 	detachHandoff() {
 		const handoff = this.handoff;
 		if (!handoff) return;
+		this.stagedSourceCapture = undefined;
 		const actor = handoff.actor;
 		const model = actor.model;
 		model.updateWorldMatrix(true, true);
@@ -1297,6 +1326,7 @@ export class CatalogSpatialElementLayer {
 				if (released) return false;
 				if (this.disposed || !this.desired.has(actor.key) || !actor.slot?.isConnected) { release(); return false; }
 				released = true; this.detachedInstances--;
+				this.stagedSourceCapture = undefined;
 				actor.model.matrixAutoUpdate = true; actor.model.updateMatrix();
 				actor.view.add(actor.model); this.scene.add(actor.root);
 				this.actors.set(actor.key, actor); this.layoutDirty = true; this.invalidate();
@@ -1334,6 +1364,7 @@ export class CatalogSpatialElementLayer {
 	finishHandoff() {
 		const handoff = this.handoff;
 		if (!handoff) return;
+		this.stagedSourceCapture = undefined;
 		this.handoff = undefined;
 		const actor = handoff.actor;
 		applyCatalogMaterialOpacity(actor.materials, 1);
@@ -1357,6 +1388,7 @@ export class CatalogSpatialElementLayer {
 	}
 
 	dispose() {
+		this.stagedSourceCapture = undefined;
 		this.cancelActivationFocusRequest();
 		this.ground.dispose();
 		this.glass.dispose();
@@ -1622,6 +1654,7 @@ export class CatalogSpatialElementLayer {
 	}
 
 	private disposeActor(actor: CatalogActor) {
+		this.stagedSourceCapture = undefined;
 		this.outline.release(actor.model);
 		if (actor.summaryPanel) this.layoutObserver.unobserve(actor.summaryPanel);
 		actor.root.removeFromParent();

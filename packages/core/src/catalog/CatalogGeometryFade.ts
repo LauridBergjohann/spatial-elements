@@ -3,6 +3,21 @@ import { texture, uniform } from 'three/tsl';
 import { getRefinementSize } from '../stage/SpatialElementRefinement.js';
 import type { CatalogWarmOutputContext } from './CatalogWarmOutputContext.js';
 
+interface FrozenCapture {
+	source: object;
+	renderer: THREE.WebGPURenderer;
+	destination: THREE.RenderTarget | null;
+	canvas?: THREE.CanvasTarget;
+	width: number;
+	height: number;
+	captureWidth: number;
+	captureHeight: number;
+	coordinateSystem: THREE.WebGPURenderer['coordinateSystem'];
+	toneMapping: THREE.WebGPURenderer['toneMapping'];
+	exposure: number;
+	colorSpace: THREE.WebGPURenderer['outputColorSpace'];
+}
+
 /** Fade the resolved image, never the individual opaque surfaces of a element. */
 export class CatalogGeometryFade {
 	getRenderTargets() {
@@ -13,8 +28,12 @@ export class CatalogGeometryFade {
 	private quad?: THREE.QuadMesh;
 	private offscreenQuad?: THREE.QuadMesh;
 	private readonly alpha = uniform(1);
+	private frozenCapture?: FrozenCapture;
 
-	render(renderer: THREE.WebGPURenderer, opacity: number, draw: () => void, warmOutput?: CatalogWarmOutputContext) {
+	/** A source token belongs to one frozen source generation and output band only. */
+	render(renderer: THREE.WebGPURenderer, opacity: number, draw: () => void,
+		warmOutput?: CatalogWarmOutputContext, frozenSource?: object) {
+		if (!frozenSource || warmOutput || opacity >= 1 || opacity <= 0) this.frozenCapture = undefined;
 		if (opacity >= 1) {
 			draw();
 			return;
@@ -30,6 +49,7 @@ export class CatalogGeometryFade {
 				type: THREE.HalfFloatType,
 				samples: 4
 			});
+			this.capture.addEventListener('dispose', () => { this.frozenCapture = undefined; });
 			this.material = new THREE.NodeMaterial();
 			this.material.fragmentNode = texture(this.capture.texture).mul(this.alpha);
 			this.material.transparent = true;
@@ -44,16 +64,35 @@ export class CatalogGeometryFade {
 			this.offscreenQuad = new THREE.QuadMesh(this.material);
 		}
 		this.capture.setSize(width, height);
+		const next: FrozenCapture | undefined = frozenSource && !warmOutput ? {
+			source: frozenSource, renderer, destination,
+			canvas: destination ? undefined : renderer.getCanvasTarget(),
+			width: size.width, height: size.height, captureWidth: width, captureHeight: height,
+			coordinateSystem: renderer.coordinateSystem, toneMapping: renderer.toneMapping,
+			exposure: renderer.toneMappingExposure, colorSpace: renderer.outputColorSpace
+		} : undefined;
+		const previous = this.frozenCapture;
+		const reuse = next && previous && next.source === previous.source && next.renderer === previous.renderer &&
+			next.destination === previous.destination && next.canvas === previous.canvas &&
+			next.width === previous.width && next.height === previous.height &&
+			next.captureWidth === previous.captureWidth && next.captureHeight === previous.captureHeight &&
+			next.coordinateSystem === previous.coordinateSystem && next.toneMapping === previous.toneMapping &&
+			next.exposure === previous.exposure && next.colorSpace === previous.colorSpace;
 		const color = renderer.getClearColor(new THREE.Color());
 		const clearAlpha = renderer.getClearAlpha();
 		const scissor = renderer.getScissor(new THREE.Vector4());
 		const scissorTest = renderer.getScissorTest();
 		try {
-			renderer.setRenderTarget(this.capture);
-			renderer.setScissorTest(false);
-			renderer.setClearColor(0x000000, 0);
-			renderer.clear();
-			draw();
+			// One shared scratch target: another band, ordinary draw or warmup replaces
+			// these pixels. The first fractional frame always performs the full capture.
+			this.frozenCapture = undefined;
+			if (!reuse) {
+				renderer.setRenderTarget(this.capture);
+				renderer.setScissorTest(false);
+				renderer.setClearColor(0x000000, 0);
+				renderer.clear();
+				draw();
+			}
 			renderer.setRenderTarget(destination);
 			renderer.setScissor(scissor);
 			renderer.setScissorTest(scissorTest);
@@ -65,8 +104,10 @@ export class CatalogGeometryFade {
 			renderer.setScissor(scissor);
 			renderer.setScissorTest(scissorTest);
 		}
+		this.frozenCapture = next;
 	}
 	dispose() {
+		this.frozenCapture = undefined;
 		this.capture?.dispose();
 		this.material?.dispose();
 		this.capture = undefined;
