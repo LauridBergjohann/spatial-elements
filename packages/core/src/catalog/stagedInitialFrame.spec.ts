@@ -16,6 +16,7 @@ function fixture() {
 	};
 	const stage = Object.assign(Object.create(StageExperience.prototype), {
 		catalogLayer: layer, renderer: { coordinateSystem: 2001 }, renderRequestId: 41,
+		pipeline: { backgroundOutputHeld: false, ensureCatalogWarmOutputContext: vi.fn(() => undefined) },
 		renderInvalidated: false, stagedAwaitingFirstFrame: false, render: vi.fn(),
 		renderFrame: vi.fn(), deviceMotion: { update: vi.fn() },
 		preparationGate: { setPaused: vi.fn() }, detailPreparationGate: { setPaused: vi.fn() },

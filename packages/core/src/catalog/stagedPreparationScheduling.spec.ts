@@ -15,6 +15,7 @@ function fixture() {
 	};
 	const stage = Object.assign(Object.create(StageExperience.prototype), {
 		stagedPreparationIdle: 0, stagedPreparationAbort: new AbortController(),
+		pipeline: { backgroundOutputHeld: false, ensureCatalogWarmOutputContext: vi.fn(() => undefined) },
 		catalogPresentation: { active: false }, catalogLayer: layer,
 		preparationGate: { run: (work: () => unknown) => Promise.resolve(work()) }
 	}) as { scheduleStagedPreparation(): void; scrollActive: boolean; disposed: boolean };
