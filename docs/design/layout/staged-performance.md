@@ -862,3 +862,69 @@ The `staged-performance-v2` protocol, calibration, raw latency/frame/resource
 gates, twenty-sample default and trusted-input separation remain unchanged. This
 section defines an experiment only; it records no measured performance outcome
 and does not enable the renderer experiment or staged navigation by default.
+
+## Background output diagnostic: build 84797 / ceeef8f
+
+Two separate, serial, unprofiled v2 synthetic Hero cohorts ran at 1440 × 1000,
+DPR 1, Chrome 156.0.8078.80, Windows / Intel Core i7-1065G7. Each case has one
+fresh-context sample. The explicit-owner run `82024` and subsequent default-path
+control `80413` both finished 4/4 start-latency cases with exit 0. They are not
+pooled, and none of their latency, frame-pacing or resource acceptance-eligibility
+fields is true at this sample count.
+
+Explicit-owner cohort:
+
+| Case | Motion | Submission | DOM observation | Raw Moving / Reveal | Stable calibration |
+| --- | ---: | ---: | ---: | --- | --- |
+| List cold | 68.9 ms | 78.1 ms | 81.4 ms | pass / pass | no |
+| List warm | 30.4 ms | 38.2 ms | 41.2 ms | pass / fail | yes |
+| Carousel cold | 34.8 ms | 47.8 ms | 51.1 ms | pass / fail | yes |
+| Carousel warm | 17.6 ms | 29.4 ms | 41.4 ms | pass / pass | yes |
+
+All eight source/end owner snapshots confirm explicit mode, no implicit
+Background target, one inventoried output target and an unchanged target ID
+within each navigation. The four raw Reveal violations are wholly internal:
+warm List has **33.7 ms** at 7517.8–7551.5 ms and **33.5 ms** at
+7584.5–7618.0 ms; cold Carousel has **33.6 ms** at 9102.8–9136.4 ms and
+**33.5 ms** at 9186.2–9219.7 ms. These are document-clock timestamps. The raw
+threshold is 33.4 ms. All four have the additional `two-period-borderline` label
+and no recorded overlapping LoAF script; they remain failures. There are no
+Moving or Reveal boundary violations.
+
+Default-path control cohort:
+
+| Case | Motion | Submission | DOM observation | Raw Moving / Reveal | Stable calibration |
+| --- | ---: | ---: | ---: | --- | --- |
+| List cold | 67.0 ms | 77.0 ms | 80.0 ms | pass / pass | no |
+| List warm | 45.5 ms | 54.2 ms | 59.2 ms | pass / pass | yes |
+| Carousel cold | 54.2 ms | 75.2 ms | 83.8 ms | fail / pass | yes |
+| Carousel warm | 41.4 ms | 57.4 ms | 62.8 ms | pass / pass | yes |
+
+Cold Carousel has one wholly internal **49.9 ms Moving gap** at
+7215.0–7264.9 ms, above the same 33.4 ms threshold. A recorded script overlaps
+3.9 ms of that exact gap; its entire script lasts 53.9 ms and overlaps Moving
+by 24.0 ms. These durations must not be added or treated as a complete causal
+explanation. Warm Carousel records 17.9 ms of script overlap with Moving but
+passes its raw frame gate. The control has no boundary violations and no
+recorded script overlap with Reveal. Its cold Carousel also retains a later
+44.6 ms script, including 10.6 ms forced layout, wholly after Reveal.
+
+Both cohorts retain empty GPU-creation windows from click through movement and
+during Reveal, with no sample validation errors. Cold List's blank-document
+calibration is unstable in both runs, including a 183.4 / 183.3 ms idle gap;
+neither sample is discarded and its raw budget is not relaxed. Motion-end to
+Reveal-start remains visible waiting time: explicit-owner List cold/warm and
+Carousel cold/warm are 1.531 / 1.338 / 1.330 / 1.243 s; the separate control is
+1.481 / 1.210 / 1.596 / 1.095 s.
+
+The explicit-owner samples show lower start latencies in three cases but two
+Reveal failures where this control has none. With n=1, sequential cohorts and
+unstable cold-List calibration, this establishes neither a speedup nor a
+regression attributable to the output owner. Missing LoAF overlap also does not
+identify a GPU cause. Repeated calibrated measurements and physical-device
+checks remain open; both experimental flags stay opt-in.
+
+Evidence: [explicit-owner analyzer output](../../../.artifacts/staged-performance-84797-ceeef8f-explicit-hero1440-n1-analysis.json)
+and [separate default-path analyzer output](../../../.artifacts/staged-performance-84797-ceeef8f-default-hero1440-n1-analysis.json).
+Their sibling directories preserve the original samples and calibration
+timestamps; the runner logs remain beside them.
