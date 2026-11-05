@@ -27,11 +27,31 @@ test('authored pose, padding and fit scale remain independent of source interact
 	const viewport = { width: 1440, height: 900 }, fit = resolveDetailLayout(viewport).mediaFit;
 	const matrix = new THREE.Matrix4().makeScale(0.5, 0.5, 0.5).setPosition(0.1, 0.2, 0.3);
 	const first = createStagedDetailGeometry(bounds, matrix, { azimuth: 20, elevation: 10, fitPadding: 30 }, viewport, fit);
-	const second = createStagedDetailGeometry(bounds, matrix, { azimuth: 20, elevation: 10, fitPadding: 30, fitScale: 2 }, viewport, fit);
+	const second = createStagedDetailGeometry(bounds, matrix, { azimuth: 20, elevation: 10, fitPadding: 30, fitScale: 0.5 }, viewport, fit);
 	expect(first.model.matrix.equals(matrix)).toBe(true);
 	expect(first.model.matrix).not.toBe(matrix);
-	expect(first.framing.distance / second.framing.distance).toBeCloseTo(2);
+	expect(second.framing.distance / first.framing.distance).toBeCloseTo(2);
 	expect(first.camera.position.distanceTo(first.framing.center)).toBeCloseTo(first.framing.distance);
+});
+
+test.each([430, 840, 1600, 1809, 2200, 2456])('authored enlargement cannot cover the rail or summary at %ipx', width => {
+	const viewport = { width, height: 900 }, fit = resolveDetailLayout(viewport).mediaFit;
+	// Multigate 3 canonical dimensions, including terminals and all protrusions.
+	const bounds = new THREE.Box3(new THREE.Vector3(-0.1065, -0.0483193, -0.0311251),
+		new THREE.Vector3(0.1065, 0.0483193, 0.0311251)).applyMatrix4(new THREE.Matrix4().makeScale(3, 3, 3));
+	for (const fitScale of [1.1, 1.6, 4]) for (const fitPadding of [0, 40]) {
+		const { camera } = createStagedDetailGeometry(bounds, new THREE.Matrix4(),
+			{ azimuth: -20, elevation: 10, fitScale, fitPadding }, viewport, fit);
+		for (const x of [bounds.min.x, bounds.max.x]) for (const y of [bounds.min.y, bounds.max.y])
+			for (const z of [bounds.min.z, bounds.max.z]) {
+				const p = new THREE.Vector3(x, y, z).project(camera);
+				const left = (p.x + 1) * width / 2, top = (1 - p.y) * viewport.height / 2;
+				expect(left).toBeGreaterThanOrEqual(fit.x - 0.000001);
+				expect(left).toBeLessThanOrEqual(fit.x + fit.width + 0.000001);
+				expect(top).toBeGreaterThanOrEqual(fit.y - 0.000001);
+				expect(top).toBeLessThanOrEqual(fit.y + fit.height + 0.000001);
+			}
+	}
 });
 
 test.each([THREE.WebGPUCoordinateSystem, THREE.WebGLCoordinateSystem])('hero endpoint uses renderer depth convention %s without changing the screen fit', coordinateSystem => {

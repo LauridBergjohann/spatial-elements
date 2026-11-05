@@ -50,7 +50,8 @@ import {
 	smoothstep
 } from './stageMath.js';
 import {
-	getMinimapDockedQuaternion, getMinimapModelFitScale, getMinimapModelRadius, getMinimapRestQuaternion
+	getMinimapDockedQuaternion, getMinimapModelFitScale, getMinimapModelRadius, getMinimapRestQuaternion,
+	getMinimapTopAlignmentOffset
 } from './minimap/MinimapModelGeometry.js';
 import {
 	addMinimapBlurLights,
@@ -754,27 +755,15 @@ export class MinimapController {
 		if (this.ports.frame().fullscreen) return;
 		const targetTop = this.ports.target(minimap.panelIndex)?.getMinimapModelTop?.();
 		if (targetTop === undefined || !Number.isFinite(targetTop)) return;
-
-		for (let iteration = 0; iteration < 2; iteration += 1) {
-			const projected = this.getProjectedMinimapModelRect(minimap);
-			if (!projected || Math.abs(projected.y - targetTop) < 0.001) return;
-
-			const startY = minimap.displayModel.position.y;
-			minimap.displayModel.position.y = startY + 1;
-			const shifted = this.getProjectedMinimapModelRect(minimap);
-			minimap.displayModel.position.y = startY;
-			if (!shifted) return;
-
-			const pixelsPerLocalUnit = shifted.y - projected.y;
-			if (Math.abs(pixelsPerLocalUnit) < 0.000001) return;
-
-			minimap.displayModel.position.y += THREE.MathUtils.clamp(
-				(targetTop - projected.y) / pixelsPerLocalUnit,
-				-window.innerHeight,
-				window.innerHeight
-			);
-		}
-
+		const progress = THREE.MathUtils.clamp(this.ports.target(minimap.panelIndex)?.getMinimapDockProgress?.() ?? 1, 0, 1);
+		if (progress === 0) return;
+		const projected = this.getProjectedMinimapModelRect(minimap);
+		if (!projected) return;
+		// Blend from the ordinary rail pose throughout the existing scroll morph.
+		// Once the model reaches the viewport edge, do not let any corner cross it.
+		const top = Math.max(targetTop, THREE.MathUtils.lerp(projected.y, targetTop, progress));
+		minimap.displayModel.position.y += getMinimapTopAlignmentOffset(minimap.modelBoundsPoints,
+			minimap.displayModel.matrixWorld, minimap.screenCamera, window.innerHeight, top, minimap.layer.matrixWorld);
 		minimap.displayModel.updateWorldMatrix(true, true);
 	}
 	getProjectedMinimapModelRect(minimap: StageMinimapState) {

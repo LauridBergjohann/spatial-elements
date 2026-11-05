@@ -32,3 +32,28 @@ export function getMinimapDockedQuaternion(
 	return getCameraOrbitQuaternion(docked?.azimuth ?? camera.azimuth, docked?.elevation ?? camera.elevation)
 		.invert().multiply(model);
 }
+
+/**
+ * Exact translation along a parent's Y axis that puts the projected model top
+ * on a viewport row. Solving each corner's homogeneous projection also handles
+ * depth, hover enlargement and tilted panels without a screen-space estimate.
+ */
+export function getMinimapTopAlignmentOffset(
+	points: readonly THREE.Vector3[], modelMatrix: THREE.Matrix4, camera: THREE.PerspectiveCamera,
+	viewportHeight: number, top: number, parentMatrix = new THREE.Matrix4()
+) {
+	const projection = new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+	const direction = new THREE.Vector4(0, 1, 0, 0).applyMatrix4(parentMatrix).applyMatrix4(projection);
+	const transform = projection.multiply(modelMatrix);
+	const targetY = 1 - top * 2 / Math.max(viewportHeight, 1);
+	const slope = direction.y - targetY * direction.w;
+	if (!Number.isFinite(slope) || slope <= 0.000001) return 0;
+	const point = new THREE.Vector4();
+	let offset = Number.POSITIVE_INFINITY;
+	for (const bound of points) {
+		point.set(bound.x, bound.y, bound.z, 1).applyMatrix4(transform);
+		if (point.w <= 0) continue;
+		offset = Math.min(offset, (targetY * point.w - point.y) / slope);
+	}
+	return Number.isFinite(offset) ? offset : 0;
+}

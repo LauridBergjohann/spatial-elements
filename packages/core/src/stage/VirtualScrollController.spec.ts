@@ -66,6 +66,7 @@ test.each([{ width: 1400, dockTop: 3 }, { width: 900, dockTop: 0 }]
 			else expect(content.style.transform).toBeUndefined();
 			expect(Number.parseFloat(minimap.style.top) - (enhanced ? scrollY : 0)).toBe(dockTop);
 			expect(minimap.style.position).toBe('fixed');
+			expect(minimap.getAttribute('data-stage-minimap-model-top')).toBe('0.000');
 			expect(content.style.setProperty).not.toHaveBeenCalled();
 		}
 		expect(frames.size).toBe(0);

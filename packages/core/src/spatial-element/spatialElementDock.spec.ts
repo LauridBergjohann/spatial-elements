@@ -106,24 +106,23 @@ describe('spatialElement dock geometry', () => {
 		);
 	});
 
-	it('covers the scaled docked minimap around its actual centered fit square', () => {
+	it('covers the scaled docked minimap from its visible top edge', () => {
 		const source = { left: 32, top: 0, width: 120, height: 120 };
 		const header = { left: 16, top: 8, width: 968, height: 86 };
 
 		expect(getDockedMinimapInteractionRect(source, header, 1.4)).toEqual({
 			left: 8,
-			top: -24,
+			top: 8,
 			width: 168,
 			height: 168
 		});
 	});
 
-	it.each([430, 840, 1200, 1600, 2100])('keeps an enlarged dock hit target centered across the %ipx layout', width => {
+	it.each([430, 840, 1200, 1600, 2100])('keeps the dock hit target below the safe top at %ipx', width => {
 		const layout = resolveSpatialElementDockLayout({ width, height: 900 })!;
 		const hit = getDockedMinimapInteractionRect(layout.minimap, layout.header, 1.4);
 		expect(hit.left + hit.width / 2).toBeCloseTo(layout.minimap.left + layout.minimap.width / 2);
-		expect(hit.top + hit.height / 2).toBeCloseTo(layout.header.top + layout.header.height / 2);
-		expect(hit.top).toBeLessThan(layout.minimap.top);
+		expect(hit.top).toBe(layout.header.top);
 		expect(hit.top + hit.height).toBeGreaterThan(layout.minimap.top + layout.minimap.height);
 	});
 

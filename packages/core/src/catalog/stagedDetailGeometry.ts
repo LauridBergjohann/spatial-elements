@@ -9,19 +9,30 @@ export function detailCameraFit(
 	bounds: THREE.Box3, camera: THREE.PerspectiveCamera, settings: StageCameraSettings,
 	viewport: { width: number; height: number }, fit: Pick<LayoutRect, 'width' | 'height'>
 ) {
+	const direction = getCameraOrbitDirection(settings.azimuth, settings.elevation);
+	const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+	const radius = Math.max(sphere.radius, 1);
+	const distance = Math.max(radius * 0.6, detailCameraFitDistance(bounds, direction, camera, settings, viewport, fit));
+	return { direction, center: sphere.center, radius, distance,
+		near: Math.max(distance / 100, 0.01), far: Math.max(distance * 100, radius * 20) };
+}
+
+/** Authored magnification can consume padding, but never the rail/summary clearance. */
+export function detailCameraFitDistance(
+	bounds: THREE.Box3, direction: THREE.Vector3, camera: THREE.PerspectiveCamera, settings: StageCameraSettings,
+	viewport: { width: number; height: number }, fit: Pick<LayoutRect, 'width' | 'height'>
+) {
 	const width = Math.max(viewport.width, 1), height = Math.max(viewport.height, 1);
 	const fitWidth = Math.min(fit.width, width), fitHeight = Math.min(fit.height, height);
 	const maximumPadding = Math.max(Math.min(fitWidth, fitHeight) / 2 - 1, 0);
 	const padding = THREE.MathUtils.clamp(settings.fitPadding ?? 0, 0, maximumPadding);
 	const scale = { x: THREE.MathUtils.clamp((fitWidth - padding * 2) / width, 0.08, 1),
 		y: THREE.MathUtils.clamp((fitHeight - padding * 2) / height, 0.08, 1) };
-	const direction = getCameraOrbitDirection(settings.azimuth, settings.elevation);
-	const sphere = bounds.getBoundingSphere(new THREE.Sphere());
-	const radius = Math.max(sphere.radius, 1);
-	const distance = Math.max(radius * 0.6, getCameraFitDistance(bounds, direction, camera,
-		SPATIAL_ELEMENT_CAMERA_FIT_MARGIN, scale) / THREE.MathUtils.clamp(settings.fitScale ?? 1, 0.2, 4));
-	return { direction, center: sphere.center, radius, distance,
-		near: Math.max(distance / 100, 0.01), far: Math.max(distance * 100, radius * 20) };
+	const desired = getCameraFitDistance(bounds, direction, camera,
+		SPATIAL_ELEMENT_CAMERA_FIT_MARGIN, scale) / THREE.MathUtils.clamp(settings.fitScale ?? 1, 0.2, 4);
+	const contained = getCameraFitDistance(bounds, direction, camera, 1,
+		{ x: Math.max(fitWidth / width, 0.000001), y: Math.max(fitHeight / height, 0.000001) });
+	return Math.max(desired, contained);
 }
 
 /** Pure CPU camera/model descriptors; this creates no scene, material, buffer or GPU pipeline. */

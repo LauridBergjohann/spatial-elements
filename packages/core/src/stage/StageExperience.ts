@@ -59,7 +59,6 @@ import {
 	DEFAULT_PANELS,
 	PANEL_CAMERA_FOV,
 	PANEL_CONTENT_Z,
-	SPATIAL_ELEMENT_CAMERA_FIT_MARGIN,
 	ZOOM_FOCUS_NOTIFY_EPSILON
 } from './stageConstants.js';
 import { getStagePositionFromRect, isViewportRectVisible } from './stageDom.js';
@@ -71,7 +70,6 @@ import {
 	type StageScrollFrame
 } from './scrollFrame.js';
 import {
-	getCameraFitDistance,
 	getCameraOrbitDirection,
 	getBoxCorners,
 	getPanelFocusOpacity,
@@ -90,7 +88,7 @@ import { disposeMaterialOnly, getMeshBounds, getMeshMaterials, isMesh } from './
 import { isOutlineMesh } from './interactionOutline.js';
 import { resolveDetailLayout, resolveZoomLayout } from '../spatial-element/responsiveLayout.js';
 import type { LayoutRect } from '../spatial-element/responsiveLayout.js';
-import { detailCameraFit } from '../catalog/stagedDetailGeometry.js';
+import { detailCameraFit, detailCameraFitDistance } from '../catalog/stagedDetailGeometry.js';
 import type { StagedDockTargetOptions } from '../catalog/stagedDockGeometry.js';
 import type { SpatialElementMediaItem } from '../spatial-element/types.js';
 import type {
@@ -2931,32 +2929,10 @@ export class StageExperience {
 		this.viewportFrame.set(left, top, frameWidth, frameHeight);
 	}
 
-	private getViewportScale() {
-		const width = Math.max(window.innerWidth, 1);
-		const height = Math.max(window.innerHeight, 1);
-		const maximumPadding = Math.max(
-			Math.min(this.viewportLayoutSize.x, this.viewportLayoutSize.y) * 0.5 - 1,
-			0
-		);
-		const padding = THREE.MathUtils.clamp(this.cameraSettings.fitPadding ?? 0, 0, maximumPadding);
-
-		return {
-			x: THREE.MathUtils.clamp((this.viewportLayoutSize.x - padding * 2) / width, 0.08, 1),
-			y: THREE.MathUtils.clamp((this.viewportLayoutSize.y - padding * 2) / height, 0.08, 1)
-		};
-	}
-
 	private getSpatialElementCameraFitDistance(bounds: THREE.Box3, viewDirection: THREE.Vector3) {
-		const fitScale = THREE.MathUtils.clamp(this.cameraSettings.fitScale ?? 1, 0.2, 4);
-		return (
-			getCameraFitDistance(
-				bounds,
-				viewDirection,
-				this.camera,
-				SPATIAL_ELEMENT_CAMERA_FIT_MARGIN,
-				this.getViewportScale()
-			) / fitScale
-		);
+		return detailCameraFitDistance(bounds, viewDirection, this.camera, this.cameraSettings,
+			{ width: window.innerWidth, height: window.innerHeight },
+			{ width: this.viewportLayoutSize.x, height: this.viewportLayoutSize.y });
 	}
 
 	private rememberFittedViewportMetrics() {

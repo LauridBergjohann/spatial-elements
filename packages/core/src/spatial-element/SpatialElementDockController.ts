@@ -76,6 +76,7 @@ export class SpatialElementDockController {
 	private minimapOriginalModelScale: string | null = null;
 	private minimapOriginalModelTop: string | null = null;
 	private minimapDock?: SpatialElementDockRect;
+	private minimapViewportTop = 0;
 	private tabsDock?: SpatialElementDockRect;
 	private dockedMinimapModelScale = 1;
 	private stickyHeaderBottom = 0;
@@ -263,6 +264,7 @@ export class SpatialElementDockController {
 		// The fixed 3XL pane owns its header and submenu separately (step 10).
 		if (!geometry) {
 			this.applyState(false);
+			this.setMinimapModelTop(undefined);
 			if (!this.tabsInPane) this.setTabsActive(false);
 			this.setPaneTabsActive(true);
 			this.applyMinimapPresentation(0);
@@ -280,6 +282,7 @@ export class SpatialElementDockController {
 		const headerRect = geometry.header;
 		applyViewportFixedRect(this.stickyHeader, headerRect);
 		this.minimapDock = geometry.minimap;
+		this.minimapViewportTop = geometry.header.top;
 		this.dockedMinimapModelScale = getDockedMinimapModelScale(
 			this.minimapDock,
 			headerRect,
@@ -375,9 +378,10 @@ export class SpatialElementDockController {
 			this.setHeaderActive(docked);
 			this.root.toggleAttribute('data-spatial-element-dock-active', docked);
 		}
-		// The canonical fit square is centered on the header; pinning the actual
-		// projected model's top would introduce an extra jump for non-square models.
-		this.setMinimapModelTop(undefined);
+		// The fit square can extend above the viewport for large layouts. The live
+		// model follows this top edge through the same continuous dock morph,
+		// including its hover and sensor pose, instead of being clipped by it.
+		this.setMinimapModelTop(this.minimapViewportTop);
 		if (docked) this.updateDepartingContentClipping();
 		else if (changed) this.restoreDepartingContentClipping();
 		if (changed || dockLayoutChanged) {

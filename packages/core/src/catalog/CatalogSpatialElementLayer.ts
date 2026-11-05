@@ -31,6 +31,7 @@ import {
 	applyModelMaterialOverrides,
 	centerAndScale,
 	getMeshBounds,
+	getMeshBoundsPoints,
 	getMeshMaterials,
 	isMesh
 } from '../stage/stageSceneUtils.js';
@@ -68,6 +69,7 @@ interface CatalogActor {
 	detailBounds: THREE.Box3;
 	/** Actual included Low bounds, before catalog placement; declared pair bounds can be larger. */
 	detailLowBounds: THREE.Box3;
+	detailLowBoundsPoints: THREE.Vector3[];
 	root: THREE.Group;
 	tilt: THREE.Group;
 	view: THREE.Group;
@@ -1050,7 +1052,7 @@ export class CatalogSpatialElementLayer {
 		if (!actor?.rendered || !actor.root.visible) return;
 		if (target && resolveDetailLayout(target.layout).dock) {
 			return createStagedDockGeometry({ layout: target.layout, viewport,
-				lowBounds: actor.detailLowBounds, modelMatrix: actor.detailFrame,
+				lowBounds: actor.detailLowBounds, lowBoundsPoints: actor.detailLowBoundsPoints, modelMatrix: actor.detailFrame,
 				center: actor.detailBounds.getCenter(new THREE.Vector3()),
 				camera: actor.stage.camera ?? {}, minimap: target.minimap, coordinateSystem });
 		}
@@ -1462,6 +1464,7 @@ export class CatalogSpatialElementLayer {
 			throw new Error('Catalog asset contains no spatialElement geometry');
 		}
 		const detailLowBounds = getMeshBounds(model, (mesh) => !excluded.has(mesh.name));
+		const detailLowBoundsPoints = getMeshBoundsPoints(model, (mesh) => !excluded.has(mesh.name));
 		const radius = Math.max(bounds.getBoundingSphere(new THREE.Sphere()).radius, 0.001);
 		const root = new THREE.Group();
 		root.matrixAutoUpdate = false;
@@ -1491,6 +1494,7 @@ export class CatalogSpatialElementLayer {
 			detailFrame: model.matrix.clone(),
 			detailBounds: bounds.clone(),
 			detailLowBounds,
+			detailLowBoundsPoints,
 			root,
 			tilt,
 			view,

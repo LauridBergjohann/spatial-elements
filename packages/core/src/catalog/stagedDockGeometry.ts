@@ -4,10 +4,11 @@ import { getDockedMinimapModelScale } from '../spatial-element/spatialElementDoc
 import type { StagePanelMinimapOptions } from '../stage/panelContext.js';
 import type { StageCameraSettings } from '../stage/stageTypes.js';
 import { MINIMAP_PANEL_Z, PANEL_CAMERA_FOV } from '../stage/stageConstants.js';
-import { getCameraOrbitQuaternion, getPerspectiveDistance } from '../stage/stageMath.js';
+import { getBoxCorners, getCameraOrbitQuaternion, getPerspectiveDistance } from '../stage/stageMath.js';
 import { getMinimapDepthRange } from '../stage/minimap/MinimapProjection.js';
 import {
-	getMinimapDockedQuaternion, getMinimapModelFitScale, getMinimapModelRadius, getMinimapRestQuaternion
+	getMinimapDockedQuaternion, getMinimapModelFitScale, getMinimapModelRadius, getMinimapRestQuaternion,
+	getMinimapTopAlignmentOffset
 } from '../stage/minimap/MinimapModelGeometry.js';
 
 /** Explicit route contract; a hash alone never creates this intent. */
@@ -24,6 +25,8 @@ export interface StagedDockGeometryInput {
 	viewport: { width: number; height: number };
 	/** Actual included Low-mesh bounds after canonical import, authored pose and normalization. */
 	lowBounds: THREE.Box3;
+	/** Per-mesh corners in the same canonical frame; preserve sparse/rotated Low silhouettes. */
+	lowBoundsPoints?: readonly THREE.Vector3[];
 	/** Canonical model-root matrix, before catalog interaction/placement. Children already contain authored rotation. */
 	modelMatrix: THREE.Matrix4;
 	/** Shared detail/LOD pivot. It need not equal the center of the actual Low bounds. */
@@ -85,8 +88,10 @@ export function createStagedDockGeometry(input: StagedDockGeometryInput) {
 	const model = new THREE.Object3D();
 	model.matrixAutoUpdate = false;
 	model.matrix.compose(panelCenter.clone().setZ(MINIMAP_PANEL_Z), quaternion, new THREE.Vector3(scale, scale, scale))
-		.multiply(new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z))
-		.multiply(modelMatrix);
+		.multiply(new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z));
+	model.matrix.elements[13] += getMinimapTopAlignmentOffset(input.lowBoundsPoints ?? getBoxCorners(lowBounds),
+		model.matrix, camera, viewport.height, dock.surface.y);
+	model.matrix.multiply(modelMatrix);
 	model.updateMatrixWorld(true);
 	if (![...model.matrix.elements, ...camera.projectionMatrix.elements].every(Number.isFinite)) return undefined;
 	return { camera, model, framing: { dock, modelRadius, scale, quaternion, presentationScale } };

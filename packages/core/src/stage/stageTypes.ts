@@ -30,7 +30,7 @@ export interface StageCameraSettings {
 	elevation?: number;
 	/** Empty space in CSS pixels reserved on every side of the automatic element fit. */
 	fitPadding?: number;
-	/** Presentation multiplier applied after fitting. Values above one make the element larger. */
+	/** Presentation multiplier after padding. Enlargement stops at the detail media rectangle's edges. */
 	fitScale?: number;
 }
 

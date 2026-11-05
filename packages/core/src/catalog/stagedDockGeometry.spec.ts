@@ -6,7 +6,7 @@ import { resolveLiquidGlassPanelOptions } from '../stage/LiquidGlassPanel.js';
 import { resolveDetailLayout, type ResponsiveLayoutInput } from '../spatial-element/responsiveLayout.js';
 import { resolveSpatialElementDockLayout, getDockedMinimapModelScale } from '../spatial-element/spatialElementDock.js';
 import { getCameraOrbitQuaternion, getPerspectiveDistance } from '../stage/stageMath.js';
-import { getMeshBounds } from '../stage/stageSceneUtils.js';
+import { getMeshBounds, getMeshBoundsPoints } from '../stage/stageSceneUtils.js';
 import { PANEL_CAMERA_FOV } from '../stage/stageConstants.js';
 import type { StagePanelRuntime } from '../stage/StagePanelRuntime.js';
 import type { StagePanelTarget } from '../stage/stageTypes.js';
@@ -34,7 +34,9 @@ test.each([
 	expect(descriptor.framing.dock.minimap).toEqual({ x, y, width: size, height: size });
 	const center = new THREE.Vector3().applyMatrix4(descriptor.model.matrixWorld).project(descriptor.camera);
 	expect((center.x + 1) * width / 2).toBeCloseTo(x + size / 2, 10);
-	expect((1 - center.y) * height / 2).toBeCloseTo(y + size / 2, 10);
+	const top = Math.min(...corners(baseInput().lowBounds).map(point =>
+		(1 - point.applyMatrix4(descriptor.model.matrixWorld).project(descriptor.camera).y) * height / 2));
+	expect(top).toBeCloseTo(0, 10);
 	expect(descriptor.model.children).toHaveLength(0);
 	expect(descriptor.camera.near).toBeGreaterThan(0);
 	expect(descriptor.camera.far).toBeGreaterThan(descriptor.camera.near);
@@ -99,6 +101,7 @@ test.each(parityCases)('CPU descriptor equals mounted minimap matrices and proje
 	low.position.set(0.13, -0.08, 0.02); low.scale.setScalar(0.7); low.updateMatrixWorld(true);
 	input.modelMatrix = low.matrix.clone();
 	input.lowBounds = getMeshBounds(low, object => object.name !== 'excluded');
+	input.lowBoundsPoints = getMeshBoundsPoints(low, object => object.name !== 'excluded');
 	// The LOD/canonical pivot intentionally differs from the Low AABB center.
 	input.center.set(0.11, -0.12, 0.07);
 	const descriptor = createStagedDockGeometry(input)!;
@@ -120,10 +123,14 @@ test.each(parityCases)('CPU descriptor equals mounted minimap matrices and proje
 	camera.quaternion.copy(getCameraOrbitQuaternion(input.camera.azimuth, input.camera.elevation));
 	const restModel = new THREE.Quaternion(); low.getWorldQuaternion(restModel);
 	const capture = new THREE.RenderTarget(1, 1);
+	const sensor = new THREE.Quaternion();
+	let progress = 1;
 	const owner = new MinimapController({
 		renderer: { coordinateSystem: panelCamera.coordinateSystem } as THREE.WebGPURenderer,
 		camera, panelCamera, panelScene: new THREE.Scene(), panel: () => panel,
-		target: () => ({ getMinimapDockProgress: () => 1, getMinimapModelScale: () => presentationScale } as StagePanelTarget),
+		target: () => ({ getMinimapDockProgress: () => progress, getMinimapModelScale: () => presentationScale,
+			getMinimapModelTop: () => dock.header.top } as StagePanelTarget),
+		sensorRotation: () => sensor,
 		spatialElement: () => ({ model: low, low, camera: input.camera, restCamera: camera.quaternion,
 			restModel, hasControls: false, center: input.center }),
 		frame: () => ({ hovering: false, interacting: false, scrolling: false }), environment: () => undefined,
@@ -145,6 +152,26 @@ test.each(parityCases)('CPU descriptor equals mounted minimap matrices and proje
 			const mounted = localPoint.clone().applyMatrix4(mountedMesh.matrixWorld).project(view.screenCamera);
 			expect(staged.distanceTo(mounted)).toBeLessThan(1e-10);
 		}
+		// Re-evaluate from the live enlarged pose, including all sensor axes and
+		// panel tilt. The model keeps its size; its top alone stays on the safe edge.
+		for (const hover of [0, 0.5, 1]) {
+			view.pointerReveal = hover;
+			sensor.setFromEuler(new THREE.Euler(0.08 * hover, -0.12 * hover, 0.07 * hover));
+			view.layer.rotation.set(-0.04 * hover, 0.03 * hover, -0.02 * hover);
+			owner.updateMinimapDisplayModel(view, dock.minimap.width, dock.minimap.height, 0);
+			owner.syncMinimapProjection(view, dock.minimap.width, dock.minimap.height);
+			expect(owner.getProjectedMinimapModelRect(view)!.y).toBeCloseTo(dock.header.top, 7);
+		}
+		// Leaving the rail starts continuously; small progress makes a small change.
+		view.layer.rotation.set(0, 0, 0); view.layer.position.y -= 180;
+		view.pointerReveal = 0; sensor.identity(); progress = 0;
+		owner.updateMinimapDisplayModel(view, dock.minimap.width, dock.minimap.height, 0);
+		owner.syncMinimapProjection(view, dock.minimap.width, dock.minimap.height);
+		const restTop = owner.getProjectedMinimapModelRect(view)!.y;
+		progress = 0.001;
+		owner.updateMinimapDisplayModel(view, dock.minimap.width, dock.minimap.height, 0);
+		owner.syncMinimapProjection(view, dock.minimap.width, dock.minimap.height);
+		expect(Math.abs(owner.getProjectedMinimapModelRect(view)!.y - restTop)).toBeLessThan(0.5);
 	} finally {
 		owner.dispose(); capture.dispose(); mesh.geometry.dispose(); mesh.material.dispose();
 	}
