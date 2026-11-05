@@ -2,6 +2,7 @@ import * as THREE from 'three/webgpu';
 import { screenUV, texture, uv, vec4 } from 'three/tsl';
 import { CatalogSpatialElementLayer } from '@spatial-elements/core/catalog/CatalogSpatialElementLayer';
 import { CatalogWarmOutputContext } from '@spatial-elements/core/catalog/CatalogWarmOutputContext';
+import { CatalogGeometryFade } from '@spatial-elements/core/catalog/CatalogGeometryFade';
 import { BackgroundLayerOutput } from '@spatial-elements/core/stage/BackgroundLayerOutput';
 import { SpatialElementAssetManager } from '@spatial-elements/core/catalog/assets/SpatialElementAssetManager';
 import { EnvironmentCache } from '@spatial-elements/core/catalog/EnvironmentCache';
@@ -27,12 +28,17 @@ export interface CatalogWarmRow {
 	stats: ReturnType<CatalogSpatialElementLayer['getStats']>;
 }
 export interface CatalogWarmEvidence { protocol: string; warmMode: CatalogWarmMode; phase: string; rows: CatalogWarmRow[]; calls: WarmGpuCall[]; gpuErrors: string[] }
+export interface FadeReuseFrame { phase: string; draws: number; submits: number; creates: WarmGpuCall[] }
+export interface FadeReuseProof { mode: 'control' | 'candidate'; frames: FadeReuseFrame[] }
 
 /** Real catalog owners and GLB loader, isolated from Stage orchestration; no production caller opts in. */
 export async function runCatalogWarmOutputProof(host: HTMLElement,
 	checkpoint: (point: Omit<BackgroundCheckpoint, 'id'>) => Promise<void>, observe?: (evidence: CatalogWarmEvidence) => void) {
 	const requestedMode = new URLSearchParams(location.search).get('warm-mode');
 	const warmMode: CatalogWarmMode = requestedMode === 'legacy' || requestedMode === 'borrowed' ? requestedMode : 'scratch';
+	const requestedReuse = new URLSearchParams(location.search).get('fade-reuse');
+	const fadeReuse: FadeReuseProof | undefined = requestedReuse === 'control' || requestedReuse === 'candidate'
+		? { mode: requestedReuse, frames: [] } : undefined;
 	const renderer = new THREE.WebGPURenderer({ antialias: true });
 	const assets = new SpatialElementAssetManager(), environments = new EnvironmentCache(renderer, new PreparationGate());
 	const canvases = ['background', 'rear', 'front'].map((name, index) => {
@@ -57,7 +63,22 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 	const calls: WarmGpuCall[] = [], gpuErrors: string[] = [], rows: CatalogWarmRow[] = [];
 	let phase = 'initialize', device: GPUDevice | undefined, layer: CatalogSpatialElementLayer | undefined;
 	let context: CatalogWarmOutputContext | undefined, semantic: HTMLElement | undefined;
+	let intervention: THREE.RenderTarget | undefined;
 	const restoreMethods: (() => void)[] = [];
+	let fadeDraws = 0, submissions = 0, validationScope = false;
+	const originalFadeRender = CatalogGeometryFade.prototype.render;
+	if (fadeReuse) {
+		// Proof-only control: execute the same production owner without its optional
+		// retained-source key. Both modes keep identical rendering and input poses.
+		CatalogGeometryFade.prototype.render = function (...args: Parameters<CatalogGeometryFade['render']>) {
+			const [renderer, opacity, draw, warmOutput, frozenSource] = args;
+			return originalFadeRender.call(this, renderer, opacity, () => {
+				if (opacity > 0 && opacity < 1) fadeDraws++;
+				draw();
+			}, warmOutput, fadeReuse.mode === 'candidate' ? frozenSource : undefined);
+		};
+		restoreMethods.push(() => { CatalogGeometryFade.prototype.render = originalFadeRender; });
+	}
 	const onGpuError = (event: GPUUncapturedErrorEvent) => gpuErrors.push(event.error.message);
 	const paint = async () => { await device!.queue.onSubmittedWorkDone(); await new Promise(requestAnimationFrame); await new Promise(requestAnimationFrame); };
 	const presented = async (name: string) => {
@@ -92,12 +113,12 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 	const sourceDom = (kind: string) => {
 		const root = document.createElement('section'); root.dataset.catalogList = ''; root.dataset.brandId = 'warm-proof';
 		root.style.cssText = 'position:fixed;left:0;top:190px;width:960px;height:400px;z-index:3;pointer-events:none;';
-		const carousel = kind !== 'list', ids = carousel ? ['column', 'ring'] : ['column'];
+		const carousel = kind !== 'list', ids = carousel || fadeReuse ? ['column', 'ring'] : ['column'];
 		const items: SpatialListItem[] = [];
 		let focus: HTMLElement | undefined, selectedCard: HTMLElement | undefined, selectedSummary: HTMLElement | undefined;
 		for (const [index, id] of ids.entries()) {
 			const card = document.createElement('div'); card.style.cssText = carousel
-				? 'position:absolute;inset:0;pointer-events:none;' : 'position:absolute;left:350px;top:0;width:240px;height:260px;';
+				? 'position:absolute;inset:0;pointer-events:none;' : `position:absolute;left:${fadeReuse ? 180 + index * 280 : 350}px;top:0;width:240px;height:260px;`;
 			if (carousel) {
 				card.dataset.carouselSpatialElement = ''; card.dataset.carouselSurface = kind;
 				card.dataset.carouselTheme = JSON.stringify({ backdropBlur: 5, tintOpacity: 0.2, radius: 12 });
@@ -114,7 +135,7 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 				if (kind === 'frosted') summary.style.cssText += 'background:rgba(255,255,255,.2);backdrop-filter:blur(5px);border-radius:12px;';
 				card.append(summary);
 				if (!index) selectedSummary = summary;
-			} else { card.tabIndex = 0; focus = card; }
+			} else { card.tabIndex = 0; if (!index) focus = card; }
 			root.append(card);
 			const item = overview.find(item => item.id === id)!;
 			items.push({ ...item, ...(carousel ? { pose: { kind: 'carousel' as const, read: () => carouselPose(index, 0, ids.length, {},
@@ -127,6 +148,12 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 		const backend = renderer.backend as unknown as { isWebGPUBackend: boolean; device: GPUDevice };
 		if (!backend.isWebGPUBackend) throw new Error('Catalog output proof requires real WebGPU');
 		device = backend.device; device.addEventListener('uncapturederror', onGpuError);
+		if (fadeReuse) {
+			device.pushErrorScope('validation'); validationScope = true;
+			const queue = device.queue, submit = queue.submit;
+			queue.submit = function (commands) { submissions++; return submit.call(this, commands); };
+			restoreMethods.push(() => { queue.submit = submit; });
+		}
 		for (const method of ['createRenderPipeline', 'createRenderPipelineAsync', 'createShaderModule', 'createTexture', 'createBuffer'] as const) {
 			const port = device as unknown as Record<string, (...args: unknown[]) => unknown>, original = port[method];
 			port[method] = function (...args) {
@@ -164,7 +191,16 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 					select(1); renderer.setClearColor(0, 0); renderer.clear(); layer!.renderRear(renderer);
 					select(2); renderer.setClearColor(0, 0); renderer.clear(); layer!.draw(renderer, 'front'); select(0);
 				};
+				intervention = fadeReuse ? new THREE.RenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 }) : undefined;
+				const warmIntervention = () => {
+					if (!intervention) return;
+					try { renderer.setRenderTarget(intervention); renderer.setClearColor(0, 0); renderer.clear(); layer!.renderForPreparation(renderer); }
+					finally { select(0); }
+				};
 				update(); draw(); await paint(); update(); draw(); await paint();
+				// Allocate the artificial intervening warm destination before measured
+				// motion. It later overwrites the real shared fade scratch, not a mock.
+				if (intervention) { warmIntervention(); await paint(); }
 				context = createWarmContext(() => true);
 				if (!context) throw new Error(`Scratch output profile unexpectedly declined: ${kind}`);
 				// The separate legacy control exercises the unchanged Canvas warm caller.
@@ -197,13 +233,33 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 					const panel = dom.selectedSummary && captureCarouselElement(dom.selectedSummary);
 					if (kind === 'glass' && !panel) throw new Error('Real selected glass has no captured plane');
 					phase = prefix + '/moving'; const movingStart = calls.length;
+					const firstDraws = fadeDraws, firstSubmits = submissions;
 					captureAccepted.push(layer!.capture('column'));
 					layer!.freezeStagedSource(); layer!.setExitOpacity(0.5, true);
 					if (panel && !layer!.setStagedPanel(dom.selectedCard, panel.corners, panel.width, panel.height)) throw new Error('Existing glass ownership was not retained');
 					layer!.setHandoffTarget({ ...target, progress: 0.25 }); update(); draw(); await device!.queue.onSubmittedWorkDone();
 					const movingCreates = calls.slice(movingStart);
+					fadeReuse?.frames.push({ phase, draws: fadeDraws - firstDraws, submits: submissions - firstSubmits, creates: movingCreates });
 					await presented(`${prefix}/moving`);
+					if (fadeReuse) {
+						for (const [index, name] of ['moving-reuse', 'moving-after-warm', 'moving-reuse-again'].entries()) {
+							if (index === 1) { phase = `${prefix}/intervening-warm`; warmIntervention(); await paint(); }
+							phase = `${prefix}/${name}`;
+							const beforeDraws = fadeDraws, beforeSubmits = submissions, beforeCalls = calls.length;
+							const progress = 0.45 + index * 0.2;
+							layer!.setExitOpacity(0.4 - index * 0.12, true);
+							if (panel && dom.selectedSummary) {
+								dom.selectedSummary.style.transform = `translate(${(index + 1) * 28}px,${-(index + 1) * 18}px)`;
+								const moved = captureCarouselElement(dom.selectedSummary);
+								if (!moved || !layer!.setStagedPanel(dom.selectedCard, moved.corners, moved.width, moved.height)) throw new Error('Retained panel did not move');
+							}
+							layer!.setHandoffTarget({ ...target, progress }); update(); draw(); await device!.queue.onSubmittedWorkDone();
+							fadeReuse.frames.push({ phase, draws: fadeDraws - beforeDraws, submits: submissions - beforeSubmits, creates: calls.slice(beforeCalls) });
+							await presented(phase);
+						}
+					}
 					phase = prefix + '/restore'; layer!.finishHandoff(); layer!.finishStagedPanel(); layer!.setExitOpacity(1, false); dom.focus.blur();
+					if (dom.selectedSummary) dom.selectedSummary.style.transform = '';
 					for (let i = 0; i < 80 && update(); i++) { /* deterministic source settling, outside measured draws */ }
 					draw(); await paint();
 					return { focusCreates, movingCreates };
@@ -250,13 +306,15 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 					sharedOwnerTarget: outputOwner ? outputOwner.getRenderTargets().length === 1 && context.target === outputOwner.getRenderTargets()[0] : null,
 					scratchPublicationRejected,
 					staleFenceRejected, resizeRejected, resizedBackStillRejected, stats });
+				intervention?.dispose(); intervention = undefined;
 				context.dispose(); context = undefined; layer.dispose(); layer = undefined; semantic.remove(); semantic = undefined;
 				// Resize invalidated the published backing texture: restore the legitimate source for the next case.
 				publishSource();
 			}
 		} finally { envLease.release(); }
 		await device.queue.onSubmittedWorkDone();
-		return { protocol: 'catalog-warm-output-v1', warmMode, rows, calls, gpuErrors,
+		if (validationScope) { validationScope = false; const error = await device.popErrorScope(); if (error) gpuErrors.push(error.message); }
+		return { protocol: 'catalog-warm-output-v1', warmMode, rows, calls, gpuErrors, fadeReuse,
 			limits: ['960x640, DPR1 only', 'High intervention includes a real GLB/environment draw and existing layer.renderForPreparation Low-fade owner in an independent 4x HalfFloat target, not the full Stage refinement owner graph.',
 				'No forced renderer exception, repeated resize/reprepare pixel matrix, transmission-material or arbitrary custom callback coverage yet.',
 				'Counts establish first-use compatibility only; this is not a frame-time benchmark.'] };
@@ -265,7 +323,8 @@ export async function runCatalogWarmOutputProof(host: HTMLElement,
 		Object.assign(failure, { evidence: { protocol: 'catalog-warm-output-v1', warmMode, phase, rows, calls, gpuErrors } });
 		throw failure;
 	} finally {
-		context?.dispose(); layer?.dispose(); semantic?.remove();
+		if (validationScope) { validationScope = false; await device?.popErrorScope(); }
+		intervention?.dispose(); context?.dispose(); layer?.dispose(); semantic?.remove();
 		restoreMethods.reverse().forEach(restore => restore()); device?.removeEventListener('uncapturederror', onGpuError);
 		environments.dispose(); assets.dispose(); outputOwner?.dispose(); publish.dispose(); displayMaterial.dispose(); seedMaterial.dispose(); background.dispose();
 		outputs.forEach(output => output.dispose()); canvases.forEach(canvas => canvas.remove()); void renderer.dispose();
