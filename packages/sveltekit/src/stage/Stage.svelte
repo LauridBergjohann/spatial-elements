@@ -746,6 +746,12 @@
 					creations: 0,
 					resizes: 0,
 					warmups: 0,
+					inactiveScrollWarmups: 0,
+					backgroundOutput: {
+						requested: false, initialized: false, mode: 'legacy', held: false,
+						targetTextureId: null, implicitBackgroundTarget: null,
+						catalogProfile: null, catalogProfileCurrent: false
+					},
 					activeScale: 0
 				},
 			getVisibilityStats: () =>
