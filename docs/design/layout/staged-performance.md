@@ -928,3 +928,68 @@ The built Kit chunk contains a RAF→timer→navigation path consistent with the
 reported invoker, but the missing stack/source information prevents assigning
 that anonymous script directly to it. These observations do not attribute the
 whole 49.9 ms RAF gap to the 3.9 ms of recorded overlapping script.
+
+## Frozen source capture follow-up: build 3058 / 68b62f3
+
+Run `50252` completed **4/4 start-latency cases, exit 0**, on Demo build `3058`
+with Core `68b62f3`. This is a separate unprofiled `staged-performance-v2`
+synthetic Hero cohort: default Background output, 1440 × 1000, DPR 1,
+Chrome 156.0.8078.80 on Windows / Intel Core i7-1065G7. Each List/Carousel ×
+cold/warm case retains one fresh-context sample. The analyzer also exits 0;
+that means the reports were analyzed, not that all raw pacing gates passed.
+
+| Case | Motion | Submission | DOM observation | Raw Moving / Reveal | Stable calibration |
+| --- | ---: | ---: | ---: | --- | --- |
+| List cold | 84.8 ms | 92.6 ms | 96.3 ms | pass / fail | no |
+| List warm | 28.6 ms | 37.0 ms | 41.4 ms | pass / pass | yes |
+| Carousel cold | 40.3 ms | 55.5 ms | 59.1 ms | fail / fail | yes |
+| Carousel warm | 30.8 ms | 42.9 ms | 46.4 ms | pass / pass | yes |
+
+All twelve start gates pass. Every measured GPU-creation window from click
+through motion and during Reveal is empty, with no sample validation errors.
+The raw pacing result is **3/4 Moving and 2/4 Reveal**. Three wholly internal
+gaps exceed the unchanged **33.4 ms** threshold:
+
+- Cold Carousel Moving: **33.5 ms**, 7193.6–7227.1 ms.
+- Cold Carousel Reveal: **33.5 ms**, 8826.9–8860.4 ms.
+- Cold List Reveal: **33.5 ms**, 7510.5–7544.0 ms.
+
+These are document-clock timestamps. There are no Moving or Reveal boundary
+violations, and no recorded LoAF script overlaps any of the three exact gaps.
+The two Carousel gaps have the additional `two-period-borderline` diagnostic
+label; they remain raw failures. Cold List's label is indeterminate because its
+blank-document calibration is unstable: the largest idle gap is **183.4 ms**,
+the estimated period is 18.056 ms and the two calibration halves differ by
+2.778 ms. That sample is retained and its budget is not relaxed. The other
+three calibrations are stable. All acceptance-eligibility fields remain false
+at n=1.
+
+Cold List also records a **52.4 ms** anonymous `TimerHandler:setTimeout` script
+at 5428.3–5480.7 ms: 43.0 ms before first motion and 9.4 ms overlapping Moving.
+It includes 6.4 ms of forced layout, which cannot be assigned to a smaller
+subregion from this record. Its Moving raw gate nevertheless passes. No sample
+records script overlap with Reveal. Cold Carousel retains a later **51.9 ms**
+script with 12.7 ms forced layout, wholly after Reveal; that work is not moved
+into the transition's pacing windows.
+
+Motion-end to Reveal-start remains **1.430 / 1.119 s** for cold/warm List and
+**1.168 / 1.077 s** for cold/warm Carousel. The synchronous
+first-motion-to-first-submission intervals are **7.8 / 8.4 / 15.2 / 12.1 ms**
+in that same case order. The [capture optimization](frozen-catalog-capture.md)
+still performs the first mandatory fractional-opacity capture. Its isolated
+pixel proof establishes reduced repeated capture submissions, not a first-frame
+saving or a pacing improvement. The [earlier profiled diagnostic](staged-first-frame-profile.md)
+uses different runtime bytes and must not be pooled with this cohort.
+
+Compared with the earlier default n=1 cohort, observed start latencies are lower
+in three cases and higher for cold List; the raw Moving/Reveal failures also
+occur in different places. Sequential n=1 runs and unstable cold-List calibration
+do not establish a causal speedup or regression. Repeated calibrated samples,
+trusted-input separation and physical-device validation remain required; neither
+experimental navigation nor Background output is enabled generally.
+
+Evidence: [complete analyzer output](../../../.artifacts/staged-performance-3058-68b62f3-default-hero1440-n1-analysis.json).
+The sibling `staged-performance-3058-68b62f3-default-hero1440-n1` directory
+preserves every measurement, calibration timestamp and sample. Runner and
+analyzer logs remain beside it. No threshold, sample, wait or measurement
+protocol was changed for this run.

@@ -111,3 +111,48 @@ Android/iOS/Surface validation. Enabling the new path generally is still gated
 on those results. A separate [zoom preparation lifetime audit](deferred-zoom-preparation.md)
 also identifies an asynchronous resource-lifetime boundary; it was not folded
 into this already verified output experiment or represented as fixed.
+
+## Follow-up: frozen source capture, build 3058 / 68b62f3
+
+This follow-up records later evidence without replacing the preceding checkpoint.
+Core `68b62f3` reuses the existing resolved GeometryFade capture while the source
+is explicitly frozen and its band, source and output remain compatible. It keeps
+the first capture, changing fade composition, moving handoff and Glass plane.
+Proof commit `bfaa660` adds the independent control/candidate comparison.
+
+| Check | Revision-bound result |
+| --- | --- |
+| Focused CPU verification | **66/66 in 5 files**, including capture ownership, scratch overwrites, lifecycle and failure invalidation. Core typecheck passes. |
+| Full unit suite | **1113/1113 in 129 files**, run `16627`, exit 0. |
+| Packages and Demo production build | Build run `3058`, exit 0, with runtime `68b62f3` and the subsequent proof fixture. This successful invocation does not change the earlier `84797` build's recorded exit. |
+| Isolated real WebGPU capture comparison | **3/3**, run `46978`, exit 0: **24 exact control/candidate RGBA pairs** and 12 reused captures. Reuse submissions fall from **13→10 List, 21→14 Frosted Carousel, 29→22 Glass Carousel**; first/recapture counts stay unchanged. [Scope and limits](frozen-catalog-capture.md). |
+| Complete ordinary-output staged navigation | **24/24**, run `1420`, exit 0, on build `3058` / Core `68b62f3`. |
+| Experimental output in the actual Stage | **5/5**, run `59745`, exit 0, on the same build/runtime. This is functional coverage, not an explicit-owner pacing cohort. |
+
+Framework evidence remains in `.artifacts/frozen-catalog-capture-units.log`,
+`.artifacts/frozen-catalog-capture-types.log`,
+`.artifacts/frozen-catalog-capture-all-units.log`,
+`.artifacts/frozen-catalog-capture-package-build.log`,
+`.artifacts/frozen-catalog-capture-demo-build.log`,
+`.artifacts/catalog-fade-reuse-3058-68b62f3`,
+`.artifacts/staged-production-3058-68b62f3` and
+`.artifacts/background-output-stage-3058-68b62f3`, with their runner logs.
+The isolated comparison proves unchanged tested images and fewer submissions;
+it does not establish a GPU-duration or first-frame improvement.
+
+The separate unprofiled default-output diagnostic `50252` completes **4/4 start
+cases, exit 0** at 1440 × 1000, DPR 1, one synthetic sample per case. All twelve
+start gates are below 100 ms, creation windows are empty and validation errors
+are absent. **Raw Moving passes 3/4; Reveal passes 2/4.** Cold Carousel has one
+33.5 ms internal gap in each phase; cold List has one 33.5 ms internal Reveal
+gap. These exceed the unchanged 33.4 ms threshold. There are no boundary
+violations or recorded script overlaps with those three exact gaps. Cold-List
+calibration remains unstable with a 183.4 ms idle gap; no sample is removed.
+
+The [full diagnostic result](staged-performance.md#frozen-source-capture-follow-up-build-3058--68b62f3)
+retains all latency, calibration and phase evidence. It remains ineligible for
+acceptance at n=1. The new capture reuse cannot remove its first mandatory
+capture, and comparisons with the older sequential diagnostic establish no
+causal timing gain. Repeated calibrated pacing and Android/iOS/Surface checks
+remain open. This follow-up does not rerun or relabel the earlier private
+Examples/package-consumer evidence; both experimental switches remain opt-in.
