@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { getContext, onMount, tick } from 'svelte';
-	import { CircleHelp, X } from 'lucide-svelte';
+	import CircleHelp from 'lucide-svelte/icons/circle-help';
+	import X from 'lucide-svelte/icons/x';
 	import InteractionGesture from './InteractionGesture.svelte';
 	import { getCssPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
 	import { getInteractionGuidance, MODEL_INPUT_EVENT, type ModelInputState, type InteractionGuidance } from '@spatial-elements/core/stage/interactionGuidance';

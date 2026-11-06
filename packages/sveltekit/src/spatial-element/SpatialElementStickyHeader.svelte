@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ResolvedSpatialElementData as SpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 	import { catalogActionSemantic } from '@spatial-elements/core/catalog/catalogAction';
-	import { ShoppingCart } from 'lucide-svelte';
+	import ShoppingCart from 'lucide-svelte/icons/shopping-cart';
 	import './layout.generated.css';
 	import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
 	const catalogEndpoint = createCatalogEndpointAction();
