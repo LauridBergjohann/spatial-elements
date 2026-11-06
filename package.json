@@ -32,7 +32,15 @@
     "release:version": "changeset version && node scripts/sync-release.mjs && npm install --package-lock-only --ignore-scripts --no-audit --no-fund",
     "release:plan": "node scripts/publish-release.mjs",
     "release:publish": "node scripts/publish-release.mjs --publish",
-    "test:release": "node --test scripts/release.test.mjs"
+    "test:release": "node --test scripts/release.test.mjs",
+    "dev:basics": "npm run demo",
+    "dev:showcase": "npm run build && npm run dev -w @spatial-elements/showcase",
+    "build:basics": "npm run build && npm run build:demo",
+    "build:showcase": "npm run build && npm run build -w @spatial-elements/showcase",
+    "build:apps": "npm run build && npm run build:demo && npm run build -w @spatial-elements/showcase",
+    "preview:basics": "npm run preview -w @spatial-elements/demo-sveltekit -- --port 4174 --strictPort",
+    "preview:showcase": "npm run preview -w @spatial-elements/showcase",
+    "test:apps": "playwright test --config playwright.apps.config.ts"
   },
   "devDependencies": {
     "@changesets/cli": "2.31.1",

@@ -8,7 +8,7 @@ for (const javaScriptEnabled of [false, true]) {
 		try {
 			const page = await context.newPage();
 			if (javaScriptEnabled) await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
-			await page.goto('/demo/layout-cards');
+			await page.goto('/proof/theming/layout-cards');
 			const menu = page.locator('.spatial-shell-menu');
 			const satellite = page.locator('.spatial-shell-right');
 			for (const width of [320, 600, 840, 1200, 1599, 1600, 1809, 2300]) {
@@ -36,7 +36,7 @@ for (const javaScriptEnabled of [false, true]) {
 				await expect.poll(async () => (await satellite.boundingBox())!.y).toBeCloseTo(28 + resolveMenuOffset(requested), 0);
 			}
 			await page.setViewportSize({ width: 2300, height: 800 });
-			await page.goto('/demo/elements/cube');
+			await page.goto('/proof/theming/elements/cube');
 			await page.evaluate(() => window.scrollTo({ top: 300, behavior: 'instant' }));
 			expect(await page.evaluate(() => scrollY)).toBeGreaterThan(0);
 			await expect.poll(async () => (await menu.boundingBox())!.y).toBeCloseTo(16, 0);
@@ -62,7 +62,7 @@ test('native menu links remain reachable on small screens', async ({ browser, ba
 test('appearance actions fit satellites and remain reachable inside the compact menu', async ({ page }) => {
 	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
 	await page.setViewportSize({ width: 1700, height: 800 });
-	await page.goto('/demo/layout-cards');
+	await page.goto('/proof/theming/layout-cards');
 	await page.locator('[data-spatial-shell-right]').getByRole('button', { name: 'Appearance', exact: true }).click();
 	const popup = page.locator('[data-appearance-popover]:popover-open');
 	await expect(popup.getByRole('button', { name: 'System appearance' })).toBeVisible();

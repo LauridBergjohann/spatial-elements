@@ -73,6 +73,15 @@ WebGPU rendering requires a capable browser/device and a secure context (HTTPS o
 - [Runtime themes and ButtonGroup](docs/theming.md): host-owned light/dark preference and reusable button groups.
 - [Configuration migration](docs/configuration-migration.md): update an existing beta integration.
 
+## Demo applications
+
+- **Basics** ? simple forms and the essential list, carousel and detail components,
+  with a fixed light theme. Run `npm run dev:basics`.
+- **Showcase** ? an independent shell for richer authored scenes and imagery,
+  with light/dark appearance. Run `npm run dev:showcase`.
+
+Both live in this repository. See [local builds, previews and authoring](apps/README.md).
+
 ## License and attribution
 
 [MPL-2.0](LICENSE).

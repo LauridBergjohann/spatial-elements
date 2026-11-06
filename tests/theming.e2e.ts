@@ -8,7 +8,7 @@ async function showAppearance(page: Page) {
 	await expect(appearancePopup(page)).toBeVisible();
 }
 async function open(page: Page) {
-	await page.goto('/demo/elements/cube?stage-test=1');
+	await page.goto('/proof/theming/elements/cube?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
 	await expect(page.getByRole('button', { name: 'Appearance', exact: true }).filter({ visible: true })).toBeVisible();
 	await page.evaluate(() => window.__stageVisualTest!.settle(50));
@@ -112,7 +112,7 @@ test('the initial dark palette is present before hydration, and blocked storage 
 	await page.route('**/_app/immutable/**', (route) =>
 		route.request().resourceType() === 'script' ? route.abort() : route.continue()
 	);
-	await page.goto('/demo/elements/cube');
+	await page.goto('/proof/theming/elements/cube');
 	await expect(theme(page)).toHaveCSS('background-color', 'rgb(18, 25, 35)');
 	await expect(page.locator('html')).toHaveAttribute('data-theme-pending', '');
 	await page.unroute('**/_app/immutable/**');

@@ -3,7 +3,9 @@
 	import { beforeNavigate } from '$app/navigation';
 	import type { SpatialTheme } from '@spatial-elements/sveltekit';
 	import { STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
-	import { Sun, Moon, Monitor } from 'lucide-svelte';
+	import Sun from 'lucide-svelte/icons/sun';
+	import Moon from 'lucide-svelte/icons/moon';
+	import Monitor from 'lucide-svelte/icons/monitor';
 	import type { Appearance } from './appearance.svelte';
 	let { theme, appearance }: { theme: SpatialTheme; appearance: Appearance } = $props();
 	const id = $props.id();

@@ -61,7 +61,7 @@ it supports older themes with no `radii` group. Content insets remain separate f
 
 `colorScheme` is optional and accepts only `light` or `dark`. It sets the wrapper's CSS `color-scheme`, including native form controls. The library never reads `matchMedia`, writes storage or modifies the document's global preference. A host can use two buttons, three buttons, a menu, or no switch at all. Update the `theme` prop with the chosen palette; do not key/recreate the shell.
 
-The demo and brand examples implement **Light / Dark / System** in their shells. System is the default and responds to operating-system changes. Explicit choices use `sessionStorage`, surviving navigation and reload within that tab. System clears the override. A blocked store falls back gracefully to in-memory behavior. For SSR, their early HTML bootstrap selects the palette before hydration; `getSpatialThemeStyle(theme)` supplies CSS declarations for the temporary preview. Applications with a CSP should authorize their bootstrap using their usual nonce/hash policy.
+Basics is permanently light. The [Showcase](../apps/showcase/README.md) provides **Light / Dark** in its right satellite (inside the menu on small screens). It follows the operating system until an explicit choice is made; that choice survives reloads in session storage. Its early HTML bootstrap and SSR preview styles apply the palette before hydration, and blocked storage remains usable. The former three-state demo remains an isolated regression fixture at `/proof/theming`. Applications with a CSP should authorize their bootstrap using their usual nonce/hash policy.
 
 ## Reuse ButtonGroup
 
