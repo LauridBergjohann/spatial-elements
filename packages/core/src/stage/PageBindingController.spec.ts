@@ -1,8 +1,29 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { PageBindingController } from './PageBindingController.js';
 import type { StagePanelTarget } from './stageTypes.js';
+import { resolveMenuOffset, spatialLayoutTokens } from '../spatial-element/responsiveLayout.js';
 
 afterEach(() => vi.unstubAllGlobals());
+
+test.each([false, true])('shell DOM and panel coordinates share one scroll correction (fixed: %s)', (fixed) => {
+	vi.stubGlobal('window', { getComputedStyle: () => ({ position: 'absolute', top: '16px' }) });
+	const owner = new PageBindingController();
+	// Re-measuring during a gesture must not cache the already compensated DOM position.
+	for (const measuredAt of [0, 48, 112, 140, 300]) {
+		const compensation = measuredAt + resolveMenuOffset(measuredAt, fixed);
+		const shell = { dataset: { stageScrollCompensation: String(compensation) }, hasAttribute: () => fixed };
+		const frame = {
+			closest: (selector: string) => selector === '[data-stage-scroll-shell]' ? shell : null,
+			getBoundingClientRect: () => ({ left: 136, top: 16 - measuredAt + compensation, width: 1328, height: 64 })
+		} as unknown as HTMLElement;
+		const cached = owner.measure(frame, 0, measuredAt);
+		expect(cached.top).toBe(16);
+		for (const scroll of [0, 48, 112, 140, 300, 140, 0]) {
+			const nativeTop = fixed ? 16 : Math.min(16, 16 + spatialLayoutTokens.menu.scrollThreshold - scroll);
+			expect(owner.resolve(cached, 0, scroll).top).toBe(nativeTop);
+		}
+	}
+});
 
 test('sticky panels stay below the header only until the end of their containing block', () => {
 	vi.stubGlobal('window', { getComputedStyle: () => ({ position: 'sticky', top: '104px' }) });
@@ -31,6 +52,25 @@ test('native popover surfaces retain viewport coordinates when the document scro
 	const measured = owner.measure(frame, 0, 400);
 	expect(measured.fixed).toBe(true);
 	expect(owner.resolve(measured, 0, 500)).toMatchObject({ left: 120, top: 80, width: 300, height: 250 });
+});
+
+test('fixed media descendants and their GPU rectangles share viewport coordinates across remeasurement', () => {
+	vi.stubGlobal('window', { getComputedStyle: () => ({ position: 'relative', top: 'auto' }) });
+	const region = {} as HTMLElement;
+	const frame = {
+		closest: (selector: string) => selector === '[data-stage-fixed-region]' ? region : null,
+		getBoundingClientRect: () => ({ left: 178, top: 96, width: 1042, height: 788 })
+	} as unknown as HTMLElement;
+	const owner = new PageBindingController();
+	for (const measuredAt of [0, 125.5, 900, 125.5, 0]) {
+		const cached = owner.measure(frame, 0, measuredAt);
+		expect(cached.fixed).toBe(true);
+		for (const scroll of [0, 125.5, 900]) {
+			expect(owner.resolve(cached, 0, scroll)).toEqual({
+				left: 178, top: 96, right: 1220, bottom: 884, width: 1042, height: 788
+			});
+		}
+	}
 });
 
 test('invalidates queued resize callbacks before replacing hosts', () => {

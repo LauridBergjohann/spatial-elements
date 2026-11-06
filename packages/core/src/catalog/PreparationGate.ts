@@ -2,6 +2,7 @@
 export class PreparationGate {
 	private paused = false;
 	private waiters = new Set<() => void>();
+	getActivity() { return { paused: this.paused, waiting: this.waiters.size }; }
 	setPaused(paused: boolean) {
 		this.paused = paused;
 		if (!paused) for (const wake of [...this.waiters]) wake();

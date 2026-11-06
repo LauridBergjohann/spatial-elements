@@ -62,7 +62,7 @@ for (const width of [1440, 430]) for (const { path, anchors } of routes) {
 	});
 }
 
-test('system dark appearance and document metrics are usable without JavaScript', async ({ browser, baseURL }) => {
+test('Basics stays light with a dark system preference and without JavaScript', async ({ browser, baseURL }) => {
 	test.skip(Boolean(process.env.SPATIAL_E2E_DEV), 'Requires production CSS for the SSR paint');
 	const contexts = await Promise.all([false, true].map((javaScriptEnabled) =>
 		browser.newContext({ baseURL, javaScriptEnabled, colorScheme: 'dark', viewport: { width: 1440, height: 900 } })
@@ -83,7 +83,7 @@ test('system dark appearance and document metrics are usable without JavaScript'
 			})));
 		}
 		expect(appearances[0]).toEqual(appearances[1]);
-		expect(appearances[0]).toMatchObject({ margin: '0px', colorScheme: 'dark' });
+		expect(appearances[0]).toMatchObject({ margin: '0px', colorScheme: 'light' });
 	} finally {
 		await Promise.all(contexts.map((context) => context.close()));
 	}

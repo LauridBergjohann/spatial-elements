@@ -69,6 +69,11 @@ describe('spatialElement detail helpers', () => {
 });
 
 describe('minimal element documents', () => {
+	it('carries element-specific minimap framing into the pre-route list projection', () => {
+		const minimap = { modelScale: 1.3, dockedView: { scale: 1.4, azimuth: 20, elevation: 12 } };
+		const [item] = getSpatialListItems([{ id: 'framed', title: 'Framed', minimap }], '/shop/elements');
+		expect(item.minimap).toEqual(minimap);
+	});
 	const element = {
 		id: 'cube',
 		title: 'Cube',

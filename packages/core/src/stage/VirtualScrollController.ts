@@ -47,6 +47,8 @@ export class VirtualScrollController {
 	private started = false;
 	private navigation?: { token: object; interrupted: boolean };
 	private historyHashUrl?: string;
+	private pointerFocusTarget?: Element;
+	private pointerFocusTimer?: ReturnType<typeof setTimeout>;
 	/** The navigation bridge supplies SvelteKit's public history writers. */
 	writeHash?: (url: URL, replace: boolean) => void;
 
@@ -125,6 +127,9 @@ export class VirtualScrollController {
 		window.addEventListener('wheel', this.handleUserInput, { passive: true });
 		window.addEventListener('touchstart', this.handleUserInput, { passive: true });
 		window.addEventListener('pointerdown', this.handleUserInput, { passive: true });
+		window.addEventListener('pointerdown', this.handlePointerFocusStart, true);
+		window.addEventListener('click', this.handlePointerFocusEnd, true);
+		window.addEventListener('pointercancel', this.handlePointerFocusEnd, true);
 		window.addEventListener('keydown', this.handleScrollInterruptionKey);
 
 		if ('ResizeObserver' in window) {
@@ -149,6 +154,9 @@ export class VirtualScrollController {
 		window.removeEventListener('wheel', this.handleUserInput);
 		window.removeEventListener('touchstart', this.handleUserInput);
 		window.removeEventListener('pointerdown', this.handleUserInput);
+		window.removeEventListener('pointerdown', this.handlePointerFocusStart, true);
+		window.removeEventListener('click', this.handlePointerFocusEnd, true);
+		window.removeEventListener('pointercancel', this.handlePointerFocusEnd, true);
 		window.removeEventListener('keydown', this.handleScrollInterruptionKey);
 		this.resizeObserver?.disconnect();
 		this.resizeObserver = undefined;
@@ -156,6 +164,9 @@ export class VirtualScrollController {
 		if (this.hashFrame) cancelAnimationFrame(this.hashFrame);
 		this.historyHashUrl = undefined;
 		this.navigation = undefined;
+		this.pointerFocusTarget = undefined;
+		clearTimeout(this.pointerFocusTimer);
+		this.pointerFocusTimer = undefined;
 		this.cancelAnchorScroll();
 		this.measureFrame = 0;
 		this.hashFrame = 0;
@@ -189,7 +200,29 @@ export class VirtualScrollController {
 		if (this.navigation) this.navigation.interrupted = true;
 	};
 	private readonly handleScrollInterruptionKey = (event: KeyboardEvent) => {
+		this.pointerFocusTarget = undefined;
+		clearTimeout(this.pointerFocusTimer);
+		this.pointerFocusTimer = undefined;
 		if (SCROLL_INTERRUPTION_KEYS.has(event.key)) this.handleUserInput();
+	};
+
+	private readonly handlePointerFocusStart = (event: Event) => {
+		clearTimeout(this.pointerFocusTimer);
+		this.pointerFocusTimer = undefined;
+		this.pointerFocusTarget = event.target instanceof Element && this.container.contains(event.target)
+			? event.target : undefined;
+	};
+
+	private readonly handlePointerFocusEnd = () => {
+		const target = this.pointerFocusTarget;
+		// Click handlers may explicitly focus their activated link. Keep the
+		// pointer association for the entire dispatch task: browsers can run
+		// microtasks between capture and delegated bubble listeners.
+		clearTimeout(this.pointerFocusTimer);
+		this.pointerFocusTimer = setTimeout(() => {
+			this.pointerFocusTimer = undefined;
+			if (this.pointerFocusTarget === target) this.pointerFocusTarget = undefined;
+		}, 0);
 	};
 
 	private readonly cancelAnchorScroll = () => {
@@ -287,13 +320,22 @@ export class VirtualScrollController {
 	private readonly handleFocusIn = (event: FocusEvent) => {
 		if (this.container.hasAttribute('data-stage-fullscreen')) return;
 		if (this.navigation || !(event.target instanceof HTMLElement)) return;
+		// A pointer has already reached this visible control. Recentering it on
+		// focus would move the document before navigation captures its history
+		// position, even when the caller used focus({ preventScroll: true }).
+		if (this.pointerFocusTarget && (event.target.contains(this.pointerFocusTarget) ||
+			this.pointerFocusTarget.contains(event.target))) return;
 		// Corner controls are already clamped into the viewport. Their 10px inset
 		// must not trigger document scrolling when focused before a fullscreen click.
 		if (event.target.closest('[data-stage-corner-control]')) return;
+		// Fixed media, pane chrome and portaled docks cannot be revealed by
+		// document scrolling, even if an authored hit area crosses a viewport edge.
+		if (event.target.closest('[data-stage-fixed-region], [data-stage-fixed-overlay]')) return;
 		const rect = event.target.getBoundingClientRect();
+		const viewport = this.getScrollViewport(event.target);
 		if (
-			rect.top >= FOCUS_VIEWPORT_MARGIN &&
-			rect.bottom <= window.innerHeight - FOCUS_VIEWPORT_MARGIN
+			rect.top >= viewport.top + FOCUS_VIEWPORT_MARGIN &&
+			rect.bottom <= viewport.bottom - FOCUS_VIEWPORT_MARGIN
 		)
 			return;
 
@@ -305,14 +347,25 @@ export class VirtualScrollController {
 		const style = window.getComputedStyle(element);
 		const scrollMarginTop = Number.parseFloat(style.scrollMarginTop) || 0;
 		const documentTop = rect.top + this.scrollY;
+		const viewport = this.getScrollViewport(element);
 		return Math.max(
 			element.hasAttribute('data-stage-scroll-top')
 				? 0
 				: center
-					? documentTop - (window.innerHeight - rect.height) * 0.5
-					: documentTop - scrollMarginTop,
+					? documentTop - viewport.top - (viewport.bottom - viewport.top - rect.height) * 0.5
+					: documentTop - viewport.top - scrollMarginTop,
 			0
 		);
+	}
+
+	/** Paint clipping never changes document coordinates. A pane only declares
+	 * the fixed obstructions which anchors and focused content must clear. */
+	private getScrollViewport(element: HTMLElement) {
+		const region = element.closest<HTMLElement>('[data-stage-scroll-viewport]');
+		const style = region ? window.getComputedStyle(region) : undefined;
+		const top = Math.min(window.innerHeight, Math.max(0, Number.parseFloat(style?.scrollPaddingTop ?? '') || 0));
+		const bottomInset = Math.max(0, Number.parseFloat(style?.scrollPaddingBottom ?? '') || 0);
+		return { top, bottom: Math.max(top, window.innerHeight - bottomInset) };
 	}
 
 	private scrollElementIntoView(element: HTMLElement, center = false, animated = false) {

@@ -17,6 +17,8 @@ import { SpaceMouseAdapter, type SpaceMouseNavigationUpdate } from './SpaceMouse
 import { dampAndSnap } from './damping.js';
 import { getInteractionGuidance, MODEL_INPUT_EVENT, type ModelInputState } from './interactionGuidance.js';
 import { ModelPointerPreview } from './ModelPointerPreview.js';
+import { resolveDetailGestureOwner } from '../spatial-element/spatialElementMedia.js';
+import type { SpatialElementMediaItem } from '../spatial-element/types.js';
 export interface SpatialElementInteractionPorts {
 	camera: THREE.PerspectiveCamera;
 	canvas: HTMLCanvasElement;
@@ -29,6 +31,7 @@ export interface SpatialElementInteractionPorts {
 		visible: boolean;
 		viewport: THREE.Vector4;
 		bounds: THREE.Box3;
+		detail?: { media: SpatialElementMediaItem['kind']; split: boolean; paneHidden: boolean; paneLeft: number };
 	};
 }
 /** Owns user navigation state; consumes the facade clock and never creates a RAF loop. */
@@ -655,6 +658,13 @@ export class SpatialElementInteractionController {
 		// Fullscreen owns the canvas, including its empty background. UI events
 		// never reach this gate as canvas input; no geometry or DOM picking is needed.
 		if (this.fullscreen) return this.canInteract && this.stageViewportVisible && target === this.backgroundCanvas;
+		const detail = this.ports.readGeometry().detail;
+		if (detail && (detail.split || detail.paneHidden)) {
+			if (!this.canInteract || !this.stageViewportVisible) return false;
+			return resolveDetailGestureOwner({ ...detail, clientX, modelHit: false,
+				uiTarget: target !== this.backgroundCanvas || isStageUiTarget(target) || this.isPointerOccludedByHtml(clientX, clientY)
+			}) === 'model';
+		}
 		if (
 			!this.canInteract ||
 			!this.stageViewportVisible ||

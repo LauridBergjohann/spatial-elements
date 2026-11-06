@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, realpathSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { join, resolve } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const directory = join(root, '.artifacts', 'packages');mkdirSync(directory, {recursive:true});
 const npmCli = process.env.npm_execpath;assert(npmCli, 'Use npm run verify:packages');
@@ -26,7 +26,13 @@ for(const name of ['core','sveltekit']) {
 }
 // Outside the repository: no parent node_modules or workspace aliases can mask a missing dependency.
 const consumer=mkdtempSync(join(tmpdir(),'spatial-elements-consumer-'));
-cpSync(join(root,'apps/sveltekit-demo/src'),join(consumer,'src'),{recursive:true});
+// The ownership proof deliberately accesses private workspace internals. Its
+// browser suite covers that seam; it is not part of the public tarball consumer.
+// Keep all public examples, including the real staged-navigation summary here.
+const internalProofs = ['routes/proof/presentation-transfer', 'lib/presentation-transfer-proof']
+ .map(path=>join(root,'apps/sveltekit-demo/src',path));
+cpSync(join(root,'apps/sveltekit-demo/src'),join(consumer,'src'),{recursive:true,
+ filter:source=>!internalProofs.some(path=>source===path||source.startsWith(path+sep))});
 cpSync(join(root,'fixtures/demo-assets'),join(consumer,'static/assets/demo'),{recursive:true});
 for(const file of ['svelte.config.js','vite.config.ts','tsconfig.json'])cpSync(join(root,'apps/sveltekit-demo',file),join(consumer,file));
 const workspace=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));

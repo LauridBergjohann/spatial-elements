@@ -63,6 +63,8 @@ function getFlatCss3DTransform(matrix: THREE.Matrix4) {
 }
 
 export interface PanelPresentationPorts {
+	/** Catalog layout; standalone panels retain their explicitly authored geometry. */
+	zoomLayout?(): ReturnType<typeof import('../spatial-element/responsiveLayout.js').resolveZoomLayout> | undefined;
 	camera: THREE.PerspectiveCamera;
 	contentScene: THREE.Scene;
 	flatLayer: HTMLElement;
@@ -96,6 +98,23 @@ export class PanelPresentationController {
 	get visibleMinimaps() {
 		return this.visibleMinimapCount;
 	}
+	/** Snapshot only; querying diagnostics must not advance damping or measure DOM layout. */
+	getRenderActivity() {
+		return this.panelRuntimes.map((panel, index) => {
+			const content = panel.content, projection = panel.contentProjectionRoot;
+			const nativeEligible = Boolean(content && projection && !this.minimaps.has(index) &&
+				Math.abs(content.rotation.x) <= PANEL_NATIVE_ROTATION_EPSILON &&
+				Math.abs(content.rotation.y) <= PANEL_NATIVE_ROTATION_EPSILON &&
+				Math.abs(content.rotation.z) <= PANEL_NATIVE_ROTATION_EPSILON &&
+				Math.abs(projection.matrix.elements[14] - PANEL_CONTENT_Z) <= PANEL_NATIVE_DEPTH_EPSILON);
+			return { index, frameId: this.panelTargets[index]?.frame.id ?? '',
+				visible: panel.group.visible, pointerLift: panel.pointerLift,
+				rotation: [panel.group.rotation.x, panel.group.rotation.y, panel.group.rotation.z],
+				position: panel.group.position.toArray(), scale: panel.group.scale.toArray(),
+				domMode: panel.domRenderMode, nativeRestFrames: panel.nativeRestFrames,
+				nativeSwitchPending: nativeEligible && panel.domRenderMode !== 'native' && panel.nativeRestFrames < PANEL_NATIVE_REST_FRAMES };
+		});
+	}
 	add(runtime: StagePanelRuntime) {
 		this.panelRuntimes.push(runtime);
 	}
@@ -103,6 +122,8 @@ export class PanelPresentationController {
 		this.panelRuntimes[index] = runtime;
 	}
 	release() {
+		for (const [element, inert] of this.nativeShellInteractivity) element.inert = inert;
+		this.nativeShellInteractivity.clear();
 		for (const runtime of this.panelRuntimes) {
 			runtime.content?.removeFromParent();
 			runtime.contentProjectionRoot?.removeFromParent();
@@ -169,6 +190,7 @@ export class PanelPresentationController {
 		HTMLElement,
 		{ parent: Node; next: ChildNode | null; style: string | null; draggable: string | null; shell: string | null }
 	>();
+	private readonly nativeShellInteractivity = new Map<HTMLElement, boolean>();
 	private readonly minimapCssLocalCorners = [
 		new THREE.Vector3(),
 		new THREE.Vector3(),
@@ -327,10 +349,16 @@ export class PanelPresentationController {
 		root.matrixWorldNeedsUpdate = true;
 	}
 	private getCornerControlOffset(panel: StagePanelRuntime, width: number, height: number, uiFocus: number): { x: number; y: number; z: number } {
-		const inset = MINIMAP_FOCUSED_VIEWPORT_INSET;
+		const progress = getPanelFocusProgress(uiFocus);
+		// At rest the offset is exactly zero: no DOM measurement is needed.
+		if (progress === 0) return { x: 0, y: 0, z: 0 };
+		const zoom = this.ports.zoomLayout?.();
+		const inset = zoom
+			? zoom.base.layoutWidth - zoom.controls.viewSelector.x - zoom.controls.viewSelector.width
+			: MINIMAP_FOCUSED_VIEWPORT_INSET;
 		// The render camera spans innerWidth, but classic scrollbars consume part
 		// of it. Express the usable viewport edge in that same camera coordinate system.
-		const usableWidth = typeof document === 'undefined' ? width : document.documentElement.clientWidth;
+		const usableWidth = zoom?.base.layoutWidth ?? (typeof document === 'undefined' ? width : document.documentElement.clientWidth);
 		const rightEdge = Math.max(...this.panelRuntimes
 			.filter((control) => control.focusReactive === 'top-right')
 			.map((control) => control.options.position.x + control.options.width / 2));
@@ -340,7 +368,7 @@ export class PanelPresentationController {
 			.filter((control) => control.focusReactive === 'top-right')
 			.map((control) => control.options.position.x - control.options.width / 2));
 		const groupLeft = usableWidth - inset - (rightEdge - leftEdge);
-		let topInset = inset;
+		let topInset = zoom?.controls.viewSelector.y ?? inset;
 		// On narrow phones retain the full close-up minimap size and place the
 		// complete control row just below it when the two corners would overlap.
 		if (this.minimapFocus > 0) for (const [index] of this.minimaps) {
@@ -348,7 +376,9 @@ export class PanelPresentationController {
 			if (!minimapPanel || minimapPanel.focusReactive === 'top-right' || !this.isPanelTargetVisible(index)) continue;
 			const layout = this.getPanelPointerLayout(minimapPanel, index, width, height, uiFocus);
 			const scale = this.panelCamera.position.z / Math.max(this.panelCamera.position.z - layout.focusOffset.z, 1);
-			if (groupLeft < layout.centerX + layout.visualWidth * scale / 2 + 8)
+			if (groupLeft < layout.centerX + layout.visualWidth * scale / 2 + 8 &&
+				topInset + panel.options.height + 8 > layout.centerY - layout.visualHeight * scale / 2 &&
+				topInset < layout.centerY + layout.visualHeight * scale / 2 + 8)
 				topInset = Math.max(topInset, layout.centerY + layout.visualHeight * scale / 2 + 8);
 		}
 		const endY = height / 2 - topInset - panel.options.height / 2;
@@ -356,7 +386,6 @@ export class PanelPresentationController {
 		// would pin both controls and their summary anchor during ordinary scrolling.
 		const startX = panel.options.position.x;
 		const startY = panel.options.position.y;
-		const progress = getPanelFocusProgress(uiFocus);
 		return {
 			x: THREE.MathUtils.lerp(startX, endX, progress) - panel.options.position.x,
 			y: THREE.MathUtils.lerp(startY, endY, progress) - panel.options.position.y,
@@ -387,9 +416,10 @@ export class PanelPresentationController {
 		const baseWidth = minimap ? minimap.baseWidth : panel.options.width;
 		const baseHeight = minimap ? minimap.baseHeight : panel.options.height;
 		const minimapFocus = minimap ? this.minimapFocus : 0;
+		const zoom = minimap ? this.ports.zoomLayout?.() : undefined;
 		const expansion =
 			minimap && !this.fixedMinimapSize
-				? THREE.MathUtils.lerp(1, minimap.options.expandedHeight / minimap.baseHeight, minimapFocus)
+				? THREE.MathUtils.lerp(1, (zoom?.minimap.height ?? minimap.options.expandedHeight) / minimap.baseHeight, minimapFocus)
 				: 1;
 		const visualWidth = baseWidth * expansion;
 		const visualHeight = baseHeight * expansion;
@@ -405,7 +435,7 @@ export class PanelPresentationController {
 			viewportWidth,
 			viewportHeight
 		);
-		const focusDepth = minimap ? rawFocusOffset.z * 0.12 : rawFocusOffset.z;
+		const focusDepth = minimap ? (zoom ? 0 : rawFocusOffset.z * 0.12) : rawFocusOffset.z;
 		const cornerControl = !minimap && panel.focusReactive !== false ? this.getAnchoredCornerControl(panel, index) : undefined;
 		if (cornerControl) {
 			const controlOffset = this.getCornerControlOffset(cornerControl, viewportWidth, viewportHeight, uiFocus);
@@ -424,7 +454,12 @@ export class PanelPresentationController {
 		const minimapProjectionScale = minimap
 			? this.panelCamera.position.z / Math.max(this.panelCamera.position.z - focusDepth, 1)
 			: 1;
-		const minimapPositionOffset = minimap
+		const minimapPositionOffset = minimap && zoom
+			? {
+					x: THREE.MathUtils.lerp(viewportWidth / 2 + baseX - baseWidth / 2, zoom.minimap.x, minimapFocus) + visualWidth / 2 - (viewportWidth / 2 + baseX),
+					y: viewportHeight / 2 - baseY - (THREE.MathUtils.lerp(viewportHeight / 2 - baseY - baseHeight / 2, zoom.minimap.y, minimapFocus) + visualHeight / 2)
+				}
+			: minimap
 			? getMinimapFocusPositionOffset(
 					{ x: baseX, y: baseY },
 					{ width: minimap.baseWidth, height: minimap.baseHeight },
@@ -471,6 +506,25 @@ export class PanelPresentationController {
 			visualWidth,
 			viewportVisible: this.isPanelTargetVisible(index)
 		};
+	}
+	private updateNativeShellPresentation(index: number, focusOffset: { x: number; y: number; z: number },
+		opacity: number, blur: number, viewportVisible: boolean, transitionBlocked: boolean) {
+		const target = this.panelTargets[index];
+		if (!target?.nativeContent || !target.frame.closest('[data-stage-scroll-shell]')) return;
+		const surface = target.surfaceElement;
+		if (!this.nativeShellInteractivity.has(surface)) this.nativeShellInteractivity.set(surface, surface.inert);
+		// Native shell content has no CSS3DObject. Project its existing surface from
+		// the same focus pose as the GPU panel, keeping the measured frame untouched.
+		// In particular, do not feed the zoom transform back into cached scroll boxes.
+		const scale = this.panelCamera.position.z / Math.max(this.panelCamera.position.z - focusOffset.z, 1);
+		surface.style.transformOrigin = '50% 50%';
+		surface.style.transform = `translate(${focusOffset.x}px, ${-focusOffset.y}px) scale(${scale})`;
+		surface.style.visibility = viewportVisible && opacity >= 0.01 ? '' : 'hidden';
+		const interactive = viewportVisible && !transitionBlocked && opacity >= 0.12;
+		surface.inert = this.nativeShellInteractivity.get(surface)! || !interactive;
+		surface.style.pointerEvents = interactive ? '' : 'none';
+		target.content.style.setProperty('--stage-panel-content-opacity', String(opacity));
+		target.content.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : '';
 	}
 	updatePanelPointerInteraction(delta: number) {
 		const viewportWidth = window.innerWidth;
@@ -648,6 +702,7 @@ export class PanelPresentationController {
 					delta,
 					panel.projectionRoot
 				) || animationActive;
+			this.updateNativeShellPresentation(index, focusOffset, focusOpacity, focusBlur, viewportVisible, transitionBlocked);
 
 			if (minimap) {
 				minimap.pointerReveal = dampAndSnap(

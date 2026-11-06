@@ -1,5 +1,8 @@
 <script lang="ts">
-	import SpatialElementSummaryContent from './SpatialElementSummaryContent.svelte';
+	import { catalogViewLink } from '@spatial-elements/core/catalog/catalogViewLink';
+	import { focusCatalogLink } from '@spatial-elements/core/catalog/catalogActivationFocus';
+	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
+	import SpatialSummarySlot from './SpatialSummarySlot.svelte';
 	import { getContext } from 'svelte';
 	import { getCssPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
 	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
@@ -53,6 +56,7 @@
 	const sections = getContext<CatalogSections | undefined>(CATALOG_SECTIONS);
 	const readTheme = useSpatialTheme();
 	const brand = $derived(readTheme());
+	const radii = $derived(resolveSpatialThemeRadii(brand));
 	const contentInset = $derived(brand.panelShape.contentInset ?? Math.max(16, Math.round(brand.panelShape.radius * 0.7)));
 	const catalogEndpoint = createCatalogEndpointAction();
 	function address(role: CatalogEndpointRole) {
@@ -82,6 +86,8 @@
 	const occurrence = $derived(JSON.stringify([sectionId, carouselKey(spatialElement)]));
 	const tooltip = $derived(spatialElement.title);
 	const pose = $derived(carouselPose(index, phase, count, presentation, layout, emphasis, focus));
+	const compact = $derived(layout.framing?.compact ?? false);
+	const modelFrameSize = $derived(layout.framing ? Math.min(layout.framing.fit.width, layout.framing.fit.height) : Math.min(layout.width, layout.height));
 	const resident = $derived(carouselResident(index, windowPhase, count, presentation, layout));
 	function activate(event: MouseEvent) {
 		endpoints?.prefer(brand.id, spatialElement.id, occurrence, 'carousel.front');
@@ -91,7 +97,7 @@
 			occurrence,
 			slot: 'carousel.front'
 		});
-		(event.currentTarget as HTMLElement).focus({ preventScroll: true });
+		focusCatalogLink(event.currentTarget as HTMLAnchorElement, event);
 	}
 	$effect(() => {
 		if (!interactive || !resident) return;
@@ -117,7 +123,7 @@
 	data-carousel-surface={brand.panelTheme.surface ?? 'glass'}
 	data-carousel-theme={JSON.stringify({
 		...brand.panelTheme,
-		radius: brand.panelShape.radius,
+		radius: radii.panel,
 		tintOpacity: Math.min(brand.panelTheme.tintOpacity ?? 0.28, 0.72)
 	})}
 	data-catalog-occurrence={occurrence}
@@ -129,11 +135,13 @@
 		data-spatial-element-id={spatialElement.id}
 		data-catalog-occurrence={occurrence}
 		style={interactive
-			? `--carousel-poster-x:${(pose.x - 0.19) * 100}%;--carousel-poster-mobile-x:${pose.x * 100}%;--carousel-poster-y:${pose.y * 100}%;--carousel-poster-size:${pose.size};--carousel-poster-opacity:${pose.opacity}`
+			? `--carousel-poster-x:${pose.x * 100}%;--carousel-poster-y:${pose.y * 100}%;--carousel-poster-width:${pose.size * modelFrameSize}px;--carousel-poster-opacity:${pose.opacity}`
 			: undefined}
 	>
+		<div data-carousel-fit-anchor aria-hidden="true"></div>
 		<a
 			use:mouseHover
+			use:catalogViewLink={{ spatialElementId: spatialElement.id, targetPresentation: spatialElement.targetPresentation }}
 			draggable="false"
 			class="spatial-element-target"
 			title={tooltip}
@@ -175,6 +183,7 @@
 	</div>
 	<div
 		class="summary"
+		class:has-eyebrow={Boolean(spatialElement.eyebrow)}
 		style:--summary-content-inset={`${contentInset}px`}
 		hidden={interactive && pose.panelOpacity < 0.001}
 		inert={interactive && !selected}
@@ -192,49 +201,25 @@
 			'%'}
 		style:--carousel-panel-blur={(brand.panelTheme.backdropBlur ?? 5) + 'px'}
 		style:--carousel-focus-blur={interactive && pose.panelOpacity < 1 ? `blur(${(1 - pose.panelOpacity) * 6}px)` : 'none'}
-		style:--carousel-panel-radius={brand.panelShape.radius + 'px'}
+		style:--carousel-panel-radius={radii.panel + 'px'}
 		use:catalogEndpoint={address('summary-surface')}
 	>
-        <SpatialElementSummaryContent {address} {contentInset} spatialElement={{
-            id: spatialElement.id, eyebrow: spatialElement.eyebrow, title: spatialElement.title,
-            features: spatialElement.summary?.features ?? spatialElement.features.map((label) => ({ label })),
-            action: spatialElement.summary?.action
-        }} />
-        <div class="information-links">
-		<a
-			data-catalog-focus-key={`catalog:${JSON.stringify([brand.id, spatialElement.id, occurrence, 'carousel.front'])}`}
-			aria-busy={busy || undefined}
-			onclick={activate}
-			class="information"
-			href={href(spatialElement.href)}
-			onpointerenter={() => prepare(spatialElement)}
-			onfocus={() => prepare(spatialElement)}
-			onpointerdown={() => prepare(spatialElement)}
-			>More information<span class="sr-only">: {spatialElement.title}</span></a
-		>
-		{#if spatialElement.summary?.sectionLink}
-			<a
-				class="information"
-				href={href(spatialElement.summary.sectionLink.href)}
-				onclick={activate}
-				data-catalog-focus-key={`catalog-section:${occurrence}`}
-				>{spatialElement.summary.sectionLink.label}</a
-			>
-		{/if}
-        </div>
+		<SpatialSummarySlot instanceKey={`carousel:${brand.id}:${occurrence}`}
+   context={{ spatialElement: { id: spatialElement.id, brandId: brand.id, eyebrow: spatialElement.eyebrow, title: spatialElement.title,
+    features: spatialElement.summary?.features ?? spatialElement.features.map((label) => ({ label })), action: spatialElement.summary?.action },
+    contentInset, heading: 'h3', mode: 'carousel', address,
+    carousel: { item: spatialElement, occurrence, compact } }} />
 	</div>
 </article>
 
 <style>
 	.carousel-spatial-element {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		grid-template-rows: 1fr;
-		align-items: center;
+		display: block;
 		position: relative;
 		min-width: 0;
-		min-height: 600px;
-		padding: 32px 0 64px;
+		height: calc(var(--spatial-carousel-title-reserve) + var(--spatial-carousel-fit-height));
+		min-height: 0;
+		padding: 0;
 		box-sizing: border-box;
 		scroll-snap-align: start;
 		scroll-snap-stop: always;
@@ -247,7 +232,7 @@
 	.spatial-element-visual {
 		position: absolute;
 		inset: 0;
-		display: grid;
+		display: block;
 		place-items: center;
 		touch-action: manipulation;
 	}
@@ -264,13 +249,20 @@
 		z-index: 1400;
 		transform-origin: 0 0;
 	}
+	/* Keep only the selected source's compositing layers ready before navigation.
+	 * Promoting its rounded/frosted surface at the click can compile a new browser
+	 * raster shader during motion even when all WebGPU passes are already warm. */
+	.interactive.selected .summary,
+	.interactive.selected .summary :global(.spatial-summary-island) {
+		will-change: transform;
+	}
 	.spatial-element-target,
 	.spatial-element-poster {
 		position: absolute;
-		left: var(--carousel-poster-x, 31%);
-		top: var(--carousel-poster-y, 50%);
-		width: calc(var(--carousel-poster-size, 0.82) * 100cqw);
-		max-width: calc(var(--carousel-poster-size, 0.82) * 560px);
+		left: var(--carousel-poster-x, calc(var(--spatial-carousel-fit-left) + var(--spatial-carousel-fit-width) / 2));
+		top: var(--carousel-poster-y, calc(var(--spatial-carousel-title-reserve) + var(--spatial-carousel-fit-height) / 2));
+		width: var(--carousel-poster-width, calc(min(var(--spatial-carousel-fit-width), var(--spatial-carousel-fit-height)) * 0.82));
+		max-width: none;
 		transform: translate(-50%, -50%);
 		aspect-ratio: 1;
 	}
@@ -291,7 +283,7 @@
 	.spatial-element-target:focus-visible {
 		outline: 2px solid var(--spatial-element-accent);
 		outline-offset: 4px;
-		border-radius: 12px;
+		border-radius: var(--spatial-element-control-radius);
 	}
 	/* Enhanced geometry already has a silhouette focus outline in the renderer. */
 	.interactive:global([data-catalog-model-ready]) .spatial-element-target:focus-visible {
@@ -317,89 +309,31 @@
 		transition: filter 180ms ease;
 	}
 	.summary {
-		position: relative;
-		width: min(494px, 100%);
-		min-height: 504px;
-		margin-left: 50%;
+		position: absolute;
+		left: var(--spatial-carousel-summary-left);
+		top: calc(var(--spatial-carousel-title-reserve) - var(--spatial-carousel-compact-height));
+		width: var(--spatial-carousel-summary-width);
+		height: var(--spatial-carousel-compact-height);
+		min-height: 0;
+		margin: 0;
+		--spatial-carousel-compact-height: 40px;
 		box-sizing: border-box;
 		filter: var(--carousel-focus-blur, none);
 
 		border-radius: var(--carousel-panel-radius, 14px);
-		padding: var(--summary-content-inset);
+		padding: 0;
 
 		color: color-mix(in srgb, var(--spatial-element-ink) 92%, transparent);
 		pointer-events: auto;
-	}
-	.summary::before {
-		content: '';
-		position: absolute;
-		inset: 0;
-		border-radius: inherit;
-		background: color-mix(
-			in srgb,
-			var(--carousel-panel-tint, white) var(--carousel-panel-tint-opacity, 65%),
-			transparent
-		);
-		border: 1px solid color-mix(in srgb, var(--spatial-element-accent) 12%, transparent);
-		backdrop-filter: blur(var(--carousel-panel-blur, 5px));
-		box-shadow: var(--carousel-panel-shadow);
-		opacity: var(--carousel-panel-opacity, 1);
-		pointer-events: none;
-	}
-	.summary > :global(*) {
-		position: relative;
-		opacity: var(--carousel-panel-opacity, 1);
-	}
-	:global([data-carousel-glass-ready]) .summary::before {
-		visibility: hidden;
 	}
 	.summary[hidden] {
 		display: block;
 		visibility: hidden;
 	}
-    .summary > .information-links {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        width: 100%;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0 16px;
-    }
-	.information {
-		display: inline-block;
-		margin-top: 20px;
-		color: var(--spatial-element-accent);
-	}
-	.information[aria-busy='true'] {
-		opacity: 0.55;
-		cursor: progress;
-	}
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip-path: inset(50%);
-		white-space: nowrap;
-	}
-	@container (max-width: 700px) {
-		.carousel-spatial-element {
-			min-height: 0;
-			padding: 360px 0 80px;
-			align-items: start;
-		}
-		.summary {
-			margin-inline: auto;
-		}
-		.spatial-element-target,
-		.spatial-element-poster {
-			left: var(--carousel-poster-mobile-x, 50%);
-			top: 180px;
-			max-width: calc(var(--carousel-poster-size, 0.82) * 360px);
-		}
+	.has-eyebrow { --spatial-carousel-compact-height: 66px; }
+	[data-carousel-fit-anchor] { position: absolute; left: var(--spatial-carousel-fit-left); top: var(--spatial-carousel-title-reserve); width: var(--spatial-carousel-fit-width); height: var(--spatial-carousel-fit-height); pointer-events: none; }
+	@media (min-width: 840px) {
+		.summary { top: calc(var(--spatial-carousel-fit-height) / 2); height: auto; max-height: var(--spatial-carousel-fit-height); padding: 0; transform: translateY(-50%); }
 	}
 	@media (prefers-reduced-motion: reduce) {
 		img { transition: none; }

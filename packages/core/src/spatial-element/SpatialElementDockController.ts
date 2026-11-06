@@ -1,5 +1,6 @@
 import { STAGE_PANEL_LAYOUT_EVENT, STAGE_PANEL_VISUAL_EVENT } from '../stage/panelContext.js';
 import { getStickyPanelTop } from '../stage/stageDom.js';
+import type { ResponsiveLayoutInput } from './responsiveLayout.js';
 import {
 	STAGE_SCROLL_PRIORITY,
 	getStageVisualScrollPosition,
@@ -7,23 +8,18 @@ import {
 	type StageScrollFrame
 } from '../stage/scrollFrame.js';
 import {
-	getCompactMinimapDockDestination,
-	getDockedMinimapCopyReserve,
 	getDockedMinimapInteractionRect,
 	getDockedMinimapModelScale,
-	getMinimapDockDestination,
 	getSpatialElementDockBreakpoint,
 	getSpatialElementDockPresentationProgress,
 	getSpatialElementDockTarget,
-	getSpatialElementSectionScrollOffset,
 	getSpatialElementTabsDockBreakpoint,
-	getSpatialElementTabsDockDestination,
 	getSpatialElementTabsDockProgress,
 	getSpatialElementTabsDockTarget,
+	resolveSpatialElementDockLayout,
 	type SpatialElementDockRect
 } from './spatialElementDock.js';
 
-const COMPACT_BREAKPOINT = 1100;
 const TABS_DOCK_MORPH_DISTANCE = 24;
 const MINIMAP_ANCHOR = '[data-spatial-element-dock-minimap-anchor]';
 const PANEL_FRAME = '[data-stage-panel-fallback]';
@@ -45,6 +41,7 @@ interface ContentPresentation {
 	webkitClipPath: string;
 	documentTop: number;
 	height: number;
+	action?: { element: HTMLElement; bottom: number; inert: boolean };
 	appliedClipPath?: string;
 }
 
@@ -57,13 +54,18 @@ export class SpatialElementDockController {
 	private minimapFrame?: HTMLElement;
 	private stickyHeader?: HTMLElement;
 	private stickyMinimapAction?: HTMLElement;
+	private stickyAction?: HTMLElement;
 	private stickyHeaderOriginalParent?: HTMLElement;
 	private stickyHeaderOriginalNextSibling?: ChildNode | null;
+	private stickyHeaderOriginalStyle: string | null = null;
 	private tabsAnchor?: HTMLElement;
 	private tabsFrame?: HTMLElement;
 	private sourceTabsList?: HTMLElement;
 	private stickyTabs?: HTMLElement;
-	private dockedTabsList?: HTMLElement;
+	private paneTabs?: HTMLElement;
+	private tabsInPane = false;
+	private tabsListOriginalParent?: HTMLElement;
+	private tabsListOriginalNextSibling?: ChildNode | null;
 	private stickyTabsOriginalParent?: HTMLElement;
 	private stickyTabsOriginalNextSibling?: ChildNode | null;
 	private stickyTabsOriginalStyle: string | null = null;
@@ -73,10 +75,12 @@ export class SpatialElementDockController {
 	private minimapOriginalDockProgress: string | null = null;
 	private minimapOriginalModelScale: string | null = null;
 	private minimapOriginalModelTop: string | null = null;
+	private minimapOriginalModelLeft: string | null = null;
 	private minimapDock?: SpatialElementDockRect;
+	private minimapViewportTop = 0;
+	private minimapViewportLeft = 0;
 	private tabsDock?: SpatialElementDockRect;
 	private dockedMinimapModelScale = 1;
-	private dockedMinimapModelTop = 0;
 	private stickyHeaderBottom = 0;
 	private breakpoint = 0;
 	private presentationEndScrollY = 0;
@@ -85,8 +89,7 @@ export class SpatialElementDockController {
 	private tabsDockProgress = -1;
 	private resizeObserver?: ResizeObserver;
 	private animationFrame = 0;
-	private focusTransferFrame = 0;
-	private focusTransferTimer = 0;
+	private layoutDirty = false;
 	private stopScrollFrames?: () => void;
 	private decorationOpacity = 1;
 	private minimapDockProgress = 0;
@@ -98,11 +101,9 @@ export class SpatialElementDockController {
 	private presentationProgress = 0;
 	private presentationRevision = 0;
 	private tabsDocked = false;
-	private lastFocusedTabId?: string;
-	private lastTabFocusTime = 0;
 	private readonly layoutRoot?: HTMLElement;
 
-	constructor(private readonly root: HTMLElement) {
+	constructor(private readonly root: HTMLElement, private readonly readLayoutMetrics?: () => ResponsiveLayoutInput | undefined) {
 		this.layoutRoot = root.closest<HTMLElement>(SPATIAL_ELEMENT_LAYOUT_ROOT) ?? undefined;
 	}
 
@@ -130,11 +131,14 @@ export class SpatialElementDockController {
 		this.stickyHeader = this.root.querySelector<HTMLElement>(STICKY_HEADER) ?? undefined;
 		this.stickyMinimapAction =
 			this.stickyHeader?.querySelector<HTMLElement>(STICKY_MINIMAP_ACTION) ?? undefined;
+		this.stickyAction = this.stickyHeader?.querySelector<HTMLElement>('[data-spatial-element-dock-action]') ?? undefined;
 		this.tabsAnchor = this.root.querySelector<HTMLElement>(TABS_ANCHOR) ?? undefined;
 		this.tabsFrame = this.tabsAnchor?.querySelector<HTMLElement>(PANEL_FRAME) ?? undefined;
 		this.sourceTabsList = this.tabsFrame?.querySelector<HTMLElement>(TABS_LIST) ?? undefined;
 		this.stickyTabs = this.stickyHeader?.querySelector<HTMLElement>(STICKY_TABS) ?? undefined;
-		this.dockedTabsList = this.stickyTabs?.querySelector<HTMLElement>(TABS_LIST) ?? undefined;
+		this.paneTabs = this.root.querySelector<HTMLElement>('[data-spatial-detail-pane-submenu]') ?? undefined;
+		this.tabsListOriginalParent = this.sourceTabsList?.parentElement ?? undefined;
+		this.tabsListOriginalNextSibling = this.sourceTabsList?.nextSibling;
 		this.departingContent = Array.from(
 			this.root.querySelectorAll<HTMLElement>(DEPARTING_CONTENT)
 		).map((element) => ({
@@ -150,6 +154,7 @@ export class SpatialElementDockController {
 
 		this.mountStickyHeaderOverlay();
 		this.mountStickyTabsOverlay();
+		this.stickyHeaderOriginalStyle = this.stickyHeader.getAttribute('style');
 		this.minimapOriginalStyle = this.minimapFrame.getAttribute('style');
 		this.minimapOriginalDockProgress = this.minimapFrame.getAttribute(
 			'data-stage-minimap-dock-progress'
@@ -158,6 +163,7 @@ export class SpatialElementDockController {
 			'data-stage-minimap-model-scale'
 		);
 		this.minimapOriginalModelTop = this.minimapFrame.getAttribute('data-stage-minimap-model-top');
+		this.minimapOriginalModelLeft = this.minimapFrame.getAttribute('data-stage-minimap-model-left');
 		this.stickyTabsOriginalStyle = this.stickyTabs?.getAttribute('style') ?? null;
 		this.tabsOriginalSurfaceOpacity =
 			this.tabsFrame?.style.getPropertyValue('--stage-panel-surface-opacity') ?? '';
@@ -166,11 +172,10 @@ export class SpatialElementDockController {
 		this.minimapModelScale = this.getMinimapModelScale();
 		this.scrollY = getStageVisualScrollPosition().scrollY;
 		this.started = true;
-		this.sourceTabsList?.addEventListener('focusin', this.handleTabFocusIn);
-		this.dockedTabsList?.addEventListener('focusin', this.handleTabFocusIn);
 		this.measure();
 		this.stopScrollFrames = subscribeStageScrollFrame(this.scrollFrame, STAGE_SCROLL_PRIORITY.dock);
 		window.addEventListener('resize', this.handleResize, { passive: true });
+		window.addEventListener(STAGE_PANEL_LAYOUT_EVENT, this.handlePanelLayout);
 
 		if ('ResizeObserver' in window) {
 			this.resizeObserver = new ResizeObserver(this.handleResize);
@@ -193,27 +198,29 @@ export class SpatialElementDockController {
 		this.stopScrollFrames?.();
 		this.stopScrollFrames = undefined;
 		window.removeEventListener('resize', this.handleResize);
+		window.removeEventListener(STAGE_PANEL_LAYOUT_EVENT, this.handlePanelLayout);
 		this.resizeObserver?.disconnect();
 		if (this.animationFrame) cancelAnimationFrame(this.animationFrame);
-		if (this.focusTransferFrame) cancelAnimationFrame(this.focusTransferFrame);
-		if (this.focusTransferTimer) clearTimeout(this.focusTransferTimer);
-		this.sourceTabsList?.removeEventListener('focusin', this.handleTabFocusIn);
-		this.dockedTabsList?.removeEventListener('focusin', this.handleTabFocusIn);
 		this.restoreMinimap();
 		this.restoreMinimapDockProgress();
 		this.restoreMinimapModelScale();
 		this.restoreMinimapModelTop();
+		if (this.minimapOriginalModelLeft === null) this.minimapFrame?.removeAttribute('data-stage-minimap-model-left');
+		else this.minimapFrame?.setAttribute('data-stage-minimap-model-left', this.minimapOriginalModelLeft);
 		this.restoreHeaderPresentation();
 		this.setHeaderActive(false);
+		this.setPaneTabsActive(false);
 		this.setTabsActive(false);
 		this.restoreStickyTabs();
 		this.restoreStickyHeader();
 		this.restoreDepartingContentClipping();
+		for (const { action } of this.departingContent) {
+			if (action) action.element.inert = action.inert;
+		}
 		this.root.removeAttribute('data-spatial-element-dock-active');
 		this.root.removeAttribute('data-spatial-element-tabs-dock-active');
 		this.root.style.removeProperty('--spatial-element-section-scroll-offset');
 		this.root.style.removeProperty('--spatial-element-summary-sticky-top');
-		(this.layoutRoot ?? this.root).style.removeProperty('--spatial-element-content-inline-inset');
 	}
 
 	private readonly scrollFrame = (frame: StageScrollFrame) => {
@@ -225,6 +232,10 @@ export class SpatialElementDockController {
 		if (!this.started || this.animationFrame) return;
 		this.animationFrame = requestAnimationFrame(() => {
 			this.animationFrame = 0;
+			if (this.layoutDirty) {
+				this.layoutDirty = false;
+				this.measure();
+			}
 			this.update();
 		});
 	};
@@ -235,12 +246,12 @@ export class SpatialElementDockController {
 		this.schedule();
 	};
 
-	private readonly handleTabFocusIn = (event: FocusEvent) => {
-		if (!(event.target instanceof HTMLElement)) return;
-		const tabId = event.target.closest<HTMLElement>('[data-spatial-element-tab-id]')?.dataset.spatialElementTabId;
-		if (!tabId) return;
-		this.lastFocusedTabId = tabId;
-		this.lastTabFocusTime = performance.now();
+	private readonly handlePanelLayout = (event: Event) => {
+		// Also ignore another route's dock during a transition. Otherwise two
+		// temporarily mounted controllers could keep remeasuring each other.
+		if ((event as CustomEvent<{ source?: string }>).detail?.source === 'spatial-element-dock') return;
+		this.layoutDirty = true;
+		this.schedule();
 	};
 
 	private measure() {
@@ -250,17 +261,41 @@ export class SpatialElementDockController {
 		this.restoreMinimap();
 		this.setMinimapSurfaceOpacity(decorationOpacity);
 		const minimapRect = toRect(this.minimapFrame.getBoundingClientRect());
-		const headerRect = toRect(this.stickyHeader.getBoundingClientRect());
-		this.minimapDock =
-			window.innerWidth <= COMPACT_BREAKPOINT
-				? getCompactMinimapDockDestination(minimapRect, headerRect, window.innerWidth)
-				: getMinimapDockDestination(minimapRect);
+		const tabsWidth = this.sourceTabsList?.querySelector<HTMLElement>(TABS_LINKS)?.scrollWidth ?? 0;
+		const metrics = this.readLayoutMetrics?.() ?? {
+			width: window.innerWidth, height: window.innerHeight,
+			scrollbarWidth: Math.max(0, window.innerWidth - (document.documentElement?.clientWidth ?? window.innerWidth))
+		};
+		const geometry = resolveSpatialElementDockLayout(metrics, tabsWidth);
+		this.minimapViewportLeft = Math.max(Number.isFinite(metrics.safeArea?.left) ? metrics.safeArea!.left! : 0, 0);
+		// The fixed 3XL pane owns its header and submenu separately (step 10).
+		if (!geometry) {
+			this.applyState(false);
+			this.setMinimapModelTop(undefined);
+			this.minimapFrame.removeAttribute('data-stage-minimap-model-left');
+			if (!this.tabsInPane) this.setTabsActive(false);
+			this.setPaneTabsActive(true);
+			this.applyMinimapPresentation(0);
+			this.applyHeaderPresentation(0);
+			this.updateActionPresentation(false);
+			this.presentationProgress = 0;
+			this.minimapDock = undefined;
+			this.tabsDock = undefined;
+			this.tabsBreakpoint = Number.POSITIVE_INFINITY;
+			this.root.style.removeProperty('--spatial-element-section-scroll-offset');
+			return;
+		}
+		this.setPaneTabsActive(false);
+		const tabsRect = this.tabsFrame ? toRect(this.tabsFrame.getBoundingClientRect()) : undefined;
+		const headerRect = geometry.header;
+		applyViewportFixedRect(this.stickyHeader, headerRect);
+		this.minimapDock = geometry.minimap;
+		this.minimapViewportTop = geometry.header.top;
 		this.dockedMinimapModelScale = getDockedMinimapModelScale(
 			this.minimapDock,
 			headerRect,
-			this.getConfiguredDockedModelScale()
+			this.getConfiguredDockedModelScale() ?? 1
 		);
-		this.dockedMinimapModelTop = headerRect.top;
 		if (this.stickyMinimapAction) {
 			applyViewportFixedRect(
 				this.stickyMinimapAction,
@@ -275,26 +310,16 @@ export class SpatialElementDockController {
 			this.minimapDock.top
 		);
 		this.presentationEndScrollY = Math.max(minimapRect.top + this.scrollY + minimapRect.height, 0);
-		const reserve = getDockedMinimapCopyReserve(
-			this.minimapDock,
-			headerRect,
-			this.dockedMinimapModelScale,
-			window.innerWidth <= COMPACT_BREAKPOINT ? 12 : 16
-		);
-		this.stickyHeader.style.setProperty('--spatial-element-sticky-minimap-reserve', `${reserve}px`);
-		(this.layoutRoot ?? this.root).style.setProperty(
-			'--spatial-element-content-inline-inset',
-			`${Math.max(headerRect.left + reserve, 0)}px`
-		);
+		this.stickyHeader.style.setProperty('--spatial-element-sticky-minimap-reserve', `${geometry.titleReserve}px`);
+		this.root.style.setProperty('--spatial-element-section-scroll-offset', `${geometry.sectionOffset}px`);
 
-		if (this.tabsFrame && this.stickyTabs) {
-			const tabsRect = toRect(this.tabsFrame.getBoundingClientRect());
+		if (this.tabsFrame && this.stickyTabs && tabsRect && geometry.submenu) {
 			const panelRadius = Number.parseFloat(
 				getComputedStyle(this.tabsFrame).getPropertyValue('--stage-panel-radius')
 			);
 			if (Number.isFinite(panelRadius)) this.tabsPanelRadius = Math.max(panelRadius, 0);
 			this.tabsDockProgress = -1;
-			this.tabsDock = getSpatialElementTabsDockDestination(tabsRect, headerRect, window.innerWidth);
+			this.tabsDock = geometry.submenu;
 			this.tabsBreakpoint = getSpatialElementTabsDockBreakpoint(
 				tabsRect.top + this.scrollY,
 				this.tabsDock.top
@@ -304,10 +329,10 @@ export class SpatialElementDockController {
 				'--spatial-element-tabs-dock-bottom-radius',
 				`${this.tabsPanelRadius}px`
 			);
-			this.root.style.setProperty(
-				'--spatial-element-section-scroll-offset',
-				`${getSpatialElementSectionScrollOffset(this.tabsDock)}px`
-			);
+		} else {
+			this.setTabsActive(false);
+			this.tabsDock = undefined;
+			this.tabsBreakpoint = Number.POSITIVE_INFINITY;
 		}
 	}
 
@@ -330,6 +355,7 @@ export class SpatialElementDockController {
 		this.applyState(docked);
 		this.applyTabsPresentation(tabsDocked);
 		this.applyTabsState(tabsDocked);
+		this.updateActionPresentation(docked);
 		this.presentationProgress = presentationProgress;
 		this.presentationRevision++;
 	}
@@ -348,7 +374,8 @@ export class SpatialElementDockController {
 			// The virtual document is a transformed containing block. Counter only
 			// this dock's scroll offset instead of invalidating inherited styles
 			// across the complete page with a per-frame CSS custom property.
-			this.minimapFrame.style.top = `${this.scrollY + this.minimapDock.top}px`;
+			const compensation = this.layoutRoot?.classList.contains('stage-virtual-scroll-active') ? this.scrollY : 0;
+			this.minimapFrame.style.top = `${compensation + this.minimapDock.top}px`;
 		} else if (changed || this.minimapDockApplied) {
 			const decorationOpacity = this.decorationOpacity;
 			this.restoreMinimap();
@@ -359,16 +386,20 @@ export class SpatialElementDockController {
 			this.setHeaderActive(docked);
 			this.root.toggleAttribute('data-spatial-element-dock-active', docked);
 		}
-		this.setMinimapModelTop(docked ? this.dockedMinimapModelTop : undefined);
+		// The fit square can extend above the viewport for large layouts. The live
+		// model follows this top edge through the same continuous dock morph,
+		// including its hover and sensor pose, instead of being clipped by it.
+		this.setMinimapModelTop(this.minimapViewportTop);
+		this.minimapFrame.setAttribute('data-stage-minimap-model-left', this.minimapViewportLeft.toFixed(3));
 		if (docked) this.updateDepartingContentClipping();
 		else if (changed) this.restoreDepartingContentClipping();
 		if (changed || dockLayoutChanged) {
-			window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
+			window.dispatchEvent(new CustomEvent(STAGE_PANEL_LAYOUT_EVENT, { detail: { source: 'spatial-element-dock' } }));
 		}
 	}
 
 	private applyTabsState(docked: boolean) {
-		if (!this.stickyTabs || !this.sourceTabsList || !this.dockedTabsList) return;
+		if (!this.stickyTabs || !this.sourceTabsList) return;
 		if (docked === this.tabsDocked) return;
 
 		this.setTabsActive(docked);
@@ -537,45 +568,68 @@ export class SpatialElementDockController {
 		this.stickyHeader.setAttribute('aria-hidden', String(!active));
 	}
 
+	private moveTabsTo(parent: HTMLElement, next: ChildNode | null = null) {
+		const list = this.sourceTabsList;
+		if (!list || list.parentElement === parent || list.contains(parent)) return;
+		const focused = document.activeElement instanceof HTMLElement && list.contains(document.activeElement)
+			? document.activeElement : undefined;
+		const links = list.querySelector<HTMLElement>(TABS_LINKS);
+		const scrollLeft = links?.scrollLeft ?? 0;
+		// Reuse the live Svelte-owned navigation, including focus and horizontal
+		// scroll. There is never a second active list or a cloned control.
+		// Svelte can disconnect the original slot before this controller's cleanup.
+		// Atomic moves require matching connected states; an ordinary DOM move is
+		// necessary when returning a live portal to that detached owner.
+		const reference = next?.parentNode === parent ? next : null;
+		if (typeof parent.moveBefore === 'function' && parent.ownerDocument === list.ownerDocument &&
+			parent.isConnected === list.isConnected) parent.moveBefore(list, reference);
+		else parent.insertBefore(list, reference);
+		if (links) links.scrollLeft = scrollLeft;
+		if (focused?.isConnected && document.activeElement !== focused) focused.focus({ preventScroll: true });
+	}
+
+	private restoreTabsList() {
+		if (!this.tabsListOriginalParent) return;
+		const next = this.tabsListOriginalNextSibling?.parentNode === this.tabsListOriginalParent
+			? this.tabsListOriginalNextSibling : null;
+		this.moveTabsTo(this.tabsListOriginalParent, next);
+	}
+
 	private setTabsActive(active: boolean) {
-		if (!this.stickyTabs || !this.sourceTabsList || !this.dockedTabsList) return;
-
-		const outgoingList = active ? this.sourceTabsList : this.dockedTabsList;
-		const incomingList = active ? this.dockedTabsList : this.sourceTabsList;
-		this.syncTabScrollPosition(outgoingList, incomingList);
-		const focusedTabId =
-			document.activeElement instanceof HTMLElement && outgoingList.contains(document.activeElement)
-				? document.activeElement.closest<HTMLElement>('[data-spatial-element-tab-id]')?.dataset.spatialElementTabId
-				: performance.now() - this.lastTabFocusTime <= 500
-					? this.lastFocusedTabId
-					: undefined;
-
-		this.tabsDocked = active;
-		this.sourceTabsList.inert = active;
-		this.sourceTabsList.setAttribute('aria-hidden', String(active));
-		this.sourceTabsList.toggleAttribute('data-spatial-element-tab-list-hidden', active);
+		if (!this.stickyTabs || !this.sourceTabsList || !this.tabsListOriginalParent) return;
 		this.stickyTabs.inert = !active;
 		this.stickyTabs.setAttribute('aria-hidden', String(!active));
 		this.stickyTabs.toggleAttribute('data-active', active);
 		this.setSourceTabsSurfaceVisible(!active);
+		if (active) this.moveTabsTo(this.stickyTabs);
+		else this.restoreTabsList();
+		this.tabsDocked = active;
+		this.sourceTabsList.dataset.spatialElementTabList = active ? 'docked' : 'panel';
+	}
 
-		if (!focusedTabId) return;
-		if (this.focusTransferFrame) cancelAnimationFrame(this.focusTransferFrame);
-		if (this.focusTransferTimer) clearTimeout(this.focusTransferTimer);
-		const focusMatchingTab = (retry = true) => {
-			if (!this.started || this.tabsDocked !== active) return;
-			const matchingTab = Array.from(
-				incomingList.querySelectorAll<HTMLElement>('[data-spatial-element-tab-id]')
-			).find((element) => element.dataset.spatialElementTabId === focusedTabId);
-			matchingTab?.focus({ preventScroll: true });
-			if (retry && matchingTab && document.activeElement !== matchingTab) {
-				this.focusTransferTimer = window.setTimeout(() => focusMatchingTab(false), 160);
-			}
-		};
-		this.focusTransferFrame = requestAnimationFrame(() => {
-			this.focusTransferFrame = 0;
-			focusMatchingTab();
-		});
+	private setPaneTabsActive(active: boolean) {
+		if (!this.paneTabs || !this.sourceTabsList) return;
+		if (active) {
+			this.paneTabs.inert = false;
+			this.paneTabs.setAttribute('aria-hidden', 'false');
+			this.paneTabs.toggleAttribute('data-active', true);
+			this.moveTabsTo(this.paneTabs);
+			this.sourceTabsList.dataset.spatialElementTabList = 'docked';
+			const links = this.sourceTabsList.querySelector<HTMLElement>(TABS_LINKS);
+			if (links?.scrollWidth) this.paneTabs.style.setProperty('--spatial-detail-submenu-natural-width', `${links.scrollWidth}px`);
+		} else if (this.tabsInPane) {
+			this.root.removeAttribute('data-spatial-detail-pane-tabs');
+			this.setSourceTabsSurfaceVisible(true);
+			this.restoreTabsList();
+			this.sourceTabsList.dataset.spatialElementTabList = 'panel';
+			this.paneTabs.inert = true;
+			this.paneTabs.setAttribute('aria-hidden', 'true');
+			this.paneTabs.removeAttribute('data-active');
+		}
+		this.tabsInPane = active;
+		this.root.toggleAttribute('data-spatial-detail-pane-tabs', active);
+		if (active) this.setSourceTabsSurfaceVisible(false);
+		else if (!this.tabsDocked) this.setSourceTabsSurfaceVisible(true);
 	}
 
 	private setSourceTabsSurfaceVisible(visible: boolean) {
@@ -590,18 +644,6 @@ export class SpatialElementDockController {
 		window.dispatchEvent(new Event(STAGE_PANEL_VISUAL_EVENT));
 	}
 
-	private syncTabScrollPosition(outgoingList: HTMLElement, incomingList: HTMLElement) {
-		const outgoingLinks = outgoingList.querySelector<HTMLElement>(TABS_LINKS);
-		const incomingLinks = incomingList.querySelector<HTMLElement>(TABS_LINKS);
-		if (!outgoingLinks || !incomingLinks) return;
-
-		const outgoingRange = Math.max(outgoingLinks.scrollWidth - outgoingLinks.clientWidth, 0);
-		const incomingRange = Math.max(incomingLinks.scrollWidth - incomingLinks.clientWidth, 0);
-		incomingLinks.scrollLeft =
-			outgoingRange > 0
-				? (outgoingLinks.scrollLeft / outgoingRange) * incomingRange
-				: outgoingLinks.scrollLeft;
-	}
 
 	private mountStickyHeaderOverlay() {
 		if (!this.stickyHeader) return;
@@ -632,6 +674,8 @@ export class SpatialElementDockController {
 		const parent = this.stickyHeaderOriginalParent;
 		const sibling = this.stickyHeaderOriginalNextSibling;
 		this.stickyHeader.removeAttribute('data-stage-fixed-overlay');
+		if (this.stickyHeaderOriginalStyle === null) this.stickyHeader.removeAttribute('style');
+		else this.stickyHeader.setAttribute('style', this.stickyHeaderOriginalStyle);
 
 		if (sibling?.parentNode === parent) parent.insertBefore(this.stickyHeader, sibling);
 		else parent.appendChild(this.stickyHeader);
@@ -661,6 +705,9 @@ export class SpatialElementDockController {
 			const rect = state.element.getBoundingClientRect();
 			state.documentTop = rect.top + this.scrollY;
 			state.height = rect.height;
+			const action = state.element.querySelector<HTMLElement>('[data-catalog-rich-shared="primary-action"]');
+			if (action) state.action = { element: action, bottom: action.getBoundingClientRect().bottom - rect.top,
+				inert: state.action?.inert ?? action.inert };
 			state.sticky = undefined;
 			if (state.frame?.parentElement) {
 				const style = getComputedStyle(state.frame);
@@ -677,12 +724,29 @@ export class SpatialElementDockController {
 		}
 	}
 
+	private contentViewportTop(state: ContentPresentation) {
+		const sticky = state.sticky;
+		return sticky
+			? getStickyPanelTop(sticky.documentTop, sticky.height, sticky.boundaryBottom, sticky.inset, this.scrollY) + sticky.contentInset
+			: state.documentTop - this.scrollY;
+	}
+
+	private updateActionPresentation(docked: boolean) {
+		const summary = this.departingContent.find(state => state.action);
+		const hiddenAboveDock = summary?.action
+			? this.contentViewportTop(summary) + summary.action.bottom <= this.stickyHeaderBottom : true;
+		const visible = docked && hiddenAboveDock;
+		this.stickyHeader?.toggleAttribute('data-action-active', visible);
+		if (this.stickyAction && this.stickyAction.inert === visible) this.stickyAction.inert = !visible;
+		if (summary?.action) {
+			const inert = summary.action.inert || visible;
+			if (summary.action.element.inert !== inert) summary.action.element.inert = inert;
+		}
+	}
+
 	private updateDepartingContentClipping() {
 		for (const state of this.departingContent) {
-			const sticky = state.sticky;
-			const viewportTop = sticky
-				? getStickyPanelTop(sticky.documentTop, sticky.height, sticky.boundaryBottom, sticky.inset, this.scrollY) + sticky.contentInset
-				: state.documentTop - this.scrollY;
+			const viewportTop = this.contentViewportTop(state);
 			const inset = Math.min(Math.max(this.stickyHeaderBottom - viewportTop, 0), state.height);
 			const clipPath = `inset(${inset.toFixed(2)}px 0 0 0)`;
 			if (state.appliedClipPath === clipPath) continue;

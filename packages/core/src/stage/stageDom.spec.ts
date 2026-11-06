@@ -56,4 +56,13 @@ describe('stage DOM helpers', () => {
 			isViewportRectVisible({ left: 100, top: 900, right: 300, bottom: 1100 }, 1000, 800, 120)
 		).toBe(true);
 	});
+
+	it.each([
+		{ left: 0, top: 0, right: 0, bottom: 0 },
+		{ left: 10, top: 10, right: 10, bottom: 80 },
+		{ left: 10, top: 10, right: 80, bottom: 10 },
+		{ left: 80, top: 10, right: 10, bottom: 80 }
+	])('does not render an empty or inverted source frame even inside the preload margin: %j', rect => {
+		expect(isViewportRectVisible(rect, 1000, 800, 240)).toBe(false);
+	});
 });

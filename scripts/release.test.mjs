@@ -14,7 +14,8 @@ test('reviewed beta promotion targets latest without affecting subsequent betas'
   assert.equal(releaseTag('1.0.0-beta.5'), 'latest');
   assert.equal(releaseTag('1.0.0-beta.6'), 'latest');
   assert.equal(releaseTag('1.0.0-beta.7'), 'latest');
-  assert.equal(releaseTag('1.0.0-beta.8'), 'beta');
+  assert.equal(releaseTag('1.0.0-beta.8'), 'latest');
+  assert.equal(releaseTag('1.0.0-beta.9'), 'beta');
 });
 test('new packages preserve dependency-first upload order', async () => {
   assert.deepEqual(await missingPackages(packages, async () => ({status:404})), packages);

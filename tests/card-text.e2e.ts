@@ -18,7 +18,7 @@ async function longText(page: Page) {
 	}, { title, eyebrow });
 }
 
-for (const width of [1440, 768, 430]) {
+for (const width of [1440, 768, 430, 320]) {
 	test(`cards reserve equal text space at ${width}px without WebGPU`, async ({ page }) => {
 		await page.setViewportSize({ width, height: 900 });
 		await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
@@ -32,6 +32,7 @@ for (const width of [1440, 768, 430]) {
 			const kicker = card.querySelector<HTMLElement>('[data-shared-role="eyebrow"]')!;
 			return {
 				id: (card as HTMLElement).dataset.spatialElementId,
+				width: (card as HTMLElement).offsetWidth,
 				height: (card as HTMLElement).offsetHeight,
 				titleLines: heading.clientHeight / parseFloat(getComputedStyle(heading).lineHeight),
 				eyebrowLines: kicker.clientHeight / parseFloat(getComputedStyle(kicker).lineHeight),
@@ -39,9 +40,10 @@ for (const width of [1440, 768, 430]) {
 				eyebrowClipped: kicker.scrollWidth > kicker.clientWidth
 			};
 		}));
-		expect(new Set(metrics.map((card) => card.height)).size).toBe(1);
+		expect(Math.max(...metrics.map(card => card.height)) - Math.min(...metrics.map(card => card.height))).toBeLessThanOrEqual(1);
 		for (const card of metrics) {
-			expect(card.titleLines).toBeCloseTo(2, 1);
+			expect(Math.abs(card.height - card.width)).toBeLessThanOrEqual(1);
+			expect(card.titleLines).toBeCloseTo(1, 1);
 			expect(card.eyebrowLines).toBeCloseTo(1, 1);
 		}
 		expect(metrics.find((card) => card.id === 'column')).toMatchObject({ titleClipped: true, eyebrowClipped: true });
@@ -53,9 +55,14 @@ test('raised, clipped card text crossfades into full detail text and back', asyn
 	await page.goto('/demo/categories/list?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
 	const card = page.locator('[data-catalog-card][data-spatial-element-id="column"]');
-	const activation = { x: 240, y: 300 };
 	await card.scrollIntoViewIfNeeded();
 	await expect(card).toHaveAttribute('data-catalog-model-ready');
+	const bounds = await card.boundingBox();
+	const media = await card.locator('[data-catalog-geometry]').boundingBox();
+	const activation = {
+		x: media!.x + media!.width / 2 - bounds!.x,
+		y: media!.y + media!.height / 2 - bounds!.y
+	};
 	await card.hover({ position: activation });
 	await expect.poll(() => card.locator('h3').evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).m43)).toBe(64);
 	await expect.poll(() => card.locator('[data-shared-role="eyebrow"]').evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).m43)).toBe(40);
@@ -63,19 +70,29 @@ test('raised, clipped card text crossfades into full detail text and back', asyn
 	await expect.poll(() => card.locator('.spatial-element-card-surface').evaluate(node => getComputedStyle(node, '::after').opacity)).toBe('1');
 	await page.screenshot({ path: info.outputPath('cards-hover.png') });
 	await page.evaluate(() => {
-		const state = { samples: [] as object[], source: undefined as object | undefined };
+		const state = { samples: [] as object[], sourceFrames: [] as object[], source: undefined as object | undefined };
+		let sourceNode: HTMLElement | undefined;
 		Object.assign(window, { cardTextTest: state });
 		document.addEventListener('click', (event) => {
 			const card = (event.target as Element).closest('[data-catalog-card]');
 			if (!card) return;
 			const title = card.querySelector('h3')!;
+			sourceNode = title;
 			state.source = { width: getComputedStyle(title).width, rect: title.getBoundingClientRect().toJSON() };
 		}, true);
 		const sample = () => {
 			const stage = document.querySelector<HTMLElement>('[data-catalog-transition]');
+			const source = sourceNode?.isConnected ? sourceNode : undefined;
+			if (state.source && source) state.sourceFrames.push({
+				time: performance.now(), direction: stage?.dataset.catalogDirection,
+				visibility: getComputedStyle(source).visibility, rect: source.getBoundingClientRect().toJSON()
+			});
 			for (const node of document.querySelectorAll<HTMLElement>('[data-catalog-actor-role="title"], [data-catalog-actor-role="eyebrow"]')) {
 				const style = getComputedStyle(node);
 				state.samples.push({
+					time: performance.now(),
+					// Same original DOM node, measured at overlay insertion even if hidden.
+					sourceRect: source?.getBoundingClientRect().toJSON(),
 					direction: stage?.dataset.catalogDirection,
 					role: node.dataset.catalogActorRole,
 					variant: node.dataset.catalogActorVariant ?? 'source',
@@ -92,7 +109,11 @@ test('raised, clipped card text crossfades into full detail text and back', asyn
 		const frame = () => { sample(); requestAnimationFrame(frame); };
 		requestAnimationFrame(frame);
 	});
-	await card.click({ position: activation });
+	// Keep the pointer at the settled hover position. Resolving the same local
+	// coordinates against a newly tilted card would move it again before capture.
+	await page.evaluate(() => window.__stageVisualTest!.settle(30));
+	await page.mouse.down();
+	await page.mouse.up();
 	await expect(page).toHaveURL(/elements\/column/);
 	await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
 	const detail = page.locator('[data-spatial-element-hero-panel-content]');
@@ -110,10 +131,12 @@ test('raised, clipped card text crossfades into full detail text and back', asyn
 	await expect(page).toHaveURL(/categories\/list/);
 	await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
 	const result = await page.evaluate(() => (window as any).cardTextTest);
+	await info.attach('card-text-samples', { body: JSON.stringify(result, null, 2), contentType: 'application/json' });
 	const first = result.samples.find((s: any) => s.direction === 'forward' && s.role === 'title' && s.variant === 'source');
-	expect(first.clamp).toBe('2');
+	expect(first.clamp).toBe('1');
 	expect(first.width).toBe(result.source.width);
-	for (const key of ['x', 'y', 'width', 'height']) expect(first.rect[key]).toBeCloseTo(result.source.rect[key], 0);
+	expect(first.sourceRect).toBeDefined();
+	for (const key of ['x', 'y', 'width', 'height']) expect(first.rect[key]).toBeCloseTo(first.sourceRect[key], 0);
 	for (const direction of ['forward', 'return']) {
 		const samples = result.samples.filter((s: any) => s.direction === direction);
 		for (const role of ['title', 'eyebrow']) {
@@ -121,7 +144,7 @@ test('raised, clipped card text crossfades into full detail text and back', asyn
 			expect(destinations.some((s: any) => s.opacity > 0 && s.opacity < 1)).toBe(true);
 			const clipped = samples.filter((s: any) => s.role === role && s.variant === (direction === 'forward' ? 'source' : 'destination'));
 			expect(clipped.length).toBeGreaterThan(0);
-			for (const s of clipped) expect(role === 'title' ? s.clamp : s.whiteSpace).toBe(role === 'title' ? '2' : 'nowrap');
+			for (const s of clipped) expect(role === 'title' ? s.clamp : s.whiteSpace).toBe(role === 'title' ? '1' : 'nowrap');
 		}
 	}
 });

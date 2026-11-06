@@ -4,6 +4,7 @@ import { createOutlineOpacity, createOutlineUniforms, isOutlineMesh } from '../s
 import { isMesh } from '../stage/stageSceneUtils.js';
 import type { StageInteractionTheme } from '../stage/stageTypes.js';
 import type { BlurRect } from './CatalogDepthBlur.js';
+import type { CatalogWarmOutputContext } from './CatalogWarmOutputContext.js';
 
 /** A shared, cropped silhouette target. Idle hover fades reuse its last mask. */
 export class CatalogModelOutline {
@@ -19,6 +20,7 @@ export class CatalogModelOutline {
 	private maskMaterial?: THREE.MeshBasicMaterial;
 	private material?: THREE.MeshBasicNodeMaterial;
 	private quad?: THREE.QuadMesh;
+	private offscreenQuad?: THREE.QuadMesh;
 	private captures = 0;
 	private passes = 0;
 	getRenderTargets() { return this.capture ? [this.capture] : []; }
@@ -26,7 +28,7 @@ export class CatalogModelOutline {
 
 	render(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera,
 		model: THREE.Object3D, bounds: BlurRect, clip: BlurRect,
-		opacity: number, theme: StageInteractionTheme) {
+		opacity: number, theme: StageInteractionTheme, warmOutput?: CatalogWarmOutputContext) {
 		if (opacity <= 0.001) return;
 		const padding = Math.ceil(theme.outlineThickness * Math.max(1, theme.outlineGlowThickness) + 2);
 		const left = Math.max(0, clip.left, Math.floor(bounds.left - padding));
@@ -43,6 +45,7 @@ export class CatalogModelOutline {
 			this.material.colorNode = this.controls.color;
 			this.material.opacityNode = createOutlineOpacity(texture(this.capture.texture), this.controls);
 			this.quad = new THREE.QuadMesh(this.material);
+			this.offscreenQuad = new THREE.QuadMesh(this.material);
 		}
 		let mask = this.masks.get(model);
 		if (!mask) {
@@ -83,6 +86,7 @@ export class CatalogModelOutline {
 		const destination = renderer.getRenderTarget();
 		const viewport = destination ? destination.viewport.clone() : renderer.getViewport(new THREE.Vector4());
 		const clearColor = renderer.getClearColor(new THREE.Color()), clearAlpha = renderer.getClearAlpha();
+		const scissor = renderer.getScissor(new THREE.Vector4());
 		const scissorTest = renderer.getScissorTest();
 		try {
 			renderer.setScissorTest(false);
@@ -97,17 +101,23 @@ export class CatalogModelOutline {
 				this.captures++;
 			}
 			renderer.setRenderTarget(destination);
+			// Only the offscreen mask ignores clipping. The final composite must
+			// respect its caller, including a zero-area idle-preparation scissor.
+			renderer.setScissor(scissor);
+			renderer.setScissorTest(scissorTest);
 			const scaleX = viewport.z / innerWidth, scaleY = viewport.w / innerHeight;
 			const output = new THREE.Vector4(viewport.x + left * scaleX, viewport.y + top * scaleY, width * scaleX, height * scaleY);
 			if (destination) destination.viewport.copy(output);
 			else renderer.setViewport(output);
-			this.quad!.render(renderer);
+			// Keep Canvas and offscreen color-space variants owned independently.
+			(destination && !warmOutput?.usesCanvasOwner(destination) ? this.offscreenQuad : this.quad)!.render(renderer);
 			this.passes++;
 		} finally {
 			renderer.setRenderTarget(destination);
 			if (destination) destination.viewport.copy(viewport);
 			else renderer.setViewport(viewport);
 			renderer.setClearColor(clearColor, clearAlpha);
+			renderer.setScissor(scissor);
 			renderer.setScissorTest(scissorTest);
 		}
 	}

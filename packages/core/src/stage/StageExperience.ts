@@ -4,8 +4,8 @@ import type {
 } from '../catalog/catalogGeometryRequest.js';
 import { describeRenderTargets } from './renderTargetInventory.js';
 import { DeviceGeometryMotion } from './DeviceGeometryMotion.js';
-import { isDeviceOrientationPaused, getListDeviceYaw, getListDevicePitch, getListDeviceRoll, retainListDeviceOrientation, subscribeListDeviceYaw, pauseDeviceOrientationForScroll } from '../catalog/listDeviceOrientation.js';
-import { StageRenderPipeline } from './StageRenderPipeline.js';
+import { isDeviceOrientationPaused, getListDeviceYaw, getListDevicePitch, getListDeviceRoll, retainListDeviceOrientation, subscribeListDeviceYaw, pauseDeviceOrientationForScroll, holdDeviceOrientationForTransition } from '../catalog/listDeviceOrientation.js';
+import { StageRenderPipeline, type DeferredScrollWarmup } from './StageRenderPipeline.js';
 import { PanelPresentationController } from './PanelPresentationController.js';
 import { MinimapController } from './MinimapController.js';
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
@@ -59,7 +59,6 @@ import {
 	DEFAULT_PANELS,
 	PANEL_CAMERA_FOV,
 	PANEL_CONTENT_Z,
-	SPATIAL_ELEMENT_CAMERA_FIT_MARGIN,
 	ZOOM_FOCUS_NOTIFY_EPSILON
 } from './stageConstants.js';
 import { getStagePositionFromRect, isViewportRectVisible } from './stageDom.js';
@@ -71,7 +70,6 @@ import {
 	type StageScrollFrame
 } from './scrollFrame.js';
 import {
-	getCameraFitDistance,
 	getCameraOrbitDirection,
 	getBoxCorners,
 	getPanelFocusOpacity,
@@ -88,6 +86,11 @@ import { type CssProjectionQuad } from './minimap/MinimapProjection.js';
 import type { StageMinimapState } from './minimap/MinimapState.js';
 import { disposeMaterialOnly, getMeshBounds, getMeshMaterials, isMesh } from './stageSceneUtils.js';
 import { isOutlineMesh } from './interactionOutline.js';
+import { resolveDetailLayout, resolveZoomLayout } from '../spatial-element/responsiveLayout.js';
+import type { LayoutRect } from '../spatial-element/responsiveLayout.js';
+import { detailCameraFit, detailCameraFitDistance } from '../catalog/stagedDetailGeometry.js';
+import type { StagedDockTargetOptions } from '../catalog/stagedDockGeometry.js';
+import type { SpatialElementMediaItem } from '../spatial-element/types.js';
 import type {
 	BackgroundSettings,
 	StageCameraSettings,
@@ -193,7 +196,58 @@ export class StageExperience {
 	private catalogLayer?: CatalogSpatialElementLayer;
 	private catalogHandoff = false;
 	private catalogMotionComplete = false;
+	private stagedDetailTarget?: ReturnType<CatalogSpatialElementLayer['getStagedDetailTarget']>;
+	private stagedAwaitingFirstFrame = false;
+	private stagedSceneCacheOwner?: object;
+	private stagedRevealPreparing?: object;
+	private releaseStagedSensorHold?: () => void;
+	/** Use only already submitted source resources during the pre-route movement. */
+	beginStagedDetailMotion(source: CatalogGeometryEndpoint, fit: LayoutRect, targetOptions?: StagedDockTargetOptions) {
+		if (!this.catalogLayer || this.spatialCapture || this.catalogHandoff) return false;
+		if (this.pipeline.backgroundOutputHeld || !this.catalogLayer.isStagedDetailReady(source.spatialElementId, source.occurrence,
+			this.renderer, this.pipeline.ensureCatalogWarmOutputContext())) return false;
+		const target = this.catalogLayer.getStagedDetailTarget(source.spatialElementId, source.occurrence, fit,
+			{ width: window.innerWidth, height: window.innerHeight }, targetOptions, this.renderer.coordinateSystem);
+		if (!target || !this.catalogLayer.capture(source.spatialElementId, source.occurrence)) return false;
+		this.stagedDetailTarget = target;
+		// Progress zero preserves the currently displayed source. The transition's
+		// clock submits the first changed pose; an intervening Stage RAF would draw
+		// that same source again and delay the first visible acknowledgement.
+		this.stagedAwaitingFirstFrame = true;
+		cancelAnimationFrame(this.renderRequestId);
+		this.renderRequestId = 0;
+		this.catalogLayer.freezeStagedSource();
+		this.releaseStagedSensorHold = holdDeviceOrientationForTransition();
+		this.deviceMotion.update(0, 0, 0, 1);
+		this.catalogHandoff = true; this.catalogMotionComplete = false;
+		this.preparationGate.setPaused(true); this.detailPreparationGate.setPaused(true);
+		this.setStagedDetailProgress(0);
+		return true;
+	}
+	setStagedDetailProgress(progress: number) {
+		if (!this.stagedDetailTarget) return;
+		this.catalogLayer?.setHandoffTarget({ ...this.stagedDetailTarget, progress, environmentIntensity: 0.5 });
+		this.requestRender();
+	}
+	setStagedDetailPanel(card: HTMLElement, corners: CssProjectionQuad, width: number, height: number) {
+		return this.catalogLayer?.setStagedPanel(card, corners, width, height) ?? false;
+	}
+	setStagedPanelOpacity(opacity: number) { this.catalogLayer?.setStagedPanelOpacity(opacity); }
+	/** Called only after the final moving frame: route teardown may now replace its source. */
+	holdStagedDetail(spatialElementId: string, kind: 'hero' | 'dock' = 'hero') {
+		if (!this.stagedDetailTarget) return false;
+		this.setStagedDetailProgress(1); this.flushCatalogFrame();
+		const held = this.adoptCatalogPresentation({ spatialElementId, kind }, true);
+		this.stagedDetailTarget = undefined;
+		return held;
+	}
+	private deferredZoomPreparation = false;
+	private deferredScrollWarmup?: DeferredScrollWarmup;
+	private zoomPreparationFrame = 0;
 	private catalogLayerAnimating = false;
+	private stagedPreparationIdle = 0;
+	private stagedPreparationFallback = false;
+	private readonly stagedPreparationAbort = new AbortController();
 	private catalogPresentation: CatalogTransitionPresentation = { ...RESTING_CATALOG_PRESENTATION };
 	private pageModelReady = false;
 	private readonly preparationGate = new PreparationGate();
@@ -379,6 +433,29 @@ export class StageExperience {
 	private panelMeasurementsDirty = true;
 	private viewportMeasurementDirty = true;
 	private stageViewportVisible = true;
+	private readonly readLayoutMetrics?: StageExperienceOptions['readLayoutMetrics'];
+	private detailMedia: SpatialElementMediaItem['kind'] = 'minimap';
+	private get detailMediaActive() { return this.detailMedia === 'minimap'; }
+	/** Changing media keeps the model/cache/camera but stops its interaction and sensor clock. */
+	setDetailMedia(media: SpatialElementMediaItem['kind']) {
+		if (this.detailMedia === media) return;
+		this.detailMedia = media;
+		this.interaction.releasePage();
+		if (!this.detailMediaActive) {
+			this.releaseDeviceOrientation?.();
+			this.releaseDeviceOrientation = undefined;
+		}
+		this.requestRender();
+	}
+	private readDetailInteractionLayout() {
+		const input = this.catalog ? this.readLayoutMetrics?.('stable') : undefined;
+		if (!input) return;
+		const layout = resolveDetailLayout(input);
+		const split = layout.composition === 'split';
+		return { media: this.detailMedia, split,
+			paneHidden: split && (this.fullscreen || this.panelUiFocus >= 0.99),
+			paneLeft: layout.base.pane.x };
+	}
 	private fullscreen = false;
 	setFullscreen(fullscreen: boolean) {
 		if (this.fullscreen === fullscreen) return;
@@ -444,6 +521,8 @@ export class StageExperience {
 		private readonly container: HTMLElement,
 		options: StageExperienceOptions = {}
 	) {
+		this.readLayoutMetrics = options.readLayoutMetrics;
+		this.detailMedia = options.detailMedia ?? 'minimap';
 		if (options.dracoDecoderPath) this.assets.setDracoDecoderPath(options.dracoDecoderPath);
 		this.deviceOrientationEnabled = options.deviceOrientation ?? false;
 		if (this.deviceOrientationEnabled) this.unsubscribeDeviceOrientation = subscribeListDeviceYaw(() => {
@@ -460,10 +539,11 @@ export class StageExperience {
 				poseOwner:
 					this.catalogHandoff || this.spatialCapture
 						? 'transition'
-						: this.catalog && !this.viewportTarget
+						: !this.detailMediaActive || (this.catalog && !this.viewportTarget)
 							? 'none'
 							: 'page',
-				visible: this.stageViewportVisible,
+				visible: this.stageViewportVisible && this.detailMediaActive,
+				detail: this.readDetailInteractionLayout(),
 				viewport: this.viewportFrame,
 				bounds: this.modelBounds
 			})
@@ -499,6 +579,10 @@ export class StageExperience {
 			includeMesh: (mesh) => this.isSpatialElementMesh(mesh)
 		});
 		this.panels = new PanelPresentationController({
+			zoomLayout: () => {
+				const input = this.catalog ? this.readLayoutMetrics?.('visible') : undefined;
+				return input ? resolveZoomLayout(input) : undefined;
+			},
 			camera: this.panelCamera,
 			contentScene: this.panelContentScene,
 			flatLayer: this.flatPanelLayer,
@@ -578,6 +662,7 @@ export class StageExperience {
 				catalogHandoff: this.catalogHandoff,
 				catalogMotionComplete: this.catalogMotionComplete,
 				stageViewportVisible: this.stageViewportVisible,
+				detailMediaActive: this.detailMediaActive,
 				modelHover: this.modelHover,
 				modelInteractionActive: this.modelInteractionActive,
 				catalog: this.catalog,
@@ -627,6 +712,7 @@ export class StageExperience {
 			this.renderer.dispose();
 			return;
 		}
+		this.pipeline.initializeBackgroundOutput();
 
 		this.backgroundCanvas.className = 'stage-webgpu-background';
 		this.container.appendChild(this.backgroundCanvas);
@@ -688,8 +774,15 @@ export class StageExperience {
 	dispose() {
 		if (this.disposed) return;
 		this.disposed = true;
+		this.stagedPreparationAbort.abort();
+		if (this.stagedPreparationIdle) {
+			if (this.stagedPreparationFallback) clearTimeout(this.stagedPreparationIdle);
+			else window.cancelIdleCallback(this.stagedPreparationIdle);
+		}
 		this.releaseDeviceOrientation?.();
 		this.unsubscribeDeviceOrientation?.();
+		this.releaseStagedSensorHold?.();
+		this.releaseStagedSensorHold = undefined;
 		this.releaseSpatialCapture();
 		this.container.removeAttribute('data-stage-scroll-rendering');
 
@@ -742,6 +835,10 @@ export class StageExperience {
 
 	/** Page DOM is a replaceable binding, not the owner of the device or element cache. */
 	releasePage() {
+		cancelAnimationFrame(this.zoomPreparationFrame);
+		this.zoomPreparationFrame = 0;
+		this.deferredZoomPreparation = false;
+		this.deferredScrollWarmup = undefined;
 		this.pageBinding.invalidate();
 		this.pageModelReady = false;
 		this.presentation.cancelRequests();
@@ -779,8 +876,12 @@ export class StageExperience {
 	}
 
 	capturePanelSurface(element: HTMLElement) {
-		if (element.closest('[data-carousel-spatial-element]'))
-			return captureCssSurface(element, element, '::before');
+		if (element.closest('[data-carousel-spatial-element]')) {
+			const bounds = element.matches('.summary') ? element :
+				(element.closest<HTMLElement>('[data-spatial-presentation-root]') ?? element);
+			const surface = bounds.querySelector<HTMLElement>('.spatial-summary-surface');
+			return captureCssSurface(bounds, surface ?? bounds, surface ? undefined : '::before');
+		}
 		if (element.hasAttribute('data-catalog-dock-surface')) {
 			const header = element.closest<HTMLElement>('[data-spatial-element-sticky-header]');
 			if (header) return captureCssSurface(element, header, '::before');
@@ -907,10 +1008,10 @@ export class StageExperience {
 			const target = this.panelTargets[index];
 			if (!target) continue; // Navigation owns newly registered panels.
 			const appearance = (panel: StagePanelTarget) => JSON.stringify([
-				panel.options, panel.minimap, panel.surface, panel.contentInset
+				panel.options, panel.minimap, panel.surface, panel.contentInset, panel.nativeContent
 			]);
 			if (appearance(target) === appearance(next)) continue;
-			surfaceChanged ||= target.surface !== next.surface;
+			surfaceChanged ||= target.surface !== next.surface || target.nativeContent !== next.nativeContent;
 			Object.assign(target, next);
 			changed.push(index);
 		}
@@ -919,7 +1020,7 @@ export class StageExperience {
 				.filter((target) => target.surface === 'glass' || target.minimap).map((target) => target.options);
 			this.pipeline.syncPanelBlurCaptures();
 			if (surfaceChanged) {
-				// A backend change only replaces panel presentation, never the element scene.
+				// Surface/DOM ownership changes move the entire live root, never its children or scene.
 				this.minimapController.dispose();
 				this.panels.release();
 				this.createPanels();
@@ -987,11 +1088,12 @@ export class StageExperience {
 		this.createPanels();
 		this.observePanelTargets();
 		this.resizeRenderer();
-		// New page targets must be GPU-ready before navigation or the first zoom.
-		// Resting frosted panels do not otherwise submit their hidden backdrop blur.
-		this.pipeline.warmRenderTargetSets();
+		// Navigation needs the visible full-quality frame, not future scroll/zoom variants.
+		// Direct/zoomed entries keep eager warming; ordinary handoffs warm after their final paint.
+		this.deferredZoomPreparation = this.catalogPresentation.active && this.panelUiFocus === 0;
+		if (!this.deferredZoomPreparation) this.pipeline.warmRenderTargetSets();
 		this.renderFrame(true);
-		await this.pipeline.prepareZoomEffects();
+		if (!this.deferredZoomPreparation) await this.pipeline.prepareZoomEffects();
 		if (this.disposed || !this.pageBinding.isCurrent(generation)) return;
 		// A submitted Low/panel frame is not yet GPU-ready. Drain the required binding work
 		// before the navigation bridge starts motion, especially on the first cold DETAIL.
@@ -1013,7 +1115,92 @@ export class StageExperience {
 		return this.catalogLayer.setSpatialElements(brandId, items);
 	}
 
+	/** Finish required DETAIL GPU preparation before its first visible reveal frame.
+	 * Binding happens with enterOpacity=0, which intentionally skips minimaps and
+	 * panel blur passes. Borrow fractional/end-point alpha to prepare both real
+	 * material owners, restore all presentation state synchronously, then fence.
+	 */
+	async prepareStagedReveal(signal?: AbortSignal): Promise<boolean> {
+		if (this.disposed || signal?.aborted || !this.catalogPresentation.active) return false;
+		const generation = this.pageBinding.token;
+		const owner = {};
+		const pageBackground = this.pageBackground;
+		this.presentation.invalidateSceneEndpoints();
+		this.stagedSceneCacheOwner = this.stagedRevealPreparing = owner;
+		const presentation = this.catalogPresentation;
+		const backgroundReveal = this.catalogBackgroundReveal.value;
+		let prepared = true;
+		let succeeded = false;
+		let ticket: import('./SpatialElementRefinement.js').SceneEndpointTicket | undefined;
+		let scrollWarmup: DeferredScrollWarmup | undefined;
+		this.deferredScrollWarmup = undefined;
+		try {
+			try {
+				// List/Card does not necessarily flush after binding. Adopt only already-ready
+				// asynchronous High; this starts no loading and advances neither p nor q.
+				if (this.pageModelReady && this.catalogHandoff && this.catalogMotionComplete && !this.catalogDockTarget &&
+					this.catalogMode !== 'synchronous' && this.pagePreparation?.highState === 'ready') this.adoptPreparedHigh();
+				// Programmatic dock restoration may still own the temporary scroll targets.
+				// The reveal uses full quality; do not let its settle timer select cold targets.
+				this.pipeline.setScrollRenderQuality(false);
+				this.syncPanelLayouts();
+				for (const opacity of [0.5, 1]) {
+					this.catalogPresentation = {
+						...presentation, enterOpacity: opacity, sharedOpacity: opacity
+					};
+					this.catalogBackgroundReveal.value = opacity;
+					this.updatePanelPointerInteraction(0);
+					if (!this.pipeline.warmRevealFrame()) { prepared = false; break; }
+				}
+				if (prepared && this.deferredZoomPreparation && !this.catalogDockTarget && !this.refinement) {
+					const model = this.model, low = this.presentation.assetInstance, high = this.highInstance,
+						environment = this.scene.environment, background = this.backgroundScene.background;
+					scrollWarmup = this.pipeline.captureDeferredScrollWarmup(() =>
+						!this.disposed && !signal?.aborted && this.pageBinding.isCurrent(generation) && this.pageModelReady && this.detailMediaActive &&
+						this.model === model && this.presentation.assetInstance === low && this.highInstance === high && !this.refinement &&
+						this.scene.environment === environment && this.backgroundScene.background === background && this.pageBackground === pageBackground);
+				}
+				// Shader/target warm-up is finished. Only now capture final endpoint pixels.
+				if (prepared && this.catalogHandoff && this.catalogMotionComplete && !this.catalogDockTarget &&
+					(this.renderer.backend as unknown as { isWebGPUBackend?: boolean }).isWebGPUBackend) {
+					try {
+						ticket = this.pipeline.withSceneCapture(() => {
+							const target = this.renderer.getRenderTarget()!;
+							const width = target.width, height = target.height;
+							return this.presentation.prepareSceneEndpoints(this.renderer, this.scene, this.camera,
+								this.pagePreparation?.environment.value?.target.texture,
+								(p) => { const previous = this.catalogBackgroundReveal.value; this.catalogBackgroundReveal.value = p;
+									try { this.pipeline.renderStageContents(); } finally { this.catalogBackgroundReveal.value = previous; } },
+								() => !this.disposed && !signal?.aborted && this.stagedSceneCacheOwner === owner && this.pageBinding.isCurrent(generation) &&
+									this.catalogPresentation.active && !this.catalogDockTarget && this.detailMediaActive &&
+									this.pageBackground === pageBackground && this.pipeline.isSceneCaptureCurrent(target, width, height),
+								[this.backgroundScene, this.tintScene], [this.tintCamera]);
+						});
+					} catch (error) { console.warn('Optional staged scene endpoint preparation failed; retaining live rendering', error); }
+				}
+			} finally {
+				this.catalogPresentation = presentation;
+				this.catalogBackgroundReveal.value = backgroundReveal;
+				this.updatePanelPointerInteraction(0);
+			}
+			if (!prepared) return false;
+			const device = (this.renderer.backend as unknown as { device?: GPUDevice }).device;
+			await device?.queue.onSubmittedWorkDone();
+			if (this.disposed || signal?.aborted || !this.pageBinding.isCurrent(generation) || this.stagedSceneCacheOwner !== owner) return false;
+			// A live Low/High write during the fence invalidates its ticket even with the same page generation.
+			ticket?.commit();
+			this.deferredScrollWarmup = scrollWarmup;
+			succeeded = true;
+			return true;
+		} finally {
+			if (this.stagedRevealPreparing === owner) this.stagedRevealPreparing = undefined;
+			if (!succeeded) ticket?.cancel();
+		}
+	}
+
 	setCatalogTransitionPresentation(state: CatalogTransitionPresentation) {
+		if (!state.active) { this.stagedSceneCacheOwner = undefined; this.presentation.invalidateSceneEndpoints(); }
+		if (!state.active) this.scheduleZoomPreparation();
 		this.catalogPresentation = normalizeCatalogPresentation(state);
 		for (const entry of this.exitingMinimaps) {
 			this.setMinimapDisplayModelOpacity(entry.minimap, entry.opacity * state.exitOpacity);
@@ -1051,6 +1238,54 @@ export class StageExperience {
 		this.requestRender();
 	}
 
+	private scheduleZoomPreparation() {
+		if (!this.deferredZoomPreparation || this.zoomPreparationFrame || this.disposed) return;
+		const generation = this.pageBinding.token;
+		// A nested RAF lets the final transition frame paint before optional work starts.
+		this.zoomPreparationFrame = requestAnimationFrame(() => {
+			this.zoomPreparationFrame = requestAnimationFrame(() => {
+				this.zoomPreparationFrame = 0;
+				if (this.disposed || !this.pageBinding.isCurrent(generation) || this.catalogPresentation.active) return;
+				this.deferredZoomPreparation = false;
+				const scrollWarmup = this.deferredScrollWarmup;
+				this.deferredScrollWarmup = undefined;
+				void (async () => {
+					if (!scrollWarmup || !this.pipeline.warmInactiveScrollTargetSet(scrollWarmup))
+						this.pipeline.warmRenderTargetSets();
+					await this.pipeline.prepareZoomEffects();
+					if (!this.disposed && this.pageBinding.isCurrent(generation)) this.requestRender();
+				})().catch(error => {
+					// Rendering still prepares effects on demand if optional warming fails.
+					if (!this.disposed && this.pageBinding.isCurrent(generation))
+						console.warn('Optional zoom preparation failed', error);
+				});
+			});
+		});
+	}
+
+	private scheduleStagedPreparation() {
+		if (this.disposed || this.stagedPreparationIdle || this.catalogHandoff || this.scrollActive ||
+			this.catalogPresentation.active || this.pipeline.backgroundOutputHeld ||
+			!this.catalogLayer?.needsStagedPreparation(this.renderer, this.pipeline.ensureCatalogWarmOutputContext())) return;
+		const prepare = () => {
+			this.stagedPreparationIdle = 0;
+			if (this.disposed || this.catalogHandoff || this.scrollActive || this.catalogPresentation.active || this.pipeline.backgroundOutputHeld) return;
+			void this.preparationGate.run(() => {
+				if (this.disposed || this.catalogHandoff || this.scrollActive || this.catalogPresentation.active || this.pipeline.backgroundOutputHeld) return;
+				return this.catalogLayer?.prepareStagedNavigation(this.renderer, this.pipeline.ensureCatalogWarmOutputContext());
+			}, this.stagedPreparationAbort.signal).catch(() => {
+				// Early navigation remains unavailable; ordinary routing still works.
+			}).finally(() => {
+				// Models can finish their first render while another actor's GPU work
+				// is pending. Recheck once idle instead of waiting for a new input frame.
+				this.scheduleStagedPreparation();
+			});
+		};
+		this.stagedPreparationFallback = !window.requestIdleCallback;
+		this.stagedPreparationIdle = window.requestIdleCallback
+			? window.requestIdleCallback(prepare, { timeout: 1000 }) : window.setTimeout(prepare, 50);
+	}
+
 	/** Reports actual applied GPU alpha for browser verification without layout or style reads. */
 	getCatalogPresentation() {
 		const triangles = (root?: Object3D) => {
@@ -1082,6 +1317,7 @@ export class StageExperience {
 			backgroundPrepared: this.catalogBackgroundPrepared,
 			handoffPoint: this.getCatalogGeometryPoint(),
 			representations: {
+				sceneEndpointCache: this.presentation.getSceneEndpointStats(),
 				retainedBlendTargets: this.returnBlend?.targetCount ?? 0,
 				state: this.refinementState,
 				hero: this.model ? (this.refinementState === 'high' ? 'high' : 'low') : null,
@@ -1240,7 +1476,7 @@ export class StageExperience {
 	}
 
 	/** Lease the last submitted element frame before another page binding can release it. */
-	adoptCatalogPresentation(destination: CatalogGeometryDestination) {
+	adoptCatalogPresentation(destination: CatalogGeometryDestination, restoreSourceOnCancel = false) {
 		const { spatialElementId } = destination;
 		const reverse = destination.kind === 'content';
 		if (!this.spatialCapture) {
@@ -1277,7 +1513,8 @@ export class StageExperience {
 						highPose?.removeFromParent();
 						transferredHigh?.overrides.forEach(disposeMaterialOnly);
 						high?.dispose();
-						moving.release();
+						if (restoreSourceOnCancel && !this.disposed && this.pageBinding.token === generation) moving.restore();
+						else moving.release();
 					}
 				});
 			} else if (
@@ -1371,19 +1608,19 @@ export class StageExperience {
 		return true;
 	}
 
-	getDockProjection() {
+	getDockProjection(allowViewportClipping = false) {
 		const candidates = [...this.minimaps.values()].filter((minimap) => minimap.viewportVisible);
 		if (candidates.length !== 1) return;
 		const minimap = candidates[0];
 		const rect = this.getProjectedMinimapModelRect(minimap);
-		if (
-			!rect ||
-			rect.x < 0 ||
-			rect.y < 0 ||
-			rect.x + rect.width > innerWidth ||
-			rect.y + rect.height > innerHeight
-		)
-			return;
+		if (!rect) return;
+		// Canonical dock fits can extend above the viewport (XS/S centers an 80px
+		// fit in a 76px header). A known destination may be partially clipped;
+		// reverse capture retains its stricter, wholly visible source requirement.
+		if (allowViewportClipping
+			? rect.width <= 0 || rect.height <= 0 || rect.x >= innerWidth || rect.y >= innerHeight ||
+				rect.x + rect.width <= 0 || rect.y + rect.height <= 0
+			: rect.x < 0 || rect.y < 0 || rect.x + rect.width > innerWidth || rect.y + rect.height > innerHeight) return;
 		return {
 			...captureSpatialElementProjection(minimap.spatialElementRoot, minimap.screenCamera),
 			environmentIntensity: this.minimapScene.environmentIntensity
@@ -1432,9 +1669,18 @@ export class StageExperience {
 
 	private prepareCatalogDestination(dock: boolean) {
 		this.catalogDockTarget = dock;
+		if (dock) {
+			// Scroll restoration can dock the DOM after updatePage's submitted frame.
+			// Its layout event invalidates the cache, but the next Stage RAF need not
+			// have run before this binding handshake. Resolve the live destination
+			// and its visibility/projection together, without drawing a GPU frame or
+			// advancing hover animation while the retained source is held onscreen.
+			this.syncPanelLayouts(true);
+			this.updatePanelPointerInteraction(0);
+		}
 		if (this.adoptedForward) {
 			this.returnProjection = dock
-				? this.getDockProjection()
+				? this.getDockProjection(true)
 				: this.model
 					? {
 							...captureSpatialElementProjection(this.model, this.camera),
@@ -1443,7 +1689,7 @@ export class StageExperience {
 					: undefined;
 			return Boolean(this.returnProjection);
 		}
-		return !dock || Boolean(this.getDockProjection());
+		return !dock || Boolean(this.getDockProjection(true));
 	}
 
 	private prepareReturnDestination() {
@@ -1582,15 +1828,32 @@ export class StageExperience {
 
 	/** Commit GPU and DOM motion in the same browser frame, not on consecutive RAFs. */
 	flushCatalogFrame() {
+		this.stagedAwaitingFirstFrame = false;
 		cancelAnimationFrame(this.renderRequestId);
 		this.renderRequestId = 0;
 		this.renderFrame(true);
+		// A synchronous render callback (for example adopting newly prepared High)
+		// can invalidate while this forced frame is running. Its own RAF would run
+		// before the next external-clock pose and draw this pose again. Keep the
+		// dirty flag, but let that next external flush consume it. Invalidations
+		// outside this flush remain schedulable, including during held page binding.
+		if (this.catalogPresentation.active) {
+			cancelAnimationFrame(this.renderRequestId);
+			this.renderRequestId = 0;
+		}
 		// After the transition's external clock stops, optional refinement resumes its own RAF.
-		if (!this.catalogPresentation.active && (this.animationActive || this.renderInvalidated))
+		else if (this.animationActive || this.renderInvalidated)
 			this.scheduleRender();
 	}
 
 	finishCatalogGeometry() {
+		this.stagedSceneCacheOwner = undefined;
+		this.presentation.invalidateSceneEndpoints();
+		this.stagedAwaitingFirstFrame = false;
+		this.stagedDetailTarget = undefined;
+		this.releaseStagedSensorHold?.();
+		this.releaseStagedSensorHold = undefined;
+		this.catalogLayer?.finishStagedPanel();
 		this.releaseSpatialCapture();
 		this.adoptedForward = false;
 		this.returnSpatialElement = undefined;
@@ -1796,6 +2059,14 @@ export class StageExperience {
 		};
 	}
 
+	/** Returns the bound renderer's projection for query-gated handoff regressions. */
+	getVisualTestDetailProjection(kind: 'hero' | 'dock') {
+		// Forward ownership releases SpatialGeometryCapture at progress one. Read
+		// its actual successor instead of expecting a final retained-capture frame.
+		if (kind === 'dock') return this.getDockProjection(true)?.clip.toArray() ?? null;
+		return this.model ? captureSpatialElementProjection(this.model, this.camera).clip.toArray() : null;
+	}
+
 	/** Returns the main element's projected bounds for query-gated layout regressions. */
 	getVisualTestModelRect() {
 		if (!this.model || this.modelBounds.isEmpty()) return null;
@@ -1871,7 +2142,26 @@ export class StageExperience {
 
 	/** Returns Low-band and glass-compositor counters without scheduling rendering. */
 	getCarouselStats() {
-		return this.catalogLayer?.getStats() ?? null;
+		return this.catalogLayer?.getStats(this.renderer, this.pipeline.peekCatalogWarmOutputContext()) ?? null;
+	}
+
+	/** Query-gated snapshot: no new frame state, DOM measurements, scheduling or settling. */
+	getVisualTestRenderActivity() {
+		const preparation = this.preparation?.current;
+		const assets = this.assets.getStats();
+		return { at: performance.now(), lastFrameAt: this.lastFrameTime,
+			animationActive: this.animationActive, catalogAnimating: this.catalogLayerAnimating,
+			renderInvalidated: this.renderInvalidated, pendingRenderFrame: this.renderRequestId !== 0,
+			pendingScrollFrame: hasPendingStageScrollFrame(), scrollActive: this.scrollActive,
+			stagedAwaitingFirstFrame: this.stagedAwaitingFirstFrame,
+			transitionActive: this.catalogPresentation.active,
+			preparation: { stagedIdlePending: this.stagedPreparationIdle !== 0,
+				zoomFramePending: this.zoomPreparationFrame !== 0, zoomDeferred: this.deferredZoomPreparation,
+				gate: this.preparationGate.getActivity(), detailGate: this.detailPreparationGate.getActivity(),
+				background: preparation?.backgroundState ?? null, high: preparation?.highState ?? null,
+				assetLoads: assets.pendingLoads, activeInstances: assets.activeInstances },
+			catalog: this.catalogLayer?.getRenderActivity() ?? null,
+			panels: this.panels.getRenderActivity() };
 	}
 
 	/** Returns render-target lifecycle counters for query-gated performance tests. */
@@ -1904,6 +2194,8 @@ export class StageExperience {
 			creations: this.pipeline.renderTargetSetCreations,
 			resizes: this.pipeline.renderTargetSetResizes,
 			warmups: this.pipeline.renderTargetSetWarmups,
+			inactiveScrollWarmups: this.pipeline.deferredScrollWarmups,
+			backgroundOutput: this.pipeline.getBackgroundOutputStats(),
 			activeScale: this.pipeline.activeRenderTargets?.scale ?? 0
 		};
 	}
@@ -1980,7 +2272,7 @@ export class StageExperience {
 	}
 
 	private scheduleRender() {
-		if (this.disposed || document.hidden || this.renderRequestId) return;
+		if (this.disposed || document.hidden || this.renderRequestId || this.stagedAwaitingFirstFrame) return;
 		this.renderRequestId = requestAnimationFrame(this.render);
 	}
 
@@ -2224,29 +2516,25 @@ export class StageExperience {
 		}
 		if (this.referenceBounds) bounds.copy(this.referenceBounds);
 		this.modelBounds.copy(bounds);
-		const sphere = bounds.getBoundingSphere(new THREE.Sphere());
-		const radius = Math.max(sphere.radius, 1);
-		this.modelRadius = radius;
-		const orbitDirection = getCameraOrbitDirection(
-			this.cameraSettings.azimuth,
-			this.cameraSettings.elevation
-		);
 		this.updateViewportFrame();
 		this.camera.aspect = window.innerWidth / window.innerHeight;
 		this.camera.updateProjectionMatrix();
-		const fitDistance = this.getSpatialElementCameraFitDistance(bounds, orbitDirection);
-		const maxDistance = Math.max(fitDistance, radius * 0.6);
+		const fit = detailCameraFit(bounds, this.camera, this.cameraSettings,
+			{ width: window.innerWidth, height: window.innerHeight },
+			{ width: this.viewportLayoutSize.x, height: this.viewportLayoutSize.y });
+		const { radius, center, distance: maxDistance } = fit;
+		this.modelRadius = radius;
 		this.rememberFittedViewportMetrics();
 
-		this.camera.position.copy(sphere.center).addScaledVector(orbitDirection, maxDistance);
-		this.camera.near = Math.max(maxDistance / 100, 0.01);
-		this.camera.far = Math.max(maxDistance * 100, radius * 20);
+		this.camera.position.copy(center).addScaledVector(fit.direction, maxDistance);
+		this.camera.near = fit.near;
+		this.camera.far = fit.far;
 		this.camera.updateProjectionMatrix();
 
 		const focusRange = getZoomFocusDistanceRange(maxDistance, radius);
 		this.interaction.setFocusRange(focusRange.restDistance, focusRange.closeDistance);
 
-		this.controls?.target.copy(sphere.center);
+		this.controls?.target.copy(center);
 		if (this.controls) {
 			this.controls.minDistance = this.focusCloseDistance * 0.64;
 			this.controls.maxDistance = maxDistance;
@@ -2492,7 +2780,9 @@ export class StageExperience {
 		this.panelTargets.forEach((target, index) => {
 			if (!target.nativeContent || target.getVisible?.() === false) return;
 			target.updateNativeLayout?.();
-			this.syncPanelLayout(target, index, true);
+			// Only an actively positioned native popover needs a fresh DOM measurement.
+			// Pane summaries use the same resize/scroll-invalidated cache as other panels.
+			this.syncPanelLayout(target, index, Boolean(target.updateNativeLayout));
 			const runtime = this.panelRuntimes[index];
 			if (runtime) runtime.group.visible = this.isPanelTargetVisible(index);
 		});
@@ -2550,6 +2840,7 @@ export class StageExperience {
 	private isPanelTargetVisible(index: number) {
 		const target = this.panelTargets[index];
 		if (!target) return true;
+		if (!this.detailMediaActive && target.frame.closest('[data-spatial-model-controls]')) return false;
 		if (target.getVisible?.() === false) return false;
 		if (this.fullscreen) return Boolean(target.minimap || target.focusReactive === 'top-right' ||
 			target.content.hasAttribute('data-stage-fullscreen-visible'));
@@ -2638,32 +2929,10 @@ export class StageExperience {
 		this.viewportFrame.set(left, top, frameWidth, frameHeight);
 	}
 
-	private getViewportScale() {
-		const width = Math.max(window.innerWidth, 1);
-		const height = Math.max(window.innerHeight, 1);
-		const maximumPadding = Math.max(
-			Math.min(this.viewportLayoutSize.x, this.viewportLayoutSize.y) * 0.5 - 1,
-			0
-		);
-		const padding = THREE.MathUtils.clamp(this.cameraSettings.fitPadding ?? 0, 0, maximumPadding);
-
-		return {
-			x: THREE.MathUtils.clamp((this.viewportLayoutSize.x - padding * 2) / width, 0.08, 1),
-			y: THREE.MathUtils.clamp((this.viewportLayoutSize.y - padding * 2) / height, 0.08, 1)
-		};
-	}
-
 	private getSpatialElementCameraFitDistance(bounds: THREE.Box3, viewDirection: THREE.Vector3) {
-		const fitScale = THREE.MathUtils.clamp(this.cameraSettings.fitScale ?? 1, 0.2, 4);
-		return (
-			getCameraFitDistance(
-				bounds,
-				viewDirection,
-				this.camera,
-				SPATIAL_ELEMENT_CAMERA_FIT_MARGIN,
-				this.getViewportScale()
-			) / fitScale
-		);
+		return detailCameraFitDistance(bounds, viewDirection, this.camera, this.cameraSettings,
+			{ width: window.innerWidth, height: window.innerHeight },
+			{ width: this.viewportLayoutSize.x, height: this.viewportLayoutSize.y });
 	}
 
 	private rememberFittedViewportMetrics() {
@@ -2874,13 +3143,14 @@ export class StageExperience {
 
 	private renderFrame(force = false) {
 		if (this.disposed) return;
+		if (!force && this.stagedAwaitingFirstFrame) return;
 		if (!this.disposed && (this.rendererSize.x !== window.innerWidth || this.rendererSize.y !== window.innerHeight))
 			this.resizeRenderer(false);
 		const renderTargets = this.pipeline.activeRenderTargets;
 		const listOnly = this.catalog && !this.viewportTarget;
-		if (this.deviceOrientationEnabled && !listOnly && this.model && !this.releaseDeviceOrientation)
+		if (this.deviceOrientationEnabled && this.detailMediaActive && !listOnly && this.model && !this.releaseDeviceOrientation)
 			this.releaseDeviceOrientation = retainListDeviceOrientation(this.container, () => {});
-		else if (listOnly && this.releaseDeviceOrientation) {
+		else if ((listOnly || !this.detailMediaActive) && this.releaseDeviceOrientation) {
 			this.releaseDeviceOrientation();
 			this.releaseDeviceOrientation = undefined;
 		}
@@ -2911,6 +3181,7 @@ export class StageExperience {
 			const domAnimating = this.updatePanelDomRenderModes();
 			this.renderPanelContents();
 			this.pipeline.renderFrame(true, false);
+			this.scheduleStagedPreparation();
 			this.animationActive = this.catalogLayerAnimating || panelsAnimating || domAnimating;
 			if (!force && (this.animationActive || this.renderInvalidated)) this.scheduleRender();
 			return;
@@ -2921,14 +3192,14 @@ export class StageExperience {
 			delta
 		);
 		let deviceAnimating = false;
-		if (this.deviceOrientationEnabled && this.model?.parent === this.scene && !this.catalogHandoff && !this.spatialCapture) {
+		if (this.deviceOrientationEnabled && this.detailMediaActive && this.model?.parent === this.scene && !this.catalogHandoff && !this.spatialCapture) {
 			if (!isDeviceOrientationPaused()) deviceAnimating = this.deviceMotion.update(getListDeviceYaw(), getListDevicePitch(), getListDeviceRoll(), delta);
 			this.deviceMotion.apply(this.model, this.camera, this.initialControlsTarget);
 		}
 
 		// The damped camera distance is the single animation clock for geometry and
 		// every close-up UI phase. Phase remapping remains, temporal lag does not.
-		this.panelFocus = this.getZoomFocusFactor();
+		this.panelFocus = this.detailMediaActive ? this.getZoomFocusFactor() : 0;
 		this.panelUiFocus = this.fullscreen ? 1 : getStageUiFocus(this.panelFocus);
 		this.minimapFocus = this.fullscreen ? 1 : getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus);
 		this.updateStageCameraProjection();
@@ -2944,12 +3215,13 @@ export class StageExperience {
 
 		this.renderPanelContents();
 		this.pipeline.renderFrame(false, !this.scrollActive && !this.catalogHandoff);
+		this.scheduleStagedPreparation();
 
 		this.animationActive =
 			deviceAnimating ||
-			this.presentation.readiness.animating ||
+			(this.detailMediaActive && this.presentation.readiness.animating) ||
 			this.catalogLayerAnimating ||
-			(this.stageViewportVisible &&
+			(this.detailMediaActive && this.stageViewportVisible &&
 				(!this.catalogHandoff || this.catalogMotionComplete) &&
 				Boolean(this.refinement)) ||
 			this.spaceMouseMoving ||
@@ -2970,7 +3242,7 @@ export class StageExperience {
 
 	private renderStage() {
 		if (
-			this.stageViewportVisible &&
+			this.detailMediaActive && this.stageViewportVisible &&
 			(!this.catalogHandoff || this.catalogMotionComplete) &&
 			this.pageModelReady &&
 			this.presentation.renderRefinement(
@@ -2982,7 +3254,9 @@ export class StageExperience {
 					this.collectModelPickTargets(model);
 					this.pipeline.createModelOutline(outline);
 				},
-				window.matchMedia('(prefers-reduced-motion: reduce)').matches
+				window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+				{ backgroundReveal: this.catalogBackgroundReveal.value,
+					advanceClock: !(this.stagedRevealPreparing && this.stagedRevealPreparing === this.stagedSceneCacheOwner) }
 			)
 		)
 			return;

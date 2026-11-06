@@ -8,6 +8,40 @@ let add: ReturnType<typeof vi.spyOn>;
 let remove: ReturnType<typeof vi.spyOn>;
 let cleanup: (() => void)[];
 
+it('holds a staged destination neutral across route owners and recalibrates after the last lease', async () => {
+	let now = 0;
+	vi.spyOn(performance, 'now').mockImplementation(() => now);
+	const api = await import('./listDeviceOrientation.js');
+	const source = {} as HTMLElement, destination = {} as HTMLElement;
+	const releaseSource = api.retainListDeviceOrientation(source, () => {});
+	cleanup.push(releaseSource);
+	intersect([{ target: source, isIntersecting: true }]);
+	const emit = (beta: number) => browser.dispatchEvent(Object.assign(new Event('deviceorientation'), { alpha: 0, beta, gamma: 0 }));
+	emit(60);
+	for (let i = 1; i <= 60; i++) { now += 20; emit(60 + Math.min(i, 20)); }
+	expect(api.getListDevicePitch()).toBeGreaterThan(7);
+	const releaseFirst = api.holdDeviceOrientationForTransition();
+	const releaseSecond = api.holdDeviceOrientationForTransition();
+	cleanup.push(releaseFirst, releaseSecond);
+	expect(api.getListDevicePitch()).toBe(0);
+	releaseSource(); cleanup = cleanup.filter(fn => fn !== releaseSource);
+	cleanup.push(api.retainListDeviceOrientation(destination, () => {}));
+	intersect([{ target: destination, isIntersecting: true }]);
+	now += 2000; emit(40);
+	expect(api.isDeviceOrientationPaused()).toBe(true);
+	expect(api.getListDevicePitch()).toBe(0);
+	releaseFirst(); releaseFirst();
+	expect(api.isDeviceOrientationPaused()).toBe(true);
+	releaseSecond(); now += 180; emit(40);
+	expect(api.isDeviceOrientationPaused()).toBe(false);
+	expect(api.getListDevicePitch()).toBe(0);
+	// A small subsequent movement enters gradually from the new neutral grip.
+	now += 20; emit(45);
+	expect(api.getListDevicePitch()).toBeLessThan(0.2);
+	for (let i = 0; i < 70; i++) { now += 20; emit(45 + Math.min(i, 15)); }
+	expect(api.getListDevicePitch()).toBeGreaterThan(7);
+});
+
 it('freezes during scrolling and softly reanchors to the post-scroll grip', async () => {
 	let now = 0;
 	vi.spyOn(performance, 'now').mockImplementation(() => now);

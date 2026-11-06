@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8" />
+<title>Source DOM projective motion proof</title>
+<style>
+  body { margin: 0; background: #edf3f9; font: 16px/1.4 system-ui; }
+  #perspective { position: absolute; left: 130px; top: 60px; width: 500px; height: 320px; perspective: 900px; perspective-origin: 250px 160px; transform: rotateZ(-2deg); }
+  #carrier { width: 500px; height: 320px; transform-style: preserve-3d; transform: translate3d(40px, 20px, 55px) rotateY(22deg) rotateX(-13deg); }
+  #source { position: relative; box-sizing: border-box; width: 280px; height: 180px; padding: 24px; border-radius: 20px; background: #0869aa; color: white; transform: rotateY(-9deg) rotateZ(3deg); transform-origin: 37px 69px; container-type: inline-size; }
+  #source p { margin: 0 0 12px; }
+  #source input { box-sizing: border-box; width: 100%; }
+  .corner { position: absolute; width: 0; height: 0; }
+  .corner:nth-of-type(1) { left: 0; top: 0; }
+  .corner:nth-of-type(2) { right: 0; top: 0; }
+  .corner:nth-of-type(3) { right: 0; bottom: 0; }
+  .corner:nth-of-type(4) { left: 0; bottom: 0; }
+  #target { position: absolute; left: 700px; top: 100px; width: 420px; height: 270px; border: 1px dashed #123; pointer-events: none; }
+  @container (min-width: 300px) { #source p { font-size: 30px; } }
+</style>
+<div id="target"></div>
+<div id="perspective"><div id="carrier"><section id="source" style="visibility: visible; --authored: 1">
+  <i class="corner"></i><i class="corner"></i><i class="corner"></i><i class="corner"></i>
+  <p>Existing source content</p><input aria-label="Retained input" value="retained value" />
+</section></div></div>
+<script type="module">
+  import { createSourceDomMotion, sourceDomProjectiveMatrix } from '/packages/core/src/catalog/SourceDomMotion.ts';
+  import { StagedCatalogTransition } from '/packages/core/src/catalog/StagedCatalogTransition.ts';
+  const element = document.getElementById('source');
+  const corners = () => [...element.querySelectorAll('.corner')].map(node => { const rect = node.getBoundingClientRect(); return { x: rect.x, y: rect.y }; });
+  const originalParent = element.parentElement, originalStyle = element.getAttribute('style');
+  let handle, source, mutations = 0, staged, stagedHandle, events = [];
+  const observer = new MutationObserver(records => { mutations += records.filter(record => record.type === 'childList').length; });
+  window.sourceDomMotionProof = {
+    start() {
+      source = { width: parseFloat(getComputedStyle(element).width), height: parseFloat(getComputedStyle(element).height), corners: corners() };
+      observer.observe(document.body, { childList: true, subtree: true });
+      handle = createSourceDomMotion(element, source, { left: 700, top: 100, width: 420 });
+      return { source, after: corners(), created: !!handle };
+    },
+    update(progress) { return { expected: handle.update(progress), actual: corners() }; },
+    restore() { handle.restore(); handle.restore(); return this.state(); },
+    hide() { handle.hide(); },
+    startStaged(reducedMotion = false) {
+      source = { width: 280, height: 180, corners: corners() };
+      observer.observe(document.body, { childList: true, subtree: true });
+      const log = (kind, extra = {}) => events.push({ kind, time: performance.now(), phase: staged?.phase, mutations, ...extra });
+      staged = new StagedCatalogTransition({ actors: [{ element, projection: source, target: { left: 700, top: 100, width: 420 } }], reducedMotion,
+        hooks: {
+          begin() { log('begin'); return true; },
+          frame({ progress, quads }) { log('frame', { progress, expected: quads[0].quad, actual: corners() }); },
+          hold({ quads, releaseDomStyles }) {
+            log('hold'); releaseDomStyles();
+            document.body.append(element);
+            Object.assign(element.style, { position: 'absolute', left: '0', top: '0', transformOrigin: '0 0',
+              transform: `matrix3d(${sourceDomProjectiveMatrix(quads[0].quad, 280, 180).join(',')})` });
+            log('held-node', { expected: quads[0].quad, actual: corners() });
+            return true;
+          },
+          reveal(progress) { log('reveal', { progress }); },
+          finish() { log('finish'); },
+          cancel(reason) {
+            if (element.parentElement !== originalParent) originalParent.append(element);
+            element.setAttribute('style', originalStyle); log('cancel', { reason });
+          }
+        }
+      });
+      log('click'); stagedHandle = staged.start();
+      stagedHandle.finished.then(value => log('motion-finished', { value })).catch(error => log('error', { message: String(error) }));
+      return !!stagedHandle;
+    },
+    stagedState() { return { phase: staged.phase, events, mutations, corners: corners(), inert: element.inert, value: element.querySelector('input').value }; },
+    cancelStaged() { stagedHandle.cancel('interaction'); },
+    async revealStaged() {
+      events.push({ kind: 'destination-created', time: performance.now(), phase: staged.phase });
+      const incoming = document.createElement('p'); incoming.textContent = 'New route content'; incoming.id = 'incoming';
+      Object.assign(incoming.style, { position: 'absolute', top: '400px', left: '700px' }); document.body.append(incoming);
+      await staged.reveal([incoming], () => { events.push({ kind: 'prepare', time: performance.now(), phase: staged.phase }); });
+    },
+    state() { return { corners: corners(), sameParent: element.parentElement === originalParent, connected: element.isConnected,
+      width: parseFloat(getComputedStyle(element).width), height: parseFloat(getComputedStyle(element).height),
+      fontSize: getComputedStyle(element.querySelector('p')).fontSize, focused: document.activeElement === element.querySelector('input'),
+      value: element.querySelector('input').value, style: element.getAttribute('style'), originalStyle, mutations }; }
+  };
+</script>
+</html>

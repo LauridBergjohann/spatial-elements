@@ -2,6 +2,9 @@
 	import type { SpatialElementLodPair } from '@spatial-elements/core/catalog/spatialElementLodPair';
 	import { DEFAULT_BACKGROUND } from '@spatial-elements/core/stage/stageConstants';
 	import { onMount, setContext, tick } from 'svelte';
+	import { ResponsiveViewportMetrics } from '@spatial-elements/core/spatial-element/ResponsiveViewportMetrics';
+	import { SPATIAL_PRESENTATION_OWNER, type SpatialPresentationOwner } from '../spatial-element/spatialPresentationOwner.js';
+	import type { SpatialSummaryHostController } from '../spatial-element/spatialSummaryHost.svelte.js';
 	import type { Snippet } from 'svelte';
 	import type {
 		BackgroundSettings,
@@ -23,6 +26,10 @@
 	import { VirtualScrollController } from '@spatial-elements/core/stage/VirtualScrollController';
 	import { StageFullscreenController } from '@spatial-elements/core/stage/StageFullscreenController';
 	import ScrollNavigationBridge from '../catalog/ScrollNavigationBridge.svelte';
+	import { startStagedCatalogNavigation, type InterruptedCatalogPresentation } from '../catalog/stagedCatalogNavigation.js';
+	import { prepareCatalogSummaryTransfer } from '../catalog/catalogSummaryTransfer.js';
+	import type { EarlyNavigationCancelReason } from '@spatial-elements/core/catalog/EarlyNavigationCoordinator';
+	import { NavigationFeedback } from '@spatial-elements/core/catalog/NavigationFeedback';
 	import { CatalogTransition } from '@spatial-elements/core/catalog/CatalogTransition';
 	import {
 		CATALOG_ENDPOINTS,
@@ -35,7 +42,7 @@
 		CATALOG_SECTIONS,
 		CatalogSections
 	} from '@spatial-elements/core/catalog/CatalogSections';
-	import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
+	import type { SpatialListItem, SpatialElementMediaItem } from '@spatial-elements/core/spatial-element/types';
 	import type { CatalogPage } from '@spatial-elements/core/catalog/catalogPage';
 	import {
 		SpatialPageRegistry,
@@ -46,9 +53,10 @@
 		hasSpatialElementScene
 	} from '@spatial-elements/core/spatial-element/spatialElementScene';
 	import { SPATIAL_PAGE } from '../spatial-element/spatialPageContext.js';
-	import type { OnNavigate } from '@sveltejs/kit';
+	import type { BeforeNavigate, OnNavigate } from '@sveltejs/kit';
 	import {
 		STAGE_CONTEXT_KEY,
+		STAGE_PANEL_LAYOUT_EVENT,
 		type StageContext,
 		type StagePanelRegistration,
 		type StageViewportRegistration
@@ -103,6 +111,7 @@
 		})
 	);
 	const activePage = $derived(readPage?.());
+	const resolvedPageBackground = $derived(activePage?.kind === 'content' ? activePage.background ?? pageBackground : pageBackground);
 	const activeElement = $derived(activePage?.kind === 'detail' ? activePage.element : undefined);
 	const activeScene = $derived(activeElement ? getSpatialElementScene(activeElement) : undefined);
 	const catalog = $derived<CatalogPage | undefined>(
@@ -147,6 +156,17 @@
 	let domLayerHidden = $state(false);
 	let domLayerOpacity = $state(1);
 	let experience = $state<StageExperience | null>(null);
+	let layoutMetrics: ResponsiveViewportMetrics | undefined;
+	let presentationHost: SpatialSummaryHostController | undefined;
+	setContext<SpatialPresentationOwner>(SPATIAL_PRESENTATION_OWNER, {
+		register(host) {
+			presentationHost = host;
+			return () => { if (presentationHost === host) presentationHost = undefined; };
+		}
+	});
+	let readDetailMedia = $state.raw<(() => SpatialElementMediaItem['kind']) | undefined>();
+	let detailMediaOwner: symbol | undefined;
+	const detailMedia = $derived(readDetailMedia?.() ?? 'minimap');
 	let stageState = $state<'loading' | 'enhanced' | 'fallback'>('loading');
 	let zoomFocusState = $state<StageZoomFocusState>({
 		focus: 0,
@@ -157,8 +177,13 @@
 	let visualTestController: StageVisualTestController | undefined;
 	let virtualScroll = $state<VirtualScrollController>();
 	let transition: CatalogTransition | undefined;
+	let earlyTransition: ReturnType<typeof startStagedCatalogNavigation>;
+	let interruptedPresentation: InterruptedCatalogPresentation | undefined;
+	let summaryTransfer: ReturnType<typeof prepareCatalogSummaryTransfer>;
+	let lastEarlyTimings: NonNullable<typeof earlyTransition>['timings'] | undefined;
 	let initialized: Promise<void> | undefined;
 	let navigationGeneration = 0;
+	let navigationFeedback: NavigationFeedback | undefined;
 	let destroyed = false;
 	let nextPageBinding: Promise<void> | undefined;
 	let releasePageBinding: (() => void) | undefined;
@@ -168,7 +193,7 @@
 	const pageSignature = () =>
 		JSON.stringify([
 			renderSettings,
-			pageBackground,
+			resolvedPageBackground,
 			background,
 			hdr,
 			glb,
@@ -185,6 +210,11 @@
 	};
 
 	setContext<StageContext>(STAGE_CONTEXT_KEY, {
+		registerDetailMedia(read) {
+			const owner = Symbol(); detailMediaOwner = owner; readDetailMedia = read;
+			return () => { if (detailMediaOwner === owner) { detailMediaOwner = undefined; readDetailMedia = undefined; } };
+		},
+		getLayoutMetrics: (mode) => layoutMetrics?.read(mode),
 		isEnhanced: () => isEnhanced,
 		updatePanelAppearance: scheduleAppearanceUpdate,
 		prefetchSpatialElement: (config) => experience?.prefetchSpatialElement(config),
@@ -208,10 +238,13 @@
 		},
 		isFullscreen: () => fullscreen,
 		getZoomFocus: () => zoomFocusState.focus,
+		getZoomUiFocus: () => zoomFocusState.uiFocus,
 		setFullscreen: (active) => fullscreenController?.setFullscreen(active)
 	});
 
 	onMount(() => {
+		layoutMetrics = new ResponsiveViewportMetrics(stage);
+		layoutMetrics.start();
 		// The semantic page is already usable. Only announce unusually slow enhancement.
 		const statusTimer = window.setTimeout(() => {
 			if (stageState === 'loading') showStatus = true;
@@ -225,7 +258,9 @@
 		virtualScroll = new VirtualScrollController(stage, domLayer, virtualScrollSpacer);
 		// Native fallback pages keep native document scrolling and browser anchor behavior.
 		if (navigator.gpu) virtualScroll.start();
+		navigationFeedback = new NavigationFeedback(stage);
 		transition = new CatalogTransition(stage, catalogEndpoints, {
+			diagnose: reason => { if (visualTestController) stage.dataset.catalogTransitionDecision = reason; },
 			captureContentGeometry: (endpoint, secondary) =>
 				experience?.captureContentGeometry(endpoint.spatialElementId, secondary) ?? false,
 			prepareContentParticipants: (pairs) => experience?.prepareContentParticipants(pairs),
@@ -239,7 +274,10 @@
 			prepareDestination: (destination) =>
 				experience?.prepareGeometryDestination(destination) ?? false,
 			setGeometryProgress: (progress) => experience?.setCatalogGeometryProgress(progress),
-			flushFrame: () => experience?.flushCatalogFrame(),
+			flushFrame: () => {
+				if (stage.dataset.catalogTransition === 'animating') navigationFeedback?.end();
+				experience?.flushCatalogFrame();
+			},
 			finishGeometry: () => {
 				try {
 					experience?.finishCatalogGeometry();
@@ -270,6 +308,8 @@
 			const panels = getPanelTargets();
 			const viewport = getViewportTarget();
 			const instance = new StageExperience(stage, {
+				detailMedia,
+				readLayoutMetrics: (mode) => layoutMetrics?.read(mode),
 				deviceOrientation,
 				renderSettings,
 				dracoDecoderPath,
@@ -281,7 +321,7 @@
 						spatialElementId: catalog.spatialElementId
 					}) !== 'dock',
 				background,
-				pageBackground,
+				pageBackground: resolvedPageBackground,
 				hdr,
 				glb,
 				lodPair,
@@ -294,7 +334,9 @@
 				onDeviceLost: () => {
 					if (disposed || experience !== instance) return;
 					fullscreenController?.setFullscreen(false);
+					navigationFeedback?.end();
 					navigationGeneration += 1;
+					earlyTransition?.cancel('error');
 					transition?.cancel();
 					experience = null;
 					try {
@@ -352,6 +394,8 @@
 
 		return () => {
 			window.clearTimeout(statusTimer);
+			layoutMetrics?.destroy();
+			layoutMetrics = undefined;
 			fullscreenController?.dispose();
 			fullscreenController = undefined;
 			virtualScroll?.destroy();
@@ -359,6 +403,10 @@
 			destroyed = true;
 			releasePageBinding?.();
 			navigationGeneration += 1;
+			navigationFeedback?.end();
+			earlyTransition?.cancel('destroyed');
+			interruptedPresentation?.cancel(); interruptedPresentation = undefined;
+			summaryTransfer?.cancel(); summaryTransfer = undefined;
 			transition?.dispose();
 			document.documentElement.classList.remove('stage-route');
 			document.body.classList.remove('stage-route');
@@ -372,8 +420,9 @@
 		};
 	});
 
+	$effect(() => { experience?.setDetailMedia(detailMedia); });
 	$effect(() => {
-		void pageBackground; void background; void isEnhanced;
+		void resolvedPageBackground; void background; void isEnhanced;
 		Object.values(interactionTheme ?? {});
 		scheduleAppearanceUpdate();
 	});
@@ -384,7 +433,7 @@
 		void tick().then(() => {
 			appearanceUpdatePending = false;
 			if (!destroyed && isEnhanced) experience?.updateAppearance({
-				pageBackground, background, interactionTheme, panels: getPanelTargets()
+				pageBackground: resolvedPageBackground, background, interactionTheme, panels: getPanelTargets()
 			});
 		});
 	}
@@ -419,40 +468,120 @@
 	}
 
 	function interruptNavigation() {
+		earlyTransition?.cancel('cancelled');
+		interruptedPresentation?.cancel(); interruptedPresentation = undefined;
+		navigationFeedback?.end();
 		navigationGeneration += 1;
 		reuseCatalogPage = false;
 		transition?.cancel();
 		if (pageBindingConsumed) releasePageBinding?.();
 	}
 
+	function interruptCommittedNavigation(reason: EarlyNavigationCancelReason) {
+		if (!earlyTransition) return false;
+		// The destination owns the route already. Release only the visual source;
+		// restoreNavigation must keep its generation and finish updatePage normally.
+		interruptedPresentation = earlyTransition.cancelCommitted(reason);
+		navigationFeedback?.end();
+		if (pageBindingConsumed) releasePageBinding?.();
+		return true;
+	}
+
 	function supersedeNavigation(destination: URL) {
+		if (earlyTransition?.destination !== destination.href) earlyTransition?.cancel('superseded');
+		interruptedPresentation?.cancel(); interruptedPresentation = undefined;
+		summaryTransfer?.cancel(); summaryTransfer = undefined;
+		navigationFeedback?.end();
 		navigationGeneration += 1;
 		transition?.supersede(destination);
 		if (pageBindingConsumed) releasePageBinding?.();
 	}
 
 	let navigationTimings = { dataReady: 0, captured: 0, restoring: 0, bound: 0 };
-	function captureNavigation(navigation: OnNavigate) {
-		fullscreenController?.setFullscreen(false);
-		navigationTimings = { dataReady: performance.now(), captured: 0, restoring: 0, bound: 0 };
-		navigationGeneration += 1;
-		reuseCatalogPage = Boolean(
-			navigation.from &&
-			navigation.to &&
-			transition?.capture(navigation.from.url, navigation.to.url, navigation.type)
-		);
-		navigationTimings.captured = performance.now();
-		if (reuseCatalogPage) {
-			retainedPageSignature = pageSignature();
-			return;
+	function startEarlyNavigation(navigation: BeforeNavigate) {
+		// The opt-in is temporary while production frame/ownership gates are verified.
+		if (visualTestController) stage.dataset.catalogStagedDecision = `gate:${isEnhanced}:${Boolean(experience)}:${Boolean(presentationHost)}`;
+		if (!new URL(location.href).searchParams.has('stagedNavigation') || !isEnhanced || !experience || !presentationHost) return;
+		const metrics = layoutMetrics?.read();
+		if (!metrics) return;
+		earlyTransition?.cancel('superseded');
+		const candidate = startStagedCatalogNavigation({ root: stage, navigation, endpoints: catalogEndpoints,
+			host: presentationHost, experience, metrics, items: catalogSpatialElements, diagnostics: Boolean(visualTestController),
+			onFinish() {
+				if (earlyTransition) lastEarlyTimings = earlyTransition.timings;
+				earlyTransition = undefined;
+				navigationFeedback?.end();
+			}
+		});
+		earlyTransition = candidate;
+		return candidate?.handle;
+	}
+	function captureNavigation(navigation: OnNavigate): undefined {
+		try {
+			navigationTimings = { dataReady: performance.now(), captured: 0, restoring: 0, bound: 0 };
+			const generation = ++navigationGeneration;
+			if (earlyTransition?.phase === 'held' && navigation.to?.url.href === earlyTransition.destination) {
+				earlyTransition.commit();
+				reuseCatalogPage = false;
+				navigationTimings.captured = performance.now();
+				experience?.releasePage();
+				setZoomFocusState(restingZoomFocus);
+				return;
+			}
+			// Snapshot the still-mounted source synchronously. Waiting for feedback to
+			// paint here would hold Kit after its URL update but before its DOM commit.
+			// Feedback stays nonblocking; destination/GPU preparation follows commit.
+			if (destroyed || generation !== navigationGeneration) return;
+			summaryTransfer?.cancel();
+			summaryTransfer = navigation.from && navigation.to && presentationHost
+				? prepareCatalogSummaryTransfer({ from: navigation.from.url, to: navigation.to.url,
+					type: navigation.type, endpoints: catalogEndpoints, host: presentationHost }) : undefined;
+			reuseCatalogPage = Boolean(
+				navigation.from &&
+				navigation.to &&
+				transition?.capture(navigation.from.url, navigation.to.url, navigation.type)
+			);
+			navigationTimings.captured = performance.now();
+			if (reuseCatalogPage) {
+				summaryTransfer?.cancel(); summaryTransfer = undefined;
+				retainedPageSignature = pageSignature();
+				return;
+			}
+			summaryTransfer?.hold();
+			experience?.releasePage();
+			setZoomFocusState(restingZoomFocus);
+		} finally {
+			// Leaving fullscreen refits the live camera and restores source DOM/scroll.
+			// Retain its visible pose and release page bindings before that mutation.
+			fullscreenController?.setFullscreen(false);
 		}
-		experience?.releasePage();
-		setZoomFocusState(restingZoomFocus);
+	}
+
+	async function settleInterruptedPresentation(generation: number, rebind = false) {
+		const pending = interruptedPresentation;
+		if (!pending) return;
+		await pending.finished;
+		if (interruptedPresentation === pending) interruptedPresentation = undefined;
+		if (destroyed || generation !== navigationGeneration || !rebind) return;
+		experience?.updateAppearance({ pageBackground: resolvedPageBackground, background, interactionTheme, panels: getPanelTargets() });
+		window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
+		experience?.flushCatalogFrame();
 	}
 
 	async function restoreNavigation() {
 		navigationTimings.restoring = performance.now();
 		const generation = navigationGeneration;
+		await tick();
+		if (destroyed || generation !== navigationGeneration) return;
+		// Preserve the real Svelte instance before page binding measures the new
+		// summary. This also applies when GPU motion is disabled or declined.
+		const transferredSlot = summaryTransfer?.adopt(); summaryTransfer = undefined;
+		if (transferredSlot) {
+			await tick();
+			if (destroyed || generation !== navigationGeneration) return;
+			transferredSlot.dispatchEvent(new Event('spatial-summary-measure'));
+			await tick();
+		}
 		await initialized;
 		await tick();
 		if (destroyed || generation !== navigationGeneration || !experience) return;
@@ -472,6 +601,8 @@
 				await pending;
 				if (destroyed || generation !== navigationGeneration) return;
 			}
+			if (interruptedPresentation) await settleInterruptedPresentation(generation);
+			if (destroyed || generation !== navigationGeneration) return;
 			registerSpatialElements();
 			const catalogReady = catalog
 				? experience.setCatalogSpatialElements(catalog.brandId, catalogSpatialElements)
@@ -493,7 +624,7 @@
 					}) === 'dock'
 				),
 				background,
-				pageBackground,
+				pageBackground: resolvedPageBackground,
 				hdr,
 				glb,
 				lodPair,
@@ -503,6 +634,8 @@
 				panels: getPanelTargets(),
 				viewport: getViewportTarget()
 			});
+			if (destroyed || generation !== navigationGeneration) return;
+			if (interruptedPresentation) await settleInterruptedPresentation(generation, true);
 			if (destroyed || generation !== navigationGeneration) return;
 			if (experience.getSpatialCapture()) {
 				await Promise.race([
@@ -515,10 +648,17 @@
 			isFallback = false;
 			stageState = 'enhanced';
 			navigationTimings.bound = performance.now();
-			await transition?.play();
+			if (earlyTransition?.phase === 'held') {
+				await earlyTransition.reveal(() => experience?.updateAppearance({
+					pageBackground: resolvedPageBackground, background, interactionTheme, panels: getPanelTargets()
+				}));
+			} else await transition?.play();
+			if (interruptedPresentation) await settleInterruptedPresentation(generation, true);
 		} catch (error) {
 			if (destroyed || generation !== navigationGeneration) return;
+			interruptedPresentation?.cancel(); interruptedPresentation = undefined;
 			transition?.cancel();
+			earlyTransition?.cancel('error');
 			try {
 				experience.discardFailedPage();
 			} catch (cleanupError) {
@@ -530,6 +670,8 @@
 			isEnhanced = false;
 			isFallback = true;
 			stageState = 'fallback';
+		} finally {
+			if (generation === navigationGeneration) navigationFeedback?.end();
 		}
 	}
 
@@ -577,11 +719,13 @@
 			loseDevice: () => experience?.loseDeviceForTest(),
 			getCarouselStats: () => experience?.getCarouselStats() ?? null,
 			getCatalogStats: () => experience?.assets.getStats() ?? null,
+			getRenderActivity: () => experience?.getVisualTestRenderActivity() ?? null,
 			getCatalogEndpoints: () => catalogEndpoints.getSnapshot(),
 			getCatalogOwnership: () => transition?.getOwnership() ?? null,
-			getNavigationTimings: () => ({ ...navigationTimings }),
+			getNavigationTimings: () => ({ ...navigationTimings, early: earlyTransition?.timings ?? lastEarlyTimings }),
 			captureHeroPresentation: () => experience?.captureHeroPresentation() ?? false,
 			getSpatialCapture: () => experience?.getSpatialCapture() ?? null,
+			getDetailProjection: kind => experience?.getVisualTestDetailProjection(kind) ?? null,
 			releaseSpatialCapture: () => experience?.releaseSpatialCapture(),
 			registerCatalogEndpoint: (address, element) => catalogEndpoints.register(address, element),
 			getCatalogPresentation: () => experience?.getCatalogPresentation() ?? null,
@@ -625,6 +769,12 @@
 					creations: 0,
 					resizes: 0,
 					warmups: 0,
+					inactiveScrollWarmups: 0,
+					backgroundOutput: {
+						requested: false, initialized: false, mode: 'legacy', held: false,
+						targetTextureId: null, implicitBackgroundTarget: null,
+						catalogProfile: null, catalogProfileCurrent: false
+					},
 					activeScale: 0
 				},
 			getVisibilityStats: () =>
@@ -667,6 +817,7 @@
 				getMinimapDockProgress: panel.getMinimapDockProgress,
 				getMinimapModelScale: panel.getMinimapModelScale,
 				getMinimapModelTop: panel.getMinimapModelTop,
+				getMinimapModelLeft: panel.getMinimapModelLeft,
 				getSurfaceOpacity: panel.getSurfaceOpacity,
 				getVisible: panel.getVisible,
 				getFocusAnchor: panel.getFocusAnchor,
@@ -688,16 +839,19 @@
 {#if catalog}
 	<ScrollNavigationBridge
 		controller={virtualScroll}
+		onEarlyStart={startEarlyNavigation}
+		onStart={() => { if (isEnhanced) navigationFeedback?.begin(); }}
 		onCapture={captureNavigation}
 		onSupersede={supersedeNavigation}
 		onInterrupt={interruptNavigation}
+		onInterruptCommitted={interruptCommittedNavigation}
 		onRestored={restoreNavigation}
 	/>
 {/if}
 
 <div
 	bind:this={stage}
-	style:--stage-page-background={pageBackground}
+	style:--stage-page-background={resolvedPageBackground}
 	class="stage"
 	class:stage-enhanced={isEnhanced}
 	class:stage-fallback={isFallback}

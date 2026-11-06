@@ -84,9 +84,11 @@ test('half-mask probe preserves target identity across viewport resizes and High
 	expect([target.width, target.height]).toEqual([500, 350]);
 	const disposed = vi.spyOn(target, 'dispose');
 	pipeline.createModelOutline(model);
-	expect(disposed).toHaveBeenCalledOnce();
+	expect(disposed).not.toHaveBeenCalled();
+	expect(pipeline.getRenderTargets()[0]).toBe(target);
 	expect(pipeline.getRenderTargets().map((t) => [t.width, t.height])).toEqual([[500, 350]]);
 	pipeline.releaseOutline();
+	expect(disposed).toHaveBeenCalledOnce();
 });
 
 test('fused halo renders the live mask without a separate composite submission', () => {
@@ -140,7 +142,7 @@ test('active touch manipulation does not submit the mouse hover glow pass', () =
 	}
 });
 
-test('High replacement retains the fused display material and frees the previous mask', () => {
+test('High replacement retains both the fused display material and its sampled mask', () => {
 	vi.stubGlobal('window', { devicePixelRatio: 1, innerWidth: 800, innerHeight: 600 });
 	const f = rendererFixture();
 	const pipeline = new StageRenderPipeline({
@@ -157,12 +159,14 @@ test('High replacement retains the fused display material and frees the previous
 	const first = pipeline.getRenderTargets()[0];
 	const disposed = vi.spyOn(first, 'dispose');
 	pipeline.createModelOutline(new THREE.Group());
-	expect(disposed).toHaveBeenCalledOnce();
+	expect(disposed).not.toHaveBeenCalled();
+	expect(pipeline.getRenderTargets()[0]).toBe(first);
 	expect(pipeline.stageDisplayQuad!.material).toBe(display);
 	expect([pipeline.getRenderTargets()[0].width, pipeline.getRenderTargets()[0].height]).toEqual([
 		800, 600
 	]);
 	pipeline.dispose();
+	expect(disposed).toHaveBeenCalledOnce();
 	f.originalTarget.dispose();
 });
 
@@ -275,7 +279,7 @@ test('backdrop blur retains its CSS sampling density across DPR and scroll targe
 	f.originalTarget.dispose();
 });
 
-test('late High silhouette replacement retains the current viewport without another resize', () => {
+test('late High silhouette replacement retains warmed target/material owners and invalidates its pixels', () => {
 	const model = new THREE.Group();
 	const mesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
 	model.add(mesh);
@@ -285,18 +289,123 @@ test('late High silhouette replacement retains the current viewport without anot
 	} as unknown as StageRenderPorts);
 	pipeline.resizeOutline(1440, 900);
 	pipeline.createModelOutline(model);
+	const owned = pipeline as unknown as {
+		outlineMaskModel: THREE.Object3D; outlineMaskMaterial: THREE.Material;
+		outlineCompositeMaterial: THREE.Material; outlineQuad: THREE.QuadMesh; outlineMaskValid: boolean;
+	};
+	const original = {
+		model: owned.outlineMaskModel, material: owned.outlineMaskMaterial,
+		composite: owned.outlineCompositeMaterial, quad: owned.outlineQuad
+	};
 	const first = pipeline.getRenderTargets()[0];
 	expect([first.width, first.height]).toEqual([1440, 900]);
 	const dispose = vi.spyOn(first, 'dispose');
-	pipeline.createModelOutline(model);
-	expect(dispose).toHaveBeenCalledOnce();
+	const materialDispose = vi.spyOn(original.material, 'dispose');
+	const compositeDispose = vi.spyOn(original.composite, 'dispose');
+	const highGeometry = new THREE.SphereGeometry();
+	const high = new THREE.Group().add(new THREE.Mesh(highGeometry, mesh.material));
+	owned.outlineMaskValid = true;
+	pipeline.createModelOutline(high);
+	expect(dispose).not.toHaveBeenCalled();
+	expect(pipeline.getRenderTargets()[0]).toBe(first);
+	expect(owned.outlineMaskMaterial).toBe(original.material);
+	expect(owned.outlineCompositeMaterial).toBe(original.composite);
+	expect(owned.outlineQuad).toBe(original.quad);
+	expect(owned.outlineMaskModel).not.toBe(original.model);
+	expect(original.model.parent).toBeNull();
+	expect((owned.outlineMaskModel.children[0] as THREE.Mesh).geometry).toBe(highGeometry);
+	expect(owned.outlineMaskValid).toBe(false);
 	expect(pipeline.getRenderTargets().map((t) => [t.width, t.height])).toEqual([[1440, 900]]);
 	pipeline.releaseOutline();
+	expect(dispose).toHaveBeenCalledOnce();
+	expect(materialDispose).toHaveBeenCalledOnce();
+	expect(compositeDispose).toHaveBeenCalledOnce();
 	mesh.geometry.dispose();
+	highGeometry.dispose();
 	mesh.material.dispose();
 });
 
 afterEach(() => vi.unstubAllGlobals());
+
+function carouselRearFixture() {
+	vi.stubGlobal('window', { innerWidth: 800, innerHeight: 600, devicePixelRatio: 1 });
+	const canvas = { width: 800, height: 600, setAttribute: vi.fn() };
+	vi.stubGlobal('document', { createElement: () => canvas });
+	const f = rendererFixture();
+	const renderer = { ...f.renderer, setPixelRatio: vi.fn(), setSize: vi.fn() };
+	const canvasSwitch = vi.spyOn(renderer, 'setCanvasTarget');
+	let active = true;
+	const layer = { hasRearOutput: () => active, renderRear: vi.fn() };
+	const pipeline = new StageRenderPipeline({ renderer, container: { appendChild: vi.fn() },
+		backgroundCanvasTarget: f.originalCanvas, catalogLayer: () => layer,
+		interactionTheme: () => DEFAULT_INTERACTION_THEME } as unknown as StageRenderPorts);
+	const restored = () => {
+		expect(renderer.getCanvasTarget()).toBe(f.originalCanvas);
+		expect(renderer.getRenderTarget()).toBe(f.originalTarget);
+		expect(renderer.getClearColor(new THREE.Color()).getHex()).toBe(0xff0000);
+		expect(renderer.getClearAlpha()).toBe(0.4);
+		expect(renderer.getScissorTest()).toBe(true);
+		expect(f.viewport.toArray()).toEqual([1, 2, 3, 4]);
+		expect(f.scissor.toArray()).toEqual([5, 6, 7, 8]);
+	};
+	const reset = () => { canvasSwitch.mockClear(); renderer.clear.mockClear(); layer.renderRear.mockClear(); renderer.setSize.mockClear(); };
+	return { ...f, renderer, pipeline, layer, canvasSwitch, restored, reset,
+		setActive: (value: boolean) => { active = value; } };
+}
+
+test('rear canvas clears once after its last output and then pauses until output or viewport changes', () => {
+	const f = carouselRearFixture();
+	f.pipeline.renderCarouselRear(); expect(f.layer.renderRear).toHaveBeenCalledOnce(); f.restored();
+	f.setActive(false); f.reset(); f.pipeline.renderCarouselRear();
+	expect(f.renderer.clear).toHaveBeenCalledOnce(); expect(f.layer.renderRear).not.toHaveBeenCalled(); f.restored();
+	f.reset(); f.pipeline.renderCarouselRear(); f.pipeline.renderCarouselRear();
+	expect(f.canvasSwitch).not.toHaveBeenCalled(); expect(f.renderer.clear).not.toHaveBeenCalled();
+	window.innerWidth = 1024;
+	f.pipeline.renderCarouselRear(); expect(f.renderer.setSize).toHaveBeenCalledWith(1024, 600, true);
+	expect(f.renderer.clear).toHaveBeenCalledOnce(); f.restored();
+	f.reset(); f.pipeline.renderCarouselRear(); expect(f.canvasSwitch).not.toHaveBeenCalled();
+	f.setActive(true); f.pipeline.renderCarouselRear(); expect(f.layer.renderRear).toHaveBeenCalledOnce();
+	f.setActive(false); f.reset(); f.pipeline.renderCarouselRear(); expect(f.renderer.clear).toHaveBeenCalledOnce();
+	f.reset(); f.pipeline.renderCarouselRear(); expect(f.canvasSwitch).not.toHaveBeenCalled();
+	f.restored(); f.originalTarget.dispose();
+});
+
+test('a failed rear draw or empty clear restores borrowed renderer state and retries instead of caching success', () => {
+	const f = carouselRearFixture();
+	f.layer.renderRear.mockImplementationOnce(() => { throw new Error('rear draw failed'); });
+	expect(() => f.pipeline.renderCarouselRear()).toThrow('rear draw failed'); f.restored();
+	f.pipeline.renderCarouselRear();
+	f.setActive(false); f.reset();
+	f.renderer.clear.mockImplementationOnce(() => {
+		expect(f.renderer.getScissorTest()).toBe(false);
+		throw new Error('clear failed');
+	});
+	expect(() => f.pipeline.renderCarouselRear()).toThrow('clear failed'); f.restored();
+	f.reset(); f.pipeline.renderCarouselRear(); expect(f.renderer.clear).toHaveBeenCalledOnce();
+	f.reset(); f.pipeline.renderCarouselRear(); expect(f.canvasSwitch).not.toHaveBeenCalled();
+	f.restored(); f.originalTarget.dispose();
+});
+
+test('the one-time inactive canvas clear ignores a zero-area scissor even on a scissor-dependent backend', () => {
+	const f = carouselRearFixture(); f.pipeline.renderCarouselRear();
+	f.setActive(false); f.reset(); f.scissor.set(0, 0, 0, 0);
+	let fullyCleared = false;
+	f.renderer.clear.mockImplementation(() => { fullyCleared = !f.renderer.getScissorTest(); });
+	f.pipeline.renderCarouselRear();
+	expect(fullyCleared).toBe(true);
+	expect(f.renderer.getScissorTest()).toBe(true);
+	expect(f.scissor.toArray()).toEqual([0, 0, 0, 0]);
+	f.reset(); f.pipeline.renderCarouselRear(); expect(f.canvasSwitch).not.toHaveBeenCalled();
+	f.originalTarget.dispose();
+});
+
+test('a page with no rear output never creates or switches to a carousel canvas', () => {
+	const f = carouselRearFixture(); f.setActive(false);
+	f.pipeline.renderCarouselRear(); f.pipeline.renderCarouselRear();
+	expect(f.canvasSwitch).not.toHaveBeenCalled(); expect(f.renderer.clear).not.toHaveBeenCalled();
+	f.restored(); f.originalTarget.dispose();
+});
+
 function rendererFixture() {
 	const originalCanvas = {} as THREE.CanvasTarget;
 	const originalTarget = new THREE.RenderTarget(5, 7);
@@ -336,6 +445,74 @@ function rendererFixture() {
 	};
 	return { renderer, originalCanvas, originalTarget, clear, viewport, scissor };
 }
+
+test.each([false, true])('reveal preparation masks both real Canvas outputs and restores state (failure=%s)', fail => {
+	vi.stubGlobal('window', { devicePixelRatio: 1 });
+	const f = rendererFixture();
+	const foreground = {} as THREE.CanvasTarget;
+	const panel = { group: new THREE.Group(), glass: {}, surface: 'glass' };
+	const view = {
+		panelIndex: 0, viewportVisible: true,
+		layer: new THREE.Group(), spatialElementRoot: new THREE.Group(),
+		overlayComposite: { visible: false }, screenCamera: new THREE.PerspectiveCamera()
+	} as unknown as StageMinimapState;
+	const stage = vi.fn(() => {
+		expect(f.renderer.getRenderTarget()).not.toBeNull();
+		expect(f.renderer.getScissorTest()).toBe(false);
+		f.renderer.clear();
+	});
+	const pipeline = new StageRenderPipeline({
+		renderer: f.renderer, backgroundCanvasTarget: f.originalCanvas,
+		interactionTheme: () => DEFAULT_INTERACTION_THEME,
+		fallbackPanelOptions: () => [resolveLiquidGlassPanelOptions({ backdropBlur: 5 })],
+		panelRuntimes: () => [panel], minimaps: () => new Map([[0, view]]),
+		minimapScene: () => new THREE.Scene(), getPanelTransitionOpacity: () => 0.5,
+		frame: () => ({}), renderStage: stage
+	} as unknown as StageRenderPorts);
+
+	pipeline.createSceneCapture();
+	Object.assign(pipeline, { foregroundCanvasTarget: foreground });
+	const active = pipeline.activeRenderTargets;
+	const blur = vi.spyOn(pipeline, 'renderPanelBlurCaptures');
+	const canvasOutputs: THREE.CanvasTarget[] = [];
+	const assertCanvas = () => {
+		expect(f.renderer.getRenderTarget()).toBeNull();
+		expect(f.renderer.getScissorTest()).toBe(true);
+		expect(f.scissor.toArray()).toEqual([0, 0, 0, 0]);
+		canvasOutputs.push(f.renderer.getCanvasTarget());
+	};
+	f.renderer.clear.mockImplementation(() => {
+		// Canvas attachment color clears can ignore the zero-area scissor.
+		expect(f.renderer.getRenderTarget()).not.toBeNull();
+	});
+	f.renderer.render.mockImplementation(() => {
+		assertCanvas();
+		if (fail && f.renderer.getCanvasTarget() === foreground) throw new Error('minimap failed');
+	});
+	const quad = vi.spyOn(THREE.QuadMesh.prototype, 'render').mockImplementation(() => {
+		if (f.renderer.getRenderTarget() === null) assertCanvas();
+	});
+	try {
+		if (fail) expect(() => pipeline.warmRevealFrame()).toThrow('minimap failed');
+		else expect(pipeline.warmRevealFrame()).toBe(true);
+		expect(stage).toHaveBeenCalledOnce();
+		expect(blur).toHaveBeenCalledWith(active, true);
+		expect(canvasOutputs).toContain(f.originalCanvas);
+		expect(canvasOutputs).toContain(foreground);
+		expect(f.renderer.getCanvasTarget()).toBe(f.originalCanvas);
+		expect(f.renderer.getRenderTarget()).toBe(f.originalTarget);
+		expect(f.scissor.toArray()).toEqual([5, 6, 7, 8]);
+		expect(f.viewport.toArray()).toEqual([1, 2, 3, 4]);
+		expect(view.layer.visible).toBe(true);
+		expect(panel.group.visible).toBe(true);
+		expect(pipeline.activeRenderTargets).toBe(active);
+	} finally {
+		quad.mockRestore();
+		Object.assign(pipeline, { foregroundCanvasTarget: undefined });
+		pipeline.dispose();
+		f.originalTarget.dispose();
+	}
+});
 
 test('a failed pass restores the borrowed canvas, target, clear and clipping state', () => {
 	const f = rendererFixture(),

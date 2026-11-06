@@ -41,9 +41,14 @@ export interface StageVisualTestVisibilityStats {
 
 /** Browser-only controls exposed when a stage is opened with `?stage-test=1`. */
 export interface StageVisualTestController {
-	getNavigationTimings(): { dataReady: number; captured: number; restoring: number; bound: number };
+	getNavigationTimings(): { dataReady: number; captured: number; restoring: number; bound: number;
+		early?: { started: number; entered: number; captured: number; prepared: number; firstMotion: number;
+			firstSubmitted: number; motionEnded: number; holdStarted: number; held: number; committed: number;
+			revealStarted: number; revealEnded: number; revealed: number } };
 	captureHeroPresentation(): boolean;
 	getSpatialCapture(): ReturnType<StageExperience['getSpatialCapture']> | null;
+	/** Clip matrix of the bound detail owner, after the retained source is released. */
+	getDetailProjection(kind: 'hero' | 'dock'): number[] | null;
 	releaseSpatialCapture(): void;
 	getCatalogOwnership(): ReturnType<
 		import('../catalog/CatalogTransition.js').CatalogTransition['getOwnership']
@@ -66,6 +71,8 @@ export interface StageVisualTestController {
 		import('../catalog/CatalogSpatialElementLayer.js').CatalogSpatialElementLayer['getStats']
 	> | null;
 	getCatalogStats(): ReturnType<StageExperience['assets']['getStats']> | null;
+	/** Read-only current animation, queued-frame and preparation metadata; does not wait for idle. */
+	getRenderActivity(): ReturnType<StageExperience['getVisualTestRenderActivity']> | null;
 	/** Applies a deterministic camera pose and waits until dependent render state settles. */
 	setView(view: StageVisualTestView, frames?: number): Promise<void>;
 	/** Applies an equivalent zoom through the SpaceMouse camera/target dolly path. */

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="550" viewBox="0 0 1200 550" role="img" aria-labelledby="title description">
+<title id="title">Nine section background roles</title><desc id="description">Transparent, standard and muted solid roles, plus all six directed gradients. Gradient rows apply only to effective full-width backgrounds.</desc>
+<style>text{font-family:Arial,sans-serif;fill:#18344b;font-size:17px}.title{font-size:23px;font-weight:600}.swatch{stroke:#8ba4b8;stroke-width:1}</style>
+<defs>
+<pattern id="checker" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#eef2f5"/><path d="M0 0h10v10H0zM10 10h10v10H10z" fill="#dae3ea"/></pattern>
+<linearGradient id="ts" x2="0" y2="1"><stop stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient>
+<linearGradient id="tm" x2="0" y2="1"><stop stop-color="#c3d5e3" stop-opacity="0"/><stop offset="1" stop-color="#c3d5e3"/></linearGradient>
+<linearGradient id="st" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="mt" x2="0" y2="1"><stop stop-color="#c3d5e3"/><stop offset="1" stop-color="#c3d5e3" stop-opacity="0"/></linearGradient>
+<linearGradient id="sm" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#c3d5e3"/></linearGradient>
+<linearGradient id="ms" x2="0" y2="1"><stop stop-color="#c3d5e3"/><stop offset="1" stop-color="#fff"/></linearGradient>
+</defs>
+<rect width="1200" height="550" fill="#fafcfe"/><text class="title" x="32" y="40">Named colors are theme roles; gradients run from top to bottom</text>
+<g><text x="32" y="84">transparent</text><rect class="swatch" x="32" y="100" width="352" height="86" fill="url(#checker)"/>
+<text x="424" y="84">standard</text><rect class="swatch" x="424" y="100" width="352" height="86" fill="#fff"/>
+<text x="816" y="84">muted</text><rect class="swatch" x="816" y="100" width="352" height="86" fill="#c3d5e3"/></g>
+<g><text x="32" y="238">transparentToStandard</text><rect x="32" y="254" width="352" height="86" fill="url(#checker)"/><rect class="swatch" x="32" y="254" width="352" height="86" fill="url(#ts)"/>
+<text x="424" y="238">transparentToMuted</text><rect x="424" y="254" width="352" height="86" fill="url(#checker)"/><rect class="swatch" x="424" y="254" width="352" height="86" fill="url(#tm)"/>
+<text x="816" y="238">standardToMuted</text><rect class="swatch" x="816" y="254" width="352" height="86" fill="url(#sm)"/></g>
+<g><text x="32" y="392">standardToTransparent</text><rect x="32" y="408" width="352" height="86" fill="url(#checker)"/><rect class="swatch" x="32" y="408" width="352" height="86" fill="url(#st)"/>
+<text x="424" y="392">mutedToTransparent</text><rect x="424" y="408" width="352" height="86" fill="url(#checker)"/><rect class="swatch" x="424" y="408" width="352" height="86" fill="url(#mt)"/>
+<text x="816" y="392">mutedToStandard</text><rect class="swatch" x="816" y="408" width="352" height="86" fill="url(#ms)"/></g>
+<text x="32" y="532">Illustrative light palette. Checkerboard means true transparency. The six gradients require effective size: full.</text>
+</svg>

@@ -11,6 +11,7 @@ import {
 	type CatalogViewContext
 } from './catalogJourney.js';
 import { readCatalogViewContext } from './catalogViewLink.js';
+import { catalogTransitionViewportChanged, readCatalogTransitionViewport, type CatalogTransitionViewport } from './catalogTransitionViewport.js';
 import { captureCarouselElement } from './carouselPanelProjection.js';
 import { captureCardElement } from './cardProjection.js';
 import type { CatalogTransitionPresentation } from './catalogPresentation.js';
@@ -42,6 +43,15 @@ function isRichRole(role: CatalogSharedRole) {
 	return role === 'features' || role === 'primary-action';
 }
 
+/** One CSS parse per detached clone instead of hundreds of CSSOM mutations.
+ * Retain all computed properties (including SVG and authored custom properties).
+ */
+function freezeComputedStyle(target: HTMLElement | SVGElement, style: CSSStyleDeclaration) {
+	let css = '';
+	for (const property of style) css += property + ':' + style.getPropertyValue(property) + ';';
+	target.style.cssText = css;
+}
+
 /** Full summaries retain authored row/icon layout; temporary controls never become interactive. */
 function copyRichContent(target: HTMLElement, source: HTMLElement) {
 	const copy = source.cloneNode(true) as HTMLElement;
@@ -49,8 +59,7 @@ function copyRichContent(target: HTMLElement, source: HTMLElement) {
 	const copies = [copy, ...copy.querySelectorAll<HTMLElement | SVGElement>('*')];
 	for (let index = 0; index < originals.length; index++) {
 		const style = getComputedStyle(originals[index]);
-		for (const property of style)
-			copies[index].style.setProperty(property, style.getPropertyValue(property));
+		freezeComputedStyle(copies[index], style);
 		copies[index].style.visibility = 'visible';
 		copies[index].removeAttribute('id');
 		for (const attribute of [...copies[index].attributes])
@@ -130,6 +139,8 @@ export class CatalogTransitionSequence {
 }
 
 interface CatalogTransitionHooks {
+	/** Optional test/debug sink; no DOM or timing work on the production path. */
+	diagnose?(reason: string): void;
 	captureContentGeometry?(
 		endpoint: CatalogParticipantEndpoint,
 		secondary: CatalogParticipantEndpoint[]
@@ -303,6 +314,15 @@ export class CatalogTransition {
 	private readonly sequence = new CatalogTransitionSequence();
 	private captureState?: TransitionCapture;
 	private readonly interrupt = () => this.cancel();
+	private capturedViewport?: CatalogTransitionViewport;
+	private readonly resize = () => {
+		// Android's address bar changes innerHeight without changing the svh
+		// layout endpoints. Only a real layout/render-scale change cancels motion.
+		if (this.capturedViewport && catalogTransitionViewportChanged(this.capturedViewport, readCatalogTransitionViewport())) {
+			this.hooks.diagnose?.('viewport-resize');
+			this.cancel();
+		}
+	};
 	private readonly keydown = (event: KeyboardEvent) => {
 		if (event.key === 'Escape') this.cancel();
 	};
@@ -509,9 +529,11 @@ export class CatalogTransition {
 		const bounds =
 			paint?.bounds ?? (role === 'summary-surface' ? this.hooks.resolveSurface(source) : source);
 		const from = bounds.getBoundingClientRect();
+		const carouselSurface = role === 'summary-surface' && source.closest('[data-carousel-spatial-element]')
+			? source.querySelector<HTMLElement>('.spatial-summary-surface') : undefined;
 		const style = getComputedStyle(
-			role === 'summary-surface' && reverse ? bounds : source,
-			role === 'summary-surface' && source.closest('[data-carousel-spatial-element]') ? '::before' : null
+			carouselSurface ?? (role === 'summary-surface' && reverse ? bounds : source),
+			!carouselSurface && role === 'summary-surface' && source.closest('[data-carousel-spatial-element]') ? '::before' : null
 		);
 		const element = document.createElement('div');
 		element.dataset.catalogSharedKey = catalogSharedKey(identity, role);
@@ -602,6 +624,7 @@ export class CatalogTransition {
 			});
 	}
 	capture(fromURL: URL, toURL: URL, type: string) {
+		this.hooks.diagnose?.('capturing');
 		const retained = this.captureState;
 
 		if (retained?.paused && retained.retarget) {
@@ -761,7 +784,9 @@ export class CatalogTransition {
 			recipe.source = contentSlot;
 			recipe.roles = [];
 		}
-		if (!recipe || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		if (!recipe || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			this.hooks.diagnose?.(recipe ? 'reduced-motion' : 'source-recipe'); return;
+		}
 		const identity = recipe.identity;
 		const dock = recipe.source === 'detail.dock';
 		const source = { ...identity, slot: recipe.source };
@@ -776,8 +801,9 @@ export class CatalogTransition {
 				slot: reverse && !dock ? 'detail.hero' : source.slot,
 				role: 'geometry'
 			})
-		)
-			return;
+		) {
+			this.hooks.diagnose?.('source-endpoint'); return;
+		}
 		if (reverse)
 			recipe.roles = recipe.roles.filter((role) => {
 				const element = this.endpoints.resolve({ ...source, role });
@@ -785,22 +811,31 @@ export class CatalogTransition {
 				// already clipped summary pieces just to retain their semantic roles.
 				return (
 					element &&
-					visiblyPresented(element) &&
-					(composition !== 'intermediate' || fullyPresented(element))
+					visiblyPresented(element) && fullyPresented(element)
 				);
 			});
-		recipe.roles = recipe.roles.filter(
-			(role) => !isRichRole(role) || this.endpoints.resolve({ ...source, role })
-		);
+		recipe.roles = recipe.roles.filter((role) => {
+			// S cards and compact Carousel summaries deliberately omit the eyebrow
+			// or rich content. That does not invalidate their prepared 3D endpoint.
+			if (role !== 'eyebrow' && !isRichRole(role)) return true;
+			const element = this.endpoints.resolve({ ...source, role });
+			return Boolean(element && hasSize(element.getBoundingClientRect()));
+		});
+		// A clipped summary (mobile fold / 3XL pane) may contribute fully visible
+		// title rows while its surface fades out. Rich rows need a retained surface
+		// to map to a compact destination which does not expose those same rows.
+		if (!recipe.roles.includes('summary-surface')) recipe.roles = recipe.roles.filter(role => !isRichRole(role));
 		const sources = recipe.roles.map((role) => this.endpoints.resolve({ ...source, role }));
-		if (sources.some((element) => !element || !hasSize(element.getBoundingClientRect()))) return;
+		if (sources.some((element) => !element || !hasSize(element.getBoundingClientRect()))) {
+			this.hooks.diagnose?.('source-role-size'); return;
+		}
 		const carouselTarget = composition === 'carousel'
 			? card.querySelector<HTMLElement>('.spatial-element-target') : null;
 		if (!reverse && !(composition === 'carousel'
 			? visiblyPresented(card) || (carouselTarget && visiblyPresented(carouselTarget))
-			: fullyPresented(card)))
-			return;
-		if (reverse && sources.some((element) => element && !fullyPresented(element))) return;
+			: fullyPresented(card))) {
+			this.hooks.diagnose?.('source-visibility'); return;
+		}
 
 		try {
 			const endpoint = geometryEndpoint({
@@ -811,8 +846,9 @@ export class CatalogTransition {
 				view
 					? !this.hooks.captureContentGeometry?.(view.source, view.sources.slice(1))
 					: !this.hooks.captureGeometry(endpoint)
-			)
-				return;
+			) {
+				this.hooks.diagnose?.('source-geometry-not-ready'); return;
+			}
 			const token = this.sequence.begin();
 			const host = document.createElement('div');
 			host.dataset.catalogTransitionActors = '';
@@ -833,7 +869,7 @@ export class CatalogTransition {
 				frame: 0,
 				inert: new Map(),
 				timeout: setTimeout(() => {
-					if (this.captureState === capture) this.cancel();
+					if (this.captureState === capture) { this.hooks.diagnose?.('capture-timeout'); this.cancel(); }
 				}, 5000)
 			};
 			this.captureState = capture;
@@ -878,16 +914,19 @@ export class CatalogTransition {
 			this.root.dataset.catalogDirection = reverse || view ? 'return' : 'forward';
 			this.setPresentation({ active: true, exitOpacity: 1, enterOpacity: 0, sharedOpacity: 0 });
 			this.root.dataset.catalogTransition = 'captured';
+			this.hooks.diagnose?.('captured');
 			this.root.dataset.catalogRecipe = recipe.id;
 			this.root.dataset.catalogOwnershipRevision = String(capture.lease.revision);
 			this.lockParticipants(capture);
 			capture.observer = new MutationObserver(() => this.lockParticipants(capture));
 			capture.observer.observe(this.root, { childList: true, subtree: true });
-			window.addEventListener('resize', this.interrupt, { passive: true });
+			this.capturedViewport = readCatalogTransitionViewport();
+			window.addEventListener('resize', this.resize, { passive: true });
 			window.addEventListener('wheel', this.interrupt, { passive: true, capture: true });
 			window.addEventListener('touchmove', this.interrupt, { passive: true, capture: true });
 			window.addEventListener('keydown', this.keydown);
-		} catch {
+		} catch (error) {
+			this.hooks.diagnose?.(`capture-error:${error instanceof Error ? error.message : String(error)}`);
 			this.cancel();
 		}
 	}
@@ -918,8 +957,7 @@ export class CatalogTransition {
 			const copies = [copy, ...copy.querySelectorAll<HTMLElement | SVGElement>('*')];
 			for (let index = 0; index < originals.length; index++) {
 				const computed = getComputedStyle(originals[index]);
-				for (const property of computed)
-					copies[index].style.setProperty(property, computed.getPropertyValue(property));
+				freezeComputedStyle(copies[index], computed);
 			}
 			for (const element of [copy, ...copy.querySelectorAll('*')]) {
 				element.removeAttribute('id');
@@ -1119,6 +1157,7 @@ export class CatalogTransition {
 			} else if (reverse) {
 				const slot = this.endpoints.getContentSlot(capture.identity);
 				if (!slot) {
+					this.hooks.diagnose?.('return-content-slot');
 					this.cancel();
 					return;
 				}
@@ -1146,6 +1185,7 @@ export class CatalogTransition {
 			} else {
 				const composition = this.endpoints.getComposition(capture.identity);
 				if (composition !== 'hero' && composition !== 'intermediate' && composition !== 'dock') {
+					this.hooks.diagnose?.('destination-composition');
 					this.cancel();
 					return;
 				}
@@ -1173,6 +1213,7 @@ export class CatalogTransition {
 					role: 'geometry'
 				})
 			) {
+				this.hooks.diagnose?.('destination-geometry-endpoint');
 				this.cancel();
 				return;
 			}
@@ -1182,6 +1223,7 @@ export class CatalogTransition {
 					kind: reverse ? 'content' : capture.recipe.targetGeometry === 'detail.dock' ? 'dock' : 'hero'
 				}) === false
 			) {
+				this.hooks.diagnose?.('destination-geometry-projection');
 				this.cancel();
 				return;
 			}
@@ -1219,6 +1261,7 @@ export class CatalogTransition {
 						? intersectsViewport(card)
 						: fullyPresented(card))
 				) {
+					this.hooks.diagnose?.('return-target-visibility');
 					this.cancel();
 					return;
 				}
@@ -1230,12 +1273,24 @@ export class CatalogTransition {
 			const measuredTargets = new Map<HTMLElement, DOMRect>();
 			const sharedTargets = new Set<HTMLElement>();
 			const destinationCopies = document.createDocumentFragment();
+			// Eyebrows are optional, notably for S cards. Fade the outgoing text
+			// when the destination omits it; retain the rest of the transition.
+			capture.actors = capture.actors.filter(actor => {
+				if (actor.role !== 'eyebrow') return true;
+				const eyebrow = this.endpoints.resolve({ ...capture.identity, slot: capture.recipe.targetShared, role: 'eyebrow' });
+				// A registered optional role can still be omitted by responsive CSS.
+				if (eyebrow && hasSize(eyebrow.getBoundingClientRect())) return true;
+				capture.exiting.push(actor.element);
+				actor.destinationCopy?.remove();
+				return false;
+			});
 			for (const actor of capture.actors) {
 				let target = this.endpoints.resolve({
 					...capture.identity,
 					slot: capture.recipe.targetShared,
 					role: actor.role
 				});
+				if (target && isRichRole(actor.role) && !hasSize(target.getBoundingClientRect())) target = undefined;
 				const missingRich = !target && isRichRole(actor.role);
 				if (missingRich) {
 					target = this.endpoints.resolve({
@@ -1246,6 +1301,7 @@ export class CatalogTransition {
 					actor.sourceOnly = true;
 				}
 				if (!target) {
+					this.hooks.diagnose?.(`destination-role:${actor.role}`);
 					this.cancel();
 					return;
 				}
@@ -1286,6 +1342,7 @@ export class CatalogTransition {
 							: 'replaced';
 				measuredTargets.set(bounds, targetRect);
 				if (!hasSize(actor.to)) {
+					this.hooks.diagnose?.(`destination-size:${actor.role}`);
 					this.cancel();
 					return;
 				}
@@ -1341,8 +1398,7 @@ export class CatalogTransition {
 							const copies = [copy, ...copy.querySelectorAll<HTMLElement | SVGElement>('*')];
 							for (let index = 0; index < originals.length; index++) {
 								const style = getComputedStyle(originals[index]);
-								for (const property of style)
-									copies[index].style.setProperty(property, style.getPropertyValue(property));
+								freezeComputedStyle(copies[index], style);
 								// The live destination is deliberately masked during binding.
 								copies[index].style.visibility = 'visible';
 							}
@@ -1396,6 +1452,7 @@ export class CatalogTransition {
 						Math.abs(current.width - rect.width) > 1 ||
 						Math.abs(current.height - rect.height) > 1
 					) {
+						this.hooks.diagnose?.('destination-layout-changed');
 						this.cancel();
 						return;
 					}
@@ -1410,6 +1467,7 @@ export class CatalogTransition {
 			}
 			this.lockParticipants(capture);
 			this.root.dataset.catalogTransition = 'animating';
+			this.hooks.diagnose?.('animating');
 			if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
 				this.hooks.setGeometryProgress(1);
 				this.settle(capture.token);
@@ -1548,7 +1606,8 @@ export class CatalogTransition {
 				};
 				capture.frame = requestAnimationFrame(frame);
 			});
-		} catch {
+		} catch (error) {
+			this.hooks.diagnose?.(`play-error:${error instanceof Error ? error.message : String(error)}`);
 			this.cancel();
 		}
 	}
@@ -1573,7 +1632,8 @@ export class CatalogTransition {
 		delete this.root.dataset.catalogRecipe;
 		delete this.root.dataset.catalogOwnershipRevision;
 		delete this.root.dataset.catalogDirection;
-		window.removeEventListener('resize', this.interrupt);
+		window.removeEventListener('resize', this.resize);
+		this.capturedViewport = undefined;
 		window.removeEventListener('wheel', this.interrupt, true);
 		window.removeEventListener('touchmove', this.interrupt, true);
 		window.removeEventListener('keydown', this.keydown);

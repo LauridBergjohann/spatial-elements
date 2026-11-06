@@ -16,6 +16,14 @@ type RendererStatePort = Pick<
 	| 'setScissorTest'
 > & { setViewport(value: Vector4): void; setScissor(value: Vector4): void };
 
+/** A cached uniform attachment must be complete on WebGPU and its WebGL fallback. */
+export function clearFullTarget(renderer: Pick<WebGPURenderer, 'getScissorTest' | 'setScissorTest' | 'clear'>) {
+	const scissorTest = renderer.getScissorTest();
+	if (scissorTest) renderer.setScissorTest(false);
+	try { renderer.clear(); }
+	finally { if (scissorTest) renderer.setScissorTest(true); }
+}
+
 /** A pass borrows renderer state; failures must not poison the next output band. */
 export function withRendererState<T>(renderer: RendererStatePort, draw: () => T): T {
 	const canvas = renderer.getCanvasTarget();

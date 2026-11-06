@@ -86,12 +86,15 @@
 		getFocusReactive: () => focusReactive,
 		getFocusAnchor: () => focusAnchor,
 		getNativeContent: () => nativeContent,
-		updateNativeLayout: () => nativeLayout?.(),
+		// Absence matters: only an actively positioned popover needs a fresh
+		// native measurement on every render; ordinary panels use the layout cache.
+		get updateNativeLayout() { return nativeLayout; },
 		getVisible: () => visible,
 		getMinimapOptions: () => getMinimapOptions(),
 		getMinimapDockProgress,
 		getMinimapModelScale,
 		getMinimapModelTop,
+		getMinimapModelLeft,
 		getSurface: () => resolvedSurface,
 		getSurfaceOpacity,
 		getOptions: getPanelOptions
@@ -103,6 +106,7 @@
 		getContentInset();
 		Object.values(getMinimapOptions() ?? {});
 		void resolvedSurface;
+		void nativeContent;
 		stage.updatePanelAppearance?.();
 	});
 	$effect(() => {
@@ -167,6 +171,11 @@
 	/** Reads the dock-controlled viewport anchor independently of model scale. */
 	function getMinimapModelTop() {
 		const value = Number.parseFloat(frameElement?.dataset.stageMinimapModelTop ?? '');
+		return Number.isFinite(value) ? value : undefined;
+	}
+
+	function getMinimapModelLeft() {
+		const value = Number.parseFloat(frameElement?.dataset.stageMinimapModelLeft ?? '');
 		return Number.isFinite(value) ? value : undefined;
 	}
 
@@ -330,7 +339,7 @@
 		/* Content can leave its CSS surface when glass uses the DOM projection layer. */
 		opacity: calc(
 			var(--stage-panel-opacity, 1) * var(--stage-panel-content-opacity, 1) *
-				var(--stage-transition-opacity, 1)
+				var(--catalog-reveal-opacity, var(--stage-transition-opacity, 1))
 		);
 	}
 
@@ -344,6 +353,9 @@
 
 	.stage-panel-surface::before,
 	.stage-panel-surface::after {
+		/* These two paint owners share their surface's local reveal value. Ordinary
+		 * descendants do not inherit it; the content has its own existing factor. */
+		--catalog-reveal-opacity: inherit;
 		position: absolute;
 		inset: 0;
 		border-radius: inherit;
@@ -351,7 +363,7 @@
 		content: '';
 		opacity: calc(
 			var(--stage-panel-opacity) * var(--stage-panel-surface-opacity, 1) *
-				var(--stage-panel-focus-opacity, 1) * var(--stage-transition-opacity, 1)
+				var(--stage-panel-focus-opacity, 1) * var(--catalog-reveal-opacity, var(--stage-transition-opacity, 1))
 		);
 	}
 
@@ -379,7 +391,7 @@
 		opacity: calc(
 			var(--stage-panel-opacity) * var(--stage-panel-surface-opacity, 1) *
 				var(--stage-panel-focus-opacity, 1) * var(--stage-panel-specular-opacity) *
-				var(--stage-transition-opacity, 1)
+				var(--catalog-reveal-opacity, var(--stage-transition-opacity, 1))
 		);
 	}
 

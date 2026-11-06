@@ -1,4 +1,30 @@
 /* Loaded by the persistent stage before any destination page can mount. */
+/* No initial-value: outside a staged reveal the guaranteed-invalid value keeps
+   the existing transition formula as the var() fallback. Do not inherit this
+   channel through text/content subtrees or another custom-property alias. */
+@property --catalog-reveal-opacity {
+	syntax: '*';
+	inherits: false;
+}
+
+.stage-navigation-feedback {
+	position: fixed;
+	inset: 0 0 auto;
+	height: 3px;
+	z-index: 2147483647;
+	pointer-events: none;
+	background: var(--spatial-element-accent, #6688cc);
+	transform: scaleX(0.18);
+	transform-origin: left;
+	animation: stage-navigation-progress 6s cubic-bezier(0.12, 0.7, 0.1, 1) forwards;
+}
+@keyframes stage-navigation-progress {
+	to { transform: scaleX(0.9); }
+}
+@media (prefers-reduced-motion: reduce) {
+	.stage-navigation-feedback { animation: none; transform: none; }
+}
+
 .stage [data-catalog-transition-group='enter'] {
 	--stage-transition-opacity: var(--catalog-enter-opacity, 1);
 }
@@ -9,7 +35,7 @@
 
 .stage [data-catalog-transition-dom='enter'] {
 	--catalog-content-opacity: var(--catalog-enter-opacity, 1);
-	opacity: var(--catalog-content-opacity);
+	opacity: var(--catalog-reveal-opacity, var(--catalog-content-opacity));
 }
 
 .stage [data-catalog-transition-dom='exit'] {
@@ -35,13 +61,13 @@
 .stage:is(
 		[data-catalog-recipe='list-to-dock'],
 		[data-catalog-recipe='carousel-to-dock']
-	)[data-catalog-transition]
+	)[data-catalog-transition]:not([data-catalog-staged-phase='revealing']):not([data-catalog-staged-phase='committing'])
 	[data-spatial-element-sticky-header]::before {
 	opacity: 0 !important;
 }
 
 .stage[data-catalog-transition] [data-catalog-transition-dom][data-stage-dom-content] {
-	opacity: calc(var(--stage-dom-opacity, 1) * var(--catalog-content-opacity, 1));
+	opacity: calc(var(--stage-dom-opacity, 1) * var(--catalog-reveal-opacity, var(--catalog-content-opacity, 1)));
 }
 
 /* Gate the initial paint before panel registration and renderer binding. */
@@ -49,6 +75,23 @@
 .stage[data-catalog-enter-hidden] [data-catalog-transition-group='enter'],
 .stage[data-catalog-shared-hidden] [data-catalog-transition-group='shared'] {
 	visibility: hidden !important;
+}
+
+/* The source is stationary in its independent hold. Rasterize real destination
+   DOM now, before its fade: visibility:hidden/opacity:0 postpones the browser's
+   rounded-rectangle/path shader preparation until the first visible frame.
+   The persistent menu keeps its explicit full opacity below; canvas and held
+   source content do not use these incoming DOM variables. */
+.stage[data-catalog-staged-phase='held'] {
+	--catalog-enter-opacity: 0.001 !important;
+	--catalog-shared-opacity: 0.001 !important;
+}
+.stage[data-catalog-staged-phase='held'] :is(
+	[data-catalog-transition-dom='enter'],
+	[data-catalog-transition-group='enter'],
+	[data-catalog-transition-group='shared']
+) {
+	visibility: visible !important;
 }
 
 .stage[data-catalog-transition] [data-catalog-transition-dom],

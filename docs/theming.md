@@ -4,12 +4,15 @@ The host application owns theme preference, system detection, persistence and th
 
 ## Define two palettes
 
-Create a complete `SpatialTheme` for each palette, keeping the same `id` and `name`. The ID is a namespace, not a light/dark identifier. Existing `colors`, `panelTheme`, `dockedPanelTheme`, `sectionTheme`, `minimapTheme` and `interactionTheme` settings describe both palettes; there is no separate set of dark-color properties.
+Create a complete `SpatialTheme` for each palette, keeping the same `id` and `name`. The ID is a namespace, not a light/dark identifier. `colors`, `panelTheme`, `dockedPanelTheme`, `sectionBackgrounds`, legacy `sectionTheme`, `minimapTheme` and `interactionTheme` settings describe both palettes; there is no separate set of dark-color properties.
 
 ```ts
 import { createSpatialTheme } from '@spatial-elements/sveltekit';
 
-export const light = createSpatialTheme({ id: 'collection', name: 'Collection' });
+export const light = createSpatialTheme({
+  id: 'collection', name: 'Collection',
+  sectionBackgrounds: { standard: '#ffffff', muted: '#f5f7f9' }
+});
 export const dark = createSpatialTheme({
   ...light,
   background: '#121923',
@@ -17,6 +20,7 @@ export const dark = createSpatialTheme({
   panelTheme: { ...light.panelTheme, tint: '#172434', tintOpacity: 0.82 },
   dockedPanelTheme: { ...light.dockedPanelTheme, tint: '#172434', tintOpacity: 0.94 },
   sectionTheme: { ...light.sectionTheme, tint: '#172434', tintOpacity: 0.9 },
+  sectionBackgrounds: { standard: '#172434', muted: '#243548' },
   colors: { ink: '#edf4fc', body: '#c8d6e7', accent: '#80bfff', onAccent: '#102438', tabBackground: '#243548' },
   minimapTheme: { ...light.minimapTheme, viewportColor: '#80bfff' },
   interactionTheme: { ...light.interactionTheme, outlineColor: '#80bfff' }
@@ -25,11 +29,21 @@ export const dark = createSpatialTheme({
 
 `sceneBackground` is optional. Its `blurriness`, `tint` and `tintIntensity` fields override the corresponding element background fields. Removing an override restores the element's settings. It changes the visible HDR backdrop, not HDR lighting, model materials or asset identity. `background` remains the flat page color.
 
+Set `sectionBackgrounds` for every light/dark palette. New standard/muted section surfaces use
+these colors independently of glass/frosted panel tint; changing only legacy `sectionTheme.tint`
+does not recolor a new `section.background` surface. ContentPage can override the flat page color
+with its `background` prop without modifying either section colors or the shared theme.
+
+`radii: { control: 12, panel: 16 }` separates cards, small controls and media thumbnails from
+larger panels and section groups. An explicitly authored legacy `panelShape.radius` supplies
+both roles until overridden. Use `resolveSpatialThemeRadii(theme)` when building custom controls;
+it supports older themes with no `radii` group. Content insets remain separate from radius values.
+
 ## Supply the resolved theme
 
 ```svelte
 <script lang="ts">
-  import { BrandStageShell, ButtonGroup } from '@spatial-elements/sveltekit';
+  import { BrandStageShell, ButtonGroup, resolveSpatialThemeRadii } from '@spatial-elements/sveltekit';
   import { light, dark } from './themes';
   let { children } = $props();
   let colorScheme = $state<'light' | 'dark'>('light');
@@ -37,7 +51,8 @@ export const dark = createSpatialTheme({
 </script>
 
 <BrandStageShell {theme} {colorScheme}>
-  <ButtonGroup label="Appearance" shape={theme.panelShape} theme={theme.panelTheme}
+  <ButtonGroup label="Appearance"
+    shape={{ ...theme.panelShape, radius: resolveSpatialThemeRadii(theme).control }} theme={theme.panelTheme}
     items={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]}
     value={colorScheme} onchange={(value) => { colorScheme = value === 'dark' ? 'dark' : 'light'; }} />
   {@render children()}
@@ -46,7 +61,7 @@ export const dark = createSpatialTheme({
 
 `colorScheme` is optional and accepts only `light` or `dark`. It sets the wrapper's CSS `color-scheme`, including native form controls. The library never reads `matchMedia`, writes storage or modifies the document's global preference. A host can use two buttons, three buttons, a menu, or no switch at all. Update the `theme` prop with the chosen palette; do not key/recreate the shell.
 
-The demo and brand examples implement **Light / Dark / System** in their shells. System is the default and responds to operating-system changes. Explicit choices use `sessionStorage`, surviving navigation and reload within that tab. System clears the override. A blocked store falls back gracefully to in-memory behavior. For SSR, their early HTML bootstrap selects the palette before hydration; `getSpatialThemeStyle(theme)` supplies CSS declarations for the temporary preview. Applications with a CSP should authorize their bootstrap using their usual nonce/hash policy.
+Basics is permanently light. The [Showcase](../apps/showcase/README.md) provides **Light / Dark** in its right satellite (inside the menu on small screens). It follows the operating system until an explicit choice is made; that choice survives reloads in session storage. Its early HTML bootstrap and SSR preview styles apply the palette before hydration, and blocked storage remains usable. The former three-state demo remains an isolated regression fixture at `/proof/theming`. Applications with a CSP should authorize their bootstrap using their usual nonce/hash policy.
 
 ## Reuse ButtonGroup
 
@@ -60,7 +75,7 @@ The demo and brand examples implement **Light / Dark / System** in their shells.
 | `label` | Accessible name of the group. |
 | `content` | Optional `Snippet<[ButtonGroupItem]>` for icons or custom content. Otherwise displays the label. |
 | `iconOnly` | Fixed 40px button width; default false uses intrinsic text width. |
-| `shape`, `theme` | Same appearance contract as Panel. Control radius is capped at 12px; content inset is zero. |
+| `shape`, `theme` | Same appearance contract as Panel. Finite radius values are clamped only at zero; nonfinite values use 12px. Content inset is zero. Pass the resolved theme control radius for theme-aware controls. |
 | `disabled`, `visible` | Disable the group or temporarily hide its contents. |
 | `focusReactive`, `focusAnchor`, `transitionGroup` | Optional integration with stage focus and transitions. |
 

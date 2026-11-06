@@ -14,6 +14,14 @@ function inlineStyle(changed: (property: string) => void = () => {}) {
 	return {
 		getPropertyValue: (property: string) => values.get(property) ?? '',
 		getPropertyPriority: () => '',
+		set cssText(css: string) {
+			values.clear();
+			for (const declaration of css.split(';').filter(Boolean)) {
+				const separator = declaration.indexOf(':');
+				values.set(declaration.slice(0, separator), declaration.slice(separator + 1));
+			}
+			changed('cssText');
+		},
 		setProperty: vi.fn((property: string, value: string) => {
 			values.set(property, value);
 			changed(property);
@@ -23,6 +31,50 @@ function inlineStyle(changed: (property: string) => void = () => {}) {
 }
 
 describe('catalog transition eligibility and identity', () => {
+	function captureEligibility(options: { reverse?: boolean; omitEyebrow?: boolean; hiddenEyebrow?: boolean; clippedSummary?: boolean; hiddenGeometry?: boolean }) {
+		vi.stubGlobal('innerWidth', 430);
+		vi.stubGlobal('innerHeight', 820);
+		vi.stubGlobal('document', { activeElement: null });
+		vi.stubGlobal('matchMedia', () => ({ matches: false }));
+		vi.stubGlobal('getComputedStyle', () => ({ visibility: 'visible', display: 'block', opacity: '1', overflowX: 'visible', overflowY: 'visible' }));
+		const element = (top: number, height: number) => ({
+			parentElement: null, querySelector: () => null,
+			getBoundingClientRect: () => ({ left: 12, right: 400, top, bottom: top + height, width: 388, height })
+		});
+		const surface = element(options.clippedSummary ? 700 : 150, 200);
+		const title = element(options.clippedSummary ? 730 : 180, 40);
+		const eyebrow = element(options.clippedSummary ? 710 : 160, options.hiddenEyebrow ? 0 : 16);
+		const geometry = element(100, 400);
+		const endpoints = {
+			getContentSlot: () => 'catalog.card', getPreferredContentSlot: () => 'catalog.card',
+			getComposition: () => 'hero',
+			resolve: ({ role }: { role: string }) => role === 'geometry' ? (options.hiddenGeometry ? undefined : geometry)
+				: role === 'title' ? title : role === 'eyebrow' ? (options.omitEyebrow ? undefined : eyebrow)
+					: role === 'summary-surface' || role === 'container' ? surface : undefined
+		};
+		const captureGeometry = vi.fn(() => false);
+		const transition = new CatalogTransition({} as HTMLElement, endpoints as unknown as ConstructorParameters<typeof CatalogTransition>[1],
+			{ captureGeometry } as unknown as ConstructorParameters<typeof CatalogTransition>[2]);
+		const list = url('/demo/categories/list'), detail = url('/demo/elements/column');
+		transition.capture(options.reverse ? detail : list, options.reverse ? list : detail, options.reverse ? 'popstate' : 'link');
+		return captureGeometry;
+	}
+
+	it('allows S cards without an authored eyebrow to reach the prepared geometry capture', () => {
+		expect(captureEligibility({ omitEyebrow: true })).toHaveBeenCalledWith({ brandId: 'demo', spatialElementId: 'column', slot: 'catalog.card', role: 'geometry' });
+	});
+	it('allows an optional eyebrow hidden by responsive CSS without losing the model transition', () => {
+		expect(captureEligibility({ hiddenEyebrow: true })).toHaveBeenCalledWith({ brandId: 'demo', spatialElementId: 'column', slot: 'catalog.card', role: 'geometry' });
+	});
+
+	it('keeps the return geometry when the summary crosses the mobile fold', () => {
+		expect(captureEligibility({ reverse: true, clippedSummary: true })).toHaveBeenCalledWith({ brandId: 'demo', spatialElementId: 'column', slot: 'detail.hero', role: 'geometry' });
+	});
+
+	it('still declines when the registered geometry endpoint is absent', () => {
+		expect(captureEligibility({ reverse: true, clippedSummary: true, hiddenGeometry: true })).not.toHaveBeenCalled();
+	});
+
 	it('selects a spatialElement across filtered lists without encoding layer or LOD in its identity', () => {
 		const identity = resolveCatalogTransition(
 			url('/demo/categories/list?sort=title'),

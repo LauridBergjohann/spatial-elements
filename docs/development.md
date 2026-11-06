@@ -2,20 +2,38 @@
 
 This guide is for working on the packages themselves. To use them in an application, start with [Getting started](getting-started.md).
 
-## Repository setup and public demo
+## Repository setup and demo applications
 
 Use Node.js 22.12 or newer and npm. From the repository root:
 
 ~~~sh
 npm ci
-npm run assets:demo
-npm run build
-npm run demo
+npm run dev:basics
+# http://localhost:5173
 ~~~
 
-Open `/demo/categories/mixed` on the local server. The public demo includes list, carousel, mixed-content and detail examples using original procedural assets. The [getting-started example](getting-started.md) is available at `/starter/categories/list`.
+**Basics** explains the library with simple forms and a fixed light theme.
+**Showcase** is the independent application for richer authored content, with
+light/dark appearance adapted from bergjohann.com.
 
-Run `npm run dev` in another terminal to watch and rebuild both packages while the demo is running. The demo consumes the built workspace packages by name.
+~~~sh
+npm run dev:showcase
+# http://localhost:5174
+
+npm run build:apps
+npm run preview:basics
+# http://localhost:4174
+# In another terminal:
+npm run preview:showcase
+# http://localhost:4175
+~~~
+
+Run one app startup at a time so its initial package build finishes before
+starting the other. Application files use HMR; run `npm run dev` in another
+terminal to watch library changes. `build:basics` and `build:showcase` build an app
+individually, including the library packages. Preview serves its existing build.
+See [applications](../apps/README.md) and [Showcase authoring](../apps/showcase/README.md).
+The minimal getting-started route remains at `/starter/categories/list` in Basics.
 
 ## Checks
 
@@ -46,34 +64,18 @@ npm run test:e2e -- carousel-touch.e2e.ts detail-touch.e2e.ts interaction-help.e
 
 They cover simultaneous carousel rotation and page scrolling, changes of direction, release damping on both axes, model rotation/pinch handoff, immediate background scrolling, and mouse-only hover on hybrid devices. The carousel coordinates both axes inside model areas; scrolling outside them and two-finger page zoom remain native. The interaction contract is documented in [Authoring](authoring.md#touch-and-pointer-interaction). Physical-device checks remain useful for Safari and device-specific input latency.
 
-## Development across repositories
+## Application and package boundaries
 
-Clone `spatial-elements` and the private `spatial-elements-brand-examples` as sibling directories for local development and local builds. Run `npm ci` in the public repository once to install its tools. The public repository never imports or needs the private one.
+Both applications consume the two workspace packages by name. The private
+`spatial-elements-brand-examples` repository is no longer part of the active demo
+workflow. Its existing checkout and assets are not moved or deleted.
 
-The private application provides three explicit package-source modes:
-
-| Mode | Public repository | Private repository |
-| --- | --- | --- |
-| Development with HMR | Keep `npm run dev` running; wait for the initial build and watchers | `npm run dev:local` |
-| Test the current local packages | Current checkout, including uncommitted changes | `npm run build:local`, then `npm run preview` |
-| Test the published packages | No sibling checkout required | `npm run build:remote`, then `npm run preview` |
-
-`dev:local` restores file-linked dependencies from the committed lockfile and starts Vite. Vite watches the built package output and deduplicates Svelte and Three.js. No source copy, source alias or global `npm link` is required. Package exports or build-configuration changes may require a server restart.
-
-The build modes install real package copies: fresh sibling tarballs for `build:local`, or the current npm `latest` versions for `build:remote`. Stop development and preview servers before switching modes. Run `npm run packages:status` in the private repository to inspect the installed sources. Plain `npm run dev` and `npm run build` use the existing installation without selecting a mode.
-
-See the private [README's development and build modes](../../spatial-elements-brand-examples/README.md#development-and-build-modes) for complete steps. The committed manifests and lockfiles retain local `file:` dependencies in every mode; running `npm ci` in the private repository restores the linked installation.
-
-## Test the delivered artifacts
-
-Public: npm run verify:packages builds an independent consumer from existing package builds. Run
-npm run verify for the full build-first pipeline. Its metadata and logs live in .artifacts/packages.
-The installed consumer remains in the OS temporary directory for investigation.
-
-Private: use `npm run build:local` before checking the current package artifacts, or `npm run build:remote` to validate the published versions. Then run the private type, unit and browser checks without running `npm ci` between them. To select packages without building the application, use `npm run packages:packed` or `npm run packages:remote`. The packed command also builds the sibling packages and keeps its tarballs in ignored `.local-packages`. Both install with `--no-save` and `--package-lock=false`, verify the package sources and leave source manifests and lockfiles unchanged. `npm run packages:link` restores file links for development.
-
-Keep @types/three aligned across linked repositories (currently 0.186.0); divergent copies can
-produce incompatible recursive type identities even when runtime Three.js is deduplicated.
+`npm run verify:packages` builds an independent consumer from existing package
+builds; `npm run verify` is the build-first pipeline. Evidence is in
+`.artifacts/packages`, and the installed consumer remains in the OS temporary
+directory for investigation. `npm run test:apps` checks the Basics and Showcase
+shells against production builds. Existing GPU and navigation regression
+suites continue to use the Basics application and its isolated proof routes.
 
 ## Architecture and maintenance
 
@@ -86,4 +88,4 @@ produce incompatible recursive type identities even when runtime Three.js is ded
 - [Migration audit](migration-audit.md) and [migration record](migration.md): repository extraction and migration history.
 - [Release workflow](release.md): versioning, verification and publication.
 
-Update architecture alongside changes to ownership, navigation order, cache lifetime or public contracts. Keep brand-specific evidence in the private examples repository.
+Update architecture alongside changes to ownership, navigation order, cache lifetime or public contracts. Keep authored showcase content and application-specific evidence outside the runtime packages.

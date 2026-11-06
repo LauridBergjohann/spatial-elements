@@ -1,5 +1,6 @@
 import { expect, test, type Locator } from '@playwright/test';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
+import { waitForCatalogIdle } from './helpers/catalogIdle';
 
 async function exposedPoint(target: Locator) {
 	return target.evaluate(element => {
@@ -39,6 +40,7 @@ for (const surface of ['frosted', 'glass']) test(`carousel ${surface}: model hov
 	let point = await exposedPoint(selected.locator('.spatial-element-target'));
 	await page.mouse.move(point.x, point.y);
 	await expect.poll(() => page.evaluate(id => window.__stageVisualTest!.getCarouselStats()!.actors.find(a => a.spatialElementId === id)?.hover, id)).toBe(1);
+	await waitForCatalogIdle(page, info);
 	const hovered = await page.evaluate(() => window.__stageVisualTest!.getCarouselStats()!);
 	expect(hovered.outline).toMatchObject({ targets: 1, size: 512 });
 	expect(hovered.outline.captures).toBeGreaterThan(0);
@@ -50,9 +52,10 @@ for (const surface of ['frosted', 'glass']) test(`carousel ${surface}: model hov
 	const neighbourId = await neighbour.locator('[data-catalog-geometry]').getAttribute('data-spatial-element-id');
 	const initialBlur = await page.evaluate(id => window.__stageVisualTest!.getCarouselStats()!.actors.find(a => a.spatialElementId === id)!.blur, neighbourId);
 	expect(initialBlur).toBeGreaterThan(0);
-	const identity = `${await neighbour.locator('.eyebrow').textContent()} — ${await neighbour.locator('h3').textContent()}`;
-	await expect(neighbour.locator('.spatial-element-target')).toHaveAttribute('title', identity);
-	await expect(neighbour.locator('.spatial-element-target')).toHaveAccessibleName(`Select ${identity}`);
+	// Authoring contract: identify geometry with its complete title, without the eyebrow.
+	const title = (await neighbour.locator('[data-shared-role="title"]').textContent())!;
+	await expect(neighbour.locator('.spatial-element-target')).toHaveAttribute('title', title);
+	await expect(neighbour.locator('.spatial-element-target')).toHaveAccessibleName(`Select ${title}`);
 	await page.evaluate(id => {
 		const samples: number[] = [];
 		Object.assign(window, { carouselHoverBlurSamples: samples });
@@ -77,6 +80,7 @@ for (const surface of ['frosted', 'glass']) test(`carousel ${surface}: model hov
 	await expect(page).toHaveURL(/categories\/carousel/);
 	await expect(neighbour.locator('.summary')).toHaveCSS('filter', 'none');
 	const target = neighbour.locator('.spatial-element-target');
+	await expect(target).toHaveAccessibleName(`More information: ${title}`);
 	const href = await target.getAttribute('href');
 	expect(href).toBe(await neighbour.locator('.information').first().getAttribute('href'));
 	await expect(target).not.toHaveAttribute('role', 'button');

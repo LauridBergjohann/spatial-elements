@@ -75,6 +75,7 @@ export interface StagePanelRegistration {
 	getMinimapDockProgress(): number;
 	/** Returns the viewport-space top edge used to anchor the rendered model. */
 	getMinimapModelTop(): number | undefined;
+	getMinimapModelLeft?(): number | undefined;
 }
 
 export interface StageViewportRegistration {
@@ -82,6 +83,10 @@ export interface StageViewportRegistration {
 }
 
 export interface StageContext {
+	/** Detail-page ownership; stale route cleanup cannot reset a newer media selection. */
+	registerDetailMedia?(read: () => import('../spatial-element/types.js').SpatialElementMediaItem['kind']): () => void;
+	/** Cached browser layout metrics; unavailable during SSR. */
+	getLayoutMetrics?(mode?: 'stable' | 'visible'): import('../spatial-element/responsiveLayout.js').ResponsiveLayoutInput | undefined;
 	/** Reactive in framework adapters; false during SSR and until the GPU has painted. */
 	isEnhanced?(): boolean;
 	prefetchSpatialElement?(stage: import('../spatial-element/spatialElementScene.js').SpatialElementScene): void;
@@ -95,5 +100,7 @@ export interface StageContext {
 	isFullscreen?(): boolean;
 	/** Current camera zoom focus, from the fitted detail view (0) to close-up (1). */
 	getZoomFocus?(): number;
+	/** Damped UI focus shared by panels and the document-scrolled detail pane. */
+	getZoomUiFocus?(): number;
 	setFullscreen?(fullscreen: boolean): void;
 }

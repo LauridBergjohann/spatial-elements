@@ -1,16 +1,23 @@
 <script lang="ts">
-	import { readCatalogViewContext } from '@spatial-elements/core/catalog/catalogViewLink';
+	import { readCatalogLinkContext, readCatalogViewContext } from '@spatial-elements/core/catalog/catalogViewLink';
+	import {
+		EarlyNavigationCoordinator,
+		type EarlyNavigationCancelReason,
+		type EarlyNavigationHandle
+	} from '@spatial-elements/core/catalog/EarlyNavigationCoordinator';
 	import {
 		afterNavigate,
 		beforeNavigate,
 		disableScrollHandling,
+		goto,
 		onNavigate,
+		preloadData,
 		pushState,
 		replaceState
 	} from '$app/navigation';
 	import { navigating, page } from '$app/state';
-	import type { OnNavigate } from '@sveltejs/kit';
-	import { getContext, onDestroy, tick } from 'svelte';
+	import type { BeforeNavigate, OnNavigate } from '@sveltejs/kit';
+	import { getContext, onDestroy, onMount, tick } from 'svelte';
 	import { CATALOG_ENDPOINTS, type CatalogEndpointRegistry } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
 	import {
 		CATALOG_SECTIONS,
@@ -23,6 +30,7 @@
 	} from '@spatial-elements/core/stage/VirtualScrollController';
 	import { subscribeStageScrollFrame, syncStageScrollToNative } from '@spatial-elements/core/stage/scrollFrame';
 	import { resolveCatalogIntent } from '@spatial-elements/core/catalog/catalogRecipes';
+	import { catalogTransitionViewportChanged, readCatalogTransitionViewport } from '@spatial-elements/core/catalog/catalogTransitionViewport';
 
 	interface EntryState {
 		id: string;
@@ -31,14 +39,20 @@
 
 	interface Props {
 		controller?: VirtualScrollController;
-		onCapture?: (navigation: OnNavigate) => void | Promise<void>;
+		onStart?: () => void;
+		/** Starts only a source-only transition whose destination is already known. */
+		onEarlyStart?: (navigation: BeforeNavigate) => EarlyNavigationHandle | undefined;
+		/** Must retain the outgoing presentation before returning; never hold Kit's commit. */
+		onCapture?: (navigation: OnNavigate) => undefined;
 		onInterrupt?: () => void;
+		/** Cancel only a still-owned visual handoff after route commit; retain destination binding. */
+		onInterruptCommitted?: (reason: EarlyNavigationCancelReason) => boolean;
 		onSupersede?: (destination: URL) => void;
 		onRestored?: (navigation: OnNavigate) => void | Promise<void>;
 		handlesNavigation?: (navigation: OnNavigate) => boolean;
 	}
 
-	let { controller, onCapture, onInterrupt, onSupersede, onRestored, handlesNavigation }: Props =
+	let { controller, onStart, onEarlyStart, onCapture, onInterrupt, onInterruptCommitted, onSupersede, onRestored, handlesNavigation }: Props =
 		$props();
 	const endpoints = getContext<CatalogEndpointRegistry | undefined>(CATALOG_ENDPOINTS);
 	const sections = getContext<CatalogSections | undefined>(CATALOG_SECTIONS);
@@ -51,10 +65,44 @@
 		}
 	});
 	onDestroy(() => disconnectSections?.());
-	const PREPARATION_LIMIT_MS = 500;
 	let generation = 0;
 	let pendingNavigation = false;
 	let focusRevision = 0;
+	let earlyReplayComplete: Promise<void> | undefined;
+	// Kit invokes beforeNavigate after the click dispatch has finished. The DOM
+	// event's composedPath is empty by then, so remember its original anchor now.
+	const earlyAnchors = new WeakMap<Event, HTMLAnchorElement>();
+	const earlyNavigation = new EarlyNavigationCoordinator({
+		preload: async (destination, signal) => {
+			let timer: ReturnType<typeof setTimeout> | undefined;
+			let abort: (() => void) | undefined;
+			try {
+				return await Promise.race([
+					preloadData(destination),
+					new Promise<never>((_resolve, reject) => {
+						abort = () => reject(new Error('Early navigation interrupted'));
+						if (signal.aborted) abort();
+						else signal.addEventListener('abort', abort, { once: true });
+						timer = setTimeout(() => reject(new Error('Early navigation preload deadline')), 15_000);
+					})
+				]);
+			} finally {
+				if (timer !== undefined) clearTimeout(timer);
+				if (abort) signal.removeEventListener('abort', abort);
+			}
+		},
+		// The absolute destination already includes Kit's configured base path.
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		navigate: async (destination) => {
+			const url = new URL(destination);
+			if (url.origin !== location.origin && (url.protocol === 'https:' || url.protocol === 'http:')) {
+				location.assign(url.href);
+				return;
+			}
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			await goto(destination);
+		}
+	});
 	// This imperative history cache must not subscribe effects to per-frame position writes.
 	// eslint-disable-next-line svelte/prefer-svelte-reactivity
 	const entryPositions = new Map<string, { x: number; y: number }>();
@@ -63,7 +111,8 @@
 				controller: VirtualScrollController;
 				token: object;
 				complete?: Promise<void>;
-				releasePreparation?: () => void;
+				committed: boolean;
+				interrupted: boolean;
 		  }
 		| undefined;
 	let initial = $state<{ target: ScrollRestoreTarget; url: string }>();
@@ -92,11 +141,12 @@
 		if (entryPositions.size > 100) entryPositions.delete(entryPositions.keys().next().value!);
 	}
 
-	function stopActive(destination?: URL) {
+	function stopActive(destination?: URL, reason: EarlyNavigationCancelReason = 'superseded') {
 		generation += 1;
+		earlyNavigation.cancel(reason);
+		earlyReplayComplete = undefined;
 		if (active) {
 			active.controller.endNavigation(active.token);
-			active.releasePreparation?.();
 		}
 		active = undefined;
 		pendingNavigation = false;
@@ -107,6 +157,38 @@
 				interruptVisuals();
 			}
 		} else interruptVisuals();
+	}
+
+	function supportsEarlyStart(navigation: BeforeNavigate): boolean {
+		if (!onEarlyStart || navigation.type !== 'link' || navigation.willUnload ||
+			!navigation.from || !navigation.to?.route.id ||
+			navigation.to.url.origin !== navigation.from.url.origin ||
+			navigation.to.url.pathname === navigation.from.url.pathname) return false;
+		// Kit's BeforeNavigate does not expose the resolved link options. Keep
+		// explicitly authored focus/scroll/history policies on the ordinary path.
+		const anchor = earlyAnchors.get(navigation.event);
+		// An author can declare a complete Dock endpoint. Arbitrary hashes still
+		// need destination DOM, including short pages where native scrolling clamps.
+		if (navigation.to.url.hash && navigation.to.url.hash !== '#overview' &&
+			readCatalogLinkContext(anchor, navigation.to.url).targetPresentation !== 'dock') return false;
+		return anchor instanceof HTMLAnchorElement && !anchor.closest(
+			'[data-sveltekit-keepfocus], [data-sveltekit-noscroll], [data-sveltekit-replacestate], [data-sveltekit-reload]'
+		);
+	}
+
+	function interruptInput(reason: EarlyNavigationCancelReason) {
+		const binding = active;
+		if (binding?.committed) {
+			// goto may already be complete while its real source is still held for
+			// destination binding/reveal. Do not invalidate that binding generation:
+			// there is no successor navigation which could finish the current page.
+			if (binding.interrupted || !onInterruptCommitted?.(reason)) return;
+			binding.interrupted = true;
+			focusRevision += 1;
+			binding.controller.endNavigation(binding.token);
+			return;
+		}
+		if (earlyNavigation.pending) stopActive(undefined, reason);
 	}
 
 	function interruptVisuals() {
@@ -188,9 +270,34 @@
 	}
 
 	beforeNavigate((navigation) => {
+		// The single permitted replay continues the existing visual ownership.
+		// It must not run stopActive, onSupersede, or the generic feedback again.
+		if (navigation.to && earlyNavigation.acceptReplay(navigation.to.url.href)) {
+			earlyReplayComplete = navigation.complete;
+			return;
+		}
 		if (!pendingNavigation) rememberPosition();
-		stopActive(navigation.to?.url);
+		stopActive(navigation.to?.url, navigation.type === 'popstate' ? 'history' : navigation.willUnload ? 'leave' : 'superseded');
 		pendingNavigation = true;
+		if (supportsEarlyStart(navigation)) {
+			let handle: EarlyNavigationHandle | undefined;
+			try { handle = onEarlyStart?.(navigation); }
+			catch { interruptVisuals(); }
+			if (handle) {
+				navigation.cancel();
+				// Rejecting the original navigation is intentional. Its completion
+				// must never cancel the independently owned source movement.
+				void navigation.complete.catch(() => {});
+				const epoch = generation;
+				void earlyNavigation.start(navigation.to!.url.href, handle).finally(() => {
+					if (epoch === generation && !active) pendingNavigation = false;
+				});
+				return;
+			}
+		}
+		if (controller?.active && !navigation.willUnload && navigation.to && navigation.from &&
+			navigation.from.url.pathname !== navigation.to.url.pathname &&
+			navigation.from.url.pathname.split('/')[1] === navigation.to.url.pathname.split('/')[1]) onStart?.();
 		const epoch = generation;
 		void navigation.complete
 			.catch(() => {})
@@ -201,15 +308,49 @@
 				}
 			});
 	});
-	onDestroy(() => stopActive());
+	onDestroy(() => stopActive(undefined, 'destroyed'));
+	onMount(() => {
+		const rememberAnchor = (event: MouseEvent) => {
+			const anchor = event.composedPath().find((node) => node instanceof HTMLAnchorElement);
+			if (anchor instanceof HTMLAnchorElement) earlyAnchors.set(event, anchor);
+		};
+		const interrupt = () => interruptInput('interaction');
+		const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') interrupt(); };
+		let viewport = readCatalogTransitionViewport();
+		const resize = () => {
+			const current = readCatalogTransitionViewport();
+			const changed = catalogTransitionViewportChanged(viewport, current);
+			viewport = current;
+			if (changed) interruptInput('resize');
+		};
+		window.addEventListener('keydown', keydown);
+		window.addEventListener('wheel', interrupt, { passive: true });
+		window.addEventListener('touchmove', interrupt, { passive: true });
+		window.addEventListener('resize', resize);
+		document.addEventListener('click', rememberAnchor, true);
+		return () => {
+			window.removeEventListener('keydown', keydown);
+			window.removeEventListener('wheel', interrupt);
+			window.removeEventListener('touchmove', interrupt);
+			window.removeEventListener('resize', resize);
+			document.removeEventListener('click', rememberAnchor, true);
+		};
+	});
 
 	$effect(() => {
 		const complete = navigating.complete;
+		if (complete && earlyReplayComplete && complete !== earlyReplayComplete && earlyNavigation.pending) {
+			stopActive(navigating.to?.url);
+			pendingNavigation = true;
+		}
 		// Kit skips beforeNavigate while another navigation is already in progress.
 		// The public completion identity still changes when that operation is superseded.
 		if (!complete || !active?.complete || complete === active.complete) return;
 		stopActive(navigating.to?.url);
 		pendingNavigation = true;
+		if (controller?.active && navigating.to && navigating.from &&
+			navigating.from.url.pathname !== navigating.to.url.pathname &&
+			navigating.from.url.pathname.split('/')[1] === navigating.to.url.pathname.split('/')[1]) onStart?.();
 		const epoch = generation;
 		void complete
 			.catch(() => {})
@@ -218,7 +359,7 @@
 			});
 	});
 
-	onNavigate(async (navigation) => {
+	onNavigate((navigation) => {
 		const destination = navigation.to;
 		if (!destination) return;
 		const owner = controller;
@@ -235,49 +376,33 @@
 		const token = {};
 		const epoch = ++generation;
 		owner.beginNavigation(token);
-		let releasePreparation!: () => void;
-		const interrupted = new Promise<boolean>((resolve) => {
-			releasePreparation = () => resolve(false);
-		});
-		active = { controller: owner, token, complete: navigation.complete, releasePreparation };
-		let preparationTimer: ReturnType<typeof setTimeout> | undefined;
+		const binding: NonNullable<typeof active> = {
+			controller: owner, token, complete: navigation.complete,
+			committed: false, interrupted: false
+		};
+		active = binding;
 		try {
-			const preparation = onCapture?.(navigation);
-			if (preparation) {
-				const prepared = await Promise.race([
-					Promise.resolve(preparation).then(() => true),
-					interrupted,
-					new Promise<boolean>((resolve) => {
-						preparationTimer = setTimeout(() => resolve(false), PREPARATION_LIMIT_MS);
-					})
-				]);
-				if (!prepared) {
-					if (epoch !== generation) return;
-					interruptVisuals();
-				}
-			}
+			onCapture?.(navigation);
 		} catch {
 			if (epoch !== generation) return;
 			interruptVisuals();
-		} finally {
-			if (preparationTimer !== undefined) clearTimeout(preparationTimer);
-			if (active?.token === token) active.releasePreparation = undefined;
 		}
 		if (epoch !== generation || !owner.active) return;
-		// The finite preparation above holds the outgoing DOM. A visual failure still
-		// restores the committed page; a superseded preparation never suppresses its successor.
+		// Source ownership is secured in this call stack. Return no promise to Kit:
+		// a visual failure still restores the committed page through the same owner.
 		disableScrollHandling();
 
 		// Do not return this promise: SvelteKit must commit before it can complete.
 		void navigation.complete
 			.then(async () => {
+				binding.committed = true;
 				await tick();
 				// Kit queues fragment focus/history work after committing the page. Its
 				// scroll correction must finish before our sole destination restoration.
 				// A microtask/tick alone runs before that queued task (Kit 2.69.2).
 				if (destination.url.hash) await new Promise<void>((resolve) => setTimeout(resolve, 0));
 				if (epoch !== generation || !owner.active) return;
-				sections?.restore();
+				if (!binding.interrupted) sections?.restore();
 				let requestedSection = viewContext.targetSection;
 				if (destination.url.hash) {
 					try {
@@ -286,7 +411,7 @@
 						requestedSection = undefined;
 					}
 				}
-				if (navigation.type !== 'popstate' && requestedSection && viewContext.spatialElementId)
+				if (!binding.interrupted && navigation.type !== 'popstate' && requestedSection && viewContext.spatialElementId)
 					sections?.selectForView(requestedSection, viewContext.spatialElementId);
 				await tick();
 				if (epoch !== generation || !owner.active) return;
@@ -295,15 +420,15 @@
 				// Our bounded cache belongs to public page.state entry IDs, never URLs.
 				const saved =
 					navigation.type === 'popstate' ? entryPositions.get(entryState()?.id ?? '') : undefined;
-				const restored = owner.restoreTarget(saved ?? target, token);
-				if (!restored) syncStageScrollToNative();
+				const restored = binding.interrupted ? undefined : owner.restoreTarget(saved ?? target, token);
+				if (!restored && !binding.interrupted) syncStageScrollToNative();
 				ensureEntry();
 				const revision = focusRevision;
-				endpoints?.restoreFocus(entryState()?.focus);
+				if (!binding.interrupted) endpoints?.restoreFocus(entryState()?.focus);
 				const origin = sections?.getOrigin();
-				endpoints?.restoreOrigin(origin);
+				if (!binding.interrupted) endpoints?.restoreOrigin(origin);
 				await onRestored?.(navigation);
-				if (restored && epoch === generation && owner.active && revision === focusRevision) {
+				if (!binding.interrupted && restored && epoch === generation && owner.active && revision === focusRevision) {
 					focusDestination(navigation);
 				}
 			})
@@ -377,7 +502,7 @@
 		const token = {};
 		const epoch = generation;
 		owner.beginNavigation(token);
-		active = { controller: owner, token };
+		active = { controller: owner, token, committed: true, interrupted: false };
 		void tick()
 			.then(() => {
 				if (epoch !== generation || !owner.active || location.href !== start.url) return;

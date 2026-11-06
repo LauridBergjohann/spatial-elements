@@ -22,7 +22,8 @@ async function exposedPoint(target: Locator) {
 }
 
 async function prepare(page: Page) {
-	await page.goto('/demo/categories/carousel?stage-test=1');
+	// Use explicit following content: the compact production carousel can fit wholly in one viewport.
+	await page.goto('/proof/carousel-layout?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
 	const target = page.locator(selectedTarget);
 	await expect(page.locator('[data-carousel-item].selected')).toHaveAttribute('data-catalog-model-ready', '');
@@ -70,7 +71,7 @@ test('a predominantly vertical diagonal gesture stays native without rotating', 
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(initialScroll + 70);
 	expect(await opacity(target)).toBeCloseTo(initialOpacity, 3);
 	await end(session);
-	await expect(page).toHaveURL(/categories\/carousel/);
+	await expect(page).toHaveURL(/proof\/carousel-layout/);
 });
 
 test('a vertical start stays with the browser for the rest of the gesture', async ({ page }) => {
@@ -131,7 +132,7 @@ test('a purely vertical swipe leaves the selection and carousel position unchang
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(initialScroll + 70);
 	expect(await opacity(target)).toBeCloseTo(initialOpacity, 3);
 	await expect(target).toHaveAttribute('href', initialHref!);
-	await expect(page).toHaveURL(/categories\/carousel/);
+	await expect(page).toHaveURL(/proof\/carousel-layout/);
 });
 
 test('a stationary tap on the selected geometry opens its detail', async ({ page }) => {

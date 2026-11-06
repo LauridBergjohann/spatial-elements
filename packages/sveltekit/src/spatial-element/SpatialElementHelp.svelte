@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { getContext, onMount, tick } from 'svelte';
-	import { CircleHelp, X } from 'lucide-svelte';
+	import CircleHelp from 'lucide-svelte/icons/circle-help';
+	import X from 'lucide-svelte/icons/x';
 	import InteractionGesture from './InteractionGesture.svelte';
 	import { getCssPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
 	import { getInteractionGuidance, MODEL_INPUT_EVENT, type ModelInputState, type InteractionGuidance } from '@spatial-elements/core/stage/interactionGuidance';
@@ -14,18 +16,21 @@
 
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
+	const radii = $derived(resolveSpatialThemeRadii(theme));
 	const stageContext = getContext<StageContext>(STAGE_CONTEXT_KEY);
 	const fullscreen = $derived(stageContext.isFullscreen?.() ?? false);
 	const readMessages = useSpatialMessages();
 	const messages = $derived(readMessages());
 	const help = $derived(messages.interactionHelp);
 	const id = $props.id();
+	let { active = true }: { active?: boolean } = $props();
 	let root: HTMLDivElement;
 	let focusAnchor = $state<HTMLElement>();
 	let button = $state<HTMLButtonElement>(null!);
 	let popover: HTMLDivElement;
 	let closeButton: HTMLButtonElement;
 	let open = $state(false);
+	$effect(() => { if (!active) close(); });
 	let enhanced = $state(false);
 	let visible = false;
 	let interacted = $state(false);
@@ -42,7 +47,7 @@
 		`--help-tint-opacity: ${(theme.panelTheme.tintOpacity ?? 0.65) * 100}%`,
 		`--help-blur: ${Math.min(100, Math.max(0, theme.panelTheme.backdropBlur ?? 8))}px`,
 		`--help-shadow: ${getCssPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2)}`,
-		`--help-radius: ${theme.panelShape.radius}px`
+		`--help-radius: ${radii.panel}px`
 	].join(';'));
 
 	function clearDelay() { clearTimeout(delay); delay = undefined; }
@@ -82,7 +87,7 @@
 		if (open) window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
 	}
 	async function show(keyboard = false) {
-		if (!enhanced || (!visible && !fullscreen)) return;
+		if (!active || !enhanced || (!visible && !fullscreen)) return;
 		clearDelay(); clearHideDelay();
 		popover.showPopover();
 		open = true;
@@ -100,7 +105,7 @@
 	}
 	function schedule() {
 		clearDelay(); clearHideDelay();
-		if (manual || !enhanced || !visible || modelInput.active || touchInput || guidance?.snapshot.interacted) return;
+		if (!active || manual || !enhanced || !visible || modelInput.active || touchInput || guidance?.snapshot.interacted) return;
 		if (modelInput.hovered) {
 			if (!open) delay = setTimeout(() => { void show(); }, 600);
 		} else if (open && !helpHovered && !buttonHovered && !popover.contains(document.activeElement)) {
@@ -119,7 +124,9 @@
 			if (state.interacted) close();
 		});
 		const stage = root.closest<HTMLElement>('.stage')!;
-		focusAnchor = root.closest('.spatial-element-hero')?.querySelector<HTMLElement>('.spatial-element-panel') ?? undefined;
+		// The summary shares the detail page with the media but lives in the
+		// neighbouring pane body, including the regular single-column layout.
+		focusAnchor = root.closest('[data-spatial-element-root]')?.querySelector<HTMLElement>('.spatial-element-panel') ?? undefined;
 		// Keep the non-modal help accessible when close-up hides the ordinary DOM layer.
 		stage.appendChild(popover);
 		// Measure the nearest wide panel above the hero, without relying on a host CSS class.
@@ -199,14 +206,14 @@
 	});
 </script>
 
-<div bind:this={root} class="model-tools" class:enhanced style={surfaceStyle} data-spatial-element-tools>
+<div bind:this={root} class="model-tools" class:enhanced style={surfaceStyle} style:visibility={active ? undefined : 'hidden'} inert={!active} data-spatial-element-tools data-spatial-model-controls>
 	<div class="model-tools-buttons">
-		<SpatialIconButton bind:element={button} {focusAnchor} label={messages.controls.help} onclick={toggleHelp} expanded={open} controls={id} enabled={enhanced}>
+		<SpatialIconButton bind:element={button} {focusAnchor} label={messages.controls.help} onclick={toggleHelp} expanded={open} controls={id} enabled={enhanced && active}>
 			<CircleHelp size={21} strokeWidth={1.8} aria-hidden="true" />
 		</SpatialIconButton>
-		<SpatialElementViewToggle enabled={enhanced} {focusAnchor} onchange={() => close()} />
+		<SpatialElementViewToggle enabled={enhanced && active} {focusAnchor} onchange={() => close()} />
 	</div>
-	{#if enhanced && touchInput && !interacted && !open && !fullscreen}
+	{#if active && enhanced && touchInput && !interacted && !open && !fullscreen}
 		<p class="touch-hint" data-spatial-element-touch-hint>{help.touchHint}</p>
 	{/if}
 	<div bind:this={popover} {id} popover="auto" role="dialog" tabindex="-1" aria-modal="false" aria-labelledby={`${id}-title`}
@@ -217,7 +224,7 @@
 		onfocusin={clearHideDelay} onfocusout={() => { queueMicrotask(schedule); }}
 		ontoggle={(event) => { open = event.newState === 'open'; if (!open) { manual = false; clearHideDelay(); } }}>
 		<Panel class="interaction-help-panel" data-stage-fullscreen-visible nativeContent nativeLayout={position} visible={open} pointerReactive={false} focusReactive={false}
-			shape={{ ...theme.panelShape, contentInset: 0 }} theme={theme.panelTheme}>
+			shape={{ ...theme.panelShape, radius: radii.panel, contentInset: 0 }} theme={theme.panelTheme}>
 			<div class="help-copy">
 				<div class="help-heading">
 					<h2 id={`${id}-title`}>{help.title}</h2>
@@ -245,15 +252,15 @@
 
 <style>
 	.model-tools {
-		grid-column: 1; grid-row: 1; align-self: start; justify-self: end; position: relative;
-		margin-top: 6px; margin-inline-end: calc(var(--model-tools-gap, 32px) - var(--spatial-element-hero-column-gap));
+		position: absolute; top: 0; right: var(--spatial-detail-fit-right);
+		margin: 0;
 		width: 128px; height: 40px; z-index: 6; visibility: hidden; pointer-events: none;
 	}
 	.model-tools.enhanced { visibility: visible; pointer-events: auto; }
 	.model-tools-buttons { display: flex; gap: 8px; justify-content: flex-end; }
 	.touch-hint {
 		position: absolute; right: 0; top: 48px; width: max-content; max-width: min(260px, calc(100vw - 48px));
-		margin: 0; padding: 8px 12px; border-radius: 10px; font-size: 12px; line-height: 1.45;
+		margin: 0; padding: 8px 12px; border-radius: var(--spatial-element-control-radius); font-size: 12px; line-height: 1.45;
 		color: var(--spatial-element-ink); pointer-events: none;
 		background: color-mix(in srgb, var(--help-tint) var(--help-tint-opacity), transparent);
 		backdrop-filter: blur(var(--help-blur)); box-shadow: var(--help-shadow);
@@ -271,7 +278,7 @@
 	h2 { margin: 0; font-size: 15px; font-weight: 650; }
 	.close-help {
 		width: 40px; height: 40px; flex: 0 0 40px; display: grid; place-items: center;
-		padding: 0; border: 0; border-radius: 8px; color: inherit; background: transparent; cursor: pointer;
+		padding: 0; border: 0; border-radius: var(--spatial-element-control-radius); color: inherit; background: transparent; cursor: pointer;
 	}
 	.close-help:focus-visible { outline: 2px solid var(--spatial-element-accent); }
 	dl { display: grid; gap: 8px; margin: 8px 0 0; }
@@ -282,5 +289,4 @@
 	.navigation-hint { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid currentColor; font-size: 12px; }
 	.navigation-hint a { color: var(--spatial-element-accent); text-decoration: underline; text-underline-offset: 2px; }
 	.navigation-hint a:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: 3px; border-radius: 2px; }
-	@media (max-width: 1100px) { .model-tools { margin-inline-end: 0; } }
 </style>

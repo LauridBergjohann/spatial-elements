@@ -30,7 +30,7 @@ export interface StageCameraSettings {
 	elevation?: number;
 	/** Empty space in CSS pixels reserved on every side of the automatic element fit. */
 	fitPadding?: number;
-	/** Presentation multiplier applied after fitting. Values above one make the element larger. */
+	/** Presentation multiplier after padding. Enlargement stops at the detail media rectangle's edges. */
 	fitScale?: number;
 }
 
@@ -139,6 +139,8 @@ export interface StagePanelTarget {
 	getMinimapDockProgress?: () => number;
 	/** Reads the viewport-space top edge used to anchor the rendered model. */
 	getMinimapModelTop?: () => number | undefined;
+	/** Minimum viewport-space model edge; only corrects dock overflow, never normal centering. */
+	getMinimapModelLeft?: () => number | undefined;
 }
 
 /** Identifies the DOM region used to frame the main element camera. */
@@ -180,6 +182,10 @@ export interface StageRenderSettings {
 
 /** Construction options for a {@link StageExperience}. */
 export interface StageExperienceOptions {
+	/** Transient detail selection. It never becomes part of route or asset identity. */
+	detailMedia?: import('../spatial-element/types.js').SpatialElementMediaItem['kind'];
+	/** Shared browser metrics supplied by the adapter; read without DOM measurements per frame. */
+	readLayoutMetrics?: (mode?: 'stable' | 'visible') => import('../spatial-element/responsiveLayout.js').ResponsiveLayoutInput | undefined;
 	deviceOrientation?: boolean;
 	/** Stage-wide output quality; native DOM content remains at the device pixel ratio. */
 	renderSettings?: StageRenderSettings;

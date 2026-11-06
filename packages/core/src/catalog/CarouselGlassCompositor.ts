@@ -1,4 +1,5 @@
 import { gaussianTargets } from '../stage/renderTargetInventory.js';
+import { clearFullTarget } from '../stage/rendererState.js';
 import * as THREE from 'three/webgpu';
 import { texture } from 'three/tsl';
 import { gaussianBlur } from 'three/addons/tsl/display/GaussianBlurNode.js';
@@ -29,11 +30,13 @@ export class CarouselGlassCompositor {
 	>();
 	private panels = new Map<
 		HTMLElement,
-		{ glass: LiquidGlassPanel; blur: number; focusBlur: number; width: number; height: number; active: boolean; seen: boolean }
+		{ glass: LiquidGlassPanel; blur: number; focusBlur: number; width: number; height: number; opacity: number; active: boolean; seen: boolean }
 	>();
 	private size = new THREE.Vector2();
 	private passes = 0;
 	private resizes = 0;
+	private emptyCaptureValid = false;
+	private emptyBlurKeys = new Set<number>();
 
 	getStats() {
 		return {
@@ -50,6 +53,25 @@ export class CarouselGlassCompositor {
 			entry.seen = false;
 			entry.glass.group.visible = false;
 		}
+	}
+
+	/** Reuse the already painted surfaces while their source route remains mounted. */
+	retainFrame(selected: HTMLElement, matrix: THREE.Matrix4, exitOpacity: number, selectedOpacity = 1) {
+		for (const [card, entry] of this.panels) {
+			const opacity = entry.opacity * (card === selected ? selectedOpacity : exitOpacity);
+			entry.seen = true; entry.active = opacity > 0.001;
+			entry.glass.setVisibilityAlpha(opacity);
+			if (card === selected) {
+				entry.focusBlur = 0;
+				entry.glass.group.matrix.copy(matrix);
+				entry.glass.group.matrixWorldNeedsUpdate = true;
+			}
+		}
+	}
+	hasPanel(card: HTMLElement) { return this.panels.has(card); }
+	hasActivePanels() {
+		for (const entry of this.panels.values()) if (entry.active) return true;
+		return false;
 	}
 
 	panel(card: HTMLElement, matrix: THREE.Matrix4, width: number, height: number, opacity: number, focusBlur = 0) {
@@ -93,10 +115,11 @@ export class CarouselGlassCompositor {
 			});
 			glass.group.matrixAutoUpdate = false;
 			this.scene.add(glass.group);
-			entry = { glass, blur, focusBlur, width, height, active: false, seen: false };
+			entry = { glass, blur, focusBlur, width, height, opacity, active: false, seen: false };
 			this.panels.set(card, entry);
 		}
 		entry.seen = true;
+		entry.opacity = opacity;
 		entry.focusBlur = focusBlur;
 		entry.width = width;
 		entry.height = height;
@@ -107,10 +130,10 @@ export class CarouselGlassCompositor {
 		entry.glass.group.matrixWorldNeedsUpdate = true;
 	}
 
-	endFrame() {
+	endFrame(retained?: HTMLElement) {
 		for (const [card, entry] of this.panels) {
 			if (!entry.active) card.removeAttribute('data-carousel-glass-ready');
-			if (!entry.seen || !card.isConnected || card.hidden) {
+			if (!entry.seen || (card !== retained && (!card.isConnected || card.hidden))) {
 				this.scene.remove(entry.glass.group);
 				entry.glass.dispose();
 				this.panels.delete(card);
@@ -118,10 +141,10 @@ export class CarouselGlassCompositor {
 		}
 	}
 
-	render(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera, drawRear: () => void) {
+	render(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera, drawRear: () => void, rearEmpty = false) {
 		const active = [...this.panels.entries()].filter(([, entry]) => entry.active);
 		if (!active.length || !this.capture) {
-			drawRear();
+			if (!rearEmpty) drawRear();
 			return;
 		}
 		// CSS-pixel resolution bounds blur cost; resizing only on viewport changes.
@@ -130,29 +153,50 @@ export class CarouselGlassCompositor {
 		if (this.size.x !== width || this.size.y !== height) {
 			this.size.set(width, height);
 			this.capture.setSize(width, height);
+			this.emptyCaptureValid = false;
+			this.emptyBlurKeys.clear();
 			this.resizes++;
 		}
 		const original = renderer.getRenderTarget();
 		const clearColor = renderer.getClearColor(new THREE.Color());
 		const clearAlpha = renderer.getClearAlpha();
 		try {
-			renderer.setRenderTarget(this.capture);
-			renderer.setClearColor(0x000000, 0);
-			renderer.clear();
-			drawRear();
+			// A live capture overwrites the shared input, including the input of inactive
+			// blur keys. Invalidate before drawing so failed writes cannot leave a cache hit.
+			if (!rearEmpty) {
+				this.emptyCaptureValid = false;
+				this.emptyBlurKeys.clear();
+			}
+			if (!rearEmpty || !this.emptyCaptureValid) {
+				renderer.setRenderTarget(this.capture);
+				renderer.setClearColor(0x000000, 0);
+				if (rearEmpty) clearFullTarget(renderer);
+				else renderer.clear();
+				if (rearEmpty) this.emptyCaptureValid = true;
+				else drawRear();
+			}
 			for (const key of new Set(active.map(([, entry]) => entry.blur))) {
 				const blur = this.blurs.get(key)!;
 				if (blur.target.width !== width || blur.target.height !== height) {
 					blur.target.setSize(width, height);
+					this.emptyBlurKeys.delete(key);
 					this.resizes++;
 				}
+				if (rearEmpty && this.emptyBlurKeys.has(key)) continue;
 				renderer.setRenderTarget(blur.target);
-				renderer.clear();
-				blur.quad.render(renderer);
+				// For transparent black, filtered.rgb + (1 - filtered.a) is exactly
+				// opaque white at every blur radius (including zero). An attachment
+				// clear with scissor disabled fills the entire texture on either backend;
+				// a clipped draw/clear must never count as a valid empty seed.
+				renderer.setClearColor(rearEmpty ? 0xffffff : 0x000000, rearEmpty ? 1 : 0);
+				if (rearEmpty) clearFullTarget(renderer);
+				else renderer.clear();
+				if (rearEmpty) this.emptyBlurKeys.add(key);
+				else blur.quad.render(renderer);
 			}
 			renderer.setRenderTarget(original);
 			// Rear geometry, including defocus, is submitted once and reused by the glass and output.
-			this.composite!.render(renderer);
+			if (!rearEmpty) this.composite!.render(renderer);
 			renderer.clearDepth();
 			if (active.some(([, entry]) => entry.focusBlur >= 0.05)) {
 				for (const [, entry] of active) entry.glass.group.visible = false;

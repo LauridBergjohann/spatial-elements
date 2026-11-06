@@ -1,7 +1,13 @@
 import { CatalogGeometryFade } from './CatalogGeometryFade.js';
 import { CarouselDeviceCamera } from './CarouselDeviceCamera.js';
+import { isCatalogActivationFocus } from './catalogActivationFocus.js';
 import { isDeviceOrientationPaused, getListDeviceYaw, getListDevicePitch, getListDeviceRoll, subscribeListDeviceYaw } from './listDeviceOrientation.js';
 import { cardModelFit } from './cardModelFit.js';
+import { createStagedDetailGeometry } from './stagedDetailGeometry.js';
+import { createStagedDockGeometry, type StagedDockTargetOptions } from './stagedDockGeometry.js';
+import { sourceDomProjectiveMatrix } from './SourceDomMotion.js';
+import { withRendererState } from '../stage/rendererState.js';
+import { resolveDetailLayout, type LayoutRect } from '../spatial-element/responsiveLayout.js';
 import { CatalogDepthBlur, type BlurRect } from './CatalogDepthBlur.js';
 import { CatalogModelOutline } from './CatalogModelOutline.js';
 import { DEFAULT_INTERACTION_THEME } from '../stage/stageConstants.js';
@@ -25,6 +31,7 @@ import {
 	applyModelMaterialOverrides,
 	centerAndScale,
 	getMeshBounds,
+	getMeshBoundsPoints,
 	getMeshMaterials,
 	isMesh
 } from '../stage/stageSceneUtils.js';
@@ -37,6 +44,7 @@ import { CarouselGlassCompositor } from './CarouselGlassCompositor.js';
 import { CarouselGround } from './CarouselGround.js';
 import { carouselProximity } from './carouselProximity.js';
 import { carouselSupport } from './carouselSupport.js';
+import type { CatalogWarmOutputContext } from './CatalogWarmOutputContext.js';
 
 interface Rect {
 	left: number;
@@ -56,6 +64,12 @@ interface CatalogActor {
 	stage: SpatialElementScene;
 	instance: SpatialElementAssetInstance;
 	model: THREE.Group;
+	/** Canonical import frame; interaction transforms live on ancestors, never in this descriptor. */
+	detailFrame: THREE.Matrix4;
+	detailBounds: THREE.Box3;
+	/** Actual included Low bounds, before catalog placement; declared pair bounds can be larger. */
+	detailLowBounds: THREE.Box3;
+	detailLowBoundsPoints: THREE.Vector3[];
 	root: THREE.Group;
 	tilt: THREE.Group;
 	view: THREE.Group;
@@ -179,19 +193,38 @@ export class CatalogSpatialElementLayer {
 	}
 	private readonly scene = new THREE.Scene();
 	private passes = 0;
-	getStats() {
+	getRenderActivity() {
+		return { camera: this.carouselDeviceCamera.getRenderActivity(), pointer: { ...this.pointer },
+			layoutDirty: this.layoutDirty, queueDirty: this.queueDirty, loadingActors: this.loadingKeys.size,
+			preparing: this.stagedPreparing, warmups: this.stagedWarmups,
+			selected: this.carouselSelection?.spatialElementId ?? null,
+			actors: [...this.actors.values()].map(actor => ({ spatialElementId: actor.spatialElementId,
+				visible: actor.root.visible, hover: actor.hover, rotationX: actor.rotationX, rotationY: actor.rotationY,
+				lift: actor.lift, deviceYaw: actor.deviceYaw, devicePitch: actor.devicePitch, deviceRoll: actor.deviceRoll,
+				materialReady: this.stagedMaterialReady(actor) })) };
+	}
+	getStats(renderer?: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
+		const signature = renderer && (!warmOutput || warmOutput.isCurrent(renderer)) ? this.stagedSignature(renderer, warmOutput) : undefined;
+		const stagedReady = (actor: CatalogActor) => Boolean(!this.stagedReadinessBlocked && signature &&
+			actor.rendered && actor.root.visible && this.desired.has(actor.key) && this.stagedMaterialReady(actor) &&
+			this.stagedPrepared.get(actor) === signature);
 		return {
 			instances: this.actors.size,
 			deviceCamera: { pitch: this.carouselDeviceCamera.angles.x, yaw: this.carouselDeviceCamera.angles.y, roll: this.carouselDeviceCamera.angles.z },
 			detachedInstances: this.detachedInstances,
 			visible: [...this.actors.values()].filter((actor) => actor.root.visible).length,
 			passes: this.passes,
+			stagedPreparation: { preparing: this.stagedPreparing,
+				readyActors: [...this.actors.values()].filter(stagedReady).length,
+				revision: this.stagedWarmRevision, warmups: this.stagedWarmups, failures: this.stagedWarmFailures,
+				sourceFrozen: this.stagedSourceFrozen },
 			glass: this.glass.getStats(),
 			ground: this.ground.getStats(),
 			depthBlur: this.depthBlur.getStats(),
 			outline: this.outline.getStats(),
 			actors: [...this.actors.values()].map((actor) => ({
 				spatialElementId: actor.spatialElementId,
+				stagedReady: stagedReady(actor),
 				projectedCenter: actor.view.getWorldPosition(new THREE.Vector3()).project(actor.pose ? this.carouselCamera : this.camera).toArray(),
 				band: actor.band,
 				clip: actor.clip ? { ...actor.clip } : undefined,
@@ -230,7 +263,22 @@ export class CatalogSpatialElementLayer {
 	private readonly motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 	private readonly unsubscribeDeviceYaw: () => void;
 	private readonly pointer = { x: 0, y: 0, active: false, pressed: false };
+	private readonly focusVisible = new WeakMap<HTMLElement, boolean>();
+	private activationFocusFrame = 0;
+	private activationFocusRequest?: object;
 	private handoff?: Handoff;
+	private stagedPanel?: { card: HTMLElement; matrix: THREE.Matrix4 };
+	private stagedPanelOpacity = 1;
+	private stagedSourceFrozen = false;
+	private stagedSourceCapture?: { front: object; rear: object; signature?: string };
+	private groundPoseSettled = false;
+	private stagedPreparing = false;
+	private stagedReadinessBlocked = false;
+	private stagedWarmRevision = 0;
+	private stagedWarmups = 0;
+	private stagedWarmFailures = 0;
+	private readonly stagedPrepared = new WeakMap<CatalogActor, string>();
+	private readonly stagedWarmFailed = new WeakMap<CatalogActor, string>();
 	private handoffPoint?: { x: number; y: number };
 	private generation = 0;
 	private disposed = false;
@@ -259,10 +307,12 @@ export class CatalogSpatialElementLayer {
 	};
 	private readonly pointerDown = (event: PointerEvent) => {
 		if (event.pointerType !== 'mouse') this.pointerLeave();
+		if (this.pointer.pressed) return;
 		this.pointer.pressed = true;
 		this.invalidate();
 	};
 	private readonly pointerUp = () => {
+		if (!this.pointer.pressed) return;
 		this.pointer.pressed = false;
 		this.invalidate();
 	};
@@ -273,12 +323,60 @@ export class CatalogSpatialElementLayer {
 		this.invalidate();
 	};
 	private readonly resize = () => {
+		this.stagedSourceCapture = undefined;
+		this.stagedWarmRevision++;
 		this.layoutDirty = true;
 		this.queueDirty = true;
 		this.invalidate();
 	};
+	private readFocusVisible(target?: HTMLElement) {
+		if (!target) return false;
+		const visible = target.matches?.(':focus-visible') ?? false;
+		this.focusVisible.set(target, visible);
+		return visible;
+	}
+	private cancelActivationFocusRequest() {
+		if (this.activationFocusFrame) cancelAnimationFrame(this.activationFocusFrame);
+		this.activationFocusFrame = 0;
+		this.activationFocusRequest = undefined;
+	}
+	private deferActivationFocusRequest() {
+		if (this.activationFocusRequest) return;
+		const request = this.activationFocusRequest = {};
+		this.activationFocusFrame = requestAnimationFrame(() => {
+			if (this.activationFocusRequest !== request) return;
+			this.activationFocusRequest = undefined;
+			this.activationFocusFrame = 0;
+			if (!this.disposed && !this.transitionActive) this.invalidate();
+		});
+	}
+	private readonly focusChange = (event: FocusEvent) => {
+		const actor = [...this.actors.values()].find(actor =>
+			(actor.pose ? actor.hitTarget : actor.card) === event.target);
+		const target = actor && (actor.pose ? actor.hitTarget : actor.card);
+		if (!actor || !target) return;
+		// focusout has already lost :focus-visible. Remember the state actually
+		// consumed by the last frame (or preceding focusin), including autofocus.
+		const before = this.focusVisible.get(target) ?? false;
+		const after = event.type === 'focusin' && (target.matches?.(':focus-visible') ?? false);
+		this.focusVisible.set(target, after);
+		if (before === after || this.transitionActive || (actor.pose && this.pointer.pressed)) return;
+		// A carousel pointer outline already has the same target value of one.
+		// Keep keyboard and genuine hover changes synchronous, without a timer.
+		if (actor.pose && this.pointer.active && target.hasAttribute('data-mouse-hover')) return;
+		// This is only our own programmatic link focus, never Tab/hover/press work.
+		// Let Kit's first repaint opportunity stay light; an accepted transition can
+		// consume the focus in its first frame. Otherwise request the ordinary next
+		// Stage frame, even when the click was vetoed or no router is installed.
+		if (isCatalogActivationFocus(event) && actor.pose?.read().front) {
+			this.deferActivationFocusRequest();
+			return;
+		}
+		this.invalidate();
+	};
 	private readonly motionChange = () => this.invalidate();
 	setPageBackground(value: string) {
+		this.stagedSourceCapture = undefined;
 		(this.scene.fog as THREE.Fog).color.set(value);
 
 		this.invalidate();
@@ -306,8 +404,8 @@ export class CatalogSpatialElementLayer {
 		window.addEventListener('pointerdown', this.pointerDown, { capture: true, passive: true });
 		window.addEventListener('pointerup', this.pointerUp, { passive: true });
 		window.addEventListener('pointercancel', this.pointerUp, { passive: true });
-		window.addEventListener('focusin', this.motionChange);
-		window.addEventListener('focusout', this.motionChange);
+		window.addEventListener('focusin', this.focusChange);
+		window.addEventListener('focusout', this.focusChange);
 		window.addEventListener('pointerleave', this.pointerLeave);
 		window.addEventListener('blur', this.pointerLeave);
 		window.addEventListener('resize', this.resize);
@@ -317,6 +415,8 @@ export class CatalogSpatialElementLayer {
 
 	async setSpatialElements(brandId: string, spatialElements: SpatialListItem[]) {
 		if (this.disposed) return;
+		this.stagedSourceCapture = undefined;
+		this.cancelActivationFocusRequest();
 		const generation = ++this.generation;
 		this.layoutObserver.disconnect();
 		const page = document.querySelector('[data-catalog-list]');
@@ -406,6 +506,7 @@ export class CatalogSpatialElementLayer {
 					const actor = this.createActor(key, brandId, spatialElement.id, getSpatialElementScene(spatialElement), instance);
 					actor.occurrence = spatialElement.occurrence;
 					actor.pose = spatialElement.pose;
+					this.stagedSourceCapture = undefined;
 					this.actors.set(key, actor);
 					this.scene.add(actor.root);
 					this.layoutDirty = true;
@@ -456,12 +557,13 @@ export class CatalogSpatialElementLayer {
 		let animating = false;
 		const projectCarousels: (() => void)[] = [];
 		let selected: CatalogActor | undefined;
-		this.glass.beginFrame();
+		if (this.stagedPanel) this.glass.retainFrame(this.stagedPanel.card, this.stagedPanel.matrix, this.exitOpacity, this.stagedPanelOpacity);
+		else this.glass.beginFrame();
 		if (!this.handoff) this.ground.beginFrame();
 
 		for (const actor of this.actors.values()) {
 			if (this.handoff?.actor === actor) continue;
-			if (this.handoff) {
+			if (this.handoff || this.stagedSourceFrozen) {
 				// The outgoing DOM has been snapshotted. Keep these already-rendered
 				// spatialElements at their captured screen pose until the shared fade completes.
 				actor.root.visible = actor.rendered && actor.root.visible && this.exitOpacity > 0.001;
@@ -519,7 +621,7 @@ export class CatalogSpatialElementLayer {
 				}
 				const hoverTarget = !this.transitionActive && !this.pointer.pressed &&
 					((this.pointer.active && actor.hitTarget?.hasAttribute('data-mouse-hover')) ||
-						actor.hitTarget?.matches(':focus-visible')) ? 1 : 0;
+						this.readFocusVisible(actor.hitTarget)) ? 1 : 0;
 				actor.hover = this.motion.matches ? hoverTarget : THREE.MathUtils.damp(actor.hover, hoverTarget, 18, delta);
 				if (Math.abs(actor.hover - hoverTarget) < 0.01) actor.hover = hoverTarget;
 				animating ||= actor.hover !== hoverTarget;
@@ -529,11 +631,15 @@ export class CatalogSpatialElementLayer {
 				actor.band = pose.front ? 'front' : 'rear';
 				actor.root.visible &&= pose.visible;
 				applyCatalogMaterialOpacity(actor.materials, pose.opacity);
-				const compact = slot.width < 700;
+				const framing = pose.framing;
+				const compact = framing?.compact ?? width < 840;
+				const frame = framing ? Math.min(framing.fit.width, framing.fit.height) : Math.min(slot.width, compact ? 360 : slot.height);
 				// Every seat shares one scene origin. Depth now determines projected size
 				// and spacing naturally, including scroll parallax and the foreground advance.
-				const x = slot.left + dx + slot.width * (pose.orbit ? (compact ? 0.5 : 0.31) : pose.x - (compact ? 0 : 0.19));
-				const y = slot.top + dy + (pose.orbit ? (compact ? 180 : slot.height * 0.54) : slot.height * pose.y);
+				const anchorX = framing ? framing.fit.x + framing.fit.width / 2 : slot.width * (compact ? 0.5 : 0.31);
+				const anchorY = framing ? framing.fit.y + framing.fit.height / 2 : compact ? 180 : slot.height * 0.54;
+				const x = slot.left + dx + (pose.orbit ? anchorX : slot.width * (pose.x - (framing || compact ? 0 : 0.19)));
+				const y = slot.top + dy + (pose.orbit ? anchorY : slot.height * pose.y);
 				const perspective = pose.orbit ? 1 : 1 - pose.depth / 2500;
 				actor.root.matrix.makeTranslation(
 					(x - width / 2) * perspective + (pose.orbit?.x ?? 0),
@@ -551,11 +657,10 @@ export class CatalogSpatialElementLayer {
 					? (slot.height - 360) * pose.y / (pose.size / 0.82)
 					: 0, 0);
 				actor.view.scale.setScalar(
-					(Math.min(slot.width, compact ? 360 : slot.height) * 0.82) / (actor.radius * 2)
+					(frame * 0.82) / (actor.radius * 2)
 				);
 				let groundMatrix: THREE.Matrix4 | undefined;
 				if (pose.orbit && actor.root.visible) {
-					const frame = Math.min(slot.width, compact ? 360 : slot.height);
 					const floor = frame * 0.32;
 					const pitch = pose.orbit.pitch;
 					// Stand every model on the same plane, including wide or short assets.
@@ -614,8 +719,8 @@ export class CatalogSpatialElementLayer {
 						const matrix = panelFrame
 							.multiply(
 								new THREE.Matrix4().makeTranslation(
-									compact ? 0 : slot.width * 0.39,
-									compact ? (pose.orbit ? 180 : slot.height / 2) - 360 - ph / 2 : 0,
+									framing ? framing.summary.x + pw / 2 - anchorX : compact ? 0 : slot.width * 0.39,
+									framing ? anchorY - (framing.summary.anchorY - (framing.summary.alignment === 'end' ? ph / 2 : 0)) : compact ? (pose.orbit ? 180 : slot.height / 2) - 360 - ph / 2 : 0,
 									0
 								)
 							);
@@ -696,7 +801,7 @@ export class CatalogSpatialElementLayer {
 				THREE.MathUtils.radToDeg(rotation.y),
 				-influence * 8,
 				!this.motion.matches && !this.transitionActive &&
-					((this.pointer.active && distance === 0) || actor.card.matches?.(':focus-visible')) ? 1 : 0
+					((this.pointer.active && distance === 0) || this.readFocusVisible(actor.card)) ? 1 : 0
 			];
 			const previous = [actor.rotationX, actor.rotationY, actor.lift, actor.hover];
 			const values = previous.map((value, index) => {
@@ -748,7 +853,7 @@ export class CatalogSpatialElementLayer {
 			actor.view.quaternion.multiply(actor.viewOrientation);
 			if (this.isDestinationActor(actor)) actor.root.visible = false;
 		}
-		if (!this.transitionActive && !this.handoff) {
+		if (!this.transitionActive && !this.handoff && !this.stagedSourceFrozen) {
 			const pivot = selected?.view.getWorldPosition(new THREE.Vector3()) ?? new THREE.Vector3();
 			const enabled = selected?.card?.closest('[data-device-orientation]');
 			if (this.motion.matches || !isDeviceOrientationPaused()) animating = this.carouselDeviceCamera.update(this.carouselCamera,
@@ -759,16 +864,17 @@ export class CatalogSpatialElementLayer {
 			this.carouselSelection = selected;
 		}
 		for (const project of projectCarousels) project();
-		if (this.queueDirty) {
+		if (this.queueDirty && !this.handoff && !this.stagedSourceFrozen) {
 			this.queueDirty = false;
 			void this.loadVisibleSpatialElements(this.generation);
 		}
-		this.glass.endFrame();
+		this.glass.endFrame(this.stagedPanel?.card);
 		if (!this.handoff) this.ground.endFrame();
+		this.groundPoseSettled = !animating;
 		return animating;
 	}
 
-	draw(renderer: THREE.WebGPURenderer, band: 'rear' | 'front') {
+	draw(renderer: THREE.WebGPURenderer, band: 'rear' | 'front', warmOutput?: CatalogWarmOutputContext) {
 		const width = window.innerWidth,
 			height = window.innerHeight;
 		const all = [...this.actors.values()].filter(
@@ -819,7 +925,7 @@ export class CatalogSpatialElementLayer {
 									actor.blur ?? 0, (camera) => renderer.render(this.scene, camera), rect);
 								if (actor.hover > 0 && actor.renderRect)
 									this.outline.render(renderer, this.carouselCamera, actor.model, actor.renderRect, rect,
-										actor.hover * (actor.materials[0]?.material.opacity ?? 1), this.interactionTheme());
+										actor.hover * (actor.materials[0]?.material.opacity ?? 1), this.interactionTheme(), warmOutput);
 								actor.root.visible = false;
 							}
 						} else {
@@ -841,7 +947,7 @@ export class CatalogSpatialElementLayer {
 					actor.card?.setAttribute('data-catalog-model-ready', '');
 				}
 			}
-		});
+		}, warmOutput, this.frozenSourceForBand(band, warmOutput));
 		for (const actor of all) actor.root.visible = true;
 		if (band === 'front' && this.handoff) this.renderHandoff(renderer);
 	}
@@ -850,23 +956,48 @@ export class CatalogSpatialElementLayer {
 	hasCarousel() {
 		return [...this.actors.values()].some((actor) => Boolean(actor.pose));
 	}
+	/** A retained glass panel outlives its source actors during staged reveal. */
+	hasRearOutput() {
+		return this.glass.hasActivePanels() || (this.exitOpacity > 0 && this.hasCarousel());
+	}
 
-	renderRear(renderer: THREE.WebGPURenderer) {
+	renderRear(renderer: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
 		this.glass.render(renderer, this.carouselUiCamera, () => {
-			this.ground.draw(renderer, this.carouselCamera, this.exitOpacity);
-			this.draw(renderer, 'rear');
-		});
+			// The full per-shadow signature is valid during normal focus/hover frames too;
+			// any changed source/camera pose falls back to live rendering immediately.
+			this.ground.draw(renderer, this.carouselCamera, this.exitOpacity,
+				true, this.stagedSignature(renderer), this.stagedPreparing, warmOutput);
+			this.draw(renderer, 'rear', warmOutput);
+		}, this.exitOpacity === 0);
 	}
 
 	/** Warm the existing Low material passes in an offscreen preparation target. */
 	renderForPreparation(renderer: THREE.WebGPURenderer) {
-		this.geometryFade.render(renderer, 0.5, () => renderer.render(this.scene, this.camera));
+		const visible = [...this.actors.values()].filter(actor => actor.root.visible);
+		this.geometryFade.render(renderer, 0.5, () => {
+			const fog = this.scene.fog;
+			try {
+				// Three shares a mesh/material/context owner across cameras. Rendering a
+				// Carousel mesh with List fog replaces its live no-fog owner and bindings.
+				for (const actor of visible) actor.root.visible = !actor.pose;
+				if (visible.some(actor => !actor.pose)) renderer.render(this.scene, this.camera);
+				for (const actor of visible) actor.root.visible = Boolean(actor.pose);
+				if (visible.some(actor => actor.pose)) {
+					this.scene.fog = null;
+					renderer.render(this.scene, this.carouselCamera);
+				}
+			} finally {
+				this.scene.fog = fog;
+				for (const actor of visible) actor.root.visible = true;
+			}
+		});
 	}
 
 	/** Applies only to outgoing list actors; the shared handoff geometry keeps its authored alpha. */
 	setExitOpacity(opacity: number, active = false) {
 		this.exitOpacity = Number.isFinite(opacity) ? Math.min(1, Math.max(0, opacity)) : 0;
 		this.transitionActive = active;
+		if (active) this.cancelActivationFocusRequest();
 		this.invalidate();
 	}
 
@@ -880,6 +1011,7 @@ export class CatalogSpatialElementLayer {
 					: !item.occurrence || item.card?.hasAttribute('data-catalog-selected'))
 		);
 		if (!actor?.rendered || !actor.root.visible) return false;
+		this.stagedSourceCapture = undefined;
 		this.finishHandoff();
 		this.handoffPoint = undefined;
 		actor.model.updateWorldMatrix(true, true);
@@ -908,6 +1040,180 @@ export class CatalogSpatialElementLayer {
 		actor.model.matrix.copy(sourceModel);
 		this.invalidate();
 		return true;
+	}
+
+	/** Computes the known detail endpoint from an already prepared Low actor, before any route mounts. */
+	getStagedDetailTarget(spatialElementId: string, occurrence: string | undefined, fit: LayoutRect,
+		viewport: { width: number; height: number }, target?: StagedDockTargetOptions,
+		coordinateSystem: THREE.PerspectiveCamera['coordinateSystem'] = THREE.WebGPUCoordinateSystem) {
+		const actor = [...this.actors.values()].find(item => item.spatialElementId === spatialElementId &&
+			this.desired.has(item.key) && (occurrence ? item.occurrence === occurrence :
+				!item.occurrence || item.card?.hasAttribute('data-catalog-selected')));
+		if (!actor?.rendered || !actor.root.visible) return;
+		if (target && resolveDetailLayout(target.layout).dock) {
+			return createStagedDockGeometry({ layout: target.layout, viewport,
+				lowBounds: actor.detailLowBounds, lowBoundsPoints: actor.detailLowBoundsPoints, modelMatrix: actor.detailFrame,
+				center: actor.detailBounds.getCenter(new THREE.Vector3()),
+				camera: actor.stage.camera ?? {}, minimap: target.minimap, coordinateSystem });
+		}
+		return createStagedDetailGeometry(actor.detailBounds, actor.detailFrame, actor.stage.camera ?? {}, viewport, fit, coordinateSystem);
+	}
+
+	private stagedSignature(renderer: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
+		const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+		return `${this.stagedWarmRevision}:${innerWidth}:${innerHeight}:${size.x}:${size.y}:${renderer.coordinateSystem}:${this.scene.environment?.uuid ?? ''}${warmOutput ? `:${warmOutput.profileKey}` : ''}`;
+	}
+	private stagedCandidates(renderer: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
+		const signature = this.stagedSignature(renderer, warmOutput);
+		return [...this.actors.values()].filter(actor => actor.rendered && actor.root.visible &&
+			this.stagedMaterialReady(actor) &&
+			this.stagedPrepared.get(actor) !== signature && this.stagedWarmFailed.get(actor) !== signature);
+	}
+	private stagedMaterialReady(actor: CatalogActor) {
+		// Capture restores authored opacity. A still-fading carousel seat would
+		// otherwise change transparent/depth-write pipeline variants at the click.
+		return actor.materials.every(({ material, transparent, depthWrite }) =>
+			material.transparent === transparent && material.depthWrite === depthWrite);
+	}
+	needsStagedPreparation(renderer: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
+		return (!warmOutput || warmOutput.isCurrent(renderer)) && !this.disposed && !this.stagedPreparing && !this.handoff && !this.stagedSourceFrozen &&
+			(this.stagedCandidates(renderer, warmOutput).length > 0 || (this.groundPoseSettled &&
+				this.ground.needsCachePreparation(this.carouselCamera, this.stagedSignature(renderer))));
+	}
+	isStagedDetailReady(spatialElementId: string, occurrence: string | undefined, renderer: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
+		const actor = [...this.actors.values()].find(item => item.spatialElementId === spatialElementId &&
+			this.desired.has(item.key) && (occurrence ? item.occurrence === occurrence :
+				!item.occurrence || item.card?.hasAttribute('data-catalog-selected')));
+		return Boolean((!warmOutput || warmOutput.isCurrent(renderer)) && !this.stagedReadinessBlocked && actor?.rendered && actor.root.visible && this.stagedMaterialReady(actor) &&
+			this.stagedPrepared.get(actor) === this.stagedSignature(renderer, warmOutput));
+	}
+	/** Idle-only: warm the exact existing Low fade and handoff passes before a click can claim them. */
+	async prepareStagedNavigation(renderer: THREE.WebGPURenderer, warmOutput?: CatalogWarmOutputContext) {
+		if (!this.needsStagedPreparation(renderer, warmOutput)) return;
+		const actors = this.stagedCandidates(renderer, warmOutput), signature = this.stagedSignature(renderer, warmOutput);
+		// Ground pixels are independent of the outer composite profile. Preserve their live-draw key.
+		const groundSignature = this.stagedSignature(renderer);
+		const warmRear = actors.some(actor => Boolean(actor.pose)) || (this.groundPoseSettled &&
+			this.ground.needsCachePreparation(this.carouselCamera, groundSignature));
+		this.stagedPreparing = true;
+		this.stagedReadinessBlocked = true;
+		const fog = this.scene.fog, environment = this.handoffScene.environment, handoffFog = this.handoffScene.fog;
+		const exitOpacity = this.exitOpacity;
+		const outlines = actors.filter(actor => actor.pose && actor.clip && actor.renderRect);
+		const hover = outlines.map(actor => actor.hover);
+		const handoffCamera = this.handoffCamera.clone();
+		try {
+			try { const draw = () => withRendererState(renderer, () => {
+				// The default keeps the real Canvas output variant. An opt-in scratch
+				// context retains Canvas-semantic owners without drawing to a Canvas.
+				renderer.setRenderTarget(warmOutput?.target ?? null);
+				renderer.setScissor(0, 0, 0, 0); renderer.setScissorTest(true);
+				// Exercise the actual output bands. A glass carousel renders its rear
+				// actors into an RGBA8 backdrop before compositing, and defocused seats
+				// use additional resolve passes. A direct scene render misses those
+				// target/pipeline variants despite compiling the same model shaders.
+				this.exitOpacity = 0.5;
+				// Focus fires before Kit's beforeNavigate callback. Prepare its first
+				// outline while idle so that pre-navigation frame cannot compile it.
+				for (const actor of outlines) actor.hover = Math.max(actor.hover, 0.5);
+				if (warmRear) {
+					if (this.groundPoseSettled) this.ground.prepareCaches(renderer, this.carouselCamera, groundSignature);
+					this.renderRear(renderer, warmOutput);
+					this.ground.prepareWindingVariants(renderer, this.carouselCamera);
+				}
+				this.draw(renderer, 'front', warmOutput);
+				// The fade pass warms offscreen output. The ordinary focused source
+				// needs the Canvas variant too, without submitting visible pixels.
+				for (const actor of outlines) {
+					renderer.setRenderTarget(warmOutput?.target ?? null);
+					renderer.setScissor(0, 0, 0, 0); renderer.setScissorTest(true);
+					this.outline.render(renderer, this.carouselCamera, actor.model, actor.renderRect!, actor.clip!,
+						0.5, this.interactionTheme(), warmOutput);
+				}
+				this.handoffScene.environment = this.scene.environment;
+				for (const actor of actors) {
+					const model = actor.model, parent = model.parent;
+					const matrix = model.matrix.clone(), auto = model.matrixAutoUpdate;
+					model.updateWorldMatrix(true, true);
+					const world = model.matrixWorld.clone();
+					try {
+						this.handoffScene.fog = actor.pose ? null : fog;
+						this.handoffCamera.copy(actor.pose ? this.carouselCamera : this.camera);
+						this.handoffCamera.coordinateSystem = renderer.coordinateSystem;
+						this.handoffCamera.updateProjectionMatrix();
+						this.handoffScene.add(model); model.matrixAutoUpdate = false; model.matrix.copy(world);
+						model.matrixWorldNeedsUpdate = true;
+						renderer.render(this.handoffScene, this.handoffCamera);
+					} finally {
+						if (parent) parent.add(model); else model.removeFromParent();
+						model.matrixAutoUpdate = auto; model.matrix.copy(matrix); model.matrixWorldNeedsUpdate = true;
+					}
+				}
+			}); if (warmOutput) warmOutput.borrow(renderer, draw); else draw(); } finally {
+				// Restore borrowed scene state before yielding to GPU completion; a
+				// normal render or fallback navigation can run while that wait is pending.
+				this.exitOpacity = exitOpacity;
+				outlines.forEach((actor, index) => { actor.hover = hover[index]; });
+				this.scene.fog = fog; this.handoffScene.environment = environment; this.handoffScene.fog = handoffFog;
+				this.handoffCamera.copy(handoffCamera);
+				// Optional shadow pixels must not revoke already fenced actor readiness.
+				// Keep preparation serialized, but unblock only after every borrowed
+				// render/scene value is restored. New actor passes still await the fence.
+				if (!actors.length) this.stagedReadinessBlocked = false;
+			}
+			const device = (renderer.backend as unknown as { device?: GPUDevice }).device;
+			await device?.queue.onSubmittedWorkDone();
+			if ((!warmOutput || warmOutput.isCurrent(renderer)) && !this.disposed && !this.handoff && !this.stagedSourceFrozen && signature === this.stagedSignature(renderer, warmOutput)) {
+				this.stagedWarmups++;
+				for (const actor of actors) if (this.actors.get(actor.key) === actor) this.stagedPrepared.set(actor, signature);
+			}
+		} catch (error) {
+			this.stagedWarmFailures++;
+			for (const actor of actors) this.stagedWarmFailed.set(actor, signature);
+			throw error;
+		} finally {
+			this.stagedPreparing = false;
+			this.stagedReadinessBlocked = false;
+		}
+	}
+	freezeStagedSource() {
+		this.stagedSourceFrozen = true;
+		this.stagedSourceCapture = { front: {}, rear: {} };
+	}
+	private frozenSourceForBand(band: 'front' | 'rear', warmOutput?: CatalogWarmOutputContext) {
+		const capture = this.stagedSourceCapture;
+		if (!this.stagedSourceFrozen || !capture || this.stagedPreparing || warmOutput) return;
+		// Frozen actors keep their pose, but projection, HDR or outline settings can
+		// still change through the stage. Any such change ends reuse for this freeze.
+		const fog = this.scene.fog as THREE.Fog | null;
+		const signature = JSON.stringify([window.innerWidth, window.innerHeight,
+			this.scene.environment?.uuid, this.scene.environment?.version, this.scene.environmentIntensity,
+			fog?.color.getHex(), fog?.near, fog?.far, this.interactionTheme()]);
+		if (capture.signature !== undefined && capture.signature !== signature) {
+			this.stagedSourceCapture = undefined;
+			return;
+		}
+		capture.signature = signature;
+		return capture[band];
+	}
+
+	/** Move the existing glass mesh with the actual DOM quad, without resizing its resources. */
+	setStagedPanel(card: HTMLElement, corners: CssProjectionQuad, width: number, height: number) {
+		if (card.dataset.carouselSurface !== 'glass') return true;
+		if (!this.glass.hasPanel(card)) return false;
+		const matrix = sourceDomProjectiveMatrix(corners, width, height);
+		if (!matrix) return false;
+		const screenToWorld = new THREE.Matrix4().makeTranslation(-innerWidth / 2, innerHeight / 2, 0)
+			.multiply(new THREE.Matrix4().makeScale(1, -1, 1));
+		const planeToLocal = new THREE.Matrix4().makeTranslation(width / 2, height / 2, 0)
+			.multiply(new THREE.Matrix4().makeScale(1, -1, 1));
+		this.stagedPanel = { card, matrix: screenToWorld.multiply(new THREE.Matrix4().fromArray(matrix)).multiply(planeToLocal) };
+		return true;
+	}
+	setStagedPanelOpacity(opacity: number) { this.stagedPanelOpacity = THREE.MathUtils.clamp(opacity, 0, 1); this.invalidate(); }
+	finishStagedPanel() {
+		this.stagedPanel = undefined; this.stagedSourceFrozen = false; this.stagedSourceCapture = undefined;
+		this.stagedPanelOpacity = 1; this.invalidate();
 	}
 
 	/** Last submitted geometry position; diagnostics never advance animation or read DOM layout. */
@@ -977,6 +1283,7 @@ export class CatalogSpatialElementLayer {
 	detachHandoff() {
 		const handoff = this.handoff;
 		if (!handoff) return;
+		this.stagedSourceCapture = undefined;
 		const actor = handoff.actor;
 		const model = actor.model;
 		model.updateWorldMatrix(true, true);
@@ -1005,18 +1312,27 @@ export class CatalogSpatialElementLayer {
 		if (this.actors.get(actor.key) === actor) this.actors.delete(actor.key);
 		this.detachedInstances++;
 		let released = false;
+		const release = () => {
+			if (released) return;
+			released = true; this.detachedInstances--; this.disposeActor(actor);
+		};
 		return {
 			model,
 			projection,
 			referencePoint: actor.referencePoint.clone(),
 			environment: handoff.sourceEnvironment,
 			highEnvironment: handoff.highEnvironment,
-			release: () => {
-				if (!released) {
-					released = true;
-					this.detachedInstances--;
-					this.disposeActor(actor);
-				}
+			release,
+			/** A pre-commit cancellation returns the same prepared instance to its live source. */
+			restore: () => {
+				if (released) return false;
+				if (this.disposed || !this.desired.has(actor.key) || !actor.slot?.isConnected) { release(); return false; }
+				released = true; this.detachedInstances--;
+				this.stagedSourceCapture = undefined;
+				actor.model.matrixAutoUpdate = true; actor.model.updateMatrix();
+				actor.view.add(actor.model); this.scene.add(actor.root);
+				this.actors.set(actor.key, actor); this.layoutDirty = true; this.invalidate();
+				return true;
 			}
 		};
 	}
@@ -1050,6 +1366,7 @@ export class CatalogSpatialElementLayer {
 	finishHandoff() {
 		const handoff = this.handoff;
 		if (!handoff) return;
+		this.stagedSourceCapture = undefined;
 		this.handoff = undefined;
 		const actor = handoff.actor;
 		applyCatalogMaterialOpacity(actor.materials, 1);
@@ -1073,6 +1390,8 @@ export class CatalogSpatialElementLayer {
 	}
 
 	dispose() {
+		this.stagedSourceCapture = undefined;
+		this.cancelActivationFocusRequest();
 		this.ground.dispose();
 		this.glass.dispose();
 		this.depthBlur.dispose();
@@ -1090,8 +1409,8 @@ export class CatalogSpatialElementLayer {
 		window.removeEventListener('pointerdown', this.pointerDown, true);
 		window.removeEventListener('pointerup', this.pointerUp);
 		window.removeEventListener('pointercancel', this.pointerUp);
-		window.removeEventListener('focusin', this.motionChange);
-		window.removeEventListener('focusout', this.motionChange);
+		window.removeEventListener('focusin', this.focusChange);
+		window.removeEventListener('focusout', this.focusChange);
 		window.removeEventListener('pointerleave', this.pointerLeave);
 		window.removeEventListener('blur', this.pointerLeave);
 		window.removeEventListener('resize', this.resize);
@@ -1144,6 +1463,8 @@ export class CatalogSpatialElementLayer {
 			for (const material of overrides) material.dispose();
 			throw new Error('Catalog asset contains no spatialElement geometry');
 		}
+		const detailLowBounds = getMeshBounds(model, (mesh) => !excluded.has(mesh.name));
+		const detailLowBoundsPoints = getMeshBoundsPoints(model, (mesh) => !excluded.has(mesh.name));
 		const radius = Math.max(bounds.getBoundingSphere(new THREE.Sphere()).radius, 0.001);
 		const root = new THREE.Group();
 		root.matrixAutoUpdate = false;
@@ -1170,6 +1491,10 @@ export class CatalogSpatialElementLayer {
 			stage,
 			instance,
 			model,
+			detailFrame: model.matrix.clone(),
+			detailBounds: bounds.clone(),
+			detailLowBounds,
+			detailLowBoundsPoints,
 			root,
 			tilt,
 			view,
@@ -1196,7 +1521,7 @@ export class CatalogSpatialElementLayer {
 	}
 
 	private measureActors(scrollX: number, scrollY: number) {
-		if (this.handoff) return;
+		if (this.handoff || this.stagedSourceFrozen) return;
 		const measured: Array<{ actor: CatalogActor; previousTransform: string }> = [];
 		for (const actor of this.actors.values()) {
 			const list = document.querySelector<HTMLElement>(
@@ -1333,6 +1658,7 @@ export class CatalogSpatialElementLayer {
 	}
 
 	private disposeActor(actor: CatalogActor) {
+		this.stagedSourceCapture = undefined;
 		this.outline.release(actor.model);
 		if (actor.summaryPanel) this.layoutObserver.unobserve(actor.summaryPanel);
 		actor.root.removeFromParent();

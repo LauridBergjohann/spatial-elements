@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" role="img" aria-labelledby="title description">
+<title id="title">Warm and cold navigation share the same source movement</title>
+<desc id="description">Both timelines move the existing source before mounting a destination. Warm data leads to a short hold and bind interval. Cold data extends the still holding interval before content is revealed. The diagram is qualitative and does not claim durations.</desc>
+<style>text{font-family:Arial,sans-serif;fill:#18344b;font-size:18px}.title{font-size:23px;font-weight:600}.small{font-size:15px}.move{fill:#c1dced;stroke:#27688e;stroke-width:2}.hold{fill:#fff0cb;stroke:#b4872b;stroke-width:2}.reveal{fill:#e3d5ef;stroke:#8a5baf;stroke-width:2}.download{stroke:#388867;stroke-width:4}.boundary{stroke:#59748b;stroke-width:2;stroke-dasharray:6 5}</style>
+<rect width="1200" height="600" fill="#fafcfe"/>
+<text class="title" x="32" y="40">Move the existing source first; reveal destination content after binding</text>
+<text x="32" y="92">Warm data</text><text class="small" x="260" y="92">Data/code preload</text>
+<line class="download" x1="260" y1="110" x2="440" y2="110"/><circle cx="440" cy="110" r="5" fill="#388867"/>
+<rect class="move" x="260" y="135" width="300" height="100" rx="10"/><rect class="hold" x="560" y="135" width="180" height="100" rx="10"/><rect class="reveal" x="740" y="135" width="428" height="100" rx="10"/>
+<text x="322" y="174">Move source</text><text class="small" x="288" y="208">Model + live panel</text><text x="590" y="174">Hold + bind</text><text class="small" x="585" y="208">Destination ready</text><text x="872" y="174">Reveal content</text><text class="small" x="800" y="208">Additional content and natural height</text>
+<text x="32" y="306">Cold data</text><text class="small" x="260" y="306">Data/code preload continues while the source remains visible</text>
+<line class="download" x1="260" y1="324" x2="868" y2="324"/><circle cx="868" cy="324" r="5" fill="#388867"/>
+<rect class="move" x="260" y="349" width="300" height="100" rx="10"/><rect class="hold" x="560" y="349" width="380" height="100" rx="10"/><rect class="reveal" x="940" y="349" width="228" height="100" rx="10"/>
+<text x="322" y="388">Move source</text><text class="small" x="288" y="422">Same source-only movement</text><text x="656" y="388">Hold longer, then bind</text><text class="small" x="610" y="422">Still source; no repeated movement</text><text x="974" y="388">Reveal content</text><text class="small" x="972" y="422">Ready destination</text>
+<line class="boundary" x1="560" y1="122" x2="560" y2="464"/>
+<text class="small" x="32" y="495">During movement: source wrapping stays fixed; no destination DOM mount or new GPU preparation.</text>
+<text class="small" x="32" y="527">Hero: model + summary anchor. Dock: compact title/eyebrow header. 3XL: fixed left model + right pane.</text>
+<text class="small" x="32" y="568">Qualitative phases, not measured durations. Main-thread preload work and actual GPU submission need separate measurements.</text>
+</svg>

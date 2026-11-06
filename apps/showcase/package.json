@@ -1,0 +1,23 @@
+{
+  "name": "@spatial-elements/showcase",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 5174 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 4175 --strictPort",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+  },
+  "dependencies": {
+    "@spatial-elements/core": "1.0.0-beta.8",
+    "@spatial-elements/sveltekit": "1.0.0-beta.8"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-auto": "^7.0.1",
+    "@sveltejs/kit": "2.70.3",
+    "@sveltejs/vite-plugin-svelte": "7.2.0",
+    "lucide-svelte": "^1.0.1",
+    "svelte": "5.56.4",
+    "vite": "8.1.4"
+  }
+}

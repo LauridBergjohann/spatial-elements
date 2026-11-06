@@ -1,11 +1,39 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
+	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 	import type { ResolvedSpatialElementData as SpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
+	import type { SpatialElementMediaItem } from '@spatial-elements/core/spatial-element/types';
 
-	let { spatialElement }: { spatialElement: SpatialElementData } = $props();
+	let { spatialElement, selectedId, onselect }: { spatialElement: SpatialElementData; selectedId?: string; onselect?: (media: SpatialElementMediaItem) => void } = $props();
+	let rail: HTMLElement;
+	let refreshFrame = 0;
+	function refreshProjection() {
+		if (!refreshFrame) refreshFrame = requestAnimationFrame(() => {
+			refreshFrame = 0; window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
+		});
+	}
+	$effect(() => {
+		const id = selectedId;
+		if (!rail || !id) return;
+		const anchor = Array.from(rail.querySelectorAll<HTMLElement>('[data-media-id]')).find(node => node.dataset.mediaId === id);
+		if (!anchor) return;
+		const left = anchor.offsetLeft, top = anchor.offsetTop;
+		if (left < rail.scrollLeft) rail.scrollLeft = left;
+		else if (left + anchor.offsetWidth > rail.scrollLeft + rail.clientWidth) rail.scrollLeft = left + anchor.offsetWidth - rail.clientWidth;
+		if (top < rail.scrollTop) rail.scrollTop = top;
+		else if (top + anchor.offsetHeight > rail.scrollTop + rail.clientHeight) rail.scrollTop = top + anchor.offsetHeight - rail.clientHeight;
+	});
+	onMount(() => {
+		const element = rail;
+		element.addEventListener('scroll', refreshProjection, { passive: true });
+		return () => { element.removeEventListener('scroll', refreshProjection); cancelAnimationFrame(refreshFrame); };
+	});
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
+	const radii = $derived(resolveSpatialThemeRadii(theme));
 	const minimap = $derived({
 		...spatialElement.minimap,
 		...theme.minimapTheme,
@@ -13,10 +41,12 @@
 	});
 </script>
 
-<aside class="spatial-element-rail" aria-label="SpatialElement images">
+<aside bind:this={rail} class="spatial-element-rail" aria-label="SpatialElement images">
 	{#each spatialElement.media as media (media.id)}
+		{@const active = selectedId ? selectedId === media.id : media.kind === 'minimap'}
 		<div
 			class="spatial-element-media-anchor"
+			data-media-id={media.id}
 			data-spatial-element-dock-minimap-anchor={media.kind === 'minimap' ? '' : undefined}
 		>
 			<Panel
@@ -24,26 +54,30 @@
 					? { brandId: theme.id, spatialElementId: spatialElement.id, slot: 'detail.dock', role: 'geometry' }
 					: undefined}
 				transitionGroup="enter"
-				class={`thumbnail-panel ${media.kind === 'minimap' ? 'active' : ''}`}
-				shape={{ ...theme.panelShape, contentInset: 0 }}
+				class={`thumbnail-panel ${active ? 'active' : ''}`}
+				shape={{ ...theme.panelShape, radius: radii.control, contentInset: 0 }}
 				theme={theme.panelTheme}
 				contentClass="thumbnail-panel-content"
 				minimap={media.kind === 'minimap' ? minimap : false}
 				data-spatial-element-departing-media-content={media.kind === 'minimap' ? undefined : ''}
 			>
 				{#if media.kind === 'minimap'}
-					<button type="button" aria-label={media.label} class="thumb thumb-minimap active">
+					<button type="button" aria-label={media.label} aria-pressed={active} onclick={() => onselect?.(media)} class="thumb thumb-minimap" class:active>
 						{#if spatialElement.fallbackImage}
 							<img class="minimap-poster" src={spatialElement.fallbackImage} alt="" />
 						{/if}
 					</button>
 				{:else if media.kind === 'drawing'}
-					<button type="button" aria-label={media.label} class="thumb thumb-drawing">
+					<button type="button" aria-label={media.label} aria-pressed={active} onclick={() => onselect?.(media)} class="thumb thumb-drawing" class:active>
 						<span class="drawing-sheet" aria-hidden="true"></span>
 					</button>
-				{:else}
-					<button type="button" aria-label={media.label} class="thumb thumb-image">
+				{:else if media.kind === 'image'}
+					<button type="button" aria-label={media.label} aria-pressed={active} onclick={() => onselect?.(media)} class="thumb thumb-image" class:active>
 						<img src={media.src} alt={media.alt} />
+					</button>
+				{:else}
+					<button type="button" aria-label={media.label} aria-pressed={active} onclick={() => onselect?.(media)} class="thumb thumb-image" class:active>
+						{#if media.poster}<img src={media.poster} alt="" />{:else}<span aria-hidden="true">▶</span>{/if}
 					</button>
 				{/if}
 			</Panel>
@@ -53,18 +87,30 @@
 
 <style>
 	.spatial-element-rail {
-		position: absolute;
-		top: 0;
-		left: 0;
+		position: relative;
+		flex: none;
+		width: calc(100% - var(--spatial-detail-media-left) * 2);
+		height: var(--spatial-detail-media-size);
+		margin-top: var(--spatial-detail-media-stage-gap);
+		margin-left: var(--spatial-detail-media-left);
 		display: grid;
-		gap: 14px;
+		grid-auto-flow: column;
+		grid-auto-columns: var(--spatial-detail-media-size);
+		gap: var(--spatial-detail-media-gap);
+		justify-content: start;
 		justify-items: start;
+		overflow-x: auto;
+		overflow-y: hidden;
+		/* Keep horizontal swipes in the rail, but let vertical gestures scroll
+		 * the document, including when this rail has no vertical overflow. */
+		overscroll-behavior-x: contain;
+		overscroll-behavior-y: auto;
 		pointer-events: auto;
 	}
 
 	.spatial-element-media-anchor {
-		width: 120px;
-		height: 120px;
+		width: 100%;
+		aspect-ratio: 1;
 	}
 
 	:global(.thumbnail-panel) {
@@ -85,7 +131,7 @@
 		width: 100%;
 		height: 100%;
 		border: 0;
-		border-radius: var(--spatial-element-panel-radius);
+		border-radius: var(--spatial-element-control-radius);
 		background: transparent;
 		cursor: pointer;
 	}
@@ -152,12 +198,20 @@
 		content: '100 mm';
 	}
 
-	@media (max-width: 1100px) {
+	@media (min-width: 840px) {
 		.spatial-element-rail {
-			position: relative;
-			left: 0;
-			grid-auto-flow: column;
-			justify-content: start;
+			position: absolute;
+			top: 0;
+			left: var(--spatial-detail-media-left);
+			width: var(--spatial-detail-media-size);
+			height: var(--spatial-detail-fit-height);
+			margin: 0;
+			grid-auto-flow: row;
+			grid-auto-columns: 100%;
+			grid-auto-rows: max-content;
+			align-content: start;
+			overflow-x: hidden;
+			overflow-y: auto;
 		}
 	}
 </style>

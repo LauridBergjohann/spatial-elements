@@ -4,7 +4,9 @@ import { getMinimapMeasurementMode } from './minimapMeasurement.js';
 import { parseRenderMeasurement } from './renderMeasurement.js';
 import type { PreparedHigh } from '../catalog/CatalogPreparation.js';
 import { gaussianTargets } from './renderTargetInventory.js';
-import { withRendererState, withVisibility } from './rendererState.js';
+import { clearFullTarget, withRendererState, withVisibility } from './rendererState.js';
+import { BackgroundLayerOutput } from './BackgroundLayerOutput.js';
+import { CatalogWarmOutputContext } from '../catalog/CatalogWarmOutputContext.js';
 
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
 
@@ -18,7 +20,6 @@ import {
 	Fn,
 	If,
 	mix,
-	premultiplyAlpha,
 	texture,
 	uniform,
 	uv,
@@ -27,6 +28,7 @@ import {
 import type { Mesh, Object3D } from 'three';
 import {
 	inverseAcesToneMapping,
+	LiquidGlassPanel,
 	STAGE_TONE_MAPPING_EXPOSURE,
 	type LiquidGlassPanelOptions
 } from './LiquidGlassPanel.js';
@@ -48,6 +50,12 @@ interface StageRenderTargetSet {
 	sceneCapture: THREE.RenderTarget;
 	panelBlurCaptures: Map<number, PanelBlurCapture>;
 }
+/** Internal proof of the exact target/configuration which completed reveal warming. */
+export interface DeferredScrollWarmup {
+	readonly owner: StageRenderPipeline;
+	readonly current: () => boolean;
+	used: boolean;
+}
 const SCROLL_RENDER_SCALE = 0.82;
 
 export interface StageRenderPorts {
@@ -67,7 +75,7 @@ export interface StageRenderPorts {
 	panelRuntimes(): readonly StagePanelRuntime[];
 	minimaps(): ReadonlyMap<number, StageMinimapState>;
 	minimapScene(): THREE.Scene;
-	catalogLayer(): Pick<CatalogSpatialElementLayer, 'hasCarousel' | 'renderRear' | 'draw'> | undefined;
+	catalogLayer(): Pick<CatalogSpatialElementLayer, 'hasRearOutput' | 'renderRear' | 'draw'> | undefined;
 	spatialCapture(): SpatialGeometryCapture | undefined;
 	exitingMinimaps(): readonly { capture: SpatialGeometryCapture; minimap: StageMinimapState }[];
 	contentSecondaries(): readonly { capture: SpatialGeometryCapture }[];
@@ -79,6 +87,7 @@ export interface StageRenderPorts {
 		catalogHandoff: boolean;
 		catalogMotionComplete: boolean;
 		stageViewportVisible: boolean;
+		detailMediaActive?: boolean;
 		modelHover: boolean;
 		modelInteractionActive: boolean;
 		catalog: boolean;
@@ -107,9 +116,118 @@ export class StageRenderPipeline {
 	private readonly measuredBackdropSeeds = new WeakMap<THREE.RenderTarget, string>();
 	private readonly preparedZoomViews = new WeakSet<StageMinimapState>();
 	private disposed = false;
+	private warmConfiguration = 0;
+	private inactiveScrollWarmups = 0;
 	private renderSettings = resolveStageRenderSettings();
+	private readonly backgroundOutputRequested = (() => {
+		const query = new URLSearchParams(typeof window === 'undefined' ? '' : window.location?.search ?? '');
+		return query.get('stage-test') === '1' && query.get('stage-background-output') === '1';
+	})();
+	private backgroundOutputInitialized = false;
+	private backgroundOutput?: BackgroundLayerOutput;
+	private catalogWarmOutput?: CatalogWarmOutputContext;
+	/** Called after renderer.init, before mounting or ever drawing the Background Canvas. */
+	initializeBackgroundOutput() {
+		if (!this.backgroundOutputRequested || this.backgroundOutputInitialized || this.disposed) return;
+		this.backgroundOutputInitialized = true;
+		const renderer = this.ports.renderer, canvas = renderer.getCanvasTarget(), target = renderer.getRenderTarget();
+		try {
+			this.resizeCanvasTarget(this.ports.backgroundCanvasTarget, window.innerWidth, window.innerHeight, this.getFullPixelRatio());
+			this.backgroundOutput = BackgroundLayerOutput.create(this.ports.renderer, this.ports.backgroundCanvasTarget);
+			if (!this.backgroundOutput) return;
+			try {
+				// Prepare the final Canvas-output owner during ordinary initialization,
+				// before there is any outgoing Canvas content to preserve.
+				if (!this.backgroundOutput.clearTransparent()) this.fallbackBackgroundOutput();
+			} catch { this.fallbackBackgroundOutput(); }
+		} finally { renderer.setCanvasTarget(canvas); renderer.setRenderTarget(target); }
+	}
+	private invalidateCatalogWarmOutput() {
+		this.catalogWarmOutput?.dispose();
+		this.catalogWarmOutput = undefined;
+	}
+	private fallbackBackgroundOutput() {
+		this.invalidateCatalogWarmOutput();
+		this.backgroundOutput?.selectFallback();
+		this.warmConfiguration++;
+	}
+	get backgroundOutputHeld() { return this.backgroundOutputRequested && this.ports.frame().outgoingBackground; }
+	/** Preparation/eligibility may acquire a lease. Diagnostics must use peek instead. */
+	ensureCatalogWarmOutputContext(): CatalogWarmOutputContext | undefined {
+		const owner = this.backgroundOutput;
+		if (!owner || this.backgroundOutputHeld || this.disposed) return;
+		if (owner.getStats().mode !== 'explicit') { this.invalidateCatalogWarmOutput(); return; }
+		return withRendererState(this.ports.renderer, () => {
+			this.ports.renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
+			if (this.catalogWarmOutput?.isCurrent(this.ports.renderer)) return this.catalogWarmOutput;
+			this.invalidateCatalogWarmOutput();
+			const handle = owner.captureScratch();
+			if (handle) this.catalogWarmOutput = CatalogWarmOutputContext.createBorrowed(this.ports.renderer, handle,
+				() => !this.disposed && this.backgroundOutput === owner);
+			if (!this.catalogWarmOutput) this.fallbackBackgroundOutput();
+			return this.catalogWarmOutput;
+		});
+	}
+	peekCatalogWarmOutputContext() { return this.catalogWarmOutput; }
+	getBackgroundOutputStats() {
+		// Query-gated diagnostics only: Map.has cannot allocate Three's implicit target.
+		const buffers = this.backgroundOutputRequested
+			? (this.ports.renderer as unknown as { _frameBufferTargets?: unknown })._frameBufferTargets : undefined;
+		return { requested: this.backgroundOutputRequested, initialized: this.backgroundOutputInitialized,
+			...(this.backgroundOutput?.getStats() ?? { mode: 'legacy' as const }),
+			held: this.backgroundOutputHeld,
+			targetTextureId: this.backgroundOutput?.getRenderTargets()[0]?.texture.uuid ?? null,
+			implicitBackgroundTarget: buffers instanceof Map ? Map.prototype.has.call(buffers, this.ports.backgroundCanvasTarget) as boolean : null,
+			catalogProfile: this.catalogWarmOutput?.profileKey ?? null,
+			catalogProfileCurrent: this.catalogWarmOutput?.isCurrent(this.ports.renderer) ?? false };
+	}
+	/** A held Canvas keeps both its pixels and dimensions until normal publication resumes. */
+	private syncBackgroundOutputSize() {
+		const owner = this.backgroundOutput;
+		if (!owner || this.backgroundOutputHeld || owner.getStats().mode !== 'explicit') return;
+		const canvas = this.ports.backgroundCanvasTarget, size = canvas.getSize(this.displaySize), ratio = this.getFullPixelRatio();
+		if (size.x !== window.innerWidth || size.y !== window.innerHeight || canvas.getPixelRatio() !== ratio) {
+			this.invalidateCatalogWarmOutput(); this.warmConfiguration++;
+			this.resizeCanvasTarget(canvas, window.innerWidth, window.innerHeight, ratio);
+		}
+		if (!owner.resize()) this.fallbackBackgroundOutput();
+	}
+	private renderBackgroundOutput(publish = true) {
+		if (!this._stageDisplayQuad || (publish && this.backgroundOutputHeld)) return;
+		const owner = this.backgroundOutput;
+		if (owner?.getStats().mode === 'explicit') {
+			try {
+				if (owner.compose(this._stageDisplayQuad, () => this.renderBackgroundPanels(), publish)) return;
+			} catch { /* The experiment declines permanently; use the established output path. */ }
+			this.fallbackBackgroundOutput();
+		}
+		// Once the explicit owner declines, even a masked legacy Canvas draw can
+		// replace its presented image. Skip that optional warm pass while held.
+		if (!publish && this.backgroundOutputHeld) return;
+		if (publish) {
+			this.renderStageDisplay(); this.renderBackgroundPanels();
+		} else {
+			const renderer = this.ports.renderer, auto = renderer.autoClear;
+			try {
+				renderer.setCanvasTarget(this.ports.backgroundCanvasTarget); renderer.setRenderTarget(null);
+				renderer.setScissor(new THREE.Vector4(0, 0, 0, 0)); renderer.setScissorTest(true); renderer.autoClear = false;
+				this._stageDisplayQuad.render(renderer); this.renderBackgroundPanels();
+			} finally { renderer.autoClear = auto; }
+		}
+	}
+	private clearBackgroundOutput() {
+		if (this.backgroundOutputHeld) return;
+		if (this.backgroundOutput?.getStats().mode === 'explicit') {
+			try { if (this.backgroundOutput.clearTransparent()) return; }
+			catch { /* Terminal fallback, as for complete composition. */ }
+			this.fallbackBackgroundOutput();
+		}
+		this.ports.renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
+		this.ports.renderer.setRenderTarget(null); this.ports.renderer.setClearColor(0, 0); this.ports.renderer.clear();
+	}
 	/** Retain the last DETAIL background while its geometry is owned by a transition. */
 	freezeBackground() {
+		this.syncBackgroundOutputSize();
 		const targets = this._activeRenderTargets;
 		if (!targets) return false;
 		// Never bake the old screen-space halo into the outgoing background snapshot.
@@ -118,8 +236,7 @@ export class StageRenderPipeline {
 			this.ports.renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
 			this.ports.renderer.setRenderTarget(targets.sceneCapture);
 			this.renderStageContents();
-			this.renderStageDisplay();
-			this.renderBackgroundPanels();
+			this.renderBackgroundOutput();
 		});
 		return true;
 	}
@@ -169,6 +286,7 @@ export class StageRenderPipeline {
 
 	getRenderTargets() {
 		return [
+			...(this.backgroundOutput?.getRenderTargets() ?? []),
 			...(this.outlineMaskTarget ? [this.outlineMaskTarget] : []),
 			...[this.fullQualityTargets, this.scrollQualityTargets].flatMap((set) =>
 				set
@@ -206,8 +324,10 @@ export class StageRenderPipeline {
 		this.updateInteractionTheme();
 		this.setRenderSettings(ports.renderSettings);
 		this.setPageBackground(ports.pageBackground ?? '#ffffff');
-		this.backgroundCoverMaterial.fragmentNode = premultiplyAlpha(
-			vec4(inverseAcesToneMapping(this.backgroundCoverColor), this.backgroundCoverOpacity)
+		// NodeMaterial applies premultipliedAlpha in setupOutput. Supply straight
+		// RGB here; multiplying twice darkens the middle of the background reveal.
+		this.backgroundCoverMaterial.fragmentNode = vec4(
+			inverseAcesToneMapping(this.backgroundCoverColor), this.backgroundCoverOpacity
 		);
 		this.backgroundCoverMaterial.depthTest = this.backgroundCoverMaterial.depthWrite = false;
 		this.backgroundCoverMaterial.transparent =
@@ -260,11 +380,14 @@ export class StageRenderPipeline {
 	private _activeRenderTargets?: StageRenderTargetSet;
 	private stageDisplayMaterial?: THREE.NodeMaterial;
 	private _stageDisplayQuad?: THREE.QuadMesh;
+	private readonly displayViewport = new THREE.Vector4();
+	private readonly displaySize = new THREE.Vector2();
 	private stageDisplayTextureNode?: THREE.TextureNode;
 	private foregroundCanvasTarget?: THREE.CanvasTarget;
 	private carouselRearTarget?: THREE.CanvasTarget;
 	private carouselRearCanvas?: HTMLCanvasElement;
 	private carouselRearSize = new THREE.Vector3();
+	private carouselRearClear = false;
 	private foregroundCanvas?: HTMLCanvasElement;
 	configureRenderer() {
 		this.ports.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -275,7 +398,9 @@ export class StageRenderPipeline {
 		this.ports.backgroundCanvas.style.touchAction = 'pan-y';
 	}
 	renderCarouselRear() {
-		if (!this.carouselRearTarget && !this.ports.catalogLayer()?.hasCarousel()) return;
+		const layer = this.ports.catalogLayer();
+		const active = layer?.hasRearOutput() ?? false;
+		if (!this.carouselRearTarget && !active) return;
 		if (!this.carouselRearTarget) {
 			const canvas = document.createElement('canvas');
 			canvas.className = 'stage-webgpu-carousel-rear';
@@ -288,20 +413,28 @@ export class StageRenderPipeline {
 		const width = window.innerWidth,
 			height = window.innerHeight,
 			ratio = this.getFullPixelRatio();
-		if (
+		const resized = (
 			this.carouselRearSize.x !== width ||
 			this.carouselRearSize.y !== height ||
 			this.carouselRearSize.z !== ratio
-		) {
-			this.resizeCanvasTarget(target, width, height, ratio);
-			this.carouselRearSize.set(width, height, ratio);
-		}
-		this.ports.renderer.setCanvasTarget(target);
-		this.ports.renderer.setRenderTarget(null);
-		this.ports.renderer.setClearColor(0x000000, 0);
-		this.ports.renderer.clear();
-		this.ports.catalogLayer()?.renderRear(this.ports.renderer);
-		this.ports.renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
+		);
+		// Clear the formerly visible layer once. Keep its allocation for Back/Cancel,
+		// but do not switch canvases or submit empty passes on subsequent detail frames.
+		if (!active && this.carouselRearClear && !resized) return;
+		withRendererState(this.ports.renderer, () => {
+			this.carouselRearClear = false;
+			if (resized) {
+				this.resizeCanvasTarget(target, width, height, ratio);
+				this.carouselRearSize.set(width, height, ratio);
+			}
+			this.ports.renderer.setCanvasTarget(target);
+			this.ports.renderer.setRenderTarget(null);
+			this.ports.renderer.setClearColor(0x000000, 0);
+			if (active) this.ports.renderer.clear();
+			else clearFullTarget(this.ports.renderer);
+			if (active) layer!.renderRear(this.ports.renderer);
+			else this.carouselRearClear = true;
+		});
 	}
 	createForegroundCanvas() {
 		const canvas = document.createElement('canvas');
@@ -314,10 +447,7 @@ export class StageRenderPipeline {
 	}
 	createModelOutline(model: Object3D) {
 		this.outlineMaskModel?.removeFromParent();
-		this.outlineMaskMaterial?.dispose();
-		this.outlineCompositeMaterial?.dispose();
-		this.outlineMaskTarget?.dispose();
-		this.outlineMaskMaterial = new THREE.MeshBasicMaterial({
+		this.outlineMaskMaterial ??= new THREE.MeshBasicMaterial({
 			color: 0xffffff,
 			depthTest: true,
 			depthWrite: true,
@@ -339,19 +469,24 @@ export class StageRenderPipeline {
 
 		this.outlineMaskModel = maskModel;
 		this.outlineMaskScene.add(maskModel);
-		this.outlineMaskTarget = new THREE.RenderTarget(1, 1, {
-			depthBuffer: true,
-			stencilBuffer: false,
-			samples: 4
-		});
-		this.outlineMaskTarget.texture.minFilter = THREE.LinearFilter;
-		this.outlineMaskTarget.texture.magFilter = THREE.LinearFilter;
-		this.outlineMaskTarget.texture.generateMipmaps = false;
-		this.displayOutlineMask.value = this.outlineMaskTarget.texture;
-		this.outlineCompositeMaterial = this.createOutlineCompositeMaterial(
-			this.outlineMaskTarget.texture
-		);
-		this.outlineQuad = new THREE.QuadMesh(this.outlineCompositeMaterial);
+		// Low/High changes replace the silhouette, not its viewport-sized storage.
+		// StageDisplay binds this sampler even while its opacity branch is zero;
+		// replacing it mid-reveal would recreate the texture and MSAA attachment.
+		if (!this.outlineMaskTarget) {
+			this.outlineMaskTarget = new THREE.RenderTarget(1, 1, {
+				depthBuffer: true,
+				stencilBuffer: false,
+				samples: 4
+			});
+			this.outlineMaskTarget.texture.minFilter = THREE.LinearFilter;
+			this.outlineMaskTarget.texture.magFilter = THREE.LinearFilter;
+			this.outlineMaskTarget.texture.generateMipmaps = false;
+			this.displayOutlineMask.value = this.outlineMaskTarget.texture;
+			this.outlineCompositeMaterial = this.createOutlineCompositeMaterial(
+				this.outlineMaskTarget.texture
+			);
+			this.outlineQuad = new THREE.QuadMesh(this.outlineCompositeMaterial);
+		}
 		// High refinement can replace the silhouette long after the last window resize.
 		this.resizeOutline(this.outlineWidth, this.outlineHeight);
 	}
@@ -382,6 +517,7 @@ export class StageRenderPipeline {
 		return material;
 	}
 	disposeSceneCapture() {
+		this.warmConfiguration++;
 		this.disposeRenderTargetSet(this.fullQualityTargets);
 		this.disposeRenderTargetSet(this.scrollQualityTargets);
 		this.stageDisplayMaterial?.dispose();
@@ -393,6 +529,7 @@ export class StageRenderPipeline {
 		this.stageDisplayTextureNode = undefined;
 	}
 	createSceneCapture() {
+		this.warmConfiguration++;
 		const blurKeys = new Set(
 			this.ports.fallbackPanelOptions().map((options) => this.getPanelBlurKey(options))
 		);
@@ -463,11 +600,15 @@ export class StageRenderPipeline {
 		targets.panelBlurCaptures.clear();
 	}
 	resizeRenderTargets() {
+		this.warmConfiguration++;
 		const width = window.innerWidth;
 		const height = window.innerHeight;
 		const pixelRatio = this.getFullPixelRatio();
-		if (!this.ports.frame().outgoingBackground)
+		if (!this.ports.frame().outgoingBackground) {
+			this.invalidateCatalogWarmOutput();
 			this.resizeCanvasTarget(this.ports.backgroundCanvasTarget, width, height, pixelRatio);
+			if (this.backgroundOutput?.getStats().mode === 'explicit' && !this.backgroundOutput.resize()) this.fallbackBackgroundOutput();
+		}
 		if (this.foregroundCanvasTarget) {
 			this.resizeCanvasTarget(this.foregroundCanvasTarget, width, height, pixelRatio);
 		}
@@ -512,6 +653,7 @@ export class StageRenderPipeline {
 		);
 	}
 	setRenderSettings(settings?: StageRenderSettings) {
+		this.warmConfiguration++;
 		this.renderSettings = resolveStageRenderSettings(settings);
 	}
 	getRenderSettings() {
@@ -544,6 +686,7 @@ export class StageRenderPipeline {
 		});
 	}
 	warmRenderTargetSets() {
+		this.syncBackgroundOutputSize();
 		const previousTargets = this._activeRenderTargets;
 		const availableTargets = [this.fullQualityTargets, this.scrollQualityTargets].filter(
 			(targets): targets is StageRenderTargetSet => Boolean(targets)
@@ -564,14 +707,157 @@ export class StageRenderPipeline {
 					this.ports.renderer.setRenderTarget(targets.sceneCapture);
 					this.ports.renderStage();
 					this.renderPanelBlurCaptures(targets, true);
-					this.renderStageDisplay();
-					this.renderBackgroundPanels();
+					this.renderBackgroundOutput(!this.backgroundOutputHeld);
 					this._renderTargetSetWarmups += 1;
 				});
 			});
 		} finally {
 			this.activateRenderTargetSet(previousTargets);
 		}
+	}
+	/** Capture immediately after reveal's real warm draws, before its GPU fence.
+	 * The facade publishes this only after that fence and its page-owner check.
+	 */
+	captureDeferredScrollWarmup(ownerIsCurrent: () => boolean): DeferredScrollWarmup | undefined {
+		const renderer = this.ports.renderer, full = this.fullQualityTargets, scroll = this.scrollQualityTargets;
+		// The explicit output has a different warmed display owner. Retain the full
+		// preparation path until its no-write Scroll shortcut is separately proven.
+		if (this.backgroundOutputRequested) return;
+		if (this.disposed || !full || !scroll || this._activeRenderTargets !== full || !this._stageDisplayQuad || !this.stageDisplayMaterial ||
+			!(renderer.backend as unknown as { isWebGPUBackend?: boolean }).isWebGPUBackend ||
+			renderer.xr.enabled || renderer.getOutputRenderTarget() || renderer.getMRT() || renderer.getRenderObjectFunction() ||
+			this.ports.panelScene.background || this.ports.panelScene.overrideMaterial ||
+			!ownerIsCurrent()) return;
+		const epoch = this.warmConfiguration, canvas = this.ports.backgroundCanvasTarget,
+			quad = this._stageDisplayQuad, display = this.stageDisplayMaterial, displayVersion = display.version;
+		const width = window.innerWidth, height = window.innerHeight, dpr = window.devicePixelRatio;
+		const canvasSize = canvas.getDrawingBufferSize(new THREE.Vector2()), canvasViewport = canvas.getViewport(new THREE.Vector4()),
+			canvasRatio = canvas.getPixelRatio(), currentSize = new THREE.Vector2(), currentViewport = new THREE.Vector4();
+		const tone = renderer.toneMapping, exposure = renderer.toneMappingExposure, space = renderer.outputColorSpace;
+		const panels = [...this.ports.panelRuntimes()], views = [...this.ports.minimaps().values()];
+		const panelOwners = panels.map(panel => ({ panel, glass: panel.glass, group: panel.group, projection: panel.projectionRoot, options: panel.options, surface: panel.surface }));
+		const materials: { mesh: THREE.Mesh; material: THREE.Material; version: number }[] = [];
+		const groups: { node: THREE.Object3D; children: THREE.Object3D[] }[] = [];
+		const allowed = new Set<THREE.Object3D>([this.ports.panelScene]);
+		for (const panel of panels) {
+			for (let node: THREE.Object3D | null = panel.group; node && node !== this.ports.panelScene; node = node.parent) allowed.add(node);
+			if (!panel.glass) continue;
+			if (!(panel.glass instanceof LiquidGlassPanel) || !panel.glass.hasOwnedRenderGraph()) return;
+			let supported = true;
+			panel.group.traverse(node => {
+				allowed.add(node);
+				groups.push({ node, children: [...node.children] });
+				if (!isMesh(node)) return;
+				const material = node.material;
+				if (Array.isArray(material) || !(material instanceof THREE.MeshBasicMaterial || material instanceof THREE.MeshBasicNodeMaterial) ||
+					node.onBeforeRender !== THREE.Object3D.prototype.onBeforeRender || node.onAfterRender !== THREE.Object3D.prototype.onAfterRender) {
+					supported = false; return;
+				}
+				materials.push({ mesh: node, material, version: material.version });
+			});
+			if (!supported) return;
+		}
+		let controlledScene = true;
+		this.ports.panelScene.traverse(node => {
+			if ((!allowed.has(node) && !(node instanceof THREE.Light && !node.castShadow)) ||
+				node.onBeforeRender !== THREE.Object3D.prototype.onBeforeRender || node.onAfterRender !== THREE.Object3D.prototype.onAfterRender)
+				controlledScene = false;
+			groups.push({ node, children: [...node.children] });
+		});
+		if (!controlledScene) return;
+		const targets = [full, scroll].flatMap(set => [set.sceneCapture, ...[...set.panelBlurCaptures.values()].map(capture => capture.target)])
+			.map(target => ({ target, width: target.width, height: target.height }));
+		return { owner: this, used: false, current: () => !this.disposed && ownerIsCurrent() && this.warmConfiguration === epoch &&
+			this.fullQualityTargets === full && this.scrollQualityTargets === scroll && this._activeRenderTargets === full &&
+			this._stageDisplayQuad === quad && quad.material === display && display.version === displayVersion && this.ports.backgroundCanvasTarget === canvas &&
+			window.innerWidth === width && window.innerHeight === height && window.devicePixelRatio === dpr &&
+			canvas.getPixelRatio() === canvasRatio && canvas.getDrawingBufferSize(currentSize).equals(canvasSize) && canvas.getViewport(currentViewport).equals(canvasViewport) &&
+			!renderer.xr.enabled && !renderer.getOutputRenderTarget() && !renderer.getMRT() && !renderer.getRenderObjectFunction() &&
+			!this.ports.panelScene.background && !this.ports.panelScene.overrideMaterial &&
+			renderer.toneMapping === tone && renderer.toneMappingExposure === exposure && renderer.outputColorSpace === space &&
+			!this.ports.frame().outgoingBackground &&
+			panels.length === this.ports.panelRuntimes().length && panels.every((panel, i) => panel === this.ports.panelRuntimes()[i]) &&
+			panelOwners.every(({ panel, glass, group, projection, options, surface }) => panel.glass === glass && panel.group === group &&
+				panel.projectionRoot === projection && panel.options === options && panel.surface === surface && (!glass || glass.hasOwnedRenderGraph())) &&
+			views.length === this.ports.minimaps().size && views.every(view => this.ports.minimaps().get(view.panelIndex) === view) &&
+			materials.every(({ mesh, material, version }) => mesh.material === material && material.version === version) &&
+			groups.every(({ node, children }) => node.onBeforeRender === THREE.Object3D.prototype.onBeforeRender &&
+				node.onAfterRender === THREE.Object3D.prototype.onAfterRender && node.children.length === children.length && children.every((child, i) => node.children[i] === child)) &&
+			targets.every(({ target, width, height }) => target.width === width && target.height === height) };
+	}
+	/** Warm only inactive Scroll resources without writing Canvas color/depth.
+	 * A stale token performs no mutation; the caller retains the complete warm path.
+	 */
+	warmInactiveScrollTargetSet(token: DeferredScrollWarmup): boolean {
+		if (token.owner !== this || token.used || !token.current()) return false;
+		token.used = true;
+		const previous = this._activeRenderTargets!, renderer = this.ports.renderer;
+		const autoClear = renderer.autoClear;
+		try {
+			withRendererState(renderer, () => {
+				renderer.autoClear = false;
+				this.activateRenderTargetSet(this.scrollQualityTargets!);
+				renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
+				renderer.setScissorTest(false);
+				renderer.setRenderTarget(this.scrollQualityTargets!.sceneCapture);
+				this.ports.renderStage();
+				this.renderPanelBlurCaptures(this.scrollQualityTargets!, true);
+				// Full reveal already drew the same display/panel materials and Canvas
+				// contexts. Scroll only replaces their sampled textures with matching
+				// types/filters. Keep preparation entirely offscreen; it must not
+				// acquire or publish another Canvas output texture.
+				this._renderTargetSetWarmups++;
+				this.inactiveScrollWarmups++;
+			});
+			return true;
+		} finally {
+			renderer.autoClear = autoClear;
+			this.activateRenderTargetSet(previous);
+		}
+	}
+	/** Warm the bound DETAIL's actual reveal passes while its DOM remains hidden.
+	 * Unlike optional scroll/zoom preparation this uses only the active target set.
+	 * Offscreen captures receive real pixels; Canvas pipelines keep their exact
+	 * output context but a zero-area scissor prevents any visible warm-up draw.
+	 */
+	warmRevealFrame() {
+		const targets = this._activeRenderTargets;
+		if (this.disposed || !targets || !this._stageDisplayQuad || !this.foregroundCanvasTarget)
+			return false;
+		return withRendererState(this.ports.renderer, () => {
+			const renderer = this.ports.renderer;
+			renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
+			renderer.setRenderTarget(targets.sceneCapture);
+			renderer.setScissorTest(false);
+			this.ports.renderStage();
+			this.renderPanelBlurCaptures(targets, true);
+			const maskCanvas = (canvas: THREE.CanvasTarget) => {
+				renderer.setCanvasTarget(canvas);
+				renderer.setRenderTarget(null);
+				renderer.setScissor(new THREE.Vector4(0, 0, 0, 0));
+				renderer.setScissorTest(true);
+			};
+			// Explicit output composition stays offscreen, without publishing over
+			// the source Canvas. The legacy path retains its masked, clear-free draw.
+			this.renderBackgroundOutput(false);
+			maskCanvas(this.foregroundCanvasTarget!);
+			this.renderMinimapScene();
+			return true;
+		});
+	}
+	/** Borrow the already selected scene output after all warm live passes. */
+	withSceneCapture<T>(draw: () => T): T | undefined {
+		const targets = this._activeRenderTargets;
+		if (this.disposed || !targets) return;
+		return withRendererState(this.ports.renderer, () => {
+			this.ports.renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
+			this.ports.renderer.setRenderTarget(targets.sceneCapture);
+			this.ports.renderer.setScissorTest(false);
+			return draw();
+		});
+	}
+	isSceneCaptureCurrent(target: THREE.RenderTarget, width: number, height: number) {
+		return !this.disposed && this._activeRenderTargets?.sceneCapture === target && target.width === width && target.height === height;
 	}
 	private resizeCanvasTarget(
 		target: THREE.CanvasTarget,
@@ -630,6 +916,7 @@ export class StageRenderPipeline {
 	}
 	/** Allocate changed blur settings without replacing the scene capture or model resources. */
 	syncPanelBlurCaptures() {
+		this.warmConfiguration++;
 		const keys = new Set(this.ports.fallbackPanelOptions().map((options) => this.getPanelBlurKey(options)));
 		if (!this._activeRenderTargets && keys.size) this.createSceneCapture();
 		for (const targets of [this.fullQualityTargets, this.scrollQualityTargets]) {
@@ -929,14 +1216,51 @@ export class StageRenderPipeline {
 	}
 	renderStageDisplay() {
 		if (!this._stageDisplayQuad) return;
-		this.ports.renderer.setRenderTarget(null);
-		this.ports.renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
-		this.ports.renderer.setClearColor(0xffffff, 1);
-		this.ports.renderer.clear();
-		this._stageDisplayQuad.render(this.ports.renderer);
+		const { renderer, backgroundCanvasTarget } = this.ports;
+		renderer.setRenderTarget(null);
+		renderer.setCanvasTarget(backgroundCanvasTarget);
+		renderer.setClearColor(0xffffff, 1);
+		if (!this.canClearWithStageDisplay()) {
+			renderer.clear();
+			this._stageDisplayQuad.render(renderer);
+			return;
+		}
+		// Only this opaque, depth-independent fullscreen copy has no nested scene
+		// rendering. Include its clear in the same render pass, avoiding the manual
+		// Canvas clear's separate pass and intermediate output-color-transform draw.
+		const { autoClear, autoClearColor, autoClearDepth, autoClearStencil } = renderer;
+		try {
+			renderer.autoClear = renderer.autoClearColor = renderer.autoClearDepth = renderer.autoClearStencil = true;
+			this._stageDisplayQuad.render(renderer);
+		} finally {
+			renderer.autoClear = autoClear;
+			renderer.autoClearColor = autoClearColor;
+			renderer.autoClearDepth = autoClearDepth;
+			renderer.autoClearStencil = autoClearStencil;
+		}
+	}
+	private canClearWithStageDisplay() {
+		const { renderer, backgroundCanvasTarget } = this.ports;
+		// Deliberately retain explicit clearing for unproved output configurations.
+		if (
+			!(renderer.backend as { isWebGPUBackend?: boolean } | undefined)?.isWebGPUBackend ||
+			renderer.xr.isPresenting || renderer.stencil || renderer.reversedDepthBuffer ||
+			renderer.getClearDepth() !== 1 || renderer.getClearStencil() !== 0 ||
+			renderer.getOutputRenderTarget() !== null || renderer.getMRT() !== null ||
+			backgroundCanvasTarget.getScissorTest()
+		) return false;
+		const viewport = backgroundCanvasTarget.getViewport(this.displayViewport);
+		const size = backgroundCanvasTarget.getSize(this.displaySize);
+		return size.x > 0 && size.y > 0 && viewport.x === 0 && viewport.y === 0 &&
+			viewport.z === size.x && viewport.w === size.y;
 	}
 	renderStageContents() {
 		this.ports.renderer.clear();
+		if (this.ports.frame().detailMediaActive === false) {
+			this.backgroundCoverOpacity.value = 1;
+			this.backgroundCover.render(this.ports.renderer);
+			return;
+		}
 		this.ports.renderer.render(this.ports.backgroundScene, this.ports.camera);
 		this.ports.renderer.render(this.ports.tintScene, this.ports.tintCamera);
 		this.backgroundCoverOpacity.value = 1 - this.ports.frame().backgroundReveal;
@@ -989,6 +1313,8 @@ export class StageRenderPipeline {
 	dispose() {
 		if (this.disposed) return;
 		this.disposed = true;
+		this.invalidateCatalogWarmOutput();
+		this.backgroundOutput?.dispose();
 		this.releaseOutline();
 		this.emptyOutlineMask.dispose();
 		this.disposeSceneCapture();
@@ -1020,6 +1346,7 @@ export class StageRenderPipeline {
 	get renderTargetSetWarmups() {
 		return this._renderTargetSetWarmups;
 	}
+	get deferredScrollWarmups() { return this.inactiveScrollWarmups; }
 	get stageModelRenderPasses() {
 		return this._stageModelRenderPasses;
 	}
@@ -1036,22 +1363,23 @@ export class StageRenderPipeline {
 	/** The facade advances owners first; this command submits the ordered GPU passes. */
 	renderFrame(contentOnly: boolean, outline: boolean) {
 		this.displayOutlineOpacity.value = 0;
+		// After a held resize, update before the outer state snapshot so restoring
+		// that scope cannot put the obsolete viewport back on the resized Canvas.
+		this.syncBackgroundOutputSize();
 		return withRendererState(this.ports.renderer, () => {
 			this.ports.renderer.setCanvasTarget(this.ports.backgroundCanvasTarget);
 			if (contentOnly) {
 				this.ports.renderer.setRenderTarget(null);
 				if (!this.ports.frame().outgoingBackground) {
-					this.ports.renderer.setClearColor(0, 0);
-					this.ports.renderer.clear();
+					this.clearBackgroundOutput();
 				}
 			} else {
 				if (!this._activeRenderTargets) return;
 				this.ports.renderer.setRenderTarget(this._activeRenderTargets.sceneCapture);
 				this.ports.renderStage();
 				this.renderPanelBlurCaptures(this._activeRenderTargets);
-				if (outline) this.renderModelOutline(this._activeRenderTargets.sceneCapture, 1);
-				this.renderStageDisplay();
-				this.renderBackgroundPanels();
+				if (outline && this.ports.frame().detailMediaActive !== false) this.renderModelOutline(this._activeRenderTargets.sceneCapture, 1);
+				this.renderBackgroundOutput();
 			}
 			this.renderCarouselRear();
 			this.renderForegroundLayer();

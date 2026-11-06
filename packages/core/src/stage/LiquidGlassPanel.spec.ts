@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three/webgpu';
+import Attributes from 'three/src/renderers/common/Attributes.js';
+import { AttributeType } from 'three/src/renderers/common/Constants.js';
 import { LiquidGlassPanel } from './LiquidGlassPanel.js';
 import { PANEL_SHADOW_RECIPE, resolvePanelShadowStrength } from './panelShadow.js';
 
@@ -13,6 +15,59 @@ function getBackdropGeometry(panel: LiquidGlassPanel) {
 }
 
 describe('LiquidGlassPanel backdrop projection', () => {
+	it('keeps buffer identities and versions while the panel shape is unchanged', () => {
+		const texture = new THREE.Texture();
+		const panel = new LiquidGlassPanel(texture, { width: 240, height: 160, radius: 12 });
+		const geometry = getBackdropGeometry(panel);
+		const attributes = {
+			position: geometry.getAttribute('position') as THREE.BufferAttribute,
+			normal: geometry.getAttribute('normal') as THREE.BufferAttribute,
+			index: geometry.index!
+		};
+		const versions = Object.fromEntries(Object.entries(attributes).map(([name, value]) => [name, value.version]));
+		for (const opacity of [0.1, 0.5, 1]) {
+			panel.setVisibilityAlpha(opacity);
+			panel.setVisualSize(240, 160, 12);
+			for (const [name, attribute] of Object.entries(attributes)) {
+				expect(name === 'index' ? geometry.index : geometry.getAttribute(name)).toBe(attribute);
+				expect(attribute.usage).toBe(THREE.StaticDrawUsage);
+				expect(attribute.version).toBe(versions[name]);
+			}
+		}
+		panel.dispose(); texture.dispose();
+	});
+	it('uploads retained backdrop attributes once after a real resize, not on every render', () => {
+		const texture = new THREE.Texture();
+		const panel = new LiquidGlassPanel(texture, { width: 240, height: 160, radius: 12 });
+		const geometry = getBackdropGeometry(panel);
+		const position = geometry.getAttribute('position') as THREE.BufferAttribute;
+		const index = geometry.index!;
+		const backend = { createAttribute: vi.fn(), createIndexAttribute: vi.fn(), updateAttribute: vi.fn() };
+		const attributes = new Attributes(backend, { createAttribute: vi.fn(), createIndexAttribute: vi.fn() });
+		const render = () => {
+			attributes.update(position, AttributeType.VERTEX);
+			attributes.update(index, AttributeType.INDEX);
+		};
+		render(); render(); render();
+		expect(backend.createAttribute).toHaveBeenCalledTimes(1);
+		expect(backend.createIndexAttribute).toHaveBeenCalledTimes(1);
+		expect(backend.updateAttribute).not.toHaveBeenCalled();
+		const versions = [position.version, index.version];
+		panel.setVisualSize(320, 220, 18);
+		expect(geometry.getAttribute('position')).toBe(position);
+		expect(geometry.index).toBe(index);
+		expect(position.version).toBeGreaterThan(versions[0]);
+		expect(index.version).toBeGreaterThan(versions[1]);
+		expect(position.usage).toBe(THREE.StaticDrawUsage);
+		expect(index.usage).toBe(THREE.StaticDrawUsage);
+		render();
+		expect(backend.updateAttribute.mock.calls).toEqual([[position], [index]]);
+		backend.updateAttribute.mockClear();
+		panel.setVisualSize(320, 220, 18);
+		render(); render();
+		expect(backend.updateAttribute).not.toHaveBeenCalled();
+		panel.dispose(); texture.dispose();
+	});
 	it('restores the complete authored glass edge when a hidden popover opens', () => {
 		const texture = new THREE.Texture();
 		const theme = { radius: 22, bezel: 20, refraction: 20 };

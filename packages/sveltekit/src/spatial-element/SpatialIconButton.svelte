@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import type { Snippet } from 'svelte';
 	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import Panel from '../stage/Panel.svelte';
@@ -16,12 +17,13 @@
 	} = $props();
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
+	const radii = $derived(resolveSpatialThemeRadii(theme));
 </script>
 
 <div class="icon-frame">
 	<Panel
 		class="spatial-icon-panel"
-		shape={{ radius: Math.min(12, theme.panelShape.radius), contentInset: 0 }}
+		shape={{ radius: radii.control, contentInset: 0 }}
 		theme={theme.panelTheme}
 		pointerReactive={false}
 		focusReactive="top-right"
@@ -45,7 +47,7 @@
 	.icon-frame :global(.spatial-icon-panel) { width: 40px; height: 40px; }
 	.spatial-icon-button {
 		box-sizing: border-box; display: grid; place-items: center; width: 40px; height: 40px;
-		padding: 0; border: 0; border-radius: min(12px, var(--spatial-element-panel-radius)); background: transparent;
+		padding: 0; border: 0; border-radius: var(--spatial-element-control-radius); background: transparent;
 		color: var(--spatial-element-ink); cursor: pointer; touch-action: manipulation;
 		transition: background-color 180ms ease;
 	}

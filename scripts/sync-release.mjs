@@ -7,12 +7,13 @@ const adapter = read('packages/sveltekit/package.json');
 if (adapter.version !== version) throw Error('Fixed package versions diverged');
 adapter.dependencies['@spatial-elements/core'] = version;
 save('packages/sveltekit/package.json', adapter);
-const demo = read('apps/sveltekit-demo/package.json');
+const appPaths = ['apps/sveltekit-demo/package.json', 'apps/showcase/package.json'];
+const apps = appPaths.map(read);
 for (const name of ['core', 'sveltekit']) {
   const p = 'packages/' + name + '/package.json';
   const pkg = read(p);
   pkg.publishConfig.tag = releaseTag(version);
   save(p, pkg);
-  demo.dependencies[pkg.name] = version;
+  for (const app of apps) app.dependencies[pkg.name] = version;
 }
-save('apps/sveltekit-demo/package.json', demo);
+appPaths.forEach((path, index) => save(path, apps[index]));

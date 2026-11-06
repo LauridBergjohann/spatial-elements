@@ -1,0 +1,33 @@
+import { afterEach, expect, test, vi } from 'vitest';
+import { NavigationFeedback } from './NavigationFeedback.js';
+
+afterEach(() => vi.unstubAllGlobals());
+test('acknowledgement survives its paint barrier and is released on cancellation or replacement', async () => {
+	const frames = new Map<number, FrameRequestCallback>();
+	let next = 0;
+	vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => { frames.set(++next, callback); return next; });
+	vi.stubGlobal('cancelAnimationFrame', (id: number) => frames.delete(id));
+	const removed = vi.fn();
+	vi.stubGlobal('document', { createElement: () => ({ setAttribute: vi.fn(), remove: removed }) });
+	const appendChild = vi.fn();
+	const feedback = new NavigationFeedback({ appendChild } as unknown as HTMLElement);
+	const frame = () => { const [id, callback] = [...frames][0]; frames.delete(id); callback(0); };
+	feedback.begin();
+	let painted = false;
+	void feedback.painted.then(() => { painted = true; });
+	frame(); await Promise.resolve();
+	expect(painted).toBe(false);
+	frame(); await Promise.resolve();
+	expect(painted).toBe(true);
+	expect(removed).not.toHaveBeenCalled();
+	feedback.begin();
+	const replaced = feedback.painted;
+	feedback.begin();
+	await replaced;
+	const cancelled = feedback.painted;
+	feedback.end();
+	await cancelled;
+	expect(frames.size).toBe(0);
+	expect(removed).toHaveBeenCalledTimes(3);
+	expect(appendChild).toHaveBeenCalledTimes(3);
+});

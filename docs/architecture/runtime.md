@@ -12,7 +12,7 @@ the shell; registration happens on mount, while SSR renders ordinary page conten
 
 Public geometry always supplies Low and High. The adapter normalizes URL shorthand into versioned resource requests; identical URLs use the same resource identity across roles. Generated frame metadata remains optional; Low determines the shared fit otherwise.
 
-## Prepared navigation
+## Ordinary prepared navigation
 
 ~~~mermaid
 sequenceDiagram
@@ -48,13 +48,34 @@ Current [timing policy](../../packages/core/src/catalog/transitionTiming.ts):
 
 A prepared background stays revealed when High arrives later. Readiness is not reclassified halfway through shared motion. Timings are animation-clock policy, not an end-to-end latency guarantee.
 
+## Experimental source-first navigation
+
+The opt-in `?stagedNavigation=1` on a prepared collection source uses a different ordering.
+It moves the existing model and live panel toward a numeric hero or explicitly declared dock
+endpoint before the destination route mounts. Code and data may preload during movement;
+mounting, scroll restoration and destination binding follow in a still holding phase. Resource
+readiness is checked before the destination reveal. General activation remains subject to the
+production performance gate; unsupported or unprepared links keep the ordinary path above.
+
+The persistent summary host retains the actual Svelte component and its DOM across route
+commit. A compatible carousel summary adopts that same instance; the card renderer hands off
+to the different detail-summary renderer during content replacement. The staged DOM reveal
+uses a non-inherited local opacity channel directly in existing paint formulas. It retains
+theme, focus, nested-content and surface factors without adding an ancestor opacity layer.
+See [transition behavior](../wiki/Transitions.md) and the [local reveal contract](../design/layout/staged-dom-reveal.md).
+
+Before route commit, cancellation restores the source. After commit, it releases the visual
+hold while allowing destination binding to complete, without overriding the user's new scroll
+or focus. Compatible summary state still transfers; a superseding navigation cancels obsolete
+adoption. These ownership rules also apply to exceptions and stage destruction.
+
 ## Identity, history and interruption
 
 Endpoints match semantic brand/element/role and then a concrete slot/occurrence. Multiple lists and carousels can contain the same element. Carousel neighbours and partially visible elements can participate; absence of a valid drawable source/destination falls back to ordinary navigation. During intermediate detail page docking the hero remains the source until the dock presentation is ready.
 
 The navigation bridge restores history scroll and section selection before endpoint measurement. Explicit fragment navigation is resolved as a destination state; it must not overwrite an existing history restoration. The browser/router owns URL history; the adapter owns the coordinated restoration handshake.
 
-A transition uses retained spatial captures rather than preserving outgoing page DOM. Incoming and outgoing panel decoration/content share the moving bounds; live endpoints are masked until handoff to avoid duplicate stationary panels. Spatial element rotation interpolates a spatial pose rather than linearly blending a projective matrix. Cancellation must restore masks and release leases. Compatible superseding navigation may adopt an existing presentation; stale completion must not modify the successor.
+The ordinary transition uses retained spatial captures rather than preserving outgoing page DOM. Incoming and outgoing panel decoration/content share the moving bounds; live endpoints are masked until handoff to avoid duplicate stationary panels. Spatial element rotation interpolates a spatial pose rather than linearly blending a projective matrix. Cancellation must restore masks and release leases. Compatible superseding navigation may adopt an existing presentation; stale completion must not modify the successor. The experimental path instead retains live panel ownership as described above.
 
 ## Rendering and interaction
 

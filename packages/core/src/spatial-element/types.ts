@@ -25,6 +25,7 @@ export interface SpatialListItem extends Partial<
 		| 'background'
 		| 'model'
 		| 'camera'
+		| 'minimap'
 		| 'assetManifest'
 		| 'fallbackImage'
 		| 'fallbackImageSize'
@@ -37,7 +38,9 @@ export interface SpatialListItem extends Partial<
 		features: SpatialElementFeature[];
 		action?: SpatialElementAction;
 		/** Optional authored link to an existing element content section. */
-		sectionLink?: { href: string; label: string };
+		sectionLink?: { href: string; label: string;
+			/** Assert that this anchor opens the fully docked content view (3XL: pane header). */
+			targetPresentation?: 'dock' };
 	};
 	/** Stable optional key when the same element occurs twice within a section. */
 	itemKey?: string;
@@ -47,6 +50,8 @@ export interface SpatialListItem extends Partial<
 	id: string;
 	/** Ordinary link to the detail page. */
 	href: string;
+	/** Optional assertion for a fragment link opening fully docked detail content (3XL: pane header). */
+	targetPresentation?: 'dock';
 	/** Short label above the title; the helper supplies an empty string when omitted. */
 	eyebrow: string;
 	/** Visible card title. */
@@ -62,6 +67,18 @@ export interface SpatialSectionTheme {
 	tintOpacity: number;
 	/** CSS backdrop blur radius in pixels. */
 	backdropBlur: number;
+}
+
+/** CSS-pixel radii for the two layout surface roles. */
+export interface SpatialThemeRadii {
+	control: number;
+	panel: number;
+}
+
+/** Opaque section colors, independent of the flat page color and glass materials. */
+export interface SpatialSectionBackgrounds {
+	standard: string;
+	muted: string;
 }
 
 /** CSS material used only by the fixed element header and its docked subnavigation. */
@@ -86,6 +103,10 @@ export interface SpatialTheme {
 	name: string;
 	/** Opaque CSS/Three.js color behind content and the independently revealed HDR stage. */
 	background: string;
+	/** Optional for hand-authored legacy themes; createSpatialTheme resolves both roles. */
+	radii?: SpatialThemeRadii;
+	/** Optional for hand-authored legacy themes; createSpatialTheme supplies both colors. */
+	sectionBackgrounds?: SpatialSectionBackgrounds;
 	/** Shared minimap appearance; element-specific framing belongs in SpatialElementData.minimap. */
 	minimapTheme: SpatialMinimapTheme;
 	/** Hover/selection outline appearance. */
@@ -133,8 +154,15 @@ export interface SpatialElementBreadcrumb {
 /** Media entries rendered in the element rail. */
 export type SpatialElementMediaItem =
 	| { id: string; kind: 'minimap'; label: string }
+	/** @deprecated A drawing needs a real source. Use kind: 'image' instead. */
 	| { id: string; kind: 'drawing'; label: string }
-	| { id: string; kind: 'image'; label: string; src: string; alt: string };
+	| { id: string; kind: 'image'; label: string; src: string; alt: string }
+	| {
+		id: string; kind: 'video'; label: string; src: string; poster?: string;
+		/** Optional WebVTT caption tracks. Native controls remain available. */
+		captions?: { src: string; language: string; label: string; default?: boolean }[];
+	}
+	| { id: string; kind: 'youtube'; label: string; videoId: string; poster?: string };
 
 /** Optional CSS presentation for a regular HTML element section. */
 export interface SpatialElementSectionStyle {
@@ -149,10 +177,25 @@ export interface SpatialElementSectionStyle {
 	width?: string;
 }
 
+export type SectionBackgroundColor =
+	| 'transparent' | 'standard' | 'muted'
+	| 'transparentToStandard' | 'transparentToMuted'
+	| 'standardToTransparent' | 'standardToMuted'
+	| 'mutedToTransparent' | 'mutedToStandard';
+
+export interface SectionBackground {
+	color: SectionBackgroundColor;
+	size?: 'standard' | 'full';
+}
+
 /** Metadata supplied to a composable spatial-element `Section`. */
 export interface SpatialElementSectionDefinition {
 	id: string;
 	title: string;
+	/** Optional visible heading, separate from the navigation/accessibility title. */
+	headline?: string;
+	/** Semantic section background; legacy style remains available during migration. */
+	background?: SectionBackground;
 	style?: SpatialElementSectionStyle;
 }
 

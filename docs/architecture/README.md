@@ -1,6 +1,6 @@
 # Spatial Elements architecture
 
-Current implementation baseline: 2026-09-26, including the SpatialElement API migration. This is implementation documentation, not a proposal for an additional rewrite.
+Current implementation baseline: 2026-10-31, including the SpatialElement API migration and shared responsive layout. This is implementation documentation, not a proposal for an additional rewrite. The [layout architecture](layout.md) describes token, viewport, DOM-ownership and scroll contracts in detail.
 The twelve sections follow [arc42](https://arc42.org/overview/); the diagrams use the context, container and component levels of [C4](https://c4model.com/diagrams). Diagram arrows describe dependencies or data flow, not deployment of npm packages as services.
 
 ## 1. Introduction and goals
@@ -25,7 +25,7 @@ Spatial Elements is a library inside the host application. It does not provide a
 
 ## 4. Solution strategy
 
-Keep semantic content in HTML, render spatial geometry through a persistent stage, and let SvelteKit own URLs/history. Identify shared elements by element and role instead of retaining page DOM. Prepare optional resources ahead of motion; pin captured presentations across route replacement. Use a common Low/High coordinate frame and resolved-image fades. Separate public neutral examples from private integration assets.
+Keep semantic content in HTML, render spatial geometry through a persistent stage, and let SvelteKit own URLs/history. Identify presentations by element, occurrence and role; give stateful presentation roots a persistent owner when their DOM must survive route replacement. Resolve known layout rectangles from common tokens and measure natural content separately. Prepare optional resources ahead of motion and retain required scene resources through handoff. Use a common Low/High coordinate frame and resolved-image fades. Separate public neutral examples from private integration assets.
 
 ## 5. Building blocks - C4 levels 2 and 3
 

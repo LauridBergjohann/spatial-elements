@@ -41,7 +41,7 @@
 	}: Props = $props();
 	let group: HTMLDivElement;
 	let measuredWidth = $state<number>();
-	const radius = $derived(Math.min(12, Math.max(0, shape.radius)));
+	const radius = $derived(Number.isFinite(shape.radius) ? Math.max(0, shape.radius) : 12);
 	const width = $derived(
 		iconOnly ? `${items.length * 40}px` : measuredWidth ? `${measuredWidth}px` : 'max-content'
 	);

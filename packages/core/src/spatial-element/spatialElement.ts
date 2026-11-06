@@ -46,6 +46,7 @@ interface SpatialListSource {
 	title: string;
 	features?: readonly { label: string; marker?: string }[];
 	action?: SpatialElementData['action'];
+	minimap?: SpatialElementData['minimap'];
 }
 
 /**
@@ -71,6 +72,7 @@ export function getSpatialListItems(
 		background: spatialElement.background,
 		model: spatialElement.model,
 		camera: spatialElement.camera,
+		minimap: spatialElement.minimap,
 		assetManifest: spatialElement.assetManifest,
 		fallbackImage: spatialElement.fallbackImage,
 		fallbackImageSize: spatialElement.fallbackImageSize

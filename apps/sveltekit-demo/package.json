@@ -3,14 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "vite dev --port 5173 --strictPort",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "@spatial-elements/core": "1.0.0-beta.7",
-    "@spatial-elements/sveltekit": "1.0.0-beta.7"
+    "@spatial-elements/core": "1.0.0-beta.8",
+    "@spatial-elements/sveltekit": "1.0.0-beta.8"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^7.0.1",

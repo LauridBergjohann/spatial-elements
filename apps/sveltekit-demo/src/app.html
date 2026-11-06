@@ -1,6 +1,11 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><meta name="color-scheme" content="light dark" />
 <script>
 (function () {
+ if (!location.pathname.startsWith('/proof/theming/')) {
+  document.documentElement.dataset.theme = 'light';
+  document.documentElement.style.colorScheme = 'light';
+  return;
+ }
  var preference = 'system';
  try { preference = sessionStorage.getItem('spatial-demo-appearance') || 'system'; } catch (_) {}
  var dark = preference === 'dark' || (preference !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);

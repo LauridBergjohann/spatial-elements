@@ -1,0 +1,53 @@
+{
+  "contentMax": 1536,
+  "layoutMinWidths": { "xs": 0, "s": 600, "m": 840, "l": 1200, "xl": 1600, "2xl": 1809, "3xl": 2300 },
+  "grid": {
+    "xs": { "minWidth": 0, "columns": 4, "gap": 12, "headlineSize": 18, "headlineLineHeight": 28, "bodySize": 14, "bodyLineHeight": 20, "headlineGap": 8 },
+    "s": { "minWidth": 600, "columns": 6, "gap": 16, "headlineSize": 18, "headlineLineHeight": 28, "bodySize": 14, "bodyLineHeight": 20, "headlineGap": 8 },
+    "m": { "minWidth": 840, "columns": 8, "gap": 16, "headlineSize": 20, "headlineLineHeight": 32, "bodySize": 14, "bodyLineHeight": 20, "headlineGap": 12 },
+    "l": { "minWidth": 1200, "columns": 12, "gap": 24, "headlineSize": 24, "headlineLineHeight": 40, "bodySize": 16, "bodyLineHeight": 24, "headlineGap": 16 }
+  },
+  "cards": {
+    "s": { "span": 1, "titleSize": 9, "titleWeight": 500, "eyebrowSize": 0, "eyebrowWeight": 400, "lineHeight": 18, "rows": 1 },
+    "m": { "span": 2, "titleSize": 12, "titleWeight": 500, "eyebrowSize": 10, "eyebrowWeight": 400, "lineHeight": 20, "rows": 2 },
+    "l": { "span": 4, "gridSSpan": 3, "titleSize": 18, "titleWeight": 500, "eyebrowSize": 14, "eyebrowWeight": 400, "lineHeight": 24, "rows": 3 }
+  },
+  "cardTextInset": { "inline": 4, "block": 2 },
+  "xlContentInset": 136,
+  "pane": { "centerGap": 8, "rightInset": 20, "top": 96, "bottom": 16, "submenuHeight": 44, "headerHeight": 86, "minUsableHeight": 512 },
+  "menu": { "height": 66, "wideHeight": 64, "wideTop": 16, "scrollThreshold": 112 },
+  "satellite": { "width": 80, "height": 40, "inset": 28, "top": 28 },
+  "stageControls": { "buttonSize": 40, "groupButtons": 2, "gap": 8 },
+  "breadcrumb": {
+    "xs": { "fontSize": 10, "height": 24 },
+    "s": { "fontSize": 10, "height": 24 },
+    "m": { "fontSize": 12, "height": 30 },
+    "l": { "fontSize": 14, "height": 40 },
+    "xl": { "fontSize": 14, "height": 40 },
+    "2xl": { "fontSize": 14, "height": 40 },
+    "3xl": { "fontSize": 14, "height": 40 }
+  },
+  "hero": {
+    "xs": { "minHeight": 150, "heightOffset": 214, "maxHeight": 400, "railSize": 80, "railGap": 8, "railInset": 8, "railStageGap": 8, "summaryColumns": 4, "summaryInset": 8, "summaryGap": 8, "dockHeight": 76, "submenuHeight": 0, "submenuGap": 0, "submenuAfterGap": 0, "submenuLeft": 8, "submenuRight": 8, "zoomMinimap": 112, "zoomInset": 8 },
+    "s": { "minHeight": 150, "heightOffset": 214, "maxHeight": 500, "railSize": 80, "railGap": 8, "railInset": 8, "railStageGap": 8, "summaryColumns": 6, "summaryInset": 8, "summaryGap": 8, "dockHeight": 76, "submenuHeight": 0, "submenuGap": 0, "submenuAfterGap": 0, "submenuLeft": 8, "submenuRight": 8, "zoomMinimap": 112, "zoomInset": 8 },
+    "m": { "minHeight": 300, "heightOffset": 180, "maxHeight": 500, "railSize": 80, "railGap": 12, "railInset": 8, "railStageGap": 8, "summaryColumns": 3, "summaryInset": 8, "summaryGap": 8, "dockHeight": 80, "submenuHeight": 40, "submenuGap": 8, "submenuAfterGap": 8, "submenuLeft": 8, "submenuRight": 8, "zoomMinimap": 168, "zoomInset": 8 },
+    "l": { "minHeight": 340, "heightOffset": 194, "maxHeight": 600, "railSize": 80, "railGap": 16, "railInset": 8, "railStageGap": 8, "summaryColumns": 4, "summaryInset": 24, "summaryGap": 8, "dockHeight": 86, "submenuHeight": 44, "submenuGap": 8, "submenuAfterGap": 8, "submenuLeft": 8, "submenuRight": 24, "zoomMinimap": 178, "zoomInset": 8 },
+    "xl": { "minHeight": 400, "heightOffset": 236, "maxHeight": 700, "railSize": 112, "railGap": 16, "railInset": 12, "railStageGap": 12, "summaryColumns": 4, "summaryInset": 12, "summaryGap": 8, "dockHeight": 86, "submenuHeight": 44, "submenuGap": 12, "submenuAfterGap": 12, "submenuLeft": 0, "submenuRight": 0, "zoomMinimap": 220, "zoomInset": 12 },
+    "2xl": { "minHeight": 400, "heightOffset": 216, "maxHeight": 800, "railSize": 138, "railWidthRatio": 0.07, "railMinInset": 8, "railGap": 24, "railInset": 0, "railStageGap": 24, "summaryColumns": 4, "summaryInset": 0, "summaryGap": 24, "dockHeight": 86, "submenuHeight": 44, "submenuGap": 12, "submenuAfterGap": 12, "submenuLeft": 0, "submenuRight": 0, "zoomMinimap": 242, "zoomInset": 16 },
+    "3xl": { "minHeight": 400, "heightOffset": 112, "maxHeight": 800, "railSize": 138, "railGap": 24, "railInset": 28, "railStageGap": 12, "summaryColumns": 4, "summaryInset": 0, "summaryGap": 16, "dockHeight": 86, "submenuHeight": 44, "submenuGap": 0, "submenuAfterGap": 0, "submenuLeft": 0, "submenuRight": 0, "zoomMinimap": 242, "zoomInset": 28 }
+  },
+  "carousel": {
+    "dotsHeight": 32,
+    "nextPreviewHeight": 28,
+    "compactTitleHeight": 40,
+    "compactEyebrowHeight": 66,
+    "layouts": {
+      "xs": { "minHeight": 150, "maxHeight": 300, "sideAllowance": 36, "fitStartColumn": 1, "fitColumns": 4, "summaryStartColumn": 1, "summaryColumns": 4, "dotsGap": 0 },
+      "s": { "minHeight": 150, "maxHeight": 400, "sideAllowance": 72, "fitStartColumn": 1, "fitColumns": 6, "summaryStartColumn": 1, "summaryColumns": 6, "dotsGap": 0 },
+      "m": { "minHeight": 300, "maxHeight": 500, "sideAllowance": 0, "fitStartColumn": 2, "fitColumns": 3, "summaryStartColumn": 5, "summaryColumns": 3, "dotsGap": 12 },
+      "l": { "minHeight": 340, "maxHeight": 600, "sideAllowance": 0, "fitStartColumn": 3, "fitColumns": 5, "summaryStartColumn": 8, "summaryColumns": 4, "dotsGap": 16 },
+      "xl": { "minHeight": 400, "maxHeight": 700, "sideAllowance": 0, "fitStartColumn": 2, "fitColumns": 5, "summaryStartColumn": 7, "summaryColumns": 4, "dotsGap": 16 },
+      "2xl": { "minHeight": 400, "maxHeight": 800, "sideAllowance": 0, "fitStartColumn": 2, "fitColumns": 6, "summaryStartColumn": 8, "summaryColumns": 4, "dotsGap": 16 }
+    }
+  }
+}

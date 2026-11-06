@@ -2,6 +2,11 @@
 
 Analysis date: 2026-10-01. Baseline: commit `2f1196f`, including the five procedural demo geometries.
 
+The later layout redesign uses a different source-only navigation path. Its separate
+[production measurement protocol](design/layout/staged-performance.md) describes cold/warm
+route validation and exact movement/holding boundaries. The historical numbers below are
+not measurements of that new path.
+
 The demo's main costs are repeated full-screen rendering, preparation of render targets and
 shaders, and DOM style/layout work. Geometry simplification is not the appropriate first fix.
 The package now limits WebGPU resolution independently of HTML resolution, bounds temporary
@@ -164,7 +169,7 @@ silently labelling a missed input as a successful measurement.
 The new default is equivalent to:
 
 ```svelte
-<BrandStageShell {theme} {stage} {catalog}
+<BrandStageShell {theme}
   renderSettings={{ maxPixelRatio: 1, maxPixels: 2_073_600 }}>
   {@render children()}
 </BrandStageShell>

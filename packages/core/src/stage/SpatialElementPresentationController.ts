@@ -6,7 +6,8 @@ import type {
 	SpatialElementAssetManager
 } from '../catalog/assets/SpatialElementAssetManager.js';
 import type { PreparedHigh } from '../catalog/CatalogPreparation.js';
-import { SpatialElementRefinement } from './SpatialElementRefinement.js';
+import { SpatialElementRefinement, type RefinementRenderOptions } from './SpatialElementRefinement.js';
+import { createSceneEndpointGuard } from './sceneEndpointEligibility.js';
 import { prepareSpatialElementFrame } from './spatialElementFrame.js';
 import type { resolveStageProfile } from './resolveStageProfile.js';
 import {
@@ -39,6 +40,31 @@ export class SpatialElementPresentationController {
 		return [...new Set([this.blend, this.retainedBlend, this.movingBlend])].flatMap(
 			(blend) => blend?.getRenderTargets() ?? []
 		);
+	}
+	getSceneEndpointStats() {
+		return [...new Set([this.blend, this.retainedBlend, this.movingBlend])].flatMap(blend => blend ? [blend.getSceneEndpointStats()] : []);
+	}
+	invalidateSceneEndpoints() {
+		for (const blend of new Set([this.blend, this.retainedBlend, this.movingBlend])) blend?.invalidateSceneEndpoints();
+	}
+	prepareSceneEndpoints(renderer: THREE.WebGPURenderer, scene: THREE.Scene, camera: THREE.Camera,
+		highEnvironment: THREE.Texture | undefined, draw: (backgroundReveal: number) => void, ownerIsCurrent: () => boolean,
+		additionalScenes: readonly THREE.Scene[] = [], additionalCameras: readonly THREE.Camera[] = []) {
+		const refinement = this.blend, high = this.high, model = this.value, low = this.instance?.scene;
+		if (!refinement || !high || !model || !low || this.instance?.animations.length || high.instance.animations.length) return;
+		const guard = createSceneEndpointGuard({ scene, camera, model, low, high: high.pose, highEnvironment, additionalScenes, additionalCameras });
+		if (!guard) return;
+		return refinement.prepareSceneEndpoints(renderer, (useHigh, backgroundReveal) => {
+			const environment = scene.environment;
+			const visible = model.children.map(child => child.visible);
+			if (useHigh && highEnvironment) scene.environment = highEnvironment;
+			model.children.forEach(child => { child.visible = (child === high.pose) === useHigh; });
+			try { draw(backgroundReveal); }
+			finally { scene.environment = environment; model.children.forEach((child, i) => { child.visible = visible[i]; }); }
+		}, {
+			isValid: () => this.blend === refinement && this.value === model && this.high === high && ownerIsCurrent() && guard.isValid(),
+			dispose: () => guard.dispose()
+		});
 	}
 	readonly readiness = new PresentationReadiness();
 	private environmentLease?: ReturnType<EnvironmentCache['acquire']>;
@@ -118,6 +144,7 @@ export class SpatialElementPresentationController {
 	}
 
 	finishHandoff(synchronous: boolean) {
+		this.invalidateSceneEndpoints();
 		if (synchronous && this.high && this.state !== 'high') this.blend = new SpatialElementRefinement(true);
 		if (this.movingBlend && this.high) {
 			this.retainedBlend?.dispose();
@@ -127,6 +154,7 @@ export class SpatialElementPresentationController {
 	}
 
 	takeHigh() {
+		this.invalidateSceneEndpoints();
 		const high = this.high;
 		this.high = undefined;
 		this.movingBlend = undefined;
@@ -140,6 +168,7 @@ export class SpatialElementPresentationController {
 	}
 
 	takeLowInstance() {
+		this.invalidateSceneEndpoints();
 		const low = this.instance;
 		this.instance = undefined;
 		return low;
@@ -150,6 +179,7 @@ export class SpatialElementPresentationController {
 
 	takeHero(): HeroTransfer | undefined {
 		if (!this.value) return;
+		this.invalidateSceneEndpoints();
 		const transfer: HeroTransfer = {
 			model: this.value,
 			low: this.low,
@@ -376,12 +406,14 @@ export class SpatialElementPresentationController {
 		highEnvironment: THREE.Texture | undefined,
 		draw: () => void,
 		representationChanged: (model: THREE.Object3D, outline: THREE.Object3D) => void,
-		reducedMotion: boolean
+		reducedMotion: boolean,
+		options: RefinementRenderOptions = {}
 	) {
 		const refinement = this.blend;
 		const high = this.high;
 		const model = this.value;
 		if (!refinement || !high || !model) return false;
+		const originalVisibility = options.advanceClock === false ? model.children.map(child => child.visible) : undefined;
 		try {
 			refinement.render(
 				renderer,
@@ -395,12 +427,16 @@ export class SpatialElementPresentationController {
 						scene.environment = environment;
 					}
 				},
-				reducedMotion
+				reducedMotion,
+				undefined,
+				options
 			);
+			if (options.advanceClock === false) return true;
 			this.markRefinement(refinement.complete ? 'high' : 'refining', refinement.frames);
 			for (const child of model.children)
 				child.visible = (child === high.pose) === refinement.complete;
 			if (refinement.complete) {
+				refinement.invalidateSceneEndpoints();
 				if (highEnvironment) scene.environment = highEnvironment;
 				const outline = model.clone(false);
 				outline.add(high.pose.clone(true));
@@ -418,6 +454,8 @@ export class SpatialElementPresentationController {
 			this.state = 'failed';
 			representationChanged(model, this.low ?? model);
 			return false;
+		} finally {
+			if (originalVisibility) model.children.forEach((child, i) => { child.visible = originalVisibility[i]; });
 		}
 	}
 }

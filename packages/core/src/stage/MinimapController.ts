@@ -37,7 +37,6 @@ import {
 	MINIMAP_DEFAULT_HOVER_MODEL_SCALE,
 	MINIMAP_DEFAULT_OVERLAY_BLUR,
 	MINIMAP_MIN_BLUR_GUARD,
-	MINIMAP_MODEL_FILL,
 	MINIMAP_MODEL_RENDER_ORDER,
 	MINIMAP_OVERLAY_Z,
 	MINIMAP_PANEL_Z,
@@ -46,11 +45,14 @@ import {
 	PANEL_CAMERA_FOV
 } from './stageConstants.js';
 import {
-	getCameraOrbitQuaternion,
 	getMinimapHoverScale,
 	resolveMinimapModelScale,
 	smoothstep
 } from './stageMath.js';
+import {
+	getMinimapDockedQuaternion, getMinimapModelFitScale, getMinimapModelRadius, getMinimapRestQuaternion,
+	getMinimapTopAlignmentOffset, getMinimapLeftAlignmentOffset
+} from './minimap/MinimapModelGeometry.js';
 import {
 	addMinimapBlurLights,
 	disposeMinimapModelMaterials,
@@ -196,15 +198,12 @@ export class MinimapController {
 		const modelRoot = (this.lowModel ?? this.model).clone(true);
 		this.hideExcludedMeshes(modelRoot);
 		const bounds = getMeshBounds(modelRoot, (mesh) => this.isSpatialElementMesh(mesh));
-		const sphere = bounds.getBoundingSphere(new THREE.Sphere());
 		// Low-LOD bounds can have a different center from the shared model frame.
 		// Use the same pivot as the main view so orbiting cannot move its footprint.
 		const center = this.ports.spatialElement().center;
-		sphere.radius += sphere.center.distanceTo(center);
-		sphere.center.copy(center);
 		const modelCenter = new THREE.Group();
 		modelCenter.add(modelRoot);
-		modelCenter.position.copy(sphere.center).multiplyScalar(-1);
+		modelCenter.position.copy(center).multiplyScalar(-1);
 		const model = new THREE.Group();
 		model.add(modelCenter);
 		prepareMinimapModel(model);
@@ -218,7 +217,7 @@ export class MinimapController {
 		const captureExtentHeight = baseHeight * maximumPanelScale + blurGuard * 2;
 		const maximumSourcePixelsPerCssPixel = this.getFullPixelRatio();
 		const aspect = baseWidth / Math.max(baseHeight, 1);
-		const modelRadius = Math.max(sphere.radius, 0.001);
+		const modelRadius = getMinimapModelRadius(bounds, center);
 		const panelDistance = Math.max(
 			this.panelCamera.position.z - panel.group.position.z,
 			modelRadius * 2
@@ -337,21 +336,8 @@ export class MinimapController {
 		displayModel.add(displayCenter);
 		const displayMaterials = prepareMinimapModel(displayModel);
 		displayModel.renderOrder = MINIMAP_MODEL_RENDER_ORDER;
-		const restQuaternion = this.initialCameraWorldQuaternion
-			.clone()
-			.invert()
-			.multiply(this.initialModelWorldQuaternion);
-		const hasDockedOrientation =
-			Number.isFinite(options.dockedView?.azimuth) ||
-			Number.isFinite(options.dockedView?.elevation);
-		const dockedQuaternion = hasDockedOrientation
-			? getCameraOrbitQuaternion(
-					options.dockedView?.azimuth ?? this.cameraSettings.azimuth,
-					options.dockedView?.elevation ?? this.cameraSettings.elevation
-				)
-					.invert()
-					.multiply(this.initialModelWorldQuaternion)
-			: undefined;
+		const restQuaternion = getMinimapRestQuaternion(this.initialCameraWorldQuaternion, this.initialModelWorldQuaternion);
+		const dockedQuaternion = getMinimapDockedQuaternion(options.dockedView, this.cameraSettings, this.initialModelWorldQuaternion);
 
 		const overlayVisibility = uniform(0);
 		const overlayPanelSize = uniform(new THREE.Vector2(baseWidth, baseHeight));
@@ -717,17 +703,13 @@ export class MinimapController {
 		panelHeight: number,
 		focus: number
 	) {
-		const contentWidth = Math.max(panelWidth - minimap.options.inset * 2, 8);
-		const contentHeight = Math.max(panelHeight - minimap.options.inset * 2, 8);
-		const availableDiameter = Math.min(contentWidth, contentHeight) * MINIMAP_MODEL_FILL;
 		const presentationScale = THREE.MathUtils.clamp(
 			this.ports.frame().fullscreen ? 1 : (this.ports.target(minimap.panelIndex)?.getMinimapModelScale?.() ?? 1),
 			0.2,
 			2
 		);
-		const baseScale =
-			(availableDiameter * minimap.options.modelScale * presentationScale) /
-			Math.max(minimap.modelRadius * 2, 0.001);
+		const baseScale = getMinimapModelFitScale(panelWidth, panelHeight, minimap.modelRadius,
+			minimap.options, presentationScale);
 		const hoverModelScale = THREE.MathUtils.lerp(
 			minimap.options.hoverModelScale,
 			minimap.options.expandedHoverModelScale,
@@ -773,28 +755,26 @@ export class MinimapController {
 		if (this.ports.frame().fullscreen) return;
 		const targetTop = this.ports.target(minimap.panelIndex)?.getMinimapModelTop?.();
 		if (targetTop === undefined || !Number.isFinite(targetTop)) return;
-
-		for (let iteration = 0; iteration < 2; iteration += 1) {
-			const projected = this.getProjectedMinimapModelRect(minimap);
-			if (!projected || Math.abs(projected.y - targetTop) < 0.001) return;
-
-			const startY = minimap.displayModel.position.y;
-			minimap.displayModel.position.y = startY + 1;
-			const shifted = this.getProjectedMinimapModelRect(minimap);
-			minimap.displayModel.position.y = startY;
-			if (!shifted) return;
-
-			const pixelsPerLocalUnit = shifted.y - projected.y;
-			if (Math.abs(pixelsPerLocalUnit) < 0.000001) return;
-
-			minimap.displayModel.position.y += THREE.MathUtils.clamp(
-				(targetTop - projected.y) / pixelsPerLocalUnit,
-				-window.innerHeight,
-				window.innerHeight
-			);
-		}
-
+		const progress = THREE.MathUtils.clamp(this.ports.target(minimap.panelIndex)?.getMinimapDockProgress?.() ?? 1, 0, 1);
+		if (progress === 0) return;
+		const projected = this.getProjectedMinimapModelRect(minimap);
+		if (!projected) return;
+		// Blend from the ordinary rail pose throughout the existing scroll morph.
+		// Once the model reaches the viewport edge, do not let any corner cross it.
+		const top = Math.max(targetTop, THREE.MathUtils.lerp(projected.y, targetTop, progress));
+		minimap.displayModel.position.y += getMinimapTopAlignmentOffset(minimap.modelBoundsPoints,
+			minimap.displayModel.matrixWorld, minimap.screenCamera, window.innerHeight, top, minimap.layer.matrixWorld);
 		minimap.displayModel.updateWorldMatrix(true, true);
+		const safeLeft = this.ports.target(minimap.panelIndex)?.getMinimapModelLeft?.() ?? 0;
+		const shift = getMinimapLeftAlignmentOffset(minimap.modelBoundsPoints, minimap.displayModel.matrixWorld,
+			minimap.screenCamera, window.innerWidth, safeLeft);
+		if (shift.lengthSq() > 0) {
+			// Camera-right leaves projected Y and depth unchanged, even when the panel tilts.
+			const local = new THREE.Vector4(shift.x, shift.y, shift.z, 0)
+				.applyMatrix4(minimap.layer.matrixWorld.clone().invert());
+			minimap.displayModel.position.add(new THREE.Vector3(local.x, local.y, local.z));
+			minimap.displayModel.updateWorldMatrix(true, true);
+		}
 	}
 	getProjectedMinimapModelRect(minimap: StageMinimapState) {
 		minimap.layer.updateWorldMatrix(true, false);
@@ -1086,15 +1066,7 @@ export class MinimapController {
 
 		minimap.displayOpacity = resolvedOpacity;
 		minimap.displayModel.visible = resolvedOpacity > 0.001;
-		minimap.displayMaterials.forEach((state) => {
-			const transparent = state.transparent || resolvedOpacity < 0.999;
-			if (state.material.transparent !== transparent) {
-				state.material.transparent = transparent;
-				state.material.needsUpdate = true;
-			}
-			state.material.opacity = state.opacity * resolvedOpacity;
-			state.material.depthWrite = state.depthWrite && resolvedOpacity > 0.999;
-		});
+		minimap.displayMaterials.forEach((state) => state.setOpacity(resolvedOpacity));
 	}
 	renderMinimapBlur(minimap: StageMinimapState) {
 		return withRendererState(this.renderer, () => {

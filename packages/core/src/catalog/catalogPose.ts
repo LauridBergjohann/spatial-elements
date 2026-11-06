@@ -1,3 +1,11 @@
+import { resolveCarouselLayout, spatialLayoutTokens, type CarouselLayoutInput, type LayoutRect } from '../spatial-element/responsiveLayout.js';
+
+export interface CarouselFraming {
+	compact: boolean;
+	fit: LayoutRect;
+	summary: { x: number; width: number; anchorY: number; alignment: 'center' | 'end' };
+}
+
 /** Section-local screen framing, independent of assets and camera ownership. */
 export interface CatalogPose {
 	x: number;
@@ -13,6 +21,7 @@ export interface CatalogPose {
 	opacity: number;
 	/** Camera-space offsets from the shared section origin; no per-item perspective compensation. */
 	orbit?: { x: number; y: number; pitch: number };
+	framing?: CarouselFraming;
 }
 
 export interface CatalogPoseProvider {
@@ -34,6 +43,26 @@ export interface CarouselLayout {
 	height: number;
 	left: number;
 	viewportWidth: number;
+	framing?: CarouselFraming;
+}
+
+/** Convert predictable viewport rules to the existing section-local scene clock. */
+export function resolveCarouselPoseLayout(input: CarouselLayoutInput, ring: { width: number; left: number }): CarouselLayout {
+	const resolved = resolveCarouselLayout(input);
+	const compact = resolved.summary.placement === 'compact';
+	const titleHeight = compact ? spatialLayoutTokens.carousel.compactEyebrowHeight : 0;
+	const ringTop = resolved.mediaFit.y - titleHeight;
+	return {
+		width: ring.width, height: resolved.mediaFit.height + titleHeight,
+		left: ring.left, viewportWidth: resolved.base.layoutWidth,
+		framing: {
+			compact,
+			fit: { ...resolved.mediaFit, x: resolved.mediaFit.x - ring.left, y: titleHeight },
+			summary: { x: resolved.summary.x - ring.left, width: resolved.summary.width,
+				anchorY: compact ? titleHeight : resolved.summary.anchor.y - ringTop,
+				alignment: compact ? 'end' : 'center' }
+		}
+	};
 }
 
 const defaultLayout: CarouselLayout = { width: 1320, height: 560, left: 60, viewportWidth: 1440 };
@@ -61,8 +90,9 @@ export class CarouselDragEmphasis {
 
 function framing(distance: number, presentation: CarouselPresentation, layout: CarouselLayout,
 	emphasis = carouselEmphasis(distance)) {
-	const compact = layout.width < 700;
-	const frame = Math.min(layout.width, compact ? 360 : layout.height);
+	const compact = layout.framing?.compact ?? layout.viewportWidth < spatialLayoutTokens.layoutMinWidths.m;
+	const fit = layout.framing?.fit;
+	const frame = fit ? Math.min(fit.width, fit.height) : Math.min(layout.width, compact ? 360 : layout.height);
 	const spacing = Number.isFinite(presentation.radius)
 		? Math.max(0.2, Math.min(0.7, presentation.radius!)) : 0.48;
 	const depth = Number.isFinite(presentation.depth)
@@ -87,7 +117,7 @@ function framing(distance: number, presentation: CarouselPresentation, layout: C
 		pitch
 	};
 	const scale = 2500 / (2500 - z);
-	const anchor = layout.left + layout.width * (compact ? 0.5 : 0.31);
+	const anchor = layout.left + (fit ? fit.x + fit.width / 2 : layout.width * (compact ? 0.5 : 0.31));
 	const center = layout.viewportWidth / 2 + (anchor - layout.viewportWidth / 2 + orbit.x) * scale;
 	const offset = center - anchor;
 	const extent = frame * 0.82 * scale * 0.6;
@@ -124,11 +154,12 @@ export function carouselPose(
 	const { offset, scale, center, extent, orbit, z, angle, arcOpacity } = framing(distance, presentation, layout, emphasis);
 	const edge = Math.max(0, Math.min(1, (center + extent) / 48, (layout.viewportWidth - center + extent) / 48)) * arcOpacity;
 	return {
-		x: 0.5 + offset / Math.max(1, layout.width),
-		y: 0.54 - orbit.y * scale / Math.max(1, layout.height),
+		x: (layout.framing ? layout.framing.fit.x + layout.framing.fit.width / 2 : layout.width * 0.5) / Math.max(1, layout.width) + offset / Math.max(1, layout.width),
+		y: (layout.framing ? layout.framing.fit.y + layout.framing.fit.height / 2 : layout.height * 0.54) / Math.max(1, layout.height) - orbit.y * scale / Math.max(1, layout.height),
 		size: 0.82 * scale,
 		depth: z,
 		orbit,
+		...(layout.framing ? { framing: layout.framing } : {}),
 		yaw: angle,
 		visible: edge > 0,
 		front: Math.abs(distance) <= 0.5,
