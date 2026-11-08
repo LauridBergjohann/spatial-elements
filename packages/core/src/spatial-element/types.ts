@@ -1,3 +1,5 @@
+import type { SectionDefinition, SectionBackground, SectionBackgroundColor, ContentPageData as PageContentData } from '@page-sections/core';
+export type { SectionBackground, SectionBackgroundColor } from '@page-sections/core';
 import type { VerifiedSpatialElementAssetManifest } from '../catalog/spatialElementAssets.js';
 import type { SpatialElementGeometry } from './spatialElementGeometry.js';
 import type {
@@ -177,19 +179,8 @@ export interface SpatialElementSectionStyle {
 	width?: string;
 }
 
-export type SectionBackgroundColor =
-	| 'transparent' | 'standard' | 'muted'
-	| 'transparentToStandard' | 'transparentToMuted'
-	| 'standardToTransparent' | 'standardToMuted'
-	| 'mutedToTransparent' | 'mutedToStandard';
-
-export interface SectionBackground {
-	color: SectionBackgroundColor;
-	size?: 'standard' | 'full';
-}
-
 /** Metadata supplied to a composable spatial-element `Section`. */
-export interface SpatialElementSectionDefinition {
+export interface SpatialElementSectionDefinition extends Omit<SectionDefinition, 'style'> {
 	id: string;
 	title: string;
 	/** Optional visible heading, separate from the navigation/accessibility title. */
@@ -262,7 +253,7 @@ export type SpatialMinimapTheme = Pick<
 >;
 
 /** Category/content page metadata; only title is required. */
-export interface ContentPageData {
+export interface ContentPageData extends PageContentData {
 	/** Browser document title; defaults to title. */
 	pageTitle?: string;
 	title: string;

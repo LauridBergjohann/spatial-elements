@@ -32,6 +32,7 @@
  });
  // Resizing keeps the same endpoints: spatial measurement uses the actual media rectangle.
  const ready = $derived.by(() => {
+   void reserveEyebrow; void cardSize;
    const enabled = active, themeId = brand.id, current = spatialElement, key = occurrence;
    return (parts: CardElements) => {
      const cleanups: (() => void)[] = [];
@@ -80,22 +81,22 @@
 </Card>
 <span class="catalog-status" role="status">{busy ? 'Opening spatial element…' : ''}</span>
 <style>
- :global(.spatial-element-card) { pointer-events: auto; transform-origin: center; transform-style: preserve-3d; transform: perspective(1000px) translate3d(0, var(--catalog-lift, 0px), 0) rotateX(var(--catalog-rotate-x, 0deg)) rotateY(var(--catalog-rotate-y, 0deg)); }
- :global(.spatial-element-card [data-ps-card-part='media-frame']) { overflow: visible; }
- :global(.spatial-element-card [data-ps-card-part='media']), :global(.spatial-element-card [data-ps-card-part='copy']) { transform-style: preserve-3d; }
- :global(.spatial-element-card [data-ps-card-part='surface']) { box-shadow: 0 12px 32px rgb(0 0 0 / 6%); transition: border-color 180ms ease; }
- :global(.spatial-element-card:is([data-mouse-hover], :focus-visible) [data-ps-card-part='surface']) { border-color: var(--ps-accent); }
- :global(.spatial-element-card [data-ps-card-part='surface']::after) { content: ''; position: absolute; inset: -1px; border-radius: inherit; box-shadow: 0 0 0 1px color-mix(in srgb, var(--ps-accent) 25%, transparent), 0 0 18px color-mix(in srgb, var(--ps-accent) 18%, transparent); opacity: 0; transition: opacity 180ms ease; }
- :global(.spatial-element-card:is([data-mouse-hover], :focus-visible) [data-ps-card-part='surface']::after) { opacity: 1; }
+ :global(.ps-card.spatial-element-card[data-catalog-card]) { isolation: auto; --ps-radius: var(--spatial-element-control-radius); pointer-events: auto; transform-origin: center; transform-style: preserve-3d; transform: perspective(1000px) translate3d(0, var(--catalog-lift, 0px), 0) rotateX(var(--catalog-rotate-x, 0deg)) rotateY(var(--catalog-rotate-y, 0deg)); }
+ :global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='media-frame']) { overflow: visible; }
+ :global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='media']), :global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='copy']) { transform-style: preserve-3d; }
+ :global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='surface']) { box-shadow: 0 12px 32px rgb(0 0 0 / 6%); transition: border-color 180ms ease; }
+ :global(.ps-card.spatial-element-card[data-catalog-card]:is([data-mouse-hover], :focus-visible) [data-ps-card-part='surface']) { border-color: var(--ps-accent); }
+ :global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='surface']::after) { content: ''; position: absolute; inset: -1px; border-radius: inherit; box-shadow: 0 0 0 1px color-mix(in srgb, var(--ps-accent) 25%, transparent), 0 0 18px color-mix(in srgb, var(--ps-accent) 18%, transparent); opacity: 0; transition: opacity 180ms ease; }
+ :global(.ps-card.spatial-element-card[data-catalog-card]:is([data-mouse-hover], :focus-visible) [data-ps-card-part='surface']::after) { opacity: 1; }
  :global([data-spatial-card-appearance-frozen]::after) { opacity: var(--spatial-card-frozen-after-opacity) !important; transition-property: none !important; }
- :global(.spatial-element-card [data-ps-card-part='title']) { transform: translateZ(var(--card-title-depth, 0px)); }
- :global(.spatial-element-card [data-ps-card-part='eyebrow']) { transform: translateZ(var(--card-eyebrow-depth, 0px)); }
- :global(.spatial-element-card [data-shared-role='title']), :global(.spatial-element-card [data-shared-role='eyebrow']) { text-shadow: var(--card-text-shadow, 0 0 0 transparent); transition: transform 260ms ease, text-shadow 260ms ease; }
- :global(.spatial-element-card:is([data-mouse-hover], :focus-visible)) { --card-eyebrow-depth: 40px; --card-title-depth: 64px; --card-model-depth: 96px; --card-model-scale: 1.12; --card-text-shadow: 0 4px 10px rgb(0 0 0 / 16%); }
+ :global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='title']) { transform: translateZ(var(--card-title-depth, 0px)); }
+ :global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='eyebrow']) { transform: translateZ(var(--card-eyebrow-depth, 0px)); }
+ :global(.ps-card.spatial-element-card[data-catalog-card] [data-shared-role='title']), :global(.ps-card.spatial-element-card[data-catalog-card] [data-shared-role='eyebrow']) { text-shadow: var(--card-text-shadow, 0 0 0 transparent); transition: transform 260ms ease, text-shadow 260ms ease; }
+ :global(.ps-card.spatial-element-card[data-catalog-card]:is([data-mouse-hover], :focus-visible)) { --card-eyebrow-depth: 40px; --card-title-depth: 64px; --card-model-depth: 96px; --card-model-scale: 1.12; --card-text-shadow: 0 4px 10px rgb(0 0 0 / 16%); }
  .catalog-poster { display: block; transform: translateZ(var(--card-model-depth, 0px)) scale(var(--card-model-scale, 1)); transition: transform 260ms ease, opacity 240ms ease; }
  :global([data-catalog-model-ready]) .catalog-poster, :global([data-spatial-presentation-model-ready]) .catalog-poster { opacity: 0; }
  .catalog-loading { position: absolute; right: 14px; top: 14px; width: 18px; height: 18px; border: 2px solid var(--ps-border); border-top-color: var(--ps-accent); border-radius: 50%; animation: spin .8s linear infinite; }
  .catalog-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
  @keyframes spin { to { transform: rotate(360deg); } }
- @media (prefers-reduced-motion: reduce) { :global(.spatial-element-card), :global(.spatial-element-card [data-shared-role]), .catalog-poster { transform: none; transition: none; text-shadow: none; } }
+ @media (prefers-reduced-motion: reduce) { :global(.ps-card.spatial-element-card[data-catalog-card]), :global(.ps-card.spatial-element-card[data-catalog-card] [data-shared-role]), .catalog-poster { transform: none; transition: none; text-shadow: none; } }
 </style>

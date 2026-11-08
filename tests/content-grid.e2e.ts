@@ -46,7 +46,7 @@ test('ContentPage widths match the resolver and grids reflow at their container 
 	await page.goto('/demo/layout-grid');
 	for (const width of [320, 599, 600, 839, 840, 1199, 1200, 1536, 1599, 1600, 1808, 1809, 2300, 3200]) {
 		await page.setViewportSize({ width, height: 900 });
-		const content = page.locator('.content-page');
+		const content = page.locator('.content-page > .ps-content-width');
 		await expect.poll(async () => (await content.boundingBox())!.width).toBeCloseTo(resolveResponsiveLayout({ width, height: 900 }).content.width, 0);
 		expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 	}

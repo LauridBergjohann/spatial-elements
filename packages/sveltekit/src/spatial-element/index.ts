@@ -38,3 +38,5 @@ export { createSpatialTheme, resolveSpatialThemeRadii, resolveSpatialSectionBack
 export type { StageRenderSettings, BackgroundSettings, StageModelSettings, StageCameraSettings } from '@spatial-elements/core/stage/stageTypes';
 
 export { geometryFromLodPair, type SpatialElementGeometry } from '@spatial-elements/core/spatial-element/spatialElementGeometry';
+
+export type { CardMediaAspect, CardMediaFit, SurfaceTone } from '@page-sections/core';

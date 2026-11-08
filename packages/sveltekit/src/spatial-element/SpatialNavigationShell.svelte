@@ -1,17 +1,21 @@
 <script lang="ts">
-	import { onMount, tick, type Snippet } from 'svelte';
+	import { getContext, onMount, tick, type Snippet } from 'svelte';
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
 	import { resolveMenuOffset } from '@spatial-elements/core/spatial-element/responsiveLayout';
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { getStageVisualScrollPosition, STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
 	import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
-	import Panel from '../stage/Panel.svelte';
+	import { Navigation } from '@page-sections/svelte';
+	import type { MenuItem } from '@page-sections/core';
+	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
 	import { useSpatialTheme } from './brandContext.js';
 	import './layout.generated.css';
 
-	let { menu, left, right }: { menu?: Snippet; left?: Snippet; right?: Snippet } = $props();
+	let { menu, items, brand, tools, left, right }: { menu?: Snippet; items?: MenuItem[]; brand?: Snippet; tools?: Snippet; left?: Snippet; right?: Snippet } = $props();
+	const stageContext = getContext<StageContext | undefined>(STAGE_CONTEXT_KEY);
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
+	$effect(() => { void theme; void fixedDetail; stageContext?.updatePanelAppearance?.(); });
 	const radii = $derived(resolveSpatialThemeRadii(theme));
 	let rack: HTMLDivElement;
 	let stage: HTMLElement | undefined;
@@ -46,84 +50,38 @@
 		updateMode();
 		const observer = new MutationObserver(updateMode);
 		if (stage) observer.observe(stage, { attributes: true, attributeFilter: ['class'] });
-		const stop = subscribeStageScrollFrame(frame => position(frame.scrollY), STAGE_SCROLL_PRIORITY.virtualDocument + 1);
+		// Shared navigation owns the boxes; the stage only enhances their surfaces.
+        const releases = [...rack.querySelectorAll<HTMLElement>('.header, .satellite')].map(element => {
+            const role = element.classList.contains('header') ? 'menu' : element.classList.contains('left') ? 'left' : 'right';
+            element.setAttribute('data-spatial-shell-' + role, '');
+            element.classList.add('spatial-shell-' + (role === 'menu' ? 'menu' : 'satellite'));
+            element.dataset.stagePanelNativeContent = '';
+            return stageContext?.registerPanel({
+                getElement: () => element, getFrameElement: () => element, getSurfaceElement: () => element,
+                getContentInset: () => 0, getPointerReactive: () => false, getFocusReactive: () => true,
+                getNativeContent: () => true, getVisible: () => element.getClientRects().length > 0,
+                getMinimapOptions: () => undefined, getMinimapDockProgress: () => 0,
+                getMinimapModelScale: () => 1, getMinimapModelTop: () => undefined,
+                getSurface: () => fixedDetail ? theme.panelTheme.surface ?? 'glass' : 'frosted',
+                getSurfaceOpacity: () => 1,
+                getOptions: () => ({ ...theme.panelTheme, radius: role === 'menu' ? radii.panel : radii.control })
+            });
+        });
+        const stop = subscribeStageScrollFrame(frame => position(frame.scrollY), STAGE_SCROLL_PRIORITY.virtualDocument + 1);
 		window.addEventListener('resize', updateMode, { passive: true });
-		return () => { stop(); observer.disconnect(); window.removeEventListener('resize', updateMode); };
+		return () => { releases.forEach(release => release?.()); stop(); observer.disconnect(); window.removeEventListener('resize', updateMode); };
 	});
 </script>
 
 <div class="spatial-shell-track" data-spatial-navigation-shell>
-	<div bind:this={rack} class="spatial-shell-rack" data-stage-scroll-shell data-catalog-shell>
-		{#if menu}
-			<Panel class="spatial-shell-menu spatial-content-width" nativeContent pointerReactive={false}
-				surface={fixedDetail ? theme.panelTheme.surface : 'frosted'}
-				shape={{ radius: radii.panel, contentInset: 0 }} theme={theme.panelTheme}
-				contentClass="spatial-shell-menu-content" data-spatial-shell-menu>
-				{@render menu()}
-			</Panel>
-		{/if}
-		{#if left}
-			<Panel class="spatial-shell-satellite spatial-shell-left" nativeContent pointerReactive={false}
-				surface={fixedDetail ? theme.panelTheme.surface : 'frosted'}
-				shape={{ radius: radii.control, contentInset: 0 }} theme={theme.panelTheme}
-				contentClass="spatial-shell-satellite-content" data-spatial-shell-left>
-				{@render left()}
-			</Panel>
-		{/if}
-		{#if right}
-			<Panel class="spatial-shell-satellite spatial-shell-right" nativeContent pointerReactive={false}
-				surface={fixedDetail ? theme.panelTheme.surface : 'frosted'}
-				shape={{ radius: radii.control, contentInset: 0 }} theme={theme.panelTheme}
-				contentClass="spatial-shell-satellite-content" data-spatial-shell-right>
-				{@render right()}
-			</Panel>
-		{/if}
-	</div>
+ <div bind:this={rack} class="spatial-shell-rack" data-stage-scroll-shell data-catalog-shell data-spatial-navigation-glass={fixedDetail && theme.panelTheme.surface === 'glass' ? '' : undefined}>
+  <Navigation {menu} {items} {brand} {tools} {left} {right} />
+ </div>
 </div>
-
 <style>
-	.spatial-shell-track {
-		position: relative;
-		z-index: 30;
-		height: calc(var(--spatial-shell-reserve) + var(--spatial-shell-sticky-range));
-		margin-bottom: calc(-1 * var(--spatial-shell-sticky-range));
-		pointer-events: none;
-	}
-	.spatial-shell-rack {
-		position: sticky;
-		top: 0;
-		width: 100%;
-		height: var(--spatial-shell-reserve);
-		pointer-events: none;
-	}
-	:global(.stage-virtual-scroll-active) .spatial-shell-rack {
-		position: relative;
-		transform: translateY(var(--spatial-shell-scroll-compensation, 0px));
-	}
-	:global(.spatial-shell-menu) {
-		position: absolute;
-		top: var(--spatial-shell-menu-top);
-		left: 0;
-		right: 0;
-		height: var(--spatial-shell-menu-height);
-		pointer-events: auto;
-	}
-	:global(.spatial-shell-menu-content) {
-		box-sizing: border-box;
-		display: flex;
-		align-items: center;
-		width: 100%;
-		height: 100%;
-		padding: 0 12px;
-	}
-	:global(.spatial-shell-satellite) {
-		position: absolute;
-		top: var(--spatial-shell-satellite-top);
-		width: var(--spatial-shell-satellite-width);
-		height: var(--spatial-shell-satellite-height);
-		pointer-events: auto;
-	}
-	:global(.spatial-shell-left) { left: var(--spatial-shell-satellite-inset); }
-	:global(.spatial-shell-right) { right: var(--spatial-shell-satellite-inset); }
-	:global(.spatial-shell-satellite-content) { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+ .spatial-shell-track { position: relative; z-index: 30; height: calc(var(--ps-nav-height) + var(--ps-sticky-range)); margin-bottom: calc(-1 * var(--ps-sticky-range)); pointer-events: none; }
+ .spatial-shell-rack { position: sticky; top: 0; height: var(--ps-nav-height); pointer-events: none; }
+ .spatial-shell-rack :global(.ps-navigation) { pointer-events: auto; }
+ :global(.stage-virtual-scroll-active) .spatial-shell-rack { position: relative; transform: translateY(var(--spatial-shell-scroll-compensation, 0px)); }
+ [data-spatial-navigation-glass] :global([data-stage-panel-bound]) { background: transparent; box-shadow: none; }
 </style>

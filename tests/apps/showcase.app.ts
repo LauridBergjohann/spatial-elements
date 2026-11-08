@@ -25,6 +25,7 @@ test('two-state controls preserve the live shell, keyboard choice and reload pre
 	await expect(shell).toHaveAttribute('data-color-scheme', 'light');
 	for (const width of [320, 600, 840, 1600]) {
 		await page.setViewportSize({ width, height: 900 });
+		if (width < 1600) await page.locator('.settings summary').click();
 		const dark = page.getByRole('button', { name: 'Dark mode' }).filter({ visible: true });
 		await expect(dark).toHaveCount(1);
 		await dark.click();
@@ -32,8 +33,8 @@ test('two-state controls preserve the live shell, keyboard choice and reload pre
 		expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 	}
 	await page.setViewportSize({ width: 320, height: 800 });
-	await page.locator('.compact-links summary').click();
-	await expect(page.locator('.compact-links').getByRole('link', { name: 'Documentation' })).toBeVisible();
+	await page.locator('.mobile-menu summary').click();
+	await expect(page.locator('.mobile-menu').getByRole('link', { name: 'Documentation' })).toBeVisible();
 	await page.screenshot({ path: info.outputPath('showcase-mobile.png') });
 	expect(errors).toEqual([]);
 });
@@ -63,9 +64,10 @@ test('dark native page and mobile menu work without JavaScript', async ({ browse
 		const page = await context.newPage();
 		await page.goto('/');
 		await expect(page.locator('.brand-stage-shell')).toHaveCSS('background-color', 'rgb(28, 30, 34)');
+		await page.locator('.settings summary').click();
 		await expect(page.getByRole('button', { name: 'Light mode' }).filter({ visible: true })).toBeDisabled();
-		await page.locator('.compact-links summary').click();
-		await expect(page.locator('.compact-links').getByRole('link', { name: 'Documentation' })).toBeVisible();
+		await page.locator('.mobile-menu summary').click();
+		await expect(page.locator('.mobile-menu').getByRole('link', { name: 'Documentation' })).toBeVisible();
 		expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 		await page.screenshot({ path: info.outputPath('showcase-no-js.png') });
 	} finally { await context.close(); }

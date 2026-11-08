@@ -121,3 +121,26 @@ test('changing only the content container selects card spans independently of th
 		await expectGridCards(page);
 	}
 });
+
+test('media formats, filtering and keyed reorder preserve measured endpoints and equal heights', async ({ page }) => {
+ await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
+ await page.goto('/demo/layout-cards');
+ const cards = page.locator('#cards-medium [data-catalog-card]');
+ await expect(cards).toHaveCount(6);
+ for (const aspect of ['1/1', '3/2', '4/3']) {
+  await page.getByLabel('Media aspect').selectOption(aspect);
+  const [x,y] = aspect.split('/').map(Number);
+  await expect.poll(() => cards.first().locator('[data-ps-card-part="media-frame"]').evaluate(el => el.clientWidth / el.clientHeight)).toBeCloseTo(x/y, 1);
+  const heights = await cards.evaluateAll(nodes => nodes.map(el => el.getBoundingClientRect().height));
+  expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(1);
+ }
+ const before = (await cards.first().boundingBox())!.height;
+ const node = await cards.nth(1).elementHandle();
+ await page.getByLabel('Only items without eyebrows').check();
+ await expect(cards).toHaveCount(3);
+ await expect.poll(async () => (await cards.first().boundingBox())!.height).toBeCloseTo(before - 20, 0);
+ await page.getByLabel('Reverse items').check();
+ expect(await node!.evaluate(el => el.isConnected)).toBe(true);
+ await expect(cards.last()).toHaveAttribute('data-catalog-occurrence', JSON.stringify(['cards-medium','card-1']));
+ for (const card of await cards.all()) await expect(card.locator('[data-catalog-geometry]')).toHaveCount(1);
+});

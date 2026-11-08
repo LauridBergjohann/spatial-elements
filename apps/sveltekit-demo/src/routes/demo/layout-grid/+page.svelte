@@ -7,7 +7,7 @@
 	<p class="introduction">The same viewport contains independently sized grids. Blocks follow their authored order.</p>
 	{#each widths as width}
 		<section class="sample spatial-content-container" style:width={`${width}px`} data-grid-sample={width} aria-label={`${width}px grid`}>
-			<div class="sample-inset spatial-grid-scope">
+			<div class="sample-inset ps-grid-scope">
 				<h2>{width}px container</h2>
 				<ContentGrid data-grid>
 					<ContentBlock span={{ xs: 4, s: 3, m: 4, l: 6 }} data-block="first"><a href="#grid-end">First block</a></ContentBlock>
@@ -21,7 +21,7 @@
 		</section>
 	{/each}
 	<section class="sample spatial-content-container order-sample" aria-label="Reading order sample">
-		<div class="sample-inset spatial-grid-scope">
+		<div class="sample-inset ps-grid-scope">
 			<h2>No dense backfilling</h2>
 			<ContentGrid data-order-grid>
 				<ContentBlock span={3}><a id="order-first" href="#grid-end">First</a></ContentBlock>

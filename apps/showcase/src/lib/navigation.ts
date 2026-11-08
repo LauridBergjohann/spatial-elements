@@ -1,5 +1,5 @@
 /** Add navigation entries here as showcase collections are authored. */
 export const navigation = [
-	{ label: 'Showcase', href: '/' },
-	{ label: 'Documentation', href: 'https://github.com/LauridBergjohann/spatial-elements#usage-guides' }
+	{ id: 'showcase', label: 'Showcase', href: '/' },
+	{ id: 'docs', label: 'Documentation', href: 'https://github.com/LauridBergjohann/spatial-elements#usage-guides' }
 ];

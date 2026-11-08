@@ -12,36 +12,9 @@
 </script>
 
 <ThemeStyles {themes} />
-<BrandStageShell {theme} colorScheme={appearance.colorScheme}>
-	{#snippet menu()}
-		<nav class="demo-navigation" aria-label="Main navigation">
-			<a class="brand" href="/proof/theming/categories/mixed">Spatial Elements</a>
-			<div class="desktop-links">{@render links()}</div>
-			<div class="spatial-shell-compact-only"><ThemeSwitch {theme} {appearance} /></div>
-			<details class="compact-links">
-				<summary>Menu</summary>
-				<div class="menu-popover">{@render links()}</div>
-			</details>
-		</nav>
-	{/snippet}
-	{#snippet right()}<ThemeSwitch {theme} {appearance} />{/snippet}
-	{@render children()}
+<BrandStageShell {theme} colorScheme={appearance.colorScheme} items={['List','Carousel','Mixed'].map(label => ({ id: label.toLowerCase(), label, href: '/proof/theming/categories/' + label.toLowerCase() }))}>
+ {#snippet brand()}<a href="/proof/theming/categories/mixed">Spatial Elements</a>{/snippet}
+ {#snippet right()}<ThemeSwitch {theme} {appearance} />{/snippet}
+ {@render children()}
 </BrandStageShell>
-
-{#snippet links()}
-	<a href="/proof/theming/categories/list">List</a>
-	<a href="/proof/theming/categories/carousel">Carousel</a>
-	<a href="/proof/theming/categories/mixed">Mixed</a>
-{/snippet}
-
-<style>
-	:global(body) { margin: 0; font-family: system-ui, sans-serif; }
-	.demo-navigation { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; height: 100%; }
-	.brand { margin-right: auto; font-weight: 700; }
-	.desktop-links { display: flex; gap: 24px; }
-	a { color: var(--spatial-element-body); text-decoration: none; white-space: nowrap; }
-	summary { cursor: pointer; padding: 10px 8px; border-radius: var(--spatial-element-control-radius); }
-	.compact-links { display: none; }
-	.menu-popover { position: absolute; top: 100%; right: 0; display: grid; min-width: 160px; padding: 12px; gap: 12px; background: var(--spatial-element-section-standard); border-radius: var(--spatial-element-control-radius); box-shadow: 0 8px 30px #0003; }
-	@media (max-width: 599px) { .desktop-links { display: none; } .compact-links { display: block; } .demo-navigation { gap: 4px; } }
-</style>
+<style>:global(body) { margin: 0; font-family: system-ui, sans-serif; } a { font-weight: 700; text-decoration: none; }</style>

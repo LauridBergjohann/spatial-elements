@@ -27,7 +27,7 @@
 	let catalog: HTMLDivElement;
 	$effect(() => {
 		if (catalog)
-			return retainListDeviceOrientation(catalog, () => {});
+			return retainListDeviceOrientation(catalog.querySelector<HTMLElement>('.catalog')!, () => {});
 	});
 </script>
 

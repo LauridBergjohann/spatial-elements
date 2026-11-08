@@ -11,9 +11,9 @@ for (const javaScriptEnabled of [false, true]) test(`section surfaces and labels
 		await expect(page.getByRole('region', { name: 'Second navigation title' })).toBeVisible();
 		await expect(page.locator('#surface-second h2')).toHaveCount(0);
 		const samples = await page.locator('.content-section').evaluateAll(nodes => nodes.map(node => {
-			const surface = node.querySelector('.section-surface')!;
+			const surface = node.querySelector('.ps-section-surface')!;
 			const css = getComputedStyle(surface);
-			return { id: node.id, padding: parseFloat(getComputedStyle(node).paddingLeft),
+			return { id: node.id, padding: parseFloat(getComputedStyle(node.querySelector('.ps-section-content')!).paddingLeft),
 				top: parseFloat(css.borderTopLeftRadius), bottom: parseFloat(css.borderBottomLeftRadius),
 				background: css.backgroundColor, gradient: css.backgroundImage,
 				width: surface.getBoundingClientRect().width };
@@ -36,7 +36,7 @@ for (const javaScriptEnabled of [false, true]) test(`section surfaces and labels
 		await page.screenshot({ path: info.outputPath('section-surfaces.png'), fullPage: true });
 		if (javaScriptEnabled) {
 			await page.getByRole('button', { name: 'Toggle second surface' }).click();
-			await expect.poll(() => page.locator('#surface-first .section-surface').evaluate(el => parseFloat(getComputedStyle(el).borderBottomLeftRadius))).toBeGreaterThan(0);
+			await expect.poll(() => page.locator('#surface-first .ps-section-surface').evaluate(el => parseFloat(getComputedStyle(el).borderBottomLeftRadius))).toBeGreaterThan(0);
 		}
 	} finally { await context.close(); }
 });

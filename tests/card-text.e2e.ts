@@ -42,8 +42,8 @@ for (const width of [1440, 768, 430, 320]) {
 		}));
 		expect(Math.max(...metrics.map(card => card.height)) - Math.min(...metrics.map(card => card.height))).toBeLessThanOrEqual(1);
 		for (const card of metrics) {
-			expect(Math.abs(card.height - card.width)).toBeLessThanOrEqual(1);
-			expect(card.titleLines).toBeCloseTo(1, 1);
+			expect(card.height - card.width).toBeCloseTo(84, 0);
+			expect(card.titleLines).toBeCloseTo(2, 1);
 			expect(card.eyebrowLines).toBeCloseTo(1, 1);
 		}
 		expect(metrics.find((card) => card.id === 'column')).toMatchObject({ titleClipped: true, eyebrowClipped: true });
@@ -133,7 +133,7 @@ test('raised, clipped card text crossfades into full detail text and back', asyn
 	const result = await page.evaluate(() => (window as any).cardTextTest);
 	await info.attach('card-text-samples', { body: JSON.stringify(result, null, 2), contentType: 'application/json' });
 	const first = result.samples.find((s: any) => s.direction === 'forward' && s.role === 'title' && s.variant === 'source');
-	expect(first.clamp).toBe('1');
+	expect(first.clamp).toBe('2');
 	expect(first.width).toBe(result.source.width);
 	expect(first.sourceRect).toBeDefined();
 	for (const key of ['x', 'y', 'width', 'height']) expect(first.rect[key]).toBeCloseTo(first.sourceRect[key], 0);
@@ -144,7 +144,7 @@ test('raised, clipped card text crossfades into full detail text and back', asyn
 			expect(destinations.some((s: any) => s.opacity > 0 && s.opacity < 1)).toBe(true);
 			const clipped = samples.filter((s: any) => s.role === role && s.variant === (direction === 'forward' ? 'source' : 'destination'));
 			expect(clipped.length).toBeGreaterThan(0);
-			for (const s of clipped) expect(role === 'title' ? s.clamp : s.whiteSpace).toBe(role === 'title' ? '1' : 'nowrap');
+			for (const s of clipped) expect(role === 'title' ? s.clamp : s.whiteSpace).toBe(role === 'title' ? '2' : 'nowrap');
 		}
 	}
 });

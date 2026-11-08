@@ -45,15 +45,15 @@ describe('SpatialElementSectionRegistry', () => {
 		const registry = new SpatialElementSectionRegistry();
 
 		expect(() => registry.register({ id: 'Technical Data', title: 'Data' })).toThrow(
-			'Invalid spatialElement section id'
+			'Sections require a lowercase anchor'
 		);
 		expect(() => registry.register({ id: 'data', title: '   ' })).toThrow(
-			'requires a non-empty title'
+			'non-empty title'
 		);
 
 		registry.register({ id: 'data', title: 'Data' });
 		expect(() => registry.register({ id: 'data', title: 'Other data' })).toThrow(
-			'Duplicate spatialElement section id'
+			'Duplicate section id'
 		);
 	});
 
@@ -63,7 +63,7 @@ describe('SpatialElementSectionRegistry', () => {
 		registry.register({ id: 'documents', title: 'Documents' });
 
 		expect(() => first.update({ id: 'documents', title: 'More documents' })).toThrow(
-			'Duplicate spatialElement section id'
+			'Duplicate section id'
 		);
 	});
 });

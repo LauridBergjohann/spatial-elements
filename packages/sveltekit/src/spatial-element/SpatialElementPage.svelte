@@ -135,6 +135,10 @@
 	}
 
 	onMount(() => {
+        const orderSections = () => sectionRegistry.order([...mainElement.querySelectorAll<HTMLElement>('[data-ps-section]')].map(node => node.id));
+        const sectionOrder = new MutationObserver(orderSections);
+        sectionOrder.observe(mainElement, { childList: true, subtree: true });
+        orderSections();
 		const unregisterMedia = stageContext?.registerDetailMedia?.(() => element ? selectedMedia.kind : 'minimap');
 		paneController = new SpatialElementPaneController(mainElement,
 			() => stageContext?.getLayoutMetrics?.('stable'), (split) => { splitPane = split; });
@@ -165,6 +169,7 @@
 		scheduleScrollSpy();
 
 		return () => {
+			sectionOrder.disconnect();
 			unregisterMedia?.();
 			paneController?.destroy();
 			cancelAnimationFrame(scrollSpyFrame);
