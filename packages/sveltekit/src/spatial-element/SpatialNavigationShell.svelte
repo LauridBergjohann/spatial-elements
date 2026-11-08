@@ -6,7 +6,7 @@
 	import { getStageVisualScrollPosition, STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
 	import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
 	import { Navigation } from '@page-sections/svelte';
-	import type { MenuItem } from '@page-sections/core';
+	import { layoutTokens, type MenuItem } from '@page-sections/core';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
 	import { useSpatialTheme } from './brandContext.js';
 	import './layout.generated.css';
@@ -20,6 +20,7 @@
 	let rack: HTMLDivElement;
 	let stage: HTMLElement | undefined;
 	let enhancedScroll = false;
+	let satellitesVisible = false;
 	let fixedDetail = $state(false);
 
 	function position(scrollY = getStageVisualScrollPosition().scrollY) {
@@ -34,6 +35,7 @@
 		if (!rack || !stage) return;
 		const previousMode = `${enhancedScroll}/${fixedDetail}`;
 		enhancedScroll = stage.classList.contains('stage-virtual-scroll-active');
+		satellitesVisible = window.innerWidth >= layoutTokens.layoutMinWidths.xl;
 		fixedDetail = getComputedStyle(rack).getPropertyValue('--spatial-shell-fixed').trim() === '1';
 		position();
 		if (previousMode !== `${enhancedScroll}/${fixedDetail}`) window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
@@ -59,7 +61,7 @@
             return stageContext?.registerPanel({
                 getElement: () => element, getFrameElement: () => element, getSurfaceElement: () => element,
                 getContentInset: () => 0, getPointerReactive: () => false, getFocusReactive: () => true,
-                getNativeContent: () => true, getVisible: () => element.getClientRects().length > 0,
+                getNativeContent: () => true, getVisible: () => role === 'menu' || satellitesVisible,
                 getMinimapOptions: () => undefined, getMinimapDockProgress: () => 0,
                 getMinimapModelScale: () => 1, getMinimapModelTop: () => undefined,
                 getSurface: () => fixedDetail ? theme.panelTheme.surface ?? 'glass' : 'frosted',

@@ -69,7 +69,7 @@ test('appearance actions fit satellites and remain reachable inside the compact 
 	await popup.getByRole('button', { name: 'Dark mode' }).click();
 	await expect(page.locator('.brand-stage-shell')).toHaveAttribute('data-color-scheme', 'dark');
 	await page.setViewportSize({ width: 320, height: 700 });
-	await page.getByRole('button', { name: 'Settings', exact: true }).click();
+	await page.locator('.settings summary').click();
 	await page.locator('.settings-panel').getByRole('button', { name: 'Appearance', exact: true }).click();
 	await expect(popup.getByRole('button', { name: 'System appearance' })).toBeVisible();
 	await popup.getByRole('button', { name: 'Light mode' }).click();
@@ -107,7 +107,7 @@ for (const source of ['list', 'carousel']) {
 			const sample = () => {
 				let opacity = 0;
 				// Decorative capture copies intentionally strip author data attributes.
-				for (const menu of document.querySelectorAll<HTMLElement>('.ps-navigation .header-content')) {
+				for (const menu of document.querySelectorAll<HTMLElement>('.header.ps-content-width')) {
 					const rect = menu.getBoundingClientRect();
 					if (rect.width < 100 || rect.height < 20 || rect.top < -1 || rect.bottom > 100) continue;
 					let alpha = 1;

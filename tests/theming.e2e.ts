@@ -4,13 +4,14 @@ import type {} from '@spatial-elements/core/stage/stageVisualTest';
 const theme = (page: Page) => page.locator('.brand-stage-shell');
 const appearancePopup = (page: Page) => page.locator('[data-appearance-popover]:popover-open');
 async function showAppearance(page: Page) {
+	if (!await page.getByRole('button', { name: 'Appearance', exact: true }).filter({ visible: true }).count()) await page.locator('.settings summary').click();
 	await page.getByRole('button', { name: 'Appearance', exact: true }).filter({ visible: true }).click();
 	await expect(appearancePopup(page)).toBeVisible();
 }
 async function open(page: Page) {
 	await page.goto('/proof/theming/elements/cube?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
-	await expect(page.getByRole('button', { name: 'Appearance', exact: true }).filter({ visible: true })).toBeVisible();
+	await expect(page.locator('.ps-navigation')).toBeVisible();
 	await page.evaluate(() => window.__stageVisualTest!.settle(50));
 }
 
