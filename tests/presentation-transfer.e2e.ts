@@ -74,7 +74,9 @@ for (const route of ['summary', 'card', 'detail']) {
     const card = page.locator('[data-catalog-card]');
     await expect(card).toHaveAccessibleName('Column');
     const box = await card.boundingBox();
-    expect(Math.abs(box!.width - box!.height)).toBeLessThan(1);
+    expect(box!.height).toBeGreaterThan(box!.width);
+    const frame = await card.locator('[data-ps-card-part="media-frame"]').boundingBox();
+    expect(Math.abs(frame!.width - frame!.height)).toBeLessThan(1);
    } else await expect(page.getByLabel('Retained note')).toBeVisible();
   } finally { await context.close(); }
  });

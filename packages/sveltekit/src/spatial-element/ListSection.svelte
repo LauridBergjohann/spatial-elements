@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { retainListDeviceOrientation } from '@spatial-elements/core/catalog/listDeviceOrientation';
 	import Section from './Section.svelte';
+	import { ContentGrid } from '@page-sections/svelte';
+	import type { CardMediaAspect, CardMediaFit, SurfaceTone } from '@page-sections/core';
 	import SpatialElementCard from './SpatialElementCard.svelte';
 	import type { SpatialCardSize } from '@spatial-elements/core/spatial-element/responsiveLayout';
 	import type {
@@ -16,8 +18,12 @@
 		cardSize?: SpatialCardSize;
 		/** Align both title and optional eyebrow inside the card. */
 		textAlign?: 'start' | 'center';
+		mediaAspect?: CardMediaAspect;
+		mediaFit?: CardMediaFit;
+		cardTone?: SurfaceTone;
 	}
-	let { section, list, cardSize = 'm', textAlign = 'start' }: Props = $props();
+	let { section, list, cardSize = 'm', textAlign = 'start', mediaAspect = '1/1', mediaFit = 'contain', cardTone = 'standard' }: Props = $props();
+	const reserveEyebrow = $derived(list.some(item => Boolean(item.eyebrow?.trim())));
 	let catalog: HTMLDivElement;
 	$effect(() => {
 		if (catalog)
@@ -26,25 +32,19 @@
 </script>
 
 <Section {section} presentation="list">
-	<div class="catalog" bind:this={catalog} data-device-orientation="" data-card-size={cardSize} data-card-text-align={textAlign}>
+	<div bind:this={catalog} style="display: contents"><ContentGrid class="catalog" data-device-orientation="" data-card-size={cardSize} data-card-text-align={textAlign}>
 		{#each list as spatialElement, index (spatialElement.itemKey ?? spatialElement.id)}
 			<SpatialElementCard
 				{spatialElement}
 				{cardSize}
-				{textAlign}
+				{textAlign} {mediaAspect} {mediaFit} {reserveEyebrow} {cardTone}
 				order={index}
 				occurrence={JSON.stringify([section.id, spatialElement.itemKey ?? spatialElement.id])}
 			/>
 		{/each}
-	</div>
+	</ContentGrid></div>
 </Section>
 
 <style>
-	.catalog {
-		display: grid;
-		grid-template-columns: repeat(var(--spatial-grid-columns), minmax(0, 1fr));
-		gap: var(--spatial-grid-gap);
-		align-items: start;
-		pointer-events: auto;
-	}
+ :global(.catalog) { align-items: stretch; grid-auto-rows: 1fr; pointer-events: auto; }
 </style>
