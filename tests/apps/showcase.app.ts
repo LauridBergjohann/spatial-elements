@@ -25,7 +25,7 @@ test('two-state controls preserve the live shell, keyboard choice and reload pre
 	await expect(shell).toHaveAttribute('data-color-scheme', 'light');
 	for (const width of [320, 600, 840, 1600]) {
 		await page.setViewportSize({ width, height: 900 });
-		if (width < 1600) await page.locator('.settings summary').click();
+		if (width < 1600 && (await page.locator('.settings').getAttribute('open')) === null) await page.locator('.settings summary').click();
 		const dark = page.getByRole('button', { name: 'Dark mode' }).filter({ visible: true });
 		await expect(dark).toHaveCount(1);
 		await dark.click();

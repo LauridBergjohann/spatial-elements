@@ -145,7 +145,7 @@
 	--spatial-carousel-dots-height: 32px;
 	--spatial-detail-summary-max-height: var(--spatial-carousel-fit-height);
 }
-.carousel-drag-section:has(> .section-kicker) { --spatial-carousel-headline-budget: 36px; }
+.carousel-drag-section:has(> .ps-section-content > .headline) { --spatial-carousel-headline-budget: 36px; }
 
 @media (min-width: 600px) {
 .carousel-drag-section {
@@ -159,7 +159,7 @@
 	--spatial-carousel-dots-height: 32px;
 	--spatial-detail-summary-max-height: var(--spatial-carousel-fit-height);
 }
-.carousel-drag-section:has(> .section-kicker) { --spatial-carousel-headline-budget: 36px; }
+.carousel-drag-section:has(> .ps-section-content > .headline) { --spatial-carousel-headline-budget: 36px; }
 }
 
 @media (min-width: 840px) {
@@ -174,7 +174,7 @@
 	--spatial-carousel-dots-height: 32px;
 	--spatial-detail-summary-max-height: var(--spatial-carousel-fit-height);
 }
-.carousel-drag-section:has(> .section-kicker) { --spatial-carousel-headline-budget: 44px; }
+.carousel-drag-section:has(> .ps-section-content > .headline) { --spatial-carousel-headline-budget: 44px; }
 }
 
 @media (min-width: 1200px) {
@@ -189,7 +189,7 @@
 	--spatial-carousel-dots-height: 32px;
 	--spatial-detail-summary-max-height: var(--spatial-carousel-fit-height);
 }
-.carousel-drag-section:has(> .section-kicker) { --spatial-carousel-headline-budget: 56px; }
+.carousel-drag-section:has(> .ps-section-content > .headline) { --spatial-carousel-headline-budget: 56px; }
 }
 
 @media (min-width: 1600px) {
@@ -204,7 +204,7 @@
 	--spatial-carousel-dots-height: 32px;
 	--spatial-detail-summary-max-height: var(--spatial-carousel-fit-height);
 }
-.carousel-drag-section:has(> .section-kicker) { --spatial-carousel-headline-budget: 56px; }
+.carousel-drag-section:has(> .ps-section-content > .headline) { --spatial-carousel-headline-budget: 56px; }
 }
 
 @media (min-width: 1809px) {
@@ -219,7 +219,7 @@
 	--spatial-carousel-dots-height: 32px;
 	--spatial-detail-summary-max-height: var(--spatial-carousel-fit-height);
 }
-.carousel-drag-section:has(> .section-kicker) { --spatial-carousel-headline-budget: 56px; }
+.carousel-drag-section:has(> .ps-section-content > .headline) { --spatial-carousel-headline-budget: 56px; }
 }
 
 @media (min-width: 2300px) and (min-height: 512px) {

@@ -411,7 +411,7 @@
 <style>
 	:global(.carousel-drag-section) { position: relative; }
 	:global(.carousel-drag-section:has(.interactive)) { touch-action: pan-y pinch-zoom; }
-	:global(.carousel-drag-section > .section-kicker) { pointer-events: none; }
+	:global(.carousel-drag-section > .ps-section-content > .headline) { pointer-events: none; }
 	.drag-surface {
 		position: absolute;
 		top: 0;

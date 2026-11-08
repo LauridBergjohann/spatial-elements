@@ -12,7 +12,7 @@ for (const javaScriptEnabled of [true, false]) {
 			await expect(page.locator('.brand-stage-shell')).toHaveCSS('color-scheme', 'light');
 			await expect(page.getByRole('group', { name: 'Appearance' })).toHaveCount(0);
 			await expect(page.getByRole('button', { name: 'Appearance', exact: true })).toHaveCount(0);
-			await expect(page.locator('nav .brand')).toContainText('Basics');
+			await expect(page.getByRole('link', { name: 'Spatial Elements Basics', exact: true })).toContainText('Basics');
 			await page.locator('.mobile-menu summary').click();
 			await page.getByRole('link', { name: 'Carousel', exact: true }).filter({ visible: true }).click();
 			await expect(page).toHaveURL(/categories\/carousel$/);
