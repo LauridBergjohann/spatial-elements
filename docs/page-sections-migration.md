@@ -28,7 +28,7 @@ The spatial card adapter attaches endpoint registrations to Card's actual root, 
 
 ## Navigation
 
-Prefer `BrandStageShell`'s `brand` snippet, `items` array and optional `tools` snippet. Menu items require stable `id` values. `left` and `right` satellites are available in Settings below XL. The shared navigation owns mobile menus below L, widths (1536px in 2XL), surfaces and shadows. Spatial's wrapper applies the visual-scroll compensation once and registers native menu surfaces with the stage. Open shared navigation dropdowns use the browser top layer so projected detail panels cannot cover them. Their original DOM ownership and event handlers remain intact; they close on navigation, document scrolling and resize. Existing `menu` snippets remain supported as custom content and own their internal responsive behavior.
+Prefer `BrandStageShell`'s `brand` snippet, `items` array and optional `tools` snippet. Menu items require stable `id` values. `left` and `right` satellites are available in Settings below XL. The shared navigation owns mobile menus below L, widths (1536px in 2XL), surfaces and shadows. Spatial's wrapper applies the visual-scroll compensation once and registers native menu surfaces with the stage. Open shared navigation dropdowns use the browser top layer so projected detail panels cannot cover them. Native components that share their frame and surface are measured without the temporary focus transform, preventing layout drift after zoom, fullscreen or theme changes. Their original DOM ownership and event handlers remain intact; they close on navigation, document scrolling and resize. Existing `menu` snippets remain supported as custom content and own their internal responsive behavior.
 
 ## Sections, themes and compatibility
 
@@ -39,3 +39,16 @@ Private DOM selectors changed: use `[data-ps-card-part]` for card parts and `.ps
 ## Validation
 
 Use `/demo/layout-cards` for S/M/L sizes, long/blank labels, live aspect changes, filtering and keyed reordering. Check 320px, 600px, 720px, 840px, 1200px and wide layouts, including smaller nested containers. Verify fallback/SSR, keyboard navigation, reduced motion, light/dark themes, list-to-detail-to-list and carousel transitions, fixed 3XL regions and focus/scroll restoration.
+
+
+### Migration verification (2026-11-08)
+
+- Full release verification passed: metadata, release-script tests, package boundaries, generated CSS, all workspace type checks, unit tests and isolated package consumption.
+- After the final native-frame correction, all 132 unit-test files passed again (1,145 tests), and both production applications rebuilt successfully.
+- 68 distinct targeted Chromium cases passed across card-appearance-freeze, card-grid, card-text, carousel-layout, catalog-responsive-transition, content-grid, detail-layout, detail-pane, navigation-shell, presentation-transfer, section-layout and theming suites. This includes targeted reruns after correcting carousel heading geometry, document scrolling to carousel controls, dropdown stacking and focus-transform measurements.
+- Final beta.9 tarballs were installed again outside the workspace after the native-frame correction. Core imports without DOM/GPU, consumer type checks and the SvelteKit SSR production build all passed.
+- All six Basics/Showcase application cases passed, including disabled JavaScript, mobile navigation, dark mode and blocked storage.
+- The navigation case affected by a concurrently cleared trace directory was rerun with a separate output directory and passed. On Windows, preview servers were started separately because Playwright's automatic server teardown stalled.
+- Wiki export validated 13 pages and 31 images. Updated card screenshots and the media/text diagram reflect the new card contract.
+
+These are desktop Chromium automation results; physical touch and SpaceMouse device checks were not performed. Brand examples remain outside this migration.
