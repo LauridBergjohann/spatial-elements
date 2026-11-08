@@ -1,5 +1,7 @@
 # Migrate to the content layout
 
+For the current package integration, see [Page Sections migration](page-sections-migration.md).
+
 This guide covers the source layout API introduced by the layout implementation plan. It is a
 visible layout change: existing section headings must be explicit, sections default to transparent,
 and list cards use grid spans instead of the former auto-fill widths. See [API](api.md) for the full
@@ -16,7 +18,7 @@ union also requires updating application-owned exhaustive switches over `Spatial
 | --- | --- |
 | `section.title` as the visible headline | No longer implicit; add `headline` while retaining `title` |
 | Default tinted section surfaces | Replaced by transparent backgrounds; choose an explicit background role |
-| Fixed-minimum auto-fill list cards | Replaced by square grid spans through `cardSize` |
+| Fixed-minimum auto-fill list cards | Replaced by grid spans through `cardSize` and configurable media frames |
 | Fixed summary heights and route-owned header positioning | Replace host geometry overrides with natural summary content and shell snippets |
 | `section.style` and `SpatialTheme.sectionTheme` | Retained compatibility path for explicitly authored legacy material |
 | `panelShape.radius` | Retained as the fallback for both new radius roles |
@@ -77,11 +79,15 @@ remain valid and are never redistributed automatically. Review any legacy `style
 prefer a container restriction or block span appropriate to the intended layout.
 
 ListSection defaults to `cardSize="m"` and `textAlign="start"`. Choose `s` or `l` deliberately;
-there is no longer a 250px auto-fill minimum or 360px card maximum. Cards remain square at all
-grid sizes. Small cards omit eyebrows; medium/large cards share a two-/three-line budget between
-eyebrow and title. Narrow cards reduce their media fit area to preserve these fixed line heights.
-Check the 320px case with long titles and mixed eyebrows. Keep full accessible link text, posters
-and ordinary anchors when applying custom content styles.
+there is no longer a 250px auto-fill minimum or 360px card maximum. Cards use Page Sections 0.3.0. The media frame has its own configurable aspect ratio; the text area adds independent height. All cards in a collection have equal heights across rows.
+
+- S: 2 columns, 12px title, two title lines, no eyebrow.
+- M: 2 columns, 14px title, two title lines.
+- L: 4 columns (3 in grid S), 18px title, three title lines.
+- M/L reserve an additional eyebrow row for every item when any item has a nonblank eyebrow.
+- Text padding is 12px; contained media has an 8px inset.
+
+Use `mediaAspect="1/1"` (spatial default), `"3/2"` or `"4/3"`, `mediaFit="contain"` (default) or `"cover"`, and `cardTone="standard"` or `"muted"` on ListSection. SpatialListPage forwards these options. Keep `itemKey` stable for repeated items and reordering.
 
 For responsive detail, persistent menus, a single movable section-navigation instance and the
 document-scrolled ultra-wide pane, continue with the [illustrated migration reference](wiki/Migration-and-Reference.md).

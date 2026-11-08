@@ -3,14 +3,14 @@
 Put persistent navigation inside the `BrandStageShell` snippets. The shell supplies boxes and surfaces; the host supplies real links, branding and actions.
 
 ```svelte
-<BrandStageShell {theme}>
-  {#snippet menu()}<MainNavigation />{/snippet}
+<BrandStageShell {theme} items={[{ id: 'collection', label: 'Collection', href: '/collection' }]}>
+  {#snippet brand()}<a href="/">My collection</a>{/snippet}
   {#snippet right()}<SettingsTrigger />{/snippet}
   {@render children()}
 </BrandStageShell>
 ```
 
-`left` and `right` are optional 80 × 40px satellite slots visible from XL. Menu height is 66px through L; from XL it is 64px with 16px top space. Omitted snippets create no empty interactive panel. Keep satellite actions available inside the compact menu below XL. The demo's appearance control uses a trigger and a native popover rather than trying to fit three choices inside one satellite.
+`left` and `right` are optional 80 × 40px satellite slots visible from XL. Menu height is 66px through L; from XL it is 64px with 16px top space. Omitted snippets create no empty interactive panel. Page Sections exposes satellite actions through Settings below XL. Navigation items use a native disclosure below L; custom `menu` snippets own their internal mobile behavior. The demo's appearance control uses a trigger and a native popover rather than trying to fit three choices inside one satellite.
 
 ## The 112px rule
 
@@ -32,7 +32,7 @@ Breadcrumb typography follows the viewport layout, not the inner grid. Breadcrum
 
 | Content behind the surface | Presentation |
 | --- | --- |
-| Mixed native DOM and canvas, including ordinary menu/content | Native frosted surface |
+| Mixed native DOM and canvas, including ordinary menu/content | Native Page Sections surface |
 | Integrated 3XL summary and content pane | Native DOM surface |
 | Eligible fixed controls over the spatial scene | Authored GPU material where supported |
 | No JavaScript or unavailable WebGPU | Native accessible fallback |

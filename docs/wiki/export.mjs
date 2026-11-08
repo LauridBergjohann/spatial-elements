@@ -1,3 +1,4 @@
+import { layoutTokens } from '@page-sections/core';
 import { createHash } from 'node:crypto';
 import { readFile, writeFile, readdir, mkdir, copyFile, stat } from 'node:fs/promises';
 import { dirname, resolve, relative } from 'node:path';
@@ -6,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const source = dirname(fileURLToPath(import.meta.url));
 const repository = resolve(source, '../..');
 const destination = resolve(repository, '.artifacts/wiki-export');
-const tokens = JSON.parse(await readFile(resolve(repository, 'packages/core/src/spatial-element/layoutTokens.json'), 'utf8'));
+const tokens = { ...layoutTokens, ...JSON.parse(await readFile(resolve(repository, 'packages/core/src/spatial-element/layoutTokens.json'), 'utf8')) };
 const scalar = value => typeof value === 'object' ? JSON.stringify(value) : String(value);
 function table(rows) {
   const columns = [...new Set(rows.flatMap(([, value]) => Object.keys(value)))];
@@ -15,7 +16,7 @@ function table(rows) {
 }
 function renderTokens() {
   const sections = ['# Canonical layout tokens', '',
-    'Generated from the same `layoutTokens.json` consumed by the pure resolvers and CSS generator. Values are CSS pixels unless a field explicitly describes a ratio, count, span or font weight. Regenerate with `node docs/wiki/export.mjs --write`.', ''];
+    'Generated from `@page-sections/core` and the spatial-only `layoutTokens.json`, as consumed by the pure resolvers and CSS generator. Values are CSS pixels unless a field explicitly describes a ratio, count, span or font weight. Regenerate with `node docs/wiki/export.mjs --write`.', ''];
   for (const [name, values] of Object.entries(tokens)) {
     sections.push(`## ${name}`, '');
     if (typeof values !== 'object') sections.push(String(values));

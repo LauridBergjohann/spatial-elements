@@ -1,6 +1,6 @@
 # Canonical layout tokens
 
-Generated from the same `layoutTokens.json` consumed by the pure resolvers and CSS generator. Values are CSS pixels unless a field explicitly describes a ratio, count, span or font weight. Regenerate with `node docs/wiki/export.mjs --write`.
+Generated from `@page-sections/core` and the spatial-only `layoutTokens.json`, as consumed by the pure resolvers and CSS generator. Values are CSS pixels unless a field explicitly describes a ratio, count, span or font weight. Regenerate with `node docs/wiki/export.mjs --write`.
 
 ## contentMax
 
@@ -31,32 +31,20 @@ Generated from the same `layoutTokens.json` consumed by the pure resolvers and C
 
 | Name | span | titleSize | titleWeight | eyebrowSize | eyebrowWeight | lineHeight | rows | gridSSpan |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| s | 1 | 9 | 500 | 0 | 400 | 18 | 1 | — |
-| m | 2 | 12 | 500 | 10 | 400 | 20 | 2 | — |
+| s | 2 | 12 | 500 | 0 | 400 | 18 | 2 | — |
+| m | 2 | 14 | 500 | 12 | 400 | 20 | 2 | — |
 | l | 4 | 18 | 500 | 14 | 400 | 24 | 3 | 3 |
 
 ## cardTextInset
 
 | Token | Value |
 | --- | --- |
-| inline | 4 |
-| block | 2 |
+| inline | 12 |
+| block | 12 |
 
 ## xlContentInset
 
 136
-
-## pane
-
-| Token | Value |
-| --- | --- |
-| centerGap | 8 |
-| rightInset | 20 |
-| top | 96 |
-| bottom | 16 |
-| submenuHeight | 44 |
-| headerHeight | 86 |
-| minUsableHeight | 512 |
 
 ## menu
 
@@ -76,14 +64,6 @@ Generated from the same `layoutTokens.json` consumed by the pure resolvers and C
 | inset | 28 |
 | top | 28 |
 
-## stageControls
-
-| Token | Value |
-| --- | --- |
-| buttonSize | 40 |
-| groupButtons | 2 |
-| gap | 8 |
-
 ## breadcrumb
 
 | Name | fontSize | height |
@@ -95,6 +75,30 @@ Generated from the same `layoutTokens.json` consumed by the pure resolvers and C
 | xl | 14 | 40 |
 | 2xl | 14 | 40 |
 | 3xl | 14 | 40 |
+
+## cardMediaInset
+
+8
+
+## pane
+
+| Token | Value |
+| --- | --- |
+| centerGap | 8 |
+| rightInset | 20 |
+| top | 96 |
+| bottom | 16 |
+| submenuHeight | 44 |
+| headerHeight | 86 |
+| minUsableHeight | 512 |
+
+## stageControls
+
+| Token | Value |
+| --- | --- |
+| buttonSize | 40 |
+| groupButtons | 2 |
+| gap | 8 |
 
 ## hero
 

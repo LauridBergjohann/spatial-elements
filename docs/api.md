@@ -93,7 +93,7 @@ Interface language is independent of the theme. Pass `messages: SpatialMessagesI
 
 | Component | Props and responsibility |
 | --- | --- |
-| BrandStageShell | Required reactive theme; optional colorScheme (light/dark), messages, renderSettings, dracoDecoderPath, deviceOrientation (default false, for detail geometry/minimap), menu, left/right satellite snippets, summary: SpatialSummarySnippet, and children. Persistent layout and renderer owner. No stage/catalog props. |
+| BrandStageShell | Required reactive theme; optional colorScheme (light/dark), messages, renderSettings, dracoDecoderPath, deviceOrientation (default false, for detail geometry/minimap), items: MenuItem[], brand/tools/menu snippets, left/right satellite snippets (Settings below XL), summary: SpatialSummarySnippet, and children. Persistent layout and renderer owner. No stage/catalog props. |
 | ButtonGroup | Required items, label and shape; controlled value/onchange, optional theme, iconOnly and content snippet. Generic panel-backed choices owned by the host. |
 | ContentPage | Required hdr: environment URL and page: ContentPageData; optional background: CSS color and children. background overrides the flat page color for this page in DOM and enhanced rendering, without changing HDR lighting or the shared theme. page.title is required; pageTitle defaults to title, eyebrow/intro/breadcrumbs are optional. |
 | ListSection | Required section: {id,title,headline?,background?,style?}, list: SpatialListItem[]. Optional cardSize: s/m/l (default m), textAlign: start/center (default start). Registers its own element occurrences. |
@@ -173,17 +173,17 @@ the row. Invalid values fall back to the full row and excessive spans clamp to a
 with development diagnostics. Placement follows DOM order without dense backfilling. Ordinary
 Section children remain ordinary content unless wrapped in ContentGrid/ContentBlock.
 
-| Card size | Column span | Title size/line height | Eyebrow size | Title rows without/with eyebrow |
-| --- | --- | --- | --- | --- |
-| s | 1 | 9px/18px | Hidden | 1 / n/a |
-| m | 2 | 12px/20px | 10px | 2 / 1 |
-| l | 4; 3 in grid s | 18px/24px | 14px | 3 / 2 |
+Cards use Page Sections 0.3.0. The media frame has its own configurable aspect ratio; the text area adds independent height. All cards in a collection have equal heights across rows.
 
-Titles use weight 500; eyebrows use weight 400 and share the title line height. Empty eyebrows
-consume no line. Cards are square; posters and models fit the same 4:3 slot, shrinking the slot
-on narrow cards to retain the text budget. Full title text remains accessible through the real
-detail link and tooltip. See [authoring](authoring.md) for examples and [layout migration](layout-migration.md)
-for appearance and sizing changes.
+- S: 2 columns, 12px title, two title lines, no eyebrow.
+- M: 2 columns, 14px title, two title lines.
+- L: 4 columns (3 in grid S), 18px title, three title lines.
+- M/L reserve an additional eyebrow row for every item when any item has a nonblank eyebrow.
+- Text padding is 12px; contained media has an 8px inset.
+
+Use `mediaAspect="1/1"` (spatial default), `"3/2"` or `"4/3"`, `mediaFit="contain"` (default) or `"cover"`, and `cardTone="standard"` or `"muted"` on ListSection. SpatialListPage forwards these options. Keep `itemKey` stable for repeated items and reordering.
+
+See [Page Sections migration](page-sections-migration.md) for endpoint and layout changes.
 
 getSpatialListItems(elements, basePath) derives links and includes summary and flat assets automatically. List entries can customize summary.sectionLink to point at an authored detail section; this optional link sits below the carousel surface and does not change the shared property panel's content or height. Use itemKey to distinguish repeated copies of the same element within one section; internal pose/occurrence fields are assigned by the adapter. findSpatialElement(elements, id) returns the matching document or undefined; the host decides how to render a 404.
 

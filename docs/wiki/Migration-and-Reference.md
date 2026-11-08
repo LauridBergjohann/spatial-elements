@@ -59,6 +59,6 @@ Proof routes isolate a particular invariant; they do not replace production inte
 
 ## Documentation maintenance
 
-Canonical geometry lives in `layoutTokens.json`; pure resolvers and generated CSS consume it. [The complete token reference](Layout-Tokens.md) is generated and checked by the export script. Edit the canonical token first, regenerate CSS and documentation, then rerun affected boundary/geometry tests. Do not introduce independent constants in a theme or a screenshot test merely to make an outdated expectation pass.
+Common geometry comes from `@page-sections/core`; spatial-only detail/carousel settings live in `layoutTokens.json`. Pure resolvers and generated CSS consume both. [The complete token reference](Layout-Tokens.md) is generated and checked by the export script. Edit the canonical token first, regenerate CSS and documentation, then rerun affected boundary/geometry tests. Do not introduce independent constants in a theme or a screenshot test merely to make an outdated expectation pass.
 
 The wiki export contains only public demo imagery and neutral diagrams. It has no dependency on the original design files or private brand repositories and does not publish automatically.

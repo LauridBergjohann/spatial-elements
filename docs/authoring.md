@@ -90,17 +90,15 @@ An explicitly authored legacy `panelShape.radius` remains a fallback for both ro
 Set `ContentPage background="#f7f5f0"` for a page-specific flat color; this updates native and
 enhanced backgrounds without changing the shared theme or HDR lighting.
 
-Choose one `cardSize="s"`, `"m"` (default) or `"l"` per ListSection. Cards are square and
-span 1, 2 or 4 grid columns respectively; large cards span 3 in the six-column grid.
-`textAlign="start"` (default) or `"center"` aligns the eyebrow and title together.
-Small cards show one title line and no eyebrow. Medium and large cards share a total budget
-of two and three lines: a nonempty eyebrow uses one line, leaving the rest for the title.
-Images and geometry fit the same 4:3 media slot without stretching. At narrow widths this
-slot shrinks to preserve the specified text line heights inside the square card.
+Cards use Page Sections 0.3.0. The media frame has its own configurable aspect ratio; the text area adds independent height. All cards in a collection have equal heights across rows.
 
-See the [layout migration guide](layout-migration.md) when updating existing pages and themes.
+- S: 2 columns, 12px title, two title lines, no eyebrow.
+- M: 2 columns, 14px title, two title lines.
+- L: 4 columns (3 in grid S), 18px title, three title lines.
+- M/L reserve an additional eyebrow row for every item when any item has a nonblank eyebrow.
+- Text padding is 12px; contained media has an 8px inset.
 
-## Touch and pointer interaction
+Use `mediaAspect="1/1"` (spatial default), `"3/2"` or `"4/3"`, `mediaFit="contain"` (default) or `"cover"`, and `cardTone="standard"` or `"muted"` on ListSection. SpatialListPage forwards these options. Keep `itemKey` stable for repeated items and reordering.
 
 Carousel layout follows the same content grid as the surrounding sections. Keep its section
 headline optional; omitting it also removes the heading gap from the height budget. On XS/S,

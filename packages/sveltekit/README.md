@@ -32,3 +32,5 @@ explicitly with `npm install three@^0.186.1`. Do not bypass incompatible peer ra
 `--legacy-peer-deps`. Other package managers may require explicit peer installation.
 
 Category lighting is explicit: pass `hdr="/assets/category.hdr"` to `ContentPage` (also `SpatialListPage`). It is never inferred from an element. Identical geometry URLs share one cached fetch/decode.
+
+Common layout uses Page Sections 0.3.0, installed as a runtime dependency. See the [Page Sections migration guide](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/page-sections-migration.md) for configurable media frames, equal-height cards and shared navigation.

@@ -50,23 +50,26 @@
   },
   {
     "file": "cards-320.png",
-    "route": "/demo/layout-cards?stage-test=1",
+    "route": "/demo/layout-cards",
     "width": 320,
-    "height": 1000,
-    "mode": "WebGPU"
+    "height": 950,
+    "mode": "Native fallback (Page Sections 0.3.0)",
+    "selector": "#cards-medium"
   },
   {
     "file": "cards-840.png",
-    "route": "/demo/layout-cards?stage-test=1",
+    "route": "/demo/layout-cards",
     "width": 840,
-    "height": 1000,
-    "mode": "WebGPU"
+    "height": 950,
+    "mode": "Native fallback (Page Sections 0.3.0)",
+    "selector": "#cards-medium"
   },
   {
     "file": "cards-large-720.png",
-    "route": "/demo/layout-cards?stage-test=1#cards-large",
+    "route": "/demo/layout-cards",
     "width": 720,
-    "height": 1000,
-    "mode": "WebGPU"
+    "height": 950,
+    "mode": "Native fallback (Page Sections 0.3.0)",
+    "selector": "#cards-large"
   }
 ]

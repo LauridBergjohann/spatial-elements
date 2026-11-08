@@ -4,7 +4,7 @@ The public source is `docs/wiki/`. It contains portable Markdown chapters, neutr
 
 ## Update content and figures
 
-1. Change canonical geometry in `packages/core/src/spatial-element/layoutTokens.json`, regenerate layout CSS, and complete the affected runtime checks before updating documentation evidence.
+1. Change shared geometry in Page Sections; change spatial-only geometry in `packages/core/src/spatial-element/layoutTokens.json`, regenerate layout CSS, and complete the affected runtime checks before updating documentation evidence.
 2. Update the explanatory chapters. Run `node docs/wiki/export.mjs --write` to regenerate the complete token reference from the canonical JSON. Review hand-authored explanatory tables against that reference.
 3. Edit diagram SVG sources under `docs/wiki/images/`, then run `node docs/wiki/render-diagrams.mjs`. This uses Chromium without GPU acceleration to produce matching PNGs. Inspect the raster output for clipping and readable labels.
 4. After the coordinated production demo build, start its preview and run `node docs/wiki/capture-screenshots.mjs --base-url=http://127.0.0.1:4174`. It captures seven detail widths, two card overview widths and the large-card S-grid exception with real WebGPU and records the route, size and mode. Run this separately from GPU acceptance/performance suites. The two production-pane images come from `tests/detail-pane.e2e.ts`; copy them only after that test passes and visual review.
