@@ -87,6 +87,22 @@ export class PageBindingController {
 		this.rectangles.set(element, rect);
 	}
 
+	/** Shared native components may use the same element for frame and surface. */
+	measurePanel(target: StagePanelTarget, scrollX: number, scrollY: number): CachedStageRect {
+		const frame = target.frame;
+		if (!target.nativeContent || frame !== target.surfaceElement || !frame.closest('[data-stage-scroll-shell]'))
+			return this.measure(frame, scrollX, scrollY);
+		// Focus animation is paint-only, never part of the cached layout frame.
+		const transform = frame.style.getPropertyValue('transform');
+		const priority = frame.style.getPropertyPriority('transform');
+		frame.style.setProperty('transform', 'none');
+		try { return this.measure(frame, scrollX, scrollY); }
+		finally {
+			if (transform) frame.style.setProperty('transform', transform, priority);
+			else frame.style.removeProperty('transform');
+		}
+	}
+
 	measure(element: HTMLElement, scrollX: number, scrollY: number): CachedStageRect {
 		const rect = element.getBoundingClientRect();
 		const popover = element.closest?.<HTMLElement>('[popover]');

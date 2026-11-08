@@ -2814,7 +2814,7 @@ export class StageExperience {
 	private getMeasuredPanelOptions(target: StagePanelTarget, forceMeasurement = false) {
 		let cachedRect = this.pageBinding.getPanelRect(target.frame);
 		if (!cachedRect || forceMeasurement) {
-			cachedRect = this.measureStageRect(target.frame);
+			cachedRect = this.pageBinding.measurePanel(target, this.currentScrollX, this.currentScrollY);
 			this.pageBinding.setPanelRect(target.frame, cachedRect);
 		}
 		const rect = this.resolveStageRect(cachedRect);
