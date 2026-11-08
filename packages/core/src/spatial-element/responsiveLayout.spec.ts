@@ -51,11 +51,15 @@ describe('responsive layout contract', () => {
 	it('reserves text in a 320px grid without distorting the media', () => {
 		const medium = resolveCardLayout(320, 'm');
 		expect(medium.width).toBe(142);
-		expect(medium.height).toBe(142);
-		expect(medium.textHeight).toBe(44);
-		expect(medium.media.height).toBe(98);
-		expect(medium.media.width / medium.media.height).toBeCloseTo(4 / 3);
-		expect(resolveCardLayout(320, 's').textHeight).toBe(22);
+		expect(medium.height).toBe(206);
+		expect(medium.textHeight).toBe(64);
+		expect(medium.media.height).toBe(126);
+		expect(medium.media.width / medium.media.height).toBeCloseTo(1);
+		expect(resolveCardLayout(320, 's').textHeight).toBe(60);
+		expect(resolveCardLayout(320, 'm', { reserveEyebrow: true }).height).toBe(226);
+		const landscape = resolveCardLayout(320, 'm', { mediaAspect: '3/2', mediaFit: 'cover' });
+		expect(landscape.media.width / landscape.media.height).toBeCloseTo(3 / 2);
+		expect(landscape.height).toBeCloseTo(142 * 2 / 3 + 64);
 	});
 
 	it('caps L content and retains the intended XL composition', () => {

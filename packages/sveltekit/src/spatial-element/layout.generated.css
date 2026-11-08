@@ -1,4 +1,4 @@
-/* Generated from core/spatial-element/layoutTokens.json. Run npm run layout:generate. */
+/* Generated from @page-sections/core plus spatial-only layoutTokens.json. Run npm run layout:generate. */
 
 .spatial-content-width { width: min(100%, 1536px); margin-inline: auto; }
 

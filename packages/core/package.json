@@ -48,7 +48,8 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@3dconnexion/3dconnexionjs": "0.8.1"
+    "@3dconnexion/3dconnexionjs": "0.8.1",
+    "@page-sections/core": "0.3.0"
   },
   "peerDependencies": {
     "three": "^0.186.1"

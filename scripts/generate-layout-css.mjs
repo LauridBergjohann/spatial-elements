@@ -1,11 +1,12 @@
 import { readFileSync, writeFileSync } from 'node:fs';
+import { layoutTokens } from '@page-sections/core';
 import { detailRules } from './layout-detail-css.mjs';
 import { carouselRules } from './layout-carousel-css.mjs';
 import { paneRules } from './layout-pane-css.mjs';
 
 const source = new URL('../packages/core/src/spatial-element/layoutTokens.json', import.meta.url);
 const destination = new URL('../packages/sveltekit/src/spatial-element/layout.generated.css', import.meta.url);
-const tokens = JSON.parse(readFileSync(source, 'utf8'));
+const tokens = { ...layoutTokens, ...JSON.parse(readFileSync(source, 'utf8')) };
 const properties = {
 	columns: ['columns', ''], gap: ['gap', 'px'],
 	headlineSize: ['headline-size', 'px'], headlineLineHeight: ['headline-line-height', 'px'],
@@ -25,7 +26,7 @@ function dockRules() {
 	});
 }
 const css = [
-	'/* Generated from core/spatial-element/layoutTokens.json. Run npm run layout:generate. */',
+	'/* Generated from @page-sections/core plus spatial-only layoutTokens.json. Run npm run layout:generate. */',
 	`.spatial-content-width { width: min(100%, ${tokens.contentMax}px); margin-inline: auto; }`,
 	`.spatial-content-container { container: spatial-content / inline-size; min-width: 0; }`,
 	`@media (min-width: ${tokens.layoutMinWidths.xl}px) {\n\t.spatial-content-width { width: min(${tokens.contentMax}px, max(0px, calc(100% - ${tokens.xlContentInset * 2}px))); }\n}`,
