@@ -28,7 +28,7 @@ The spatial card adapter attaches endpoint registrations to Card's actual root, 
 
 ## Navigation
 
-Prefer `BrandStageShell`'s `brand` snippet, `items` array and optional `tools` snippet. Menu items require stable `id` values. `left` and `right` satellites are available in Settings below XL. The shared navigation owns mobile menus below L, widths (1536px in 2XL), surfaces and shadows. Spatial's wrapper applies the visual-scroll compensation once and registers native menu surfaces with the stage. Existing `menu` snippets remain supported as custom content and own their internal responsive behavior.
+Prefer `BrandStageShell`'s `brand` snippet, `items` array and optional `tools` snippet. Menu items require stable `id` values. `left` and `right` satellites are available in Settings below XL. The shared navigation owns mobile menus below L, widths (1536px in 2XL), surfaces and shadows. Spatial's wrapper applies the visual-scroll compensation once and registers native menu surfaces with the stage. Open shared navigation dropdowns use the browser top layer so projected detail panels cannot cover them. Their original DOM ownership and event handlers remain intact; they close on navigation, document scrolling and resize. Existing `menu` snippets remain supported as custom content and own their internal responsive behavior.
 
 ## Sections, themes and compatibility
 

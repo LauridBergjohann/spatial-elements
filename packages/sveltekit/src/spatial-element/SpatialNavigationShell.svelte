@@ -50,6 +50,39 @@
 	onMount(() => {
 		stage = rack.closest<HTMLElement>('.stage') ?? undefined;
 		updateMode();
+		// Projected panel content lives above the ordinary DOM layer. Promote only
+		// open navigation dropdowns to the browser top layer, retaining their DOM
+		// ownership, shared markup and delegated events.
+		const dropdownStyles = new Map<HTMLElement, string | null>();
+		function restoreDropdown(panel: HTMLElement) {
+			if (!dropdownStyles.has(panel)) return;
+			if (panel.matches(':popover-open')) panel.hidePopover();
+			panel.removeAttribute('popover');
+			const style = dropdownStyles.get(panel);
+			if (style === null) panel.removeAttribute('style');
+			else panel.setAttribute('style', style!);
+			dropdownStyles.delete(panel);
+		}
+		function toggleDropdown(event: Event) {
+			if (!(event.target instanceof HTMLDetailsElement)) return;
+			const details = event.target;
+			const panel = details.querySelector<HTMLElement>(':scope > .settings-panel, :scope > .mobile-panel, :scope > .ps-submenu');
+			if (!panel || !('showPopover' in panel)) return;
+			// Nested menu entries stay inside their already elevated parent panel.
+			if (details.closest('.mobile-panel, .ps-submenu')) return;
+			if (!details.open) { restoreDropdown(panel); return; }
+			if (dropdownStyles.has(panel)) return;
+			const rect = panel.getBoundingClientRect();
+			dropdownStyles.set(panel, panel.getAttribute('style'));
+			panel.popover = 'manual';
+			Object.assign(panel.style, { position: 'fixed', inset: 'auto', margin: '0',
+				left: rect.left + 'px', top: rect.top + 'px', width: rect.width + 'px',
+				boxSizing: 'border-box', maxHeight: Math.max(0, innerHeight - rect.top - 12) + 'px', overflowY: 'auto' });
+			panel.showPopover();
+		}
+		rack.addEventListener('toggle', toggleDropdown, true);
+		window.addEventListener('scroll', closePopovers, { passive: true });
+		window.addEventListener('resize', closePopovers, { passive: true });
 		const observer = new MutationObserver(updateMode);
 		if (stage) observer.observe(stage, { attributes: true, attributeFilter: ['class'] });
 		// Shared navigation owns the boxes; the stage only enhances their surfaces.
@@ -71,7 +104,12 @@
         });
         const stop = subscribeStageScrollFrame(frame => position(frame.scrollY), STAGE_SCROLL_PRIORITY.virtualDocument + 1);
 		window.addEventListener('resize', updateMode, { passive: true });
-		return () => { releases.forEach(release => release?.()); stop(); observer.disconnect(); window.removeEventListener('resize', updateMode); };
+		return () => {
+			rack.removeEventListener('toggle', toggleDropdown, true);
+			window.removeEventListener('scroll', closePopovers);
+			window.removeEventListener('resize', closePopovers);
+			for (const panel of dropdownStyles.keys()) restoreDropdown(panel);
+			releases.forEach(release => release?.()); stop(); observer.disconnect(); window.removeEventListener('resize', updateMode); };
 	});
 </script>
 

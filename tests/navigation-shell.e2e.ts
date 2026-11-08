@@ -142,3 +142,24 @@ for (const source of ['list', 'carousel']) {
 		await expect(page.locator('.ps-navigation .header')).toHaveAttribute('data-lifetime-probe', 'persistent');
 	});
 }
+
+
+test('compact navigation stays above projected detail content and restores dropdowns on close', async ({ page }) => {
+	await page.setViewportSize({ width: 600, height: 800 });
+	await page.goto('/proof/theming/elements/cube?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
+	await page.locator('.settings summary').click();
+	await expect(page.locator('.settings-panel')).toHaveAttribute('popover', 'manual');
+	await page.locator('.settings-panel').getByRole('button', { name: 'Appearance', exact: true }).click();
+	await page.locator('[data-appearance-popover]:popover-open').getByRole('button', { name: 'Dark mode', exact: true }).click();
+	await expect(page.locator('.brand-stage-shell')).toHaveAttribute('data-color-scheme', 'dark');
+	await page.keyboard.press('Escape');
+	await expect(page.locator('.settings-panel')).toBeHidden();
+	await expect(page.locator('.settings-panel')).not.toHaveAttribute('popover');
+	await page.locator('.mobile-menu summary').click();
+	await expect(page.locator('.mobile-panel')).toHaveAttribute('popover', 'manual');
+	await page.locator('.mobile-menu').getByRole('link', { name: 'List', exact: true }).click();
+	await expect(page).toHaveURL(/categories\/list$/);
+	await expect(page.locator('.mobile-panel')).toBeHidden();
+	await expect(page.locator('.mobile-panel')).not.toHaveAttribute('popover');
+});
