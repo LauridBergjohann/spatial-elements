@@ -337,6 +337,10 @@ describe('catalog preview lifetime', () => {
 		vi.stubGlobal('innerHeight', 900);
 		const activity: string[] = [];
 		let summaryWidth = 360;
+		let sectionSurface: { left: number; top: number; width: number; height: number } | undefined;
+		// DOMRect properties are inherited accessors, not enumerable own properties.
+		const measureSurface = vi.fn(() => Object.create(sectionSurface!));
+		const section = { querySelector: () => ({ getBoundingClientRect: measureSurface }) };
 		let summaryLeft = 600, summaryTop = 200;
 		const summary = {
 			style: { transform: '', visibility: '' },
@@ -354,7 +358,7 @@ describe('catalog preview lifetime', () => {
 		const rect = { left: 0, top: 100, width: 1200, height: 600, right: 1200, bottom: 700 };
 		const card = {
 			isConnected: true,
-			closest: () => null,
+			closest: (selector: string) => selector === '[data-section-background-size]' && sectionSurface ? section : null,
 			dataset: {},
 			style: { transform: '', visibility: '', removeProperty: vi.fn() },
 			getBoundingClientRect: () => rect,
@@ -418,7 +422,7 @@ describe('catalog preview lifetime', () => {
 			layer.draw(renderer, 'front');
 			// A clipped carousel group needs one scene submission, without an empty list pass.
 			expect(renderer.render).toHaveBeenCalledTimes(1);
-			// Both rendering and detail handoff use the viewport, never the section edge.
+			// Without a section surface, legacy/custom endpoints retain viewport clipping.
 			expect(renderer.setScissor).toHaveBeenCalledWith(0, 0, 1440, 900);
 			expect(layer.getDestinationProjection('cube')?.viewportClip)
 				.toEqual({ left: 0, top: 0, width: 1440, height: 900 });
@@ -436,6 +440,21 @@ describe('catalog preview lifetime', () => {
 			// Layout may resize or reposition the semantic panel; its projected anchor stays put.
 			expect(projectedSummaryCenter().x).toBeCloseTo(840);
 			expect(projectedSummaryCenter().y).toBeCloseTo(turntable ? 324 : 300);
+			sectionSurface = { left: 120, top: 80, width: 1200, height: 640 };
+			resized();
+			layer.update(renderer, null, 148);
+			layer.draw(renderer, 'front');
+			expect(renderer.setScissor).toHaveBeenCalledWith(120, 80, 1200, 640);
+			expect(layer.getDestinationProjection('cube')?.viewportClip).toEqual(sectionSurface);
+			const measured = measureSurface.mock.calls.length;
+			window.scrollY = 30;
+			layer.update(renderer, null, 164);
+			expect(layer.getDestinationProjection('cube')?.viewportClip).toEqual({ ...sectionSurface, top: 50 });
+			expect(measureSurface).toHaveBeenCalledTimes(measured);
+			sectionSurface = { left: 0, top: 50, width: 1440, height: 640 };
+			resized();
+			layer.update(renderer, null, 180);
+			expect(layer.getDestinationProjection('cube')?.viewportClip).toEqual(sectionSurface);
 		} finally {
 			layer.dispose();
 			manager.dispose();

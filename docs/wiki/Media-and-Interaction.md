@@ -40,7 +40,7 @@ Ownership is selected at gesture start and does not flip when the finger crosses
 
 ## Device orientation
 
-ListSection and CarouselSection enable device orientation automatically; they have no `deviceOrientation` prop. Set `deviceOrientation` on BrandStageShell to enable detail geometry and minimaps as well. Access starts automatically where allowed. If explicit permission is needed, the framework requests it during a trusted internal navigation gesture without delaying navigation. Denial, missing sensors and reduced motion leave ordinary interaction available.
+SpatialCardGridSection and SpatialCarouselSection enable device orientation automatically; they have no `deviceOrientation` prop. Set `deviceOrientation` on BrandStageShell to enable detail geometry and minimaps as well. Access starts automatically where allowed. If explicit permission is needed, the framework requests it during a trusted internal navigation gesture without delaying navigation. Denial, missing sensors and reduced motion leave ordinary interaction available.
 
 Device rotation is calibrated, smoothed and bounded. Orientation changes reset the reference. Scrolling pauses application, and release establishes a new reference before the effect fades back in.
 

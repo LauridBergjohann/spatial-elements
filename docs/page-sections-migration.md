@@ -18,7 +18,7 @@ Cards use Page Sections 0.3.0. The media frame has its own configurable aspect r
 - M/L reserve an additional eyebrow row for every item when any item has a nonblank eyebrow.
 - Text padding is 12px; contained media has an 8px inset.
 
-Use `mediaAspect="1/1"` (spatial default), `"3/2"` or `"4/3"`, `mediaFit="contain"` (default) or `"cover"`, and `cardTone="standard"` or `"muted"` on ListSection. SpatialListPage forwards these options. Keep `itemKey` stable for repeated items and reordering.
+Use these options directly on `SpatialCardGridSection` (not inside `section`): `cardSize="s|m|l"`, `cardTone="standard|muted"`, `textAlign="start|center"`, `mediaAspect="1/1|3/2|4/3"` and `mediaFit="contain|cover"`. `SpatialListPage` forwards all of them. `cardVariant="catalog"` (default) uses responsive size-based spans; `cardVariant="editorial"` uses `itemSpan` (default `{ xs: 4, s: 3, m: 4, l: 4 }`) and a title link. Spatial media defaults to `1/1`; Page Sections defaults to `3/2`. Keep `itemKey` stable for repeated items and reordering.
 
 At a 320px collection width, an M card is 142px wide. With square media and an eyebrow reserve it is 226px high: 142px media plus 84px text. It is no longer a 142px square.
 
@@ -52,3 +52,18 @@ Use `/demo/layout-cards` for S/M/L sizes, long/blank labels, live aspect changes
 - Wiki export validated 13 pages and 31 images. Updated card screenshots and the media/text diagram reflect the new card contract.
 
 These are desktop Chromium automation results; physical touch and SpaceMouse device checks were not performed. Brand examples remain outside this migration.
+
+## Spatial component names and carousel fallback
+
+Use `SpatialCardGridSection` and `SpatialCarouselSection` from `@spatial-elements/sveltekit`. The old `ListSection` and `CarouselSection` exports remain deprecated aliases for existing consumers.
+
+Page Sections 0.3.0 also exports a 2D `CarouselSection`. SpatialCarouselSection currently retains its own native scroll-snap fallback with posters, accessible links, selected-item restoration and persistent interactive summary content. It does not instantiate the Page Sections carousel: that component has a different item/selection contract and no custom-card hook for the persistent spatial summary. Shared section shells and layout tokens still come from Page Sections. SSR, unavailable GPU and device loss all use the same native spatial carousel markup.
+
+Opaque section backgrounds sit below the rear GPU models. Rendering, shadows and pointer regions follow the section surface: `background.size: 'standard'` clips to the section bounds; `'full'` extends horizontally to the viewport. Both clip vertically to the section. This also applies to transparent backgrounds. Layout measurements are cached and adjusted numerically while scrolling.
+
+### Section follow-up verification (2026-11-10)
+
+- Release metadata, package boundaries, generated layout CSS, all workspace type checks and 1,147 unit tests passed.
+- 37 Chromium cases passed across card-grid, carousel-background, carousel-enhancement, carousel-focus, carousel-layout and catalog-responsive-transition suites. Four image comparisons verify opaque standard/full surfaces with frosted/glass panels, including the clipping of shadows and rear geometry.
+- Both production applications built. Isolated tarball installation, declarations and SvelteKit SSR/build passed; the package-consumer step was rerun with npm cache access after the sandbox initially denied that write.
+- The new canonical section names retain deprecated export aliases. Native carousel fallback still uses the persistent spatial summary rather than the separate Page Sections 2D CarouselSection.

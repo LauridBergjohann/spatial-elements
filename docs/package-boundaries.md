@@ -13,7 +13,7 @@ The optional SpaceMouse integration is loaded lazily from its dependency.
 ## Public entry points
 
 Prefer root imports from @spatial-elements/sveltekit for BrandStageShell, ContentPage, Section,
-ListSection, CarouselSection, SpatialElementPage, Panel, Stage and StageViewport. SpatialListPage
+SpatialCardGridSection, SpatialCarouselSection, SpatialElementPage, Panel, Stage and StageViewport. SpatialListPage
 is a convenience wrapper for one list section. Root exports include element types, lookup/projection helpers and
 catalogViewLink. ScrollNavigationBridge is available for custom integration/test shells.
 

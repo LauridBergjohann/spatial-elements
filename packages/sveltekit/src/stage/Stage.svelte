@@ -929,7 +929,7 @@
 
 	.stage-virtual-viewport {
 		position: relative;
-		z-index: 1;
+		z-index: 3;
 	}
 
 	.stage:global(.stage-virtual-scroll-active) .stage-virtual-scroll-spacer {
@@ -960,7 +960,7 @@
 	}
 
 	.stage :global(.stage-webgpu-carousel-rear) {
-		z-index: 0;
+		z-index: 2;
 		pointer-events: none;
 	}
 
@@ -985,12 +985,25 @@
 
 	.stage :global(.stage-css3d),
 	.stage :global(.stage-css3d-flat) {
-		z-index: 3;
+		z-index: 5;
 	}
 
 	.stage :global(.stage-panel-native) {
-		z-index: 2;
+		z-index: 4;
 	}
+
+	/* Carousel surfaces must be below the rear canvas while live summaries stay above it. */
+	.stage :global(.stage-carousel-surface) {
+		position: fixed;
+		left: 0;
+		top: 0;
+		z-index: 1;
+		pointer-events: none;
+		visibility: hidden;
+	}
+	.stage.stage-enhanced :global(.stage-carousel-surface) { visibility: visible; }
+	.stage.stage-enhanced :global([data-carousel-surface-projected]) { visibility: hidden; }
+	.stage:global([data-stage-fullscreen]) :global(.stage-carousel-surface) { visibility: hidden; }
 
 	.stage-dom-layer {
 		position: relative;

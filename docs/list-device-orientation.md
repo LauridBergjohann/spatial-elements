@@ -1,6 +1,6 @@
 # Experimental device geometry motion
 
-`ListSection` and `CarouselSection` enable device orientation automatically; neither
+`SpatialCardGridSection` and `SpatialCarouselSection` enable device orientation automatically; neither
 component exposes a `deviceOrientation` option. Enable `deviceOrientation` on `BrandStageShell` (or `Stage`) for detail geometry and minimaps. List/detail panels, text,
 and fallback posters are unaffected. Added yaw is bounded to ±16 degrees and
 pitch (forward/backward tilt) to ±10 degrees. Roll is limited to ±6 degrees.
@@ -103,7 +103,7 @@ height changes. Actual Android address-bar animation and physical-device scroll
 performance still require a hardware acceptance pass.
 ## Carousel camera
 
-`CarouselSection` automatically uses the same
+`SpatialCarouselSection` automatically uses the same
 permission, calibration, scroll suspension and sensor filtering as lists/details.
 The geometry camera orbits the selected model centre, preserving its screen position even in an off-centre desktop layout. All seats share this perspective: carousel seat positions and
 selection remain unchanged. Background models gain real 3D parallax. Geometry, shadows, blur and geometry hit regions use the orbit camera; DOM panels and their glass use a fixed UI camera, keeping panels, arrows and selection dots stationary. Camera motion is frozen during catalog capture/handoff.

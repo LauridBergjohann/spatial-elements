@@ -42,7 +42,7 @@ Bei Abweichungen gilt: ausdrückliche spätere Nutzerentscheidung vor Bild/PDF; 
 | Echtes DOM | Bestehende Darstellung möglichst mit der tatsächlichen Komponente übernehmen. DOM-Verschieben allein verlängert deren Svelte-Lebensdauer nicht; dafür ist ein dauerhafter Besitzer nötig. |
 | Scrollen in 3XL | Die ganze Seite bleibt das Scroll-Dokument. Kein eigener vertikaler Scrollcontainer für die Content-Pane. Linke Bühne, Hauptmenü, Pane-Kopf und Submenü bleiben in ihrer vorgesehenen Position. |
 | Eingabe in 3XL | Bei 3D bedient die linke freie Fläche die Geometrie, rechts wird die Seite gescrollt. Bei Bild/Video wird auch links die Seite gescrollt. Bei ausgeblendeter Pane bedient die gesamte freie Fläche 3D. Bedienelemente behalten Vorrang. |
-| Karten | S/M/L belegen 1/2/4 Spalten, L im sechsspaltigen S-Raster ausdrücklich 3. Eine ListSection hat eine einheitliche Kartengröße; Standard M und linksbündiger Text. |
+| Karten | S/M/L belegen 1/2/4 Spalten, L im sechsspaltigen S-Raster ausdrücklich 3. Eine SpatialCardGridSection hat eine einheitliche Kartengröße; Standard M und linksbündiger Text. |
 | Kartentext | S-Titel wird mit den erlaubten 9px geplant. M/L 12/18px; Titel-Lineheight S/M/L 18/20/24px laut aktualisierter Grafik. Vorgeschriebene Zeilenanzahl, längere Texte mit Ellipsis. |
 | Medienbereich | Karte 1:1; Medien-Fitbereich 4:3. Bild und Geometrie behalten ihre Proportionen und passen vollständig hinein. Hover darf die Geometrie darüber hinaus vergrößern. |
 | Section-Hintergründe | Transparent, Standard und Muted; Verläufe nur bei tatsächlich vollflächigem Hintergrund. Zwei Themenradien für kleine Bedienelemente/Karten und große Panels/freistehende Sections. |
@@ -177,11 +177,11 @@ Der aktuelle Status steht im Arbeitsprotokoll. Namen neuer APIs/Dateien werden i
 
 **Prüfung/Abnahme:** Kleine Regeltests für Hintergrundnormalisierung und Gruppenecken; Browserbilder für Kombinationen vor/nach transparenten und Full-Sections, Themes und Seitentypen. Anchors, Navigations-Titel und zugängliche Section-Namen bleiben unabhängig von sichtbaren Headlines nutzbar.
 
-### 05 — ListSection und Karten auf das Raster umstellen
+### 05 — SpatialCardGridSection und Karten auf das Raster umstellen
 
 **Commit:** `feat: add grid sized spatial element cards`
 
-- `ListSection.svelte`, `SpatialElementCard.svelte` und Karten-Framing in `CatalogSpatialElementLayer` auf S/M/L, Span-Ausnahme und Textausrichtung umstellen. Die bisherige Auto-Fill-Mindestbreite 250px und feste 228px-Medienhöhe ersetzen.
+- `SpatialCardGridSection.svelte`, `SpatialElementCard.svelte` und Karten-Framing in `CatalogSpatialElementLayer` auf S/M/L, Span-Ausnahme und Textausrichtung umstellen. Die bisherige Auto-Fill-Mindestbreite 250px und feste 228px-Medienhöhe ersetzen.
 - 1:1-Karte und 4:3-Fitbereich gemeinsam für Poster und 3D ableiten; kleine Viewports nach der in 01 festgelegten Textreserve behandeln. Titel- und Eyebrow-Zeilen, Lineheight und Ellipsis explizit umsetzen.
 - Vollständiger Titel bleibt als zugänglicher Linkname verfügbar. Kleine S-Karten begrenzen den Text, nicht die Information im zugänglichen Namen. Hover darf sichtbar über den Fitbereich wachsen und darf keine Nachbarlinks blockieren.
 - Vorhandene Sensorrichtung, Intensität, Scrollpause und Rekalibrierung sowie Maus-Näherungsrotation erhalten.
@@ -266,7 +266,7 @@ Der aktuelle Status steht im Arbeitsprotokoll. Namen neuer APIs/Dateien werden i
 
 **Commit:** `feat: align carousel layout with detail presentation`
 
-- `CarouselSection`, `CarouselSpatialElement`, `catalogPose` und `CatalogSpatialElementLayer` gemeinsam umstellen. Alte konkurrierende 700px-Grenzen beseitigen, Framing und Panelplatzierung aus dem neuen Vertrag beziehen.
+- `SpatialCarouselSection`, `CarouselSpatialElement`, `catalogPose` und `CatalogSpatialElementLayer` gemeinsam umstellen. Alte konkurrierende 700px-Grenzen beseitigen, Framing und Panelplatzierung aus dem neuen Vertrag beziehen.
 - Section-Headline, Hintergrund, Padding und Abstände wie andere Sections; aktive Geometrie im vorgesehenen Bereich, vorhandene Orbit-/Auswahlbewegung beibehalten. Der Fitbereich ist keine neue harte Schnittkante für benachbarte Geometrien.
 - Panel vertikal im vorgesehenen Bereich zentrieren, natürliche Höhe bis zur Obergrenze; XS/S auf Titel/Eyebrow reduzieren. Ab M passende Gridbreite, 3XL wie 2XL mit 480px. Detail-Link als Pfeil oben rechts statt „more information“; zugänglichen Namen behalten.
 - Gemeinsame Panel-Instanz und Wrapper aus Schritt 06/08 nutzen. Bestehende Maus-Näherungsrotation, dezente Sensorperspektive plus stärkere aktive Geometrie und Scrollpause/Rekalibrierung beibehalten.

@@ -74,19 +74,19 @@ Create `src/routes/starter/categories/list/+page.svelte`:
 
 ~~~svelte
 <script lang="ts">
-	import { ContentPage, ListSection } from '@spatial-elements/sveltekit';
+	import { ContentPage, SpatialCardGridSection } from '@spatial-elements/sveltekit';
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
 </script>
 
 <ContentPage hdr="/assets/demo/studio.hdr" page={{ title: 'My collection' }}>
-	<ListSection section={{ id: 'elements', title: 'Elements', headline: 'Elements' }} list={data.items} />
+	<SpatialCardGridSection section={{ id: 'elements', title: 'Elements', headline: 'Elements' }} list={data.items} />
 </ContentPage>
 ~~~
 
 The required `hdr` prop belongs to the category page. It can point to the same environment as an element or a different one; changing the list order never changes the page environment.
 
-A `ContentPage` can contain multiple `ListSection`, `CarouselSection` and ordinary `Section` components. Section IDs must be unique within the page. To repeat the same element inside one section, supply a distinct `itemKey` on each occurrence.
+A `ContentPage` can contain multiple `SpatialCardGridSection`, `SpatialCarouselSection` and ordinary `Section` components. Section IDs must be unique within the page. To repeat the same element inside one section, supply a distinct `itemKey` on each occurrence.
 
 ## 4. Build the detail page
 

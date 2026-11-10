@@ -29,8 +29,8 @@ export { default as ContentPage } from './ContentPage.svelte';
 export { default as ContentGrid } from './ContentGrid.svelte';
 export { default as ContentBlock } from './ContentBlock.svelte';
 export type { ContentGridSize, ContentSpan, SpatialCardSize } from '@spatial-elements/core/spatial-element/responsiveLayout';
-export { default as CarouselSection } from './CarouselSection.svelte';
-export { default as ListSection } from './ListSection.svelte';
+export { default as SpatialCarouselSection } from './SpatialCarouselSection.svelte';
+export { default as SpatialCardGridSection } from './SpatialCardGridSection.svelte';
 export type { ContentPageData } from '@spatial-elements/core/spatial-element/types';
 
 export type { CarouselPresentation } from '@spatial-elements/core/catalog/catalogPose';
@@ -40,3 +40,10 @@ export type { StageRenderSettings, BackgroundSettings, StageModelSettings, Stage
 export { geometryFromLodPair, type SpatialElementGeometry } from '@spatial-elements/core/spatial-element/spatialElementGeometry';
 
 export type { CardMediaAspect, CardMediaFit, SurfaceTone } from '@page-sections/core';
+
+/** @deprecated Use SpatialCardGridSection. */
+export { default as ListSection } from './SpatialCardGridSection.svelte';
+/** @deprecated Use SpatialCarouselSection. */
+export { default as CarouselSection } from './SpatialCarouselSection.svelte';
+export type { SpatialCardGridOptions } from './spatialCardGrid.js';
+export type { CardVariant } from '@page-sections/core';

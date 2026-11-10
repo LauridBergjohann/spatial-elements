@@ -7,6 +7,28 @@ const cases = [
 	{ id: 'cards-large', size: 'l', align: 'center' }
 ] as const;
 
+test('shared card tone and editorial variant update the native grid and retain real links', async ({ page }) => {
+	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
+	await page.goto('/demo/layout-cards');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'fallback');
+	const card = page.locator('#cards-medium [data-catalog-card]').first();
+	const surface = card.locator('[data-ps-card-part="surface"]');
+	const standard = await surface.evaluate(node => getComputedStyle(node).backgroundColor);
+	await page.getByLabel('Card tone').selectOption('muted');
+	await expect(card).toHaveAttribute('data-tone', 'muted');
+	await expect.poll(() => surface.evaluate(node => getComputedStyle(node).backgroundColor)).not.toBe(standard);
+	await page.getByLabel('Card variant').selectOption('editorial');
+	await expect(card).toHaveAttribute('data-card-variant', 'editorial');
+	await expect(page.locator('#cards-medium .ps-content-block')).toHaveCount(6);
+	await page.getByLabel('Media aspect').selectOption('3/2');
+	const media = await card.locator('[data-ps-card-part="media-frame"]').boundingBox();
+	expect(media!.width / media!.height).toBeCloseTo(1.5, 1);
+	const link = card.getByRole('link');
+	await expect(link).toHaveAttribute('data-catalog-view');
+	await link.click();
+	await expect(page).toHaveURL(/\/demo\/elements\//);
+});
+
 async function listMetrics(page: Page, id: string) {
 	return page.locator(`#${id}`).evaluate((section) => {
 		const catalog = section.querySelector<HTMLElement>('.catalog')!;

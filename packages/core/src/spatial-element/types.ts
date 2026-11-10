@@ -16,7 +16,7 @@ import type {
 
 /**
  * Category-card projection created by {@link getSpatialListItems}.
- * Includes the element's assets automatically; pass these items to ListSection or CarouselSection.
+ * Includes the element's assets automatically; pass these items to SpatialCardGridSection or SpatialCarouselSection.
  * Detail-only media and breadcrumbs are omitted. No catalog data belongs in the layout.
  */
 export interface SpatialListItem extends Partial<

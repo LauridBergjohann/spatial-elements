@@ -6,7 +6,7 @@
 
 - Adopt Page Sections 0.3.0 for common layout, section backgrounds and registries, page composition, cards and responsive navigation. Spatial adapters retain GPU endpoints, persistent card roots, carousel interaction, docking and virtual scrolling.
 
-  Cards use configurable media frames with independent equal-height text areas. ListSection and SpatialListPage accept mediaAspect, mediaFit and cardTone. BrandStageShell accepts brand, items and tools; small layouts expose satellites through Settings. See docs/page-sections-migration.md for changed geometry and private selectors.
+  Cards use configurable media frames with independent equal-height text areas. SpatialCardGridSection (formerly ListSection) and SpatialListPage accept the shared card layout options, including cardSize, cardTone, cardVariant, mediaAspect, mediaFit, textAlign and editorial itemSpan. SpatialCarouselSection (formerly CarouselSection) renders rear models above opaque section backgrounds and clips spatial output to the configured surface. Old component names remain deprecated aliases. BrandStageShell accepts brand, items and tools; small layouts expose satellites through Settings. See docs/page-sections-migration.md for changed geometry and private selectors.
 
 ### Patch Changes
 

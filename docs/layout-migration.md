@@ -25,7 +25,7 @@ union also requires updating application-owned exhaustive switches over `Spatial
 | `kind: 'drawing'` without a source | Still accepted by the type, but deprecated and displayed as unavailable; provide an image |
 | `media: []` or a collection without `minimap` | Detail presentation inserts one initial 3D entry; duplicate minimap entries are ignored |
 | Exhaustive handling of `SpatialElementMediaItem.kind` | Handle the new `video` and `youtube` variants in custom renderers or serializers |
-| `BrandStageShell.deviceOrientation` / low-level `Stage.deviceOrientation` | Retained for detail geometry and minimaps; ListSection and CarouselSection already enable sensors automatically and have no such prop |
+| `BrandStageShell.deviceOrientation` / low-level `Stage.deviceOrientation` | Retained for detail geometry and minimaps; SpatialCardGridSection and SpatialCarouselSection already enable sensors automatically and have no such prop |
 
 The earlier removals of `SpatialStageConfig` and Product-prefixed names are separate changes:
 see [configuration migration](configuration-migration.md) and [terminology migration](spatial-element-migration.md).
@@ -51,7 +51,7 @@ them. Add `headline` to preserve a visible heading. It may differ from the short
 ~~~
 
 Omit `headline` only when a section should have no generated visible heading. It still has an
-accessible label and a navigation title. ListSection and CarouselSection use the same definition:
+accessible label and a navigation title. SpatialCardGridSection and SpatialCarouselSection use the same definition:
 add `headline` there too, normally keeping their transparent background.
 
 ## Choose section surfaces deliberately
@@ -78,7 +78,7 @@ gutters. Use ContentGrid with ContentBlock spans to split content explicitly. Ar
 remain valid and are never redistributed automatically. Review any legacy `style.width` override;
 prefer a container restriction or block span appropriate to the intended layout.
 
-ListSection defaults to `cardSize="m"` and `textAlign="start"`. Choose `s` or `l` deliberately;
+SpatialCardGridSection defaults to `cardSize="m"` and `textAlign="start"`. Choose `s` or `l` deliberately;
 there is no longer a 250px auto-fill minimum or 360px card maximum. Cards use Page Sections 0.3.0. The media frame has its own configurable aspect ratio; the text area adds independent height. All cards in a collection have equal heights across rows.
 
 - S: 2 columns, 12px title, two title lines, no eyebrow.
@@ -87,7 +87,7 @@ there is no longer a 250px auto-fill minimum or 360px card maximum. Cards use Pa
 - M/L reserve an additional eyebrow row for every item when any item has a nonblank eyebrow.
 - Text padding is 12px; contained media has an 8px inset.
 
-Use `mediaAspect="1/1"` (spatial default), `"3/2"` or `"4/3"`, `mediaFit="contain"` (default) or `"cover"`, and `cardTone="standard"` or `"muted"` on ListSection. SpatialListPage forwards these options. Keep `itemKey` stable for repeated items and reordering.
+Use `mediaAspect="1/1"` (spatial default), `"3/2"` or `"4/3"`, `mediaFit="contain"` (default) or `"cover"`, and `cardTone="standard"` or `"muted"` on SpatialCardGridSection. SpatialListPage forwards these options. Keep `itemKey` stable for repeated items and reordering.
 
 For responsive detail, persistent menus, a single movable section-navigation instance and the
 document-scrolled ultra-wide pane, continue with the [illustrated migration reference](wiki/Migration-and-Reference.md).

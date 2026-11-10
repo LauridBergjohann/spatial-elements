@@ -17,7 +17,7 @@
 		page: ContentPageData;
 		/** Flat page color override, using the same color format as SpatialTheme.background. */
 		background?: string;
-		/** ListSection, CarouselSection and ordinary Section children. */
+		/** SpatialCardGridSection, SpatialCarouselSection and ordinary Section children. */
 		children?: Snippet;
 	}
 	let { page, hdr, background, children }: Props = $props();

@@ -42,6 +42,7 @@ import { CATALOG_POSE_CHANGED, type CatalogPoseProvider } from './catalogPose.js
 import { getProjectiveCssMatrix3d, type CssProjectionQuad } from '../stage/cssProjection.js';
 import { CarouselGlassCompositor } from './CarouselGlassCompositor.js';
 import { CarouselGround } from './CarouselGround.js';
+import { CarouselSectionSurfaces } from './CarouselSectionSurfaces.js';
 import { carouselProximity } from './carouselProximity.js';
 import { carouselSupport } from './carouselSupport.js';
 import type { CatalogWarmOutputContext } from './CatalogWarmOutputContext.js';
@@ -89,6 +90,8 @@ interface CatalogActor {
 	slot?: HTMLElement;
 	cardRect?: Rect;
 	slotRect?: Rect;
+	/** Measured section surface; translated with scroll without per-frame DOM reads. */
+	sectionRect?: Rect;
 	hitTarget?: HTMLElement;
 	summaryPanel?: HTMLElement;
 	summarySize?: { width: number; height: number };
@@ -241,6 +244,7 @@ export class CatalogSpatialElementLayer {
 	}
 	private readonly depthBlur = new CatalogDepthBlur();
 	private readonly outline = new CatalogModelOutline();
+	private readonly sectionSurfaces = new CarouselSectionSurfaces();
 	private readonly glass = new CarouselGlassCompositor(this.depthBlur);
 	private readonly ground = new CarouselGround();
 	private readonly geometryFade = new CatalogGeometryFade();
@@ -422,7 +426,7 @@ export class CatalogSpatialElementLayer {
 		const page = document.querySelector('[data-catalog-list]');
 		if (page) {
 			this.layoutObserver.observe(page);
-			for (const section of page.querySelectorAll('section')) this.layoutObserver.observe(section);
+			for (const section of page.querySelectorAll('section, section > .ps-section-surface')) this.layoutObserver.observe(section);
 		}
 		for (const request of this.requests) request.abort();
 		this.requests.clear();
@@ -552,6 +556,7 @@ export class CatalogSpatialElementLayer {
 			this.queueDirty = true;
 		}
 		if (this.layoutDirty) this.measureActors(scroll.scrollX, scroll.scrollY);
+		this.sectionSurfaces.update(scroll.scrollX, scroll.scrollY, this.exitOpacity);
 		const delta = Math.min(this.lastTime ? (now - this.lastTime) / 1000 : 1 / 60, 0.05);
 		this.lastTime = now;
 		let animating = false;
@@ -679,7 +684,10 @@ export class CatalogSpatialElementLayer {
 				actor.view.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(actor.devicePitch), THREE.MathUtils.degToRad(actor.deviceYaw), THREE.MathUtils.degToRad(actor.deviceRoll), 'ZXY'))
 					.multiply(actor.viewOrientation);
 				actor.root.updateMatrixWorld(true);
-				if (groundMatrix) this.ground.shadow(actor, actor.model, groundMatrix, 0.14 * pose.opacity);
+				actor.clip = actor.sectionRect
+					? { ...actor.sectionRect, left: actor.sectionRect.left + dx, top: actor.sectionRect.top + dy }
+					: { left: 0, top: 0, width, height };
+				if (groundMatrix) this.ground.shadow(actor, actor.model, groundMatrix, 0.14 * pose.opacity, actor.clip);
 				if (pose.front && actor.root.visible && (!selected || pose.panelOpacity > (selected.pose?.read().panelOpacity ?? 0))) selected = actor;
 				projectCarousels.push(() => {
 					const hitTarget = actor.hitTarget;
@@ -762,15 +770,10 @@ export class CatalogSpatialElementLayer {
 							pw,
 							ph,
 							hidden ? 0 : pose.panelOpacity * this.exitOpacity,
-							(1 - pose.panelOpacity) * 6
+							(1 - pose.panelOpacity) * 6,
+							actor.clip
 						);
 					}
-					actor.clip = {
-						left: 0,
-						top: 0,
-						width,
-						height
-					};
 				});
 				if (this.isDestinationActor(actor)) actor.root.visible = false;
 				continue;
@@ -1394,6 +1397,7 @@ export class CatalogSpatialElementLayer {
 		this.cancelActivationFocusRequest();
 		this.ground.dispose();
 		this.glass.dispose();
+		this.sectionSurfaces.dispose();
 		this.depthBlur.dispose();
 		this.geometryFade.dispose();
 		this.outline.dispose();
@@ -1539,12 +1543,20 @@ export class CatalogSpatialElementLayer {
 			actor.card.style.transform = 'none';
 		}
 		// Batch neutral-pose writes, measurements, and restoration to avoid per-card layout thrashing.
+		const surfaces = new Map<HTMLElement, Rect>();
 		for (const { actor } of measured) {
 			actor.cardRect = actor.card!.getBoundingClientRect();
 			actor.slotRect = actor.slot!.getBoundingClientRect();
 			if (!actor.pose)
 				actor.cardScale = cardModelFit(actor.fitCorners, actor.slotRect.width, actor.slotRect.height);
 			if (actor.pose) {
+				const surface = actor.card!.closest('[data-section-background-size]')
+					?.querySelector<HTMLElement>(':scope > .ps-section-surface');
+				if (surface && !surfaces.has(surface)) {
+					const { left, top, width, height } = surface.getBoundingClientRect();
+					surfaces.set(surface, { left, top, width, height });
+				}
+				actor.sectionRect = surface ? surfaces.get(surface) : undefined;
 				actor.hitTarget = actor.card!.querySelector<HTMLElement>('.spatial-element-target') ?? undefined;
 				const panel = actor.card!.querySelector<HTMLElement>('.summary') ?? undefined;
 				if (actor.summaryPanel && actor.summaryPanel !== panel)
@@ -1558,6 +1570,7 @@ export class CatalogSpatialElementLayer {
 			actor.scrollX = scrollX;
 			actor.scrollY = scrollY;
 		}
+		this.sectionSurfaces.sync(surfaces, scrollX, scrollY);
 		for (const { actor, previousTransform } of measured)
 			actor.card!.style.transform = previousTransform;
 		this.layoutDirty = false;
