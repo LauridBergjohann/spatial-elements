@@ -11,7 +11,13 @@ export const themes = {
 		dockedPanelTheme: { ...theme.dockedPanelTheme, tint: '#172434', tintOpacity: 0.94 },
 		sectionTheme: { ...theme.sectionTheme, tint: '#172434', tintOpacity: 0.9 },
 		sectionBackgrounds: { standard: '#172434', muted: '#243548' },
-		colors: { ink: '#edf4fc', body: '#c8d6e7', accent: '#80bfff', onAccent: '#102438', tabBackground: '#243548' },
+		colors: {
+			ink: '#edf4fc',
+			body: '#c8d6e7',
+			accent: '#80bfff',
+			onAccent: '#102438',
+			tabBackground: '#243548'
+		},
 		minimapTheme: { ...theme.minimapTheme, viewportColor: '#80bfff' },
 		interactionTheme: { outlineColor: '#80bfff' }
 	})

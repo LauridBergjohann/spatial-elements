@@ -12,7 +12,10 @@ export const load: PageLoad = async ({ params, url, fetch }) => {
 	trace('load-start', { href: url.href, slug: params.slug });
 	let data = browser ? dataCache.get(key) : undefined;
 	if (!data) {
-		const query = new URLSearchParams({ slug: params.slug, delay: url.searchParams.get('delay') ?? '0' });
+		const query = new URLSearchParams({
+			slug: params.slug,
+			delay: url.searchParams.get('delay') ?? '0'
+		});
 		const response = await fetch(`/proof/staged-navigation/data?${query}`);
 		if (!response.ok) {
 			trace('load-error', { href: url.href, status: response.status });

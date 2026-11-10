@@ -7,7 +7,10 @@
 	onMount(() => {
 		const claim = coordinator.claimRoute(slot);
 		telemetry().routeMounts++;
-		return () => { telemetry().routeDestroys++; claim.release(); };
+		return () => {
+			telemetry().routeDestroys++;
+			claim.release();
+		};
 	});
 </script>
 

@@ -1,1 +1,3 @@
-export const load = () => ({ islandPresentation: { key: 'orbit', slot: 'wide' as const, width: 960 } });
+export const load = () => ({
+	islandPresentation: { key: 'orbit', slot: 'wide' as const, width: 960 }
+});

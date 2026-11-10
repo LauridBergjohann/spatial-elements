@@ -1,2 +1,4 @@
 import { overview } from '$lib/catalog';
-export function load() { return { spatialElements: overview }; }
+export function load() {
+	return { spatialElements: overview };
+}

@@ -25,7 +25,13 @@ test('two-state controls preserve the live shell, keyboard choice and reload pre
 	await expect(shell).toHaveAttribute('data-color-scheme', 'light');
 	for (const width of [320, 600, 840, 1600]) {
 		await page.setViewportSize({ width, height: 900 });
-		if (width < 1600 && (await page.locator('.settings').getAttribute('open')) === null) await page.locator('.settings summary').click();
+		// setViewportSize can resolve before the native resize event closes the
+		// preceding dropdown. Wait for that frame before deciding whether to open it.
+		await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+		if (width < 1600) {
+			await expect(page.locator('.settings')).not.toHaveAttribute('open');
+			await page.locator('.settings summary').click();
+		}
 		const dark = page.getByRole('button', { name: 'Dark mode' }).filter({ visible: true });
 		await expect(dark).toHaveCount(1);
 		await dark.click();
@@ -33,6 +39,7 @@ test('two-state controls preserve the live shell, keyboard choice and reload pre
 		expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 	}
 	await page.setViewportSize({ width: 320, height: 800 });
+	await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 	await page.locator('.mobile-menu summary').click();
 	await expect(page.locator('.mobile-menu').getByRole('link', { name: 'Documentation' })).toBeVisible();
 	await page.screenshot({ path: info.outputPath('showcase-mobile.png') });

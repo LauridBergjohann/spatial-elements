@@ -9,18 +9,26 @@
 		const checkpoints = createScrollWarmupCheckpoints();
 		const api = { getCurrent: checkpoints.getCurrent, release: checkpoints.release };
 		Object.assign(window, { __deferredScrollWarmupCheckpoints: api });
-		void runDeferredScrollWarmupProof(host, checkpoints.wait).then(result => {
-			if (!active) return;
-			Object.assign(window, { __deferredScrollWarmupProof: result }); state = 'ready';
-		}, error => {
-			if (!active) return;
-			const failure = { error: String(error), stack: error instanceof Error ? error.stack : undefined };
-			Object.assign(window, { __deferredScrollWarmupProof: failure });
-			console.error('Deferred scroll warmup proof failed', failure.error, failure.stack);
-			state = 'error';
-		});
+		void runDeferredScrollWarmupProof(host, checkpoints.wait).then(
+			(result) => {
+				if (!active) return;
+				Object.assign(window, { __deferredScrollWarmupProof: result });
+				state = 'ready';
+			},
+			(error) => {
+				if (!active) return;
+				const failure = {
+					error: String(error),
+					stack: error instanceof Error ? error.stack : undefined
+				};
+				Object.assign(window, { __deferredScrollWarmupProof: failure });
+				console.error('Deferred scroll warmup proof failed', failure.error, failure.stack);
+				state = 'error';
+			}
+		);
 		return () => {
-			active = false; checkpoints.dispose();
+			active = false;
+			checkpoints.dispose();
 			if (Reflect.get(window, '__deferredScrollWarmupCheckpoints') === api)
 				Reflect.deleteProperty(window, '__deferredScrollWarmupCheckpoints');
 		};

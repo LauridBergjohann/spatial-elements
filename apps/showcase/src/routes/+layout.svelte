@@ -14,14 +14,39 @@
 	onMount(appearance.start);
 </script>
 
-<svelte:head><meta name="description" content="A showcase of spatial experiences built with Spatial Elements." /></svelte:head>
+<svelte:head
+	><meta
+		name="description"
+		content="A showcase of spatial experiences built with Spatial Elements."
+	/></svelte:head
+>
 <ThemeStyles {themes} />
-<BrandStageShell {theme} colorScheme={appearance.colorScheme} deviceOrientation items={navigation.map(item => ({ ...item, current: page.url.pathname === item.href }))}>
- {#snippet brand()}<a class="wordmark" href="/">Spatial Elements<span>Showcase</span></a>{/snippet}
- {#snippet right()}<ThemeSwitch {appearance} />{/snippet}
- {@render children()}
+<BrandStageShell
+	{theme}
+	colorScheme={appearance.colorScheme}
+	deviceOrientation
+	items={navigation.map((item) => ({ ...item, current: page.url.pathname === item.href }))}
+>
+	{#snippet brand()}<a class="wordmark" href="/">Spatial Elements<span>Showcase</span></a>{/snippet}
+	{#snippet right()}<ThemeSwitch {appearance} />{/snippet}
+	{@render children()}
 </BrandStageShell>
+
 <style>
- .wordmark { display: flex; flex-direction: column; gap: 2px; font-weight: 600; letter-spacing: -.035em; line-height: 1.2; text-decoration: none; }
- .wordmark span { color: var(--showcase-focus); font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; }
+	.wordmark {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		font-weight: 600;
+		letter-spacing: -0.035em;
+		line-height: 1.2;
+		text-decoration: none;
+	}
+	.wordmark span {
+		color: var(--showcase-focus);
+		font-size: 11px;
+		font-weight: 500;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+	}
 </style>

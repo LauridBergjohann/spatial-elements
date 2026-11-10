@@ -13,11 +13,19 @@ export function createAppearance() {
 		document.documentElement.style.colorScheme = scheme;
 	}
 	return {
-		get colorScheme() { return colorScheme; },
-		get ready() { return ready; },
+		get colorScheme() {
+			return colorScheme;
+		},
+		get ready() {
+			return ready;
+		},
 		select(scheme: ColorScheme) {
 			explicit = true;
-			try { sessionStorage.setItem(storageKey, scheme); } catch { /* Storage is optional. */ }
+			try {
+				sessionStorage.setItem(storageKey, scheme);
+			} catch {
+				/* Storage is optional. */
+			}
 			apply(scheme);
 		},
 		start() {
@@ -25,13 +33,22 @@ export function createAppearance() {
 			let initial: ColorScheme = media.matches ? 'dark' : 'light';
 			try {
 				const stored = sessionStorage.getItem(storageKey);
-				if (stored === 'light' || stored === 'dark') { initial = stored; explicit = true; }
-			} catch { /* Follow the operating system when storage is unavailable. */ }
+				if (stored === 'light' || stored === 'dark') {
+					initial = stored;
+					explicit = true;
+				}
+			} catch {
+				/* Follow the operating system when storage is unavailable. */
+			}
 			apply(initial);
 			ready = true;
-			const changed = () => { if (!explicit) apply(media.matches ? 'dark' : 'light'); };
+			const changed = () => {
+				if (!explicit) apply(media.matches ? 'dark' : 'light');
+			};
 			media.addEventListener('change', changed);
-			void tick().then(() => { delete document.documentElement.dataset.themePending; });
+			void tick().then(() => {
+				delete document.documentElement.dataset.themePending;
+			});
 			return () => media.removeEventListener('change', changed);
 		}
 	};

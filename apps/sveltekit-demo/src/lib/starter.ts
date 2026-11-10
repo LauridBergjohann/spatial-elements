@@ -1,7 +1,8 @@
 import { createSpatialTheme, type SpatialElementData } from '@spatial-elements/sveltekit';
 
 export const starterTheme = createSpatialTheme({
-	id: 'starter', name: 'My collection',
+	id: 'starter',
+	name: 'My collection',
 	sectionBackgrounds: { standard: '#ffffff', muted: '#f5f7f9' }
 });
 

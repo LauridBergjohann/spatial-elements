@@ -5,14 +5,21 @@
 	let state = $state('preparing');
 	onMount(() => {
 		let active = true;
-		void runStageDisplayClearProof(output).then(result => {
-			if (!active) return;
-			Object.assign(window, { __stageDisplayClearProof: result }); state = 'ready';
-		}, error => {
-			if (!active) return;
-			Object.assign(window, { __stageDisplayClearProof: { error: String(error) } }); state = 'error';
-		});
-		return () => { active = false; };
+		void runStageDisplayClearProof(output).then(
+			(result) => {
+				if (!active) return;
+				Object.assign(window, { __stageDisplayClearProof: result });
+				state = 'ready';
+			},
+			(error) => {
+				if (!active) return;
+				Object.assign(window, { __stageDisplayClearProof: { error: String(error) } });
+				state = 'error';
+			}
+		);
+		return () => {
+			active = false;
+		};
 	});
 </script>
 

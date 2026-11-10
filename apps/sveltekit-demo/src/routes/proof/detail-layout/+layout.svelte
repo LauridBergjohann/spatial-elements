@@ -6,9 +6,19 @@
 	import type { LayoutProps } from './$types';
 	let { children }: LayoutProps = $props();
 </script>
-{#snippet customSummary(context: SpatialSummaryContext)}<DetailFixtureSummary {context} long={page.params.variant === 'long'} />{/snippet}
+
+{#snippet customSummary(context: SpatialSummaryContext)}<DetailFixtureSummary
+		{context}
+		long={page.params.variant === 'long'}
+	/>{/snippet}
 <BrandStageShell {theme} summary={page.params.variant === 'default' ? undefined : customSummary}>
 	{#snippet menu()}<a href="/proof/detail-layout/default">Detail layout fixture</a>{/snippet}
 	{@render children()}
 </BrandStageShell>
-<style>:global(body) { margin: 0; font-family: system-ui, sans-serif; }</style>
+
+<style>
+	:global(body) {
+		margin: 0;
+		font-family: system-ui, sans-serif;
+	}
+</style>

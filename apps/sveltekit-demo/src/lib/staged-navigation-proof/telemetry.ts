@@ -16,15 +16,25 @@ export interface NavigationProof {
 	cancel?: () => void;
 }
 
-declare global { interface Window { __stagedNavigationProof?: NavigationProof } }
+declare global {
+	interface Window {
+		__stagedNavigationProof?: NavigationProof;
+	}
+}
 
 export function proofState(): NavigationProof | undefined {
 	if (typeof window === 'undefined') return;
-	return window.__stagedNavigationProof ??= { events: [], phase: 'idle', ready: false };
+	return (window.__stagedNavigationProof ??= { events: [], phase: 'idle', ready: false });
 }
 
 export function trace(kind: string, details: Omit<Partial<ProofEvent>, 'kind' | 'time'> = {}) {
 	const state = proofState();
 	if (!state) return;
-	state.events.push({ kind, time: performance.now(), phase: state.phase, owner: state.owner, ...details });
+	state.events.push({
+		kind,
+		time: performance.now(),
+		phase: state.phase,
+		owner: state.owner,
+		...details
+	});
 }

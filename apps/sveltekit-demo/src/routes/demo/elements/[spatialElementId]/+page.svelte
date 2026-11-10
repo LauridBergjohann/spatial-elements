@@ -1,2 +1,34 @@
-<script lang="ts">import { SpatialElementPage, Section } from '@spatial-elements/sveltekit';import type { PageData } from './$types';let { data }: {data:PageData}=$props();</script>
-<SpatialElementPage spatialElement={data.spatialElement}><Section section={{id:'features',title:'Features', headline: 'Features', background: { color: 'standard' }}}><h2>A closer look at {data.spatialElement.title}</h2><p>Drag the model to rotate it. Hover over the main model to see its interaction outline, then use the wheel to zoom.</p></Section><Section section={{id:'design',title:'Design', headline: 'Design', background: { color: 'standard' }}}><h2>Original geometric studies</h2><p>These assets are created procedurally for this demo and can be regenerated from the repository tooling.</p><a href="/demo/categories/carousel">Back to the carousel</a></Section></SpatialElementPage>
+<script lang="ts">
+	import { SpatialElementPage, Section } from '@spatial-elements/sveltekit';
+	import type { PageData } from './$types';
+	let { data }: { data: PageData } = $props();
+</script>
+
+<SpatialElementPage spatialElement={data.spatialElement}
+	><Section
+		section={{
+			id: 'features',
+			title: 'Features',
+			headline: 'Features',
+			background: { color: 'standard' }
+		}}
+		><h2>A closer look at {data.spatialElement.title}</h2>
+		<p>
+			Drag the model to rotate it. Hover over the main model to see its interaction outline, then
+			use the wheel to zoom.
+		</p></Section
+	><Section
+		section={{
+			id: 'design',
+			title: 'Design',
+			headline: 'Design',
+			background: { color: 'standard' }
+		}}
+		><h2>Original geometric studies</h2>
+		<p>
+			These assets are created procedurally for this demo and can be regenerated from the repository
+			tooling.
+		</p>
+		<a href="/demo/categories/carousel">Back to the carousel</a></Section
+	></SpatialElementPage
+>

@@ -18,7 +18,7 @@
     "layout:generate": "node scripts/generate-layout-css.mjs",
     "check:layout": "node scripts/generate-layout-css.mjs --check",
     "dev": "npm run build && concurrently -k -n core,sveltekit \"npm run dev -w @spatial-elements/core\" \"npm run dev -w @spatial-elements/sveltekit\"",
-    "verify": "npm run check:release && npm run test:release && npm run check:boundaries && npm run check && npm test && npm run verify:packages",
+    "verify": "npm run check:format && npm run check:release && npm run test:release && npm run check:boundaries && npm run check && npm test && npm run verify:packages",
     "verify:packages": "node scripts/verify-packages.mjs",
     "test": "vitest run",
     "assets:demo": "node tooling/asset-pipeline/generate-demo.mjs && node scripts/sync-demo-assets.mjs",
@@ -40,7 +40,9 @@
     "build:apps": "npm run build && npm run build:demo && npm run build -w @spatial-elements/showcase",
     "preview:basics": "npm run preview -w @spatial-elements/demo-sveltekit -- --port 4174 --strictPort",
     "preview:showcase": "npm run preview -w @spatial-elements/showcase",
-    "test:apps": "playwright test --config playwright.apps.config.ts"
+    "test:apps": "playwright test --config playwright.apps.config.ts",
+    "format:apps": "prettier --write \"apps/{sveltekit-demo,showcase}/src/**/*.{svelte,ts,js,css}\"",
+    "check:format": "prettier --check \"apps/{sveltekit-demo,showcase}/src/**/*.{svelte,ts,js,css}\""
   },
   "devDependencies": {
     "@changesets/cli": "2.31.1",
@@ -52,6 +54,8 @@
     "@types/node": "^24",
     "@types/three": "0.186.0",
     "concurrently": "10.0.5",
+    "prettier": "^3.8.3",
+    "prettier-plugin-svelte": "^4.1.0",
     "svelte": "5.56.4",
     "svelte-check": "4.7.2",
     "three": "0.186.1",

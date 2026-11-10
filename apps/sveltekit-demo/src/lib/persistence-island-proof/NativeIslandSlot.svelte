@@ -11,15 +11,30 @@
 		render: () => {
 			let body = '';
 			if (!browser) {
-				const result = render(IslandRoot, { props: { content: controller.content() }, context: controller.contexts, idPrefix: `proof-${descriptor.slot}` });
+				const result = render(IslandRoot, {
+					props: { content: controller.content() },
+					context: controller.contexts,
+					idPrefix: `proof-${descriptor.slot}`
+				});
 				body = result.body;
-				if (result.head) throw new Error('This proof accepts content-only summaries; page-head output needs an explicit host contract');
+				if (result.head)
+					throw new Error(
+						'This proof accepts content-only summaries; page-head output needs an explicit host contract'
+					);
 			}
-			const inner = browser ? '' : `<div data-island-root style="width:100%;container-type:inline-size;container-name:island-summary">${body}</div>`;
+			const inner = browser
+				? ''
+				: `<div data-island-root style="width:100%;container-type:inline-size;container-name:island-summary">${body}</div>`;
 			return `<div data-native-island-slot="${descriptor.slot}" style="width:${descriptor.width}px;max-width:100%">${inner}</div>`;
 		},
 		setup: (element) => controller.attach(element as HTMLElement, descriptor)
 	}));
-	onMount(() => { islandTelemetry().routeMounts++; return () => { islandTelemetry().routeDestroys++; }; });
+	onMount(() => {
+		islandTelemetry().routeMounts++;
+		return () => {
+			islandTelemetry().routeDestroys++;
+		};
+	});
 </script>
+
 {@render raw()}

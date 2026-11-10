@@ -16,6 +16,12 @@
 </section>
 
 <style>
-	section { padding: 24px; background: #eef3f8; border: 2px solid #c2d2e2; }
-	h1 { margin-top: 0; }
+	section {
+		padding: 24px;
+		background: #eef3f8;
+		border: 2px solid #c2d2e2;
+	}
+	h1 {
+		margin-top: 0;
+	}
 </style>

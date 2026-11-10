@@ -12,9 +12,27 @@
 </script>
 
 <ThemeStyles {themes} />
-<BrandStageShell {theme} colorScheme={appearance.colorScheme} items={['List','Carousel','Mixed'].map(label => ({ id: label.toLowerCase(), label, href: '/proof/theming/categories/' + label.toLowerCase() }))}>
- {#snippet brand()}<a href="/proof/theming/categories/mixed">Spatial Elements</a>{/snippet}
- {#snippet right()}<ThemeSwitch {theme} {appearance} />{/snippet}
- {@render children()}
+<BrandStageShell
+	{theme}
+	colorScheme={appearance.colorScheme}
+	items={['List', 'Carousel', 'Mixed'].map((label) => ({
+		id: label.toLowerCase(),
+		label,
+		href: '/proof/theming/categories/' + label.toLowerCase()
+	}))}
+>
+	{#snippet brand()}<a href="/proof/theming/categories/mixed">Spatial Elements</a>{/snippet}
+	{#snippet right()}<ThemeSwitch {theme} {appearance} />{/snippet}
+	{@render children()}
 </BrandStageShell>
-<style>:global(body) { margin: 0; font-family: system-ui, sans-serif; } a { font-weight: 700; text-decoration: none; }</style>
+
+<style>
+	:global(body) {
+		margin: 0;
+		font-family: system-ui, sans-serif;
+	}
+	a {
+		font-weight: 700;
+		text-decoration: none;
+	}
+</style>

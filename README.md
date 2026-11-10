@@ -57,7 +57,7 @@ Supply your own GLB models, HDR environment and optional poster images, for exam
 Compose the application with these components:
 
 1. Put `BrandStageShell` in a persistent `+layout.svelte` and pass the theme. It keeps the renderer and shared resources alive across page navigation.
-2. Build a collection page with `ContentPage` and `ListSection` or `CarouselSection`. Derive list items with `getSpatialListItems(elements, '/collection/elements')` and set category lighting explicitly with `ContentPage`'s `hdr` prop.
+2. Build a collection page with `ContentPage` and `SpatialCardGridSection` or `SpatialCarouselSection`. Derive list items with `getSpatialListItems(elements, '/collection/elements')` and set category lighting explicitly with `ContentPage`'s `hdr` prop.
 3. Render an individual element with `SpatialElementPage`, passing its data as `spatialElement`. Add `Section` children for text, images and other content. Detail lighting comes from the element's own `hdr`.
 
 Follow [Getting started: category and detail pages](docs/getting-started.md) for the complete layout, route files and working examples. The current transition routes use `/:namespace/categories/{list,carousel,mixed}` and `/:namespace/elements/:id` (also `products/:id`), with the theme ID as the namespace.
@@ -93,3 +93,5 @@ Suggested link: [Built with Spatial Elements](https://github.com/LauridBergjohan
 Dependencies retain their own licenses. The optional attribution request does not amend the license.
 
 Working on Spatial Elements itself? See the [development guide](docs/development.md) for repository setup, the demo, checks, architecture and releases.
+
+Demo and Showcase source use Prettier with the Svelte plugin and a 100-character target width. Run `npm run format:apps` to format or `npm run check:format` to check; CI includes this in `npm run verify`.

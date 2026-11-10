@@ -6,9 +6,19 @@
 	import type { LayoutProps } from './$types';
 	let { children }: LayoutProps = $props();
 </script>
-{#snippet customSummary(context: SpatialSummaryContext)}<CarouselFixtureSummary {context} long={Boolean(page.data.carouselLong)} />{/snippet}
+
+{#snippet customSummary(context: SpatialSummaryContext)}<CarouselFixtureSummary
+		{context}
+		long={Boolean(page.data.carouselLong)}
+	/>{/snippet}
 <BrandStageShell {theme} summary={page.data.carouselCustom ? customSummary : undefined}>
 	{#snippet menu()}<a href="/proof/carousel-layout">Carousel layout fixture</a>{/snippet}
 	{@render children()}
 </BrandStageShell>
-<style>:global(body) { margin: 0; font-family: system-ui, sans-serif; }</style>
+
+<style>
+	:global(body) {
+		margin: 0;
+		font-family: system-ui, sans-serif;
+	}
+</style>

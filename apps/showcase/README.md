@@ -29,7 +29,7 @@ libraries first. The preview command serves the existing production build.
 - Create catalog routes at `/showcase/categories/list` or
   `/showcase/categories/carousel`, and detail routes at `/showcase/elements/[id]`.
   This matches the theme ID `showcase` and the library's navigation contract.
-- Use `ContentPage`, `ListSection`, `CarouselSection`, `SpatialElementPage` and
+- Use `ContentPage`, `SpatialCardGridSection`, `SpatialCarouselSection`, `SpatialElementPage` and
   `Section` inside the existing root layout. Do not create another stage per page.
 - Keep element data in `src/lib/`, and models, HDRs, posters, images and videos in
   `static/assets/`. See [Getting started](../../docs/getting-started.md) for the
@@ -53,3 +53,7 @@ still applies, the menu works, and the theme buttons remain disabled.
 
 No language switch or private brand content is included. This app is private in
 npm and is built in CI, but is not published with the runtime packages.
+
+## Source formatting
+
+Run `npm run format:apps` from the repository root to format Demo and Showcase source with Prettier and its Svelte plugin (100-character target width). `npm run check:format` checks the same files and runs as part of `npm run verify` in CI. Configure the editor to use the repository Prettier configuration for format-on-save.

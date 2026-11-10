@@ -5,14 +5,21 @@
 	let state = $state('preparing');
 	onMount(() => {
 		let active = true;
-		void runGroundCacheProof(output).then(result => {
-			if (!active) return;
-			Object.assign(window, { __groundCacheProof: result }); state = 'ready';
-		}, error => {
-			if (!active) return;
-			Object.assign(window, { __groundCacheProof: { error: String(error) } }); state = 'error';
-		});
-		return () => { active = false; };
+		void runGroundCacheProof(output).then(
+			(result) => {
+				if (!active) return;
+				Object.assign(window, { __groundCacheProof: result });
+				state = 'ready';
+			},
+			(error) => {
+				if (!active) return;
+				Object.assign(window, { __groundCacheProof: { error: String(error) } });
+				state = 'error';
+			}
+		);
+		return () => {
+			active = false;
+		};
 	});
 </script>
 
