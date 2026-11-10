@@ -14,6 +14,22 @@ opens the list. `/starter` and `/proof` remain available for development; advanc
 proofs are not in the public menu. `/proof/theming` isolates the original theme
 regressions from the permanently light Basics application.
 
+The **Layouts** menu links to `/demo/layouts` and all six interactive layout
+examples: cards, content grid, section backgrounds, docking, media and reading
+pane. The overview explains what to try on each page.
+
+The other Basics route groups serve different development purposes:
+
+| Routes | Purpose |
+| --- | --- |
+| `/starter/categories/list` and `/starter/elements/cube` | Working minimal application from the Getting started guide, intended as a starting point for consumers. |
+| `/staged/categories/list`, `/staged/categories/carousel` and `/staged/elements/*` | Advanced transition fixtures with known dock destinations and a persistent interactive summary. Used to verify prepared navigation, return transitions and retained input state. |
+| `/proof/*` | Focused development and regression fixtures for rendering, layout, persistence, theme behavior and performance. Several expose test instrumentation or use private internals; they are not general authoring examples. |
+
+These are route groups inside the demo application, not separate packages or
+deployment environments. Their URLs remain stable because tests and development
+tools use them.
+
 Run these commands from the repository root after `npm ci`:
 
 | Task | Basics | Showcase |
