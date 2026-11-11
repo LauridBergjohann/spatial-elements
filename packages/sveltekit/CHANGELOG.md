@@ -8,6 +8,7 @@
 
 ### Patch Changes
 
+- Apply spatial panel tint, blur and shadow to native navigation and satellites, including the server-rendered fallback. The documentation website uses one light/dark theme and a shared showcase collection.
 - Updated dependencies
   - @spatial-elements/core@1.0.0-beta.10
 

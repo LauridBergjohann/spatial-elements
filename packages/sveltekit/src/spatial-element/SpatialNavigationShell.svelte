@@ -122,6 +122,15 @@
  .spatial-shell-track { position: relative; z-index: 30; height: calc(var(--ps-nav-height) + var(--ps-sticky-range)); margin-bottom: calc(-1 * var(--ps-sticky-range)); pointer-events: none; }
  .spatial-shell-rack { position: sticky; top: 0; height: var(--ps-nav-height); pointer-events: none; }
  .spatial-shell-rack :global(.ps-navigation) { pointer-events: auto; }
+ /* Native navigation retains its semantic DOM and shares the spatial material,
+  * including the SSR/no-GPU fallback. GPU glass replaces only its surface. */
+ .spatial-shell-rack :global(.header),
+ .spatial-shell-rack :global(.satellite) {
+  background: rgb(var(--spatial-element-panel-tint-rgb) / var(--spatial-element-panel-tint-opacity));
+  -webkit-backdrop-filter: blur(var(--spatial-element-panel-backdrop-blur));
+  backdrop-filter: blur(var(--spatial-element-panel-backdrop-blur));
+  box-shadow: var(--spatial-element-panel-box-shadow);
+ }
  :global(.stage-virtual-scroll-active) .spatial-shell-rack { position: relative; transform: translateY(var(--spatial-shell-scroll-compensation, 0px)); }
- [data-spatial-navigation-glass] :global([data-stage-panel-bound]) { background: transparent; box-shadow: none; }
+ [data-spatial-navigation-glass] :global([data-stage-panel-bound]) { background: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
 </style>
