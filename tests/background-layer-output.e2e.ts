@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { decodeProofPng, proofPngDifference, proofPngRgbRange, type ProofPng } from './helpers/proofPng';
-import type { BackgroundCheckpoint, BackgroundCheckpointApi } from '../apps/sveltekit-demo/src/routes/proof/background-layer-output/checkpoints';
+import type { BackgroundCheckpoint, BackgroundCheckpointApi } from '../apps/tests/src/routes/proof/background-layer-output/checkpoints';
 
 interface CheckpointObservation extends BackgroundCheckpoint {
 	canvasRects: { x: number; y: number; width: number; height: number }[];

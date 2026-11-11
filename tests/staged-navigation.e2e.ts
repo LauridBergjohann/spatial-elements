@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
-import type { ProofEvent } from '../apps/sveltekit-demo/src/lib/staged-navigation-proof/telemetry';
+import type { ProofEvent } from '../apps/tests/src/lib/staged-navigation-proof/telemetry';
 
 const events = (page: Page) => page.evaluate(() => window.__stagedNavigationProof?.events ?? []);
 const kinds = async (page: Page, kind: string) => (await events(page)).filter(event => event.kind === kind);

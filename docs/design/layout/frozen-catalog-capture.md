@@ -36,7 +36,7 @@ are not measurements of this change's savings.
 
 ## Comparative fixture
 
-The [proof route](../../../apps/sveltekit-demo/src/routes/proof/catalog-warm-output/proof.ts)
+The [proof route](../../../apps/tests/src/routes/proof/catalog-warm-output/proof.ts)
 uses the actual catalog layer, GLB assets, environment, focus, handoff and panel
 projection. The new `fade-reuse=control|candidate` query is separate from the
 existing warm-output modes. Both runs use `warm-mode=scratch` and identical

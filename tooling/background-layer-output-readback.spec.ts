@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { unpackHalfFloatRgbaRows } from '../apps/sveltekit-demo/src/routes/proof/background-layer-output/readback';
+import { unpackHalfFloatRgbaRows } from '../apps/tests/src/routes/proof/background-layer-output/readback';
 
 describe('experimental Background RGBA16F readback', () => {
 	it('keeps every channel and row while excluding nonzero padding from unaligned widths', () => {

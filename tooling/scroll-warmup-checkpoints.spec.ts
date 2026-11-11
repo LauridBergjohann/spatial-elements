@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { createScrollWarmupCheckpoints } from '../apps/sveltekit-demo/src/routes/proof/deferred-scroll-warmup/checkpoints';
+import { createScrollWarmupCheckpoints } from '../apps/tests/src/routes/proof/deferred-scroll-warmup/checkpoints';
 
 test('each screenshot handshake waits for its own ID and stale acknowledgements cannot advance a later frame', async () => {
 	const checkpoints = createScrollWarmupCheckpoints();

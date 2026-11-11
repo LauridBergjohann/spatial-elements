@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { createBackgroundCheckpoints } from '../apps/sveltekit-demo/src/routes/proof/background-layer-output/checkpoints';
+import { createBackgroundCheckpoints } from '../apps/tests/src/routes/proof/background-layer-output/checkpoints';
 
 test('screenshots own monotonically identified phases; stale release cannot advance the next one', async () => {
 	const controller = createBackgroundCheckpoints(); let done = 0;

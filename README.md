@@ -1,97 +1,37 @@
+<img src="apps/website/static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="64" height="64" />
+
 # Spatial Elements
 
-Spatial Elements brings interactive 3D models into content-driven websites. Use it to present individual items or entire collections, combining models with text, images and links in lists, carousels and detail pages.
+Spatial Elements brings interactive 3D models into content-driven SvelteKit websites. This repository contains the framework-independent rendering core, SvelteKit components, documentation website, minimal demo and regression application.
 
-Rendering is powered by Three.js and WebGPU. Visitors can explore models, rotate and zoom into details, and navigate between collection and detail views. Semantic HTML, links and supplied poster images remain available without WebGPU.
+- **Content and models together:** compose spatial card grids, carousels and detail pages with ordinary HTML and Page Sections.
+- **Persistent rendering:** share the stage, loaded assets and navigation state across related pages.
+- **Responsive by design:** coordinate content layout, model fitting, docking and wide-screen reading panes.
+- **Progressive enhancement:** real links, meaningful HTML and supplied poster images remain available without WebGPU.
+- **Your assets and identity:** bring GLB models, HDR environments and themes; adapt materials, controls and interface texts.
 
-## Packages
-
-| Package | Use it for |
-| --- | --- |
-| [@spatial-elements/sveltekit](packages/sveltekit/README.md) | Ready-to-use Svelte components, page composition and SvelteKit navigation/history integration. Includes core as a dependency. |
-| [@spatial-elements/core](packages/core/README.md) | Framework-independent rendering, model loading, level of detail (LOD), camera interaction and transitions for custom integrations. |
-
-The packages are currently in beta. The usage guides target `1.0.0-beta.5` and newer. SvelteKit is the available framework adapter; custom integrations can build on core.
+**[Documentation, interactive examples and showcase](https://spatial-elements.bergjohann.com/)** — prepared publication address; see [hosting](docs/hosting.md).
 
 ## Installation
 
-Use Node.js 22.12 or newer for tooling. In an existing Svelte / SvelteKit application (compatible peer versions: Svelte `^5.56.4`, SvelteKit `^2.70.3`):
+In a SvelteKit application:
 
-~~~sh
-npm install @spatial-elements/sveltekit@latest
-~~~
+```sh
+npm install @spatial-elements/sveltekit@beta three@^0.186.1
+```
 
-For a custom integration without the SvelteKit components:
+For a custom renderer integration, install `@spatial-elements/core@beta` instead. Both packages are prereleases. Three.js is a shared peer dependency.
 
-~~~sh
-npm install @spatial-elements/core@latest
-~~~
+## Documentation and examples
 
-Three.js is a required peer dependency (`^0.186.1`). Modern npm installs it automatically. If your application imports Three.js directly, also declare it with `npm install three@^0.186.1`. Other package managers may require explicit peer installation; keep peer versions compatible rather than bypassing them with `--legacy-peer-deps`.
+Start with [Getting started](https://spatial-elements.bergjohann.com/getting-started/), explore the [interactive documentation](https://spatial-elements.bergjohann.com/docs/) and visit the [showcase](https://spatial-elements.bergjohann.com/showcase/). The website uses Page Sections and Spatial Elements itself; explanations are authored directly in Svelte/HTML.
 
-## Use Spatial Elements in SvelteKit
+[apps/demo](apps/demo) is the minimal working example. [apps/website](apps/website) is the public website. [apps/tests](apps/tests) contains technical fixtures and performance scenarios.
 
-An element combines content with its 3D assets. A theme defines the shared appearance of your collection:
+## Development
 
-~~~ts
-import { createSpatialTheme, type SpatialElementData } from '@spatial-elements/sveltekit';
+Use Node 24 and npm 11. Run `npm ci`, then `npm run dev:website`, `npm run dev:demo` or `npm run dev:tests`. See [application commands](apps/README.md), [development](docs/development.md), [testing](docs/testing.md) and [releases](docs/release.md).
 
-export const theme = createSpatialTheme({ id: 'collection', name: 'My collection' });
+## License
 
-export const elements: SpatialElementData[] = [
-  {
-    id: 'chair',
-    title: 'Chair',
-    geometry: {
-      low: '/assets/chair-low.glb',
-      high: '/assets/chair-high.glb'
-    },
-    hdr: '/assets/studio.hdr',
-    fallbackImage: '/assets/chair.webp'
-  }
-];
-~~~
-
-Supply your own GLB models, HDR environment and optional poster images, for example in your application's `static/assets/` directory. The packages do not bundle models or environments. Both geometry variants are required and must share origin, scale and orientation. A small model can use the same URL for both; identical URLs share one cached fetch and decode.
-
-Compose the application with these components:
-
-1. Put `BrandStageShell` in a persistent `+layout.svelte` and pass the theme. It keeps the renderer and shared resources alive across page navigation.
-2. Build a collection page with `ContentPage` and `SpatialCardGridSection` or `SpatialCarouselSection`. Derive list items with `getSpatialListItems(elements, '/collection/elements')` and set category lighting explicitly with `ContentPage`'s `hdr` prop.
-3. Render an individual element with `SpatialElementPage`, passing its data as `spatialElement`. Add `Section` children for text, images and other content. Detail lighting comes from the element's own `hdr`.
-
-Follow [Getting started: category and detail pages](docs/getting-started.md) for the complete layout, route files and working examples. The current transition routes use `/:namespace/categories/{list,carousel,mixed}` and `/:namespace/elements/:id` (also `products/:id`), with the theme ID as the namespace.
-
-WebGPU rendering requires a capable browser/device and a secure context (HTTPS or localhost). Supply poster images for loading and fallback views. Asset hosting and content loading remain part of your application.
-
-## Usage guides
-
-- [Getting started](docs/getting-started.md): build your first collection and detail pages.
-- [Page Sections migration](docs/page-sections-migration.md): shared layout, configurable cards and responsive navigation.
-- [Authoring](docs/authoring.md): combine lists, carousels and ordinary content.
-- [API reference](docs/api.md): element data, themes, components and renderer settings.
-- [Interface texts and help](docs/interface-texts.md): translate controls, tooltips and the 3D interaction guide.
-- [Runtime themes and ButtonGroup](docs/theming.md): host-owned light/dark preference and reusable button groups.
-- [Configuration migration](docs/configuration-migration.md): update an existing beta integration.
-
-## Demo applications
-
-- **Basics** ? simple forms and the essential list, carousel and detail components,
-  with a fixed light theme. Run `npm run dev:basics`.
-- **Showcase** ? an independent shell for richer authored scenes and imagery,
-  with light/dark appearance. Run `npm run dev:showcase`.
-
-Both live in this repository. See [local builds, previews and authoring](apps/README.md).
-
-## License and attribution
-
-[MPL-2.0](LICENSE).
-
-A visible “Built with Spatial Elements” link is appreciated, but not required. This does not replace your obligations under the MPL-2.0 license.
-
-Suggested link: [Built with Spatial Elements](https://github.com/LauridBergjohann/spatial-elements).
-Dependencies retain their own licenses. The optional attribution request does not amend the license.
-
-Working on Spatial Elements itself? See the [development guide](docs/development.md) for repository setup, the demo, checks, architecture and releases.
-
-Demo and Showcase source use Prettier with the Svelte plugin and a 100-character target width. Run `npm run format:apps` to format or `npm run check:format` to check; CI includes this in `npm run verify`.
+[Mozilla Public License 2.0](LICENSE). Showcase assets retain their own rights and attribution; they are not included in npm packages. A visible “Built with Spatial Elements” link is appreciated, but not required by an additional attribution condition.

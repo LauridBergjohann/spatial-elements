@@ -10,7 +10,7 @@ export default defineConfig({
 	projects: [{ name: 'chrome', use: { browserName: 'chromium', channel: process.env.CI ? undefined : 'chrome' } }],
 	webServer: {
 		command: `node ../../node_modules/vite/bin/vite.js dev --host 127.0.0.1 --port ${port}`,
-		cwd: fileURLToPath(new URL('./apps/sveltekit-demo/', import.meta.url)),
+		cwd: fileURLToPath(new URL('./apps/tests/', import.meta.url)),
 		url: `${baseURL}/proof/persistent-island/source`, reuseExistingServer: false, timeout: 120000
 	}
 });

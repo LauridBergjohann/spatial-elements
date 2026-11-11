@@ -1,81 +1,180 @@
-import { expect, test } from '@playwright/test';
+﻿import { expect, test } from '@playwright/test';
 
-test('two-state controls preserve the live shell, keyboard choice and reload preference', async ({ page }, info) => {
-	const errors: string[] = [];
-	page.on('pageerror', error => errors.push(error.message));
-	await page.emulateMedia({ colorScheme: 'dark' });
+test('home explains the library and docs use the shared navigation', async ({ page }) => {
 	await page.goto('/');
-	const shell = page.locator('.brand-stage-shell');
-	await expect(shell).toHaveAttribute('data-color-scheme', 'dark');
-	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', /enhanced|fallback|unsupported/, { timeout: 45_000 });
-	const controls = page.locator('[data-spatial-shell-right]');
-	await expect(controls.getByRole('button')).toHaveCount(2);
-	await expect(controls.getByRole('button', { name: 'Dark mode' })).toHaveAttribute('aria-pressed', 'true');
-	await page.screenshot({ path: info.outputPath('showcase-dark.png') });
-	const original = await shell.elementHandle();
-	await controls.getByRole('button', { name: 'Light mode' }).focus();
-	await page.keyboard.press('Enter');
-	await expect(shell).toHaveAttribute('data-color-scheme', 'light');
-	expect(await original!.evaluate(node => node === document.querySelector('.brand-stage-shell'))).toBe(true);
-	await page.screenshot({ path: info.outputPath('showcase-light.png') });
+	await expect(page.getByRole('heading', { level: 1 })).toContainText('dimension');
+	await expect(page.locator('#features .ps-card')).toHaveCount(6);
+	await expect(page.locator('.stage')).toHaveCount(0);
+	await page.goto('/docs/foundations/assets/');
+	await expect(page.getByRole('navigation', { name: 'Documentation chapters' })).toBeVisible();
+	await expect(page.getByRole('navigation', { name: 'Breadcrumb', exact: true })).toContainText(
+		'Foundations'
+	);
+	await expect(
+		page.getByRole('navigation', { name: 'Reading order' }).locator('[rel=next]')
+	).toBeVisible();
+	await page.keyboard.press('Control+k');
+	const search = page.getByRole('combobox', { name: 'Search documentation' });
+	await expect(search).toBeFocused();
+	await search.fill('spatial collection playground');
+	await search.press('Enter');
+	await expect(page).toHaveURL(/\/docs\/sections\/playground\/$/);
+});
+
+test('theme preference works and survives reload without fixing a palette in the test', async ({
+	page
+}) => {
+	await page.goto('/');
+	await page.getByRole('button', { name: 'Dark', exact: true }).filter({ visible: true }).click();
+	await expect(page.locator('.ps-shell')).toHaveAttribute('data-ps-theme', 'dark');
 	await page.reload();
-	await expect(shell).toHaveAttribute('data-color-scheme', 'light');
-	await page.emulateMedia({ colorScheme: 'light' });
-	await page.emulateMedia({ colorScheme: 'dark' });
-	await expect(shell).toHaveAttribute('data-color-scheme', 'light');
-	for (const width of [320, 600, 840, 1600]) {
-		await page.setViewportSize({ width, height: 900 });
-		// setViewportSize can resolve before the native resize event closes the
-		// preceding dropdown. Wait for that frame before deciding whether to open it.
-		await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-		if (width < 1600) {
-			await expect(page.locator('.settings')).not.toHaveAttribute('open');
-			await page.locator('.settings summary').click();
-		}
-		const dark = page.getByRole('button', { name: 'Dark mode' }).filter({ visible: true });
-		await expect(dark).toHaveCount(1);
-		await dark.click();
-		await expect(shell).toHaveAttribute('data-color-scheme', 'dark');
-		expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-	}
-	await page.setViewportSize({ width: 320, height: 800 });
-	await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-	await page.locator('.mobile-menu summary').click();
-	await expect(page.locator('.mobile-menu').getByRole('link', { name: 'Documentation' })).toBeVisible();
-	await page.screenshot({ path: info.outputPath('showcase-mobile.png') });
+	await expect(page.locator('.ps-shell')).toHaveAttribute('data-ps-theme', 'dark');
+	await page.getByRole('button', { name: 'Light', exact: true }).filter({ visible: true }).click();
+	await expect(page.locator('.ps-shell')).toHaveAttribute('data-ps-theme', 'light');
+});
+
+test('theme still changes when storage is blocked', async ({ page }) => {
+	await page.addInitScript(() => {
+		for (const method of ['getItem', 'setItem'])
+			Object.defineProperty(Storage.prototype, method, {
+				value: () => {
+					throw Error('Blocked');
+				}
+			});
+	});
+	await page.goto('/');
+	await page.getByRole('button', { name: 'Dark', exact: true }).filter({ visible: true }).click();
+	await expect(page.locator('.ps-shell')).toHaveAttribute('data-ps-theme', 'dark');
+});
+
+test('playground updates preview and source together and can reset', async ({ page }) => {
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
+	await page.goto('/docs/sections/playground/');
+	await page.getByRole('combobox', { name: 'Card tone', exact: true }).selectOption('standard');
+	await page.getByRole('combobox', { name: 'Media aspect', exact: true }).selectOption('1/1');
+	await expect(page.locator('#collection-grid .ps-card').first()).toHaveAttribute(
+		'data-tone',
+		'standard'
+	);
+	await expect(page.locator('#source')).toContainText('cardTone="standard"');
+	await expect(page.locator('#source')).toContainText('mediaAspect="1/1"');
+	await page.getByRole('combobox', { name: 'View', exact: true }).selectOption('carousel');
+	await expect(page.locator('[data-carousel-section]')).toBeVisible();
+	await expect(page.locator('#source')).toContainText('SpatialCarouselSection');
+	await page.getByRole('button', { name: 'Reset example' }).click();
+	await expect(page.locator('#source')).toContainText('cardTone="muted"');
+	await expect(page.locator('#collection-grid .ps-card').first()).toHaveAttribute(
+		'data-tone',
+		'muted'
+	);
 	expect(errors).toEqual([]);
 });
 
-test('theme selection remains usable when storage is blocked', async ({ page }) => {
-	await page.addInitScript(() => {
-		for (const method of ['getItem', 'setItem']) Object.defineProperty(Storage.prototype, method, { value: () => { throw new Error('Storage disabled'); } });
+if (process.env.SPATIAL_GPU)
+	test('showcase models enhance and nested collection navigation survives history', async ({
+		page
+	}, info) => {
+		const errors: string[] = [];
+		page.on('pageerror', (error) => errors.push(error.message));
+		await page.goto('/showcase/wera/categories/list/?stage-test=1');
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', {
+			timeout: 60000
+		});
+		await expect(page.locator('[data-catalog-model-ready]').first()).toBeAttached({
+			timeout: 60000
+		});
+		await page.screenshot({ path: info.outputPath('wera-grid.png') });
+		await page.locator('a[data-catalog-card]').first().click();
+		await expect(page).toHaveURL(/\/showcase\/wera\/elements\//);
+		await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
+		await expect(page.locator('#demo-notice')).toContainText('cannot purchase');
+		await page.goBack();
+		await expect(page).toHaveURL(/\/showcase\/wera\/categories\/list/);
+		await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
+		await page.goto('/showcase/watches/elements/chronograph/');
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', {
+			timeout: 60000
+		});
+		await expect(page.locator('canvas').first()).toBeVisible();
+		await page.screenshot({ path: info.outputPath('watch-detail.png') });
+		expect(errors).toEqual([]);
 	});
-	await page.emulateMedia({ colorScheme: 'light' });
-	await page.goto('/');
-	await page.getByRole('button', { name: 'Dark mode' }).filter({ visible: true }).click();
-	await expect(page.locator('.brand-stage-shell')).toHaveAttribute('data-color-scheme', 'dark');
+
+test('all Wera tools are reachable and clearly identified as demonstrations', async ({ page }) => {
+	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
+	await page.goto('/showcase/wera/');
+	await expect(page.locator('[data-catalog-card]')).toHaveCount(8);
+	for (const id of [
+		'tool-check-plus',
+		'joker',
+		'kraftform-xxl',
+		'ph-kreuzschlitz',
+		'kraftform-kompakt',
+		'kraftform-kompakt-20',
+		'winkelschluessel',
+		'zyklop-speed'
+	]) {
+		const response = await page.goto('/showcase/wera/elements/' + id + '/');
+		expect(response?.status()).toBe(200);
+		await expect(page.locator('#demo-notice')).toContainText('cannot purchase');
+		await expect(page.locator('#demo-notice a')).toHaveAttribute('href', 'https://www.wera.de/');
+		await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+	}
 });
 
-test('the OS dark palette paints before hydration', async ({ page }) => {
-	test.skip(Boolean(process.env.SPATIAL_E2E_DEV), 'Production bundle bootstrap check');
-	await page.emulateMedia({ colorScheme: 'dark' });
-	await page.route('**/_app/immutable/**', route => route.request().resourceType() === 'script' ? route.abort() : route.continue());
-	await page.goto('/');
-	await expect(page.locator('html')).toHaveAttribute('data-theme-pending', '');
-	await expect(page.locator('.brand-stage-shell')).toHaveCSS('background-color', 'rgb(28, 30, 34)');
+test('watch credits its inspiration and links to the manufacturer', async ({ page }) => {
+	await page.goto('/showcase/watches/elements/chronograph/');
+	await expect(page.locator('#demo-notice')).toContainText('cannot purchase');
+	await expect(page.locator('#demo-notice a[href="https://www.rolex.com/"]')).toBeVisible();
+	await expect(page.locator('#demo-notice a[href*="webgl_watch.html"]')).toBeVisible();
 });
 
-test('dark native page and mobile menu work without JavaScript', async ({ browser, baseURL }, info) => {
-	const context = await browser.newContext({ baseURL, javaScriptEnabled: false, colorScheme: 'dark', viewport: { width: 320, height: 800 } });
+for (const width of [320, 840, 1920])
+	test(`website stays usable without JavaScript at ${width}px`, async ({ browser, baseURL }) => {
+		const context = await browser.newContext({
+			baseURL,
+			javaScriptEnabled: false,
+			viewport: { width, height: 900 }
+		});
+		try {
+			const page = await context.newPage();
+			for (const route of [
+				'/',
+				'/getting-started/',
+				'/docs/foundations/assets/',
+				'/showcase/wera/elements/joker/'
+			]) {
+				const response = await page.goto(route);
+				expect(response?.status()).toBe(200);
+				await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+				expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+					true
+				);
+			}
+			await page.goto('/');
+			if (width < 1200) {
+				await page.locator('.mobile-menu>summary').click();
+				await expect(
+					page.locator('.mobile-panel').getByRole('link', { name: 'Documentation', exact: true })
+				).toBeVisible();
+			}
+		} finally {
+			await context.close();
+		}
+	});
+
+test('minimal demo remains a small usable collection without GPU', async ({ browser }) => {
+	const context = await browser.newContext({ javaScriptEnabled: false });
 	try {
 		const page = await context.newPage();
-		await page.goto('/');
-		await expect(page.locator('.brand-stage-shell')).toHaveCSS('background-color', 'rgb(28, 30, 34)');
-		await page.locator('.settings summary').click();
-		await expect(page.getByRole('button', { name: 'Light mode' }).filter({ visible: true })).toBeDisabled();
-		await page.locator('.mobile-menu summary').click();
-		await expect(page.locator('.mobile-menu').getByRole('link', { name: 'Documentation' })).toBeVisible();
-		expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-		await page.screenshot({ path: info.outputPath('showcase-no-js.png') });
-	} finally { await context.close(); }
+		await page.goto('http://127.0.0.1:4173/');
+		await expect(page.getByRole('heading', { level: 1 })).toHaveText('My collection');
+		await page.locator('a[data-catalog-card]').first().click();
+		await expect(page).toHaveURL(/\/starter\/elements\/cube/);
+		await expect(page.getByRole('heading', { level: 1 })).toHaveText('Cube');
+	} finally {
+		await context.close();
+	}
 });

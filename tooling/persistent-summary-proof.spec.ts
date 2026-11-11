@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ProofHandoff } from '../apps/sveltekit-demo/src/lib/persistence-proof/handoff';
+import { ProofHandoff } from '../apps/tests/src/lib/persistence-proof/handoff';
 
 describe('persistent summary ownership proof', () => {
 	it('retains ownership across source cleanup and releases the destination exactly once', () => {

@@ -1,0 +1,1274 @@
+[
+  {
+    "schemaVersion": 1,
+    "brandId": "watches",
+    "spatialElementId": "chronograph",
+    "source": {
+      "url": "/assets/rolex.glb",
+      "sha256": "48d6b6f427be44b7beb33ce4845cd6886a24db732c7ebefda37b9f70fa0922f4"
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "watches-chronograph-source-frame-1",
+      "sourceUrl": "/assets/rolex.glb",
+      "low": {
+        "url": "/assets/optimized/watches-chronograph/low-dabb729d3dd5.glb",
+        "format": "glb",
+        "revision": "dabb729d3dd58cbd2c76462f526c01e9aee3535641d654b7ba2496ec9c1212fd",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression",
+            "KHR_materials_sheen",
+            "KHR_texture_transform"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/optimized/watches-chronograph/high-3cd2e04596c8.glb",
+        "format": "glb",
+        "revision": "3cd2e04596c8f635ed1132fdf2b249224af5835258f98816c62634c53e0f651b",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression",
+            "KHR_materials_sheen",
+            "KHR_texture_transform"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.0043947696685791016,
+        0.2637765391336212,
+        0.012085676193237305,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.2500457763671875,
+          -0.3292034880651703,
+          -0.4419519901275635
+        ],
+        "max": [
+          0.2500457763671875,
+          0.3292034880651703,
+          0.4419519901275635
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/posters/optimized/watches-chronograph.png",
+      "alt": "watches Chronograph",
+      "width": 640,
+      "height": 640
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/optimized/watches-chronograph/low-dabb729d3dd5.glb",
+          "format": "glb",
+          "revision": "dabb729d3dd58cbd2c76462f526c01e9aee3535641d654b7ba2496ec9c1212fd",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression",
+              "KHR_materials_sheen",
+              "KHR_texture_transform"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "dabb729d3dd58cbd2c76462f526c01e9aee3535641d654b7ba2496ec9c1212fd",
+          "transferBytes": 564036,
+          "triangleCount": 53076,
+          "primitiveCount": 33,
+          "materialCount": 7,
+          "decodedGeometryBytes": 2482328,
+          "estimatedTextureBytes": 4194306,
+          "extensions": [
+            "KHR_draco_mesh_compression",
+            "KHR_materials_sheen",
+            "KHR_texture_transform"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/optimized/watches-chronograph/high-3cd2e04596c8.glb",
+          "format": "glb",
+          "revision": "3cd2e04596c8f635ed1132fdf2b249224af5835258f98816c62634c53e0f651b",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression",
+              "KHR_materials_sheen",
+              "KHR_texture_transform"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "3cd2e04596c8f635ed1132fdf2b249224af5835258f98816c62634c53e0f651b",
+          "transferBytes": 1255596,
+          "triangleCount": 98334,
+          "primitiveCount": 33,
+          "materialCount": 7,
+          "decodedGeometryBytes": 4039876,
+          "estimatedTextureBytes": 33554434,
+          "extensions": [
+            "KHR_draco_mesh_compression",
+            "KHR_materials_sheen",
+            "KHR_texture_transform"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      }
+    },
+    "deviations": []
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wera",
+    "spatialElementId": "joker",
+    "source": {
+      "url": "/assets/wera/joker.glb",
+      "sha256": "56e582400ff51c61ffa39858b6b9a93135b45f079f2426aca8549f3197b2334d"
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "wera-joker-source-frame-1",
+      "sourceUrl": "/assets/wera/joker.glb",
+      "low": {
+        "url": "/assets/optimized/wera-joker/low-bdcee5c8d3bb.glb",
+        "format": "glb",
+        "revision": "bdcee5c8d3bbcffef65cbb0dc3bfdb59cd8cdc2b2304e462c99486c7da58dd72",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/optimized/wera-joker/high-9b94ec1c5d6e.glb",
+        "format": "glb",
+        "revision": "9b94ec1c5d6e9ca0f1935cef8f81b267ba2fd7ce4da6bb48ec9ff905aa1f0c88",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.0032052919268608093,
+        -0.0002932964125648141,
+        -0.00013972539454698563,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.09218765795230865,
+          -0.003509341855533421,
+          -0.014762251637876034
+        ],
+        "max": [
+          0.09218765795230865,
+          0.003509341855533421,
+          0.014762251637876034
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/posters/optimized/wera-joker.png",
+      "alt": "wera Joker Maulschlüssel",
+      "width": 640,
+      "height": 640
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/optimized/wera-joker/low-bdcee5c8d3bb.glb",
+          "format": "glb",
+          "revision": "bdcee5c8d3bbcffef65cbb0dc3bfdb59cd8cdc2b2304e462c99486c7da58dd72",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "bdcee5c8d3bbcffef65cbb0dc3bfdb59cd8cdc2b2304e462c99486c7da58dd72",
+          "transferBytes": 634392,
+          "triangleCount": 17943,
+          "primitiveCount": 5,
+          "materialCount": 5,
+          "decodedGeometryBytes": 509610,
+          "estimatedTextureBytes": 1398102,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/optimized/wera-joker/high-9b94ec1c5d6e.glb",
+          "format": "glb",
+          "revision": "9b94ec1c5d6e9ca0f1935cef8f81b267ba2fd7ce4da6bb48ec9ff905aa1f0c88",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "9b94ec1c5d6e9ca0f1935cef8f81b267ba2fd7ce4da6bb48ec9ff905aa1f0c88",
+          "transferBytes": 782928,
+          "triangleCount": 55385,
+          "primitiveCount": 5,
+          "materialCount": 5,
+          "decodedGeometryBytes": 1343350,
+          "estimatedTextureBytes": 1398102,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      }
+    },
+    "deviations": []
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wera",
+    "spatialElementId": "kraftform-kompakt-20",
+    "source": {
+      "url": "/assets/wera/kraftform-kompakt-20.glb",
+      "sha256": "00afb14ad659db40e308bebf2f0dff30a79d658ba9a495d9ebba5f72d0d98640"
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "wera-kraftform-kompakt-20-source-frame-1",
+      "sourceUrl": "/assets/wera/kraftform-kompakt-20.glb",
+      "low": {
+        "url": "/assets/optimized/wera-kraftform-kompakt-20/low-6878734f87ad.glb",
+        "format": "glb",
+        "revision": "6878734f87add6f3d63ea349c898e074ee722f9a268b9cfeae205b6df95533ae",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/optimized/wera-kraftform-kompakt-20/high-0192300bb0e1.glb",
+        "format": "glb",
+        "revision": "0192300bb0e1bce63140a1ff1ec635294dd43d1754ca5c2deaa323b81b6068f3",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.00021361863143846277,
+        -0.015750012294150316,
+        -0.000018015503883361816,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.12484258102589232,
+          -0.019036666028382,
+          -0.1250009983778
+        ],
+        "max": [
+          0.12484258102589232,
+          0.019036666028382,
+          0.1250009983778
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/posters/optimized/wera-kraftform-kompakt-20.png",
+      "alt": "wera Kraftform Kompakt 20",
+      "width": 640,
+      "height": 640
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/optimized/wera-kraftform-kompakt-20/low-6878734f87ad.glb",
+          "format": "glb",
+          "revision": "6878734f87add6f3d63ea349c898e074ee722f9a268b9cfeae205b6df95533ae",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "6878734f87add6f3d63ea349c898e074ee722f9a268b9cfeae205b6df95533ae",
+          "transferBytes": 546676,
+          "triangleCount": 48088,
+          "primitiveCount": 17,
+          "materialCount": 16,
+          "decodedGeometryBytes": 1466944,
+          "estimatedTextureBytes": 10485768,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/optimized/wera-kraftform-kompakt-20/high-0192300bb0e1.glb",
+          "format": "glb",
+          "revision": "0192300bb0e1bce63140a1ff1ec635294dd43d1754ca5c2deaa323b81b6068f3",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "0192300bb0e1bce63140a1ff1ec635294dd43d1754ca5c2deaa323b81b6068f3",
+          "transferBytes": 1002372,
+          "triangleCount": 147968,
+          "primitiveCount": 17,
+          "materialCount": 16,
+          "decodedGeometryBytes": 3794960,
+          "estimatedTextureBytes": 14680072,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      }
+    },
+    "deviations": []
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wera",
+    "spatialElementId": "kraftform-kompakt",
+    "source": {
+      "url": "/assets/wera/kraftform-kompakt.glb",
+      "sha256": "7ef0c6229ab725ad61ef1628c6ea9162470a1772ced104a18071dda206da2e3e"
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "wera-kraftform-kompakt-source-frame-1",
+      "sourceUrl": "/assets/wera/kraftform-kompakt.glb",
+      "low": {
+        "url": "/assets/optimized/wera-kraftform-kompakt/low-7dea89ae88d8.glb",
+        "format": "glb",
+        "revision": "7dea89ae88d8961309ac96575d1fbc819e136a70b629e9ba4b85622642817e90",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/optimized/wera-kraftform-kompakt/high-39f1a7ab0822.glb",
+        "format": "glb",
+        "revision": "39f1a7ab08221e8a8bb8ad5fbb001835d81f717ca7d0194d096be35cb80c1eaa",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.0006481558084487915,
+        -0.025670237868325785,
+        -0.00019793212413787842,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.19487187266349792,
+          -0.024831660062773153,
+          -0.15081246197223663
+        ],
+        "max": [
+          0.19487187266349792,
+          0.024831660062773153,
+          0.15081246197223663
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/posters/optimized/wera-kraftform-kompakt.png",
+      "alt": "wera Kraftform Kompakt",
+      "width": 640,
+      "height": 640
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/optimized/wera-kraftform-kompakt/low-7dea89ae88d8.glb",
+          "format": "glb",
+          "revision": "7dea89ae88d8961309ac96575d1fbc819e136a70b629e9ba4b85622642817e90",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "7dea89ae88d8961309ac96575d1fbc819e136a70b629e9ba4b85622642817e90",
+          "transferBytes": 4673372,
+          "triangleCount": 176907,
+          "primitiveCount": 112,
+          "materialCount": 62,
+          "decodedGeometryBytes": 6050002,
+          "estimatedTextureBytes": 42074134,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/optimized/wera-kraftform-kompakt/high-39f1a7ab0822.glb",
+          "format": "glb",
+          "revision": "39f1a7ab08221e8a8bb8ad5fbb001835d81f717ca7d0194d096be35cb80c1eaa",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "39f1a7ab08221e8a8bb8ad5fbb001835d81f717ca7d0194d096be35cb80c1eaa",
+          "transferBytes": 6522776,
+          "triangleCount": 437393,
+          "primitiveCount": 112,
+          "materialCount": 62,
+          "decodedGeometryBytes": 12651510,
+          "estimatedTextureBytes": 71434262,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      }
+    },
+    "deviations": []
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wera",
+    "spatialElementId": "kraftform-xxl",
+    "source": {
+      "url": "/assets/wera/kraftform-xxl.glb",
+      "sha256": "583125d5d7993c239c476892145640e36e6b862f09826b91d20ef6471bc01000"
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "wera-kraftform-xxl-source-frame-1",
+      "sourceUrl": "/assets/wera/kraftform-xxl.glb",
+      "low": {
+        "url": "/assets/optimized/wera-kraftform-xxl/low-2135e5c9873c.glb",
+        "format": "glb",
+        "revision": "2135e5c9873c65d9a9022f98031e51f79a732a41eb076d9c0f7bce877150e812",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/optimized/wera-kraftform-xxl/high-cbc63e38fcb8.glb",
+        "format": "glb",
+        "revision": "cbc63e38fcb8244bb43dc955e28acab6e1c00214c7e4ea4491063a43874b1349",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.004593908786773682,
+        -0.005436129868030548,
+        0.0011008009314537048,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.13318052887916565,
+          -0.12612011283636093,
+          -0.10233718156814575
+        ],
+        "max": [
+          0.13318052887916565,
+          0.12612011283636093,
+          0.10233718156814575
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/posters/optimized/wera-kraftform-xxl.png",
+      "alt": "wera Kraftform XXL",
+      "width": 640,
+      "height": 640
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/optimized/wera-kraftform-xxl/low-2135e5c9873c.glb",
+          "format": "glb",
+          "revision": "2135e5c9873c65d9a9022f98031e51f79a732a41eb076d9c0f7bce877150e812",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "2135e5c9873c65d9a9022f98031e51f79a732a41eb076d9c0f7bce877150e812",
+          "transferBytes": 4325284,
+          "triangleCount": 149145,
+          "primitiveCount": 116,
+          "materialCount": 53,
+          "decodedGeometryBytes": 4344438,
+          "estimatedTextureBytes": 45460164,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/optimized/wera-kraftform-xxl/high-cbc63e38fcb8.glb",
+          "format": "glb",
+          "revision": "cbc63e38fcb8244bb43dc955e28acab6e1c00214c7e4ea4491063a43874b1349",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "cbc63e38fcb8244bb43dc955e28acab6e1c00214c7e4ea4491063a43874b1349",
+          "transferBytes": 6726840,
+          "triangleCount": 461505,
+          "primitiveCount": 116,
+          "materialCount": 53,
+          "decodedGeometryBytes": 11606150,
+          "estimatedTextureBytes": 95791812,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      }
+    },
+    "deviations": []
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wera",
+    "spatialElementId": "ph-kreuzschlitz",
+    "source": {
+      "url": "/assets/wera/ph-kreuzschlitz.glb",
+      "sha256": "66906abb08d9ed66e660e3c4716b07d461fd7c5607bd5589fdc22914ceb7a146"
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "wera-ph-kreuzschlitz-source-frame-1",
+      "sourceUrl": "/assets/wera/ph-kreuzschlitz.glb",
+      "low": {
+        "url": "/assets/optimized/wera-ph-kreuzschlitz/low-31d3d876a1b8.glb",
+        "format": "glb",
+        "revision": "31d3d876a1b81e026b4f88553c3fcd47786e89c426f1c2d837ce5fe55b585cc2",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/optimized/wera-ph-kreuzschlitz/high-cd335f777ab4.glb",
+        "format": "glb",
+        "revision": "cd335f777ab450afbc93c83d2c4d4a26f60d74e1cafa44d649d1dab56790e83d",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -2.2351741790771484e-8,
+        -4.6566128730773926e-9,
+        -0.01075100526213646,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.12500100582838058,
+          -0.017196697182953358,
+          -0.1250010021030903
+        ],
+        "max": [
+          0.12500100582838058,
+          0.017196697182953358,
+          0.1250010021030903
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/posters/optimized/wera-ph-kreuzschlitz.png",
+      "alt": "wera PH Kreuzschlitz-Schraubendreher",
+      "width": 640,
+      "height": 640
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/optimized/wera-ph-kreuzschlitz/low-31d3d876a1b8.glb",
+          "format": "glb",
+          "revision": "31d3d876a1b81e026b4f88553c3fcd47786e89c426f1c2d837ce5fe55b585cc2",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "31d3d876a1b81e026b4f88553c3fcd47786e89c426f1c2d837ce5fe55b585cc2",
+          "transferBytes": 566872,
+          "triangleCount": 8502,
+          "primitiveCount": 9,
+          "materialCount": 8,
+          "decodedGeometryBytes": 291564,
+          "estimatedTextureBytes": 5592410,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/optimized/wera-ph-kreuzschlitz/high-cd335f777ab4.glb",
+          "format": "glb",
+          "revision": "cd335f777ab450afbc93c83d2c4d4a26f60d74e1cafa44d649d1dab56790e83d",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "cd335f777ab450afbc93c83d2c4d4a26f60d74e1cafa44d649d1dab56790e83d",
+          "transferBytes": 3181264,
+          "triangleCount": 25964,
+          "primitiveCount": 9,
+          "materialCount": 8,
+          "decodedGeometryBytes": 712272,
+          "estimatedTextureBytes": 37049690,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      }
+    },
+    "deviations": []
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wera",
+    "spatialElementId": "tool-check-plus",
+    "source": {
+      "url": "/assets/wera/tool-check-plus.glb",
+      "sha256": "7ee6e6be132e0b68228f3f3ed9968dd1a3d32359db6b93828b8845d0ea4eeb12"
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "wera-tool-check-plus-source-frame-1",
+      "sourceUrl": "/assets/wera/tool-check-plus.glb",
+      "low": {
+        "url": "/assets/optimized/wera-tool-check-plus/low-8d06201ce6ab.glb",
+        "format": "glb",
+        "revision": "8d06201ce6ab1042368bc19b1d6035086344b5213e0d7ac59fb1add07f104e17",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/optimized/wera-tool-check-plus/high-12637cd6494c.glb",
+        "format": "glb",
+        "revision": "12637cd6494c320014304d65cbccb8bd94579e83a840dc21c6b0c7f3b23e588f",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.0000012218952178955078,
+        0.000011460855603218079,
+        0.0000017136335372924805,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.311073899269104,
+          -0.0379341971129179,
+          -0.16030116379261017
+        ],
+        "max": [
+          0.311073899269104,
+          0.0379341971129179,
+          0.16030116379261017
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/posters/optimized/wera-tool-check-plus.png",
+      "alt": "wera Tool-Check Plus",
+      "width": 640,
+      "height": 640
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/optimized/wera-tool-check-plus/low-8d06201ce6ab.glb",
+          "format": "glb",
+          "revision": "8d06201ce6ab1042368bc19b1d6035086344b5213e0d7ac59fb1add07f104e17",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "8d06201ce6ab1042368bc19b1d6035086344b5213e0d7ac59fb1add07f104e17",
+          "transferBytes": 3943800,
+          "triangleCount": 155654,
+          "primitiveCount": 86,
+          "materialCount": 69,
+          "decodedGeometryBytes": 6414308,
+          "estimatedTextureBytes": 44477122,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/optimized/wera-tool-check-plus/high-12637cd6494c.glb",
+          "format": "glb",
+          "revision": "12637cd6494c320014304d65cbccb8bd94579e83a840dc21c6b0c7f3b23e588f",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "12637cd6494c320014304d65cbccb8bd94579e83a840dc21c6b0c7f3b23e588f",
+          "transferBytes": 5036728,
+          "triangleCount": 333678,
+          "primitiveCount": 86,
+          "materialCount": 69,
+          "decodedGeometryBytes": 11414068,
+          "estimatedTextureBytes": 103197378,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      }
+    },
+    "deviations": []
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wera",
+    "spatialElementId": "winkelschluessel",
+    "source": {
+      "url": "/assets/wera/winkelschluessel.glb",
+      "sha256": "15ed75f7d878610e80e69a08242738b0dbe0d9664260a4ecf7df0af1f8a2572b"
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "wera-winkelschluessel-source-frame-1",
+      "sourceUrl": "/assets/wera/winkelschluessel.glb",
+      "low": {
+        "url": "/assets/optimized/wera-winkelschluessel/low-151263cc8473.glb",
+        "format": "glb",
+        "revision": "151263cc84739f51fee8c6a4506c307d6cfae291097bc57fc42b318c607ed0a9",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/optimized/wera-winkelschluessel/high-f2951f1d2cac.glb",
+        "format": "glb",
+        "revision": "f2951f1d2cac2adebcd33e93f48c504f449961623c0cd846ebb1bb5bf144aa97",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.0009121433831751347,
+        -0.06684592989489466,
+        -0.00001670124816952577,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.04365226021036506,
+          -0.06684583595941439,
+          -0.01473587458459221
+        ],
+        "max": [
+          0.04365226021036506,
+          0.0668458359594144,
+          0.01473587458459221
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/posters/optimized/wera-winkelschluessel.png",
+      "alt": "wera Winkelschlüssel",
+      "width": 640,
+      "height": 640
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/optimized/wera-winkelschluessel/low-151263cc8473.glb",
+          "format": "glb",
+          "revision": "151263cc84739f51fee8c6a4506c307d6cfae291097bc57fc42b318c607ed0a9",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "151263cc84739f51fee8c6a4506c307d6cfae291097bc57fc42b318c607ed0a9",
+          "transferBytes": 1021180,
+          "triangleCount": 31579,
+          "primitiveCount": 14,
+          "materialCount": 14,
+          "decodedGeometryBytes": 1324034,
+          "estimatedTextureBytes": 14680072,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/optimized/wera-winkelschluessel/high-f2951f1d2cac.glb",
+          "format": "glb",
+          "revision": "f2951f1d2cac2adebcd33e93f48c504f449961623c0cd846ebb1bb5bf144aa97",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "f2951f1d2cac2adebcd33e93f48c504f449961623c0cd846ebb1bb5bf144aa97",
+          "transferBytes": 1244160,
+          "triangleCount": 93959,
+          "primitiveCount": 14,
+          "materialCount": 14,
+          "decodedGeometryBytes": 2984138,
+          "estimatedTextureBytes": 14680072,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      }
+    },
+    "deviations": []
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wera",
+    "spatialElementId": "zyklop-speed",
+    "source": {
+      "url": "/assets/wera/zyklop-speed.glb",
+      "sha256": "1f3a4f57d66b2d141afa63a48e64ade520f8b03f2bd0a755e0f6db86a5516b78"
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "wera-zyklop-speed-source-frame-1",
+      "sourceUrl": "/assets/wera/zyklop-speed.glb",
+      "low": {
+        "url": "/assets/optimized/wera-zyklop-speed/low-67b181c7c62d.glb",
+        "format": "glb",
+        "revision": "67b181c7c62d300733bd5b862a4d082ca1270e3998ae274ba0d3137b22d1da3d",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/optimized/wera-zyklop-speed/high-db6a25dd4740.glb",
+        "format": "glb",
+        "revision": "db6a25dd47402f79fd9c5419176dc341f57ee2a549737fa73957bcb9513ba6fd",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.000021504703909158707,
+        -0.014668231111946626,
+        0.000057076689724337194,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.07365970686078072,
+          -0.014668517243949108,
+          -0.014219763208987237
+        ],
+        "max": [
+          0.07365970686078072,
+          0.014668517243949106,
+          0.014219763208987237
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/posters/optimized/wera-zyklop-speed.png",
+      "alt": "wera Zyklop Speed",
+      "width": 640,
+      "height": 640
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/optimized/wera-zyklop-speed/low-67b181c7c62d.glb",
+          "format": "glb",
+          "revision": "67b181c7c62d300733bd5b862a4d082ca1270e3998ae274ba0d3137b22d1da3d",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "67b181c7c62d300733bd5b862a4d082ca1270e3998ae274ba0d3137b22d1da3d",
+          "transferBytes": 1612556,
+          "triangleCount": 22363,
+          "primitiveCount": 8,
+          "materialCount": 8,
+          "decodedGeometryBytes": 1051778,
+          "estimatedTextureBytes": 9786714,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/optimized/wera-zyklop-speed/high-db6a25dd4740.glb",
+          "format": "glb",
+          "revision": "db6a25dd47402f79fd9c5419176dc341f57ee2a549737fa73957bcb9513ba6fd",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "db6a25dd47402f79fd9c5419176dc341f57ee2a549737fa73957bcb9513ba6fd",
+          "transferBytes": 1934840,
+          "triangleCount": 57747,
+          "primitiveCount": 8,
+          "materialCount": 8,
+          "decodedGeometryBytes": 2141562,
+          "estimatedTextureBytes": 18175322,
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangle/draw counts include instances; accessors counted once; RGBA8 textures with full mip chain are estimates, not GPU measurements."
+        }
+      }
+    },
+    "deviations": []
+  }
+]

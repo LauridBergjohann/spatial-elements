@@ -1,0 +1,257 @@
+<script module lang="ts">
+	export const examples: Array<{ language: string; code: string }> = [
+		{
+			language: 'sh',
+			code: 'npm install @spatial-elements/sveltekit@beta\n'
+		},
+		{
+			language: 'ts',
+			code: "import { createSpatialTheme, type SpatialElementData } from '@spatial-elements/sveltekit';\n\nexport const starterTheme = createSpatialTheme({ id: 'starter', name: 'My collection' });\n\nexport const starterElements: SpatialElementData[] = [\n\t{\n\t\tid: 'cube',\n\t\ttitle: 'Cube',\n\t\tgeometry: { low: '/assets/demo/cube-high.glb', high: '/assets/demo/cube-high.glb' },\n\t\thdr: '/assets/demo/studio.hdr',\n\t\tfallbackImage: '/assets/demo/cube.svg'\n\t}\n];\n"
+		},
+		{
+			language: 'svelte',
+			code: "\u003cscript lang=\"ts\">\n\timport type { Snippet } from 'svelte';\n\timport { BrandStageShell } from '@spatial-elements/sveltekit';\n\timport { starterTheme } from '$lib/starter';\n\tlet { children }: { children: Snippet } = $props();\n\u003c/script>\n\n\u003cBrandStageShell theme={starterTheme}>\n\t{@render children()}\n\u003c/BrandStageShell>\n"
+		},
+		{
+			language: 'ts',
+			code: "import { getSpatialListItems } from '@spatial-elements/sveltekit';\nimport { starterElements } from '$lib/starter';\n\nexport function load() {\n\treturn { items: getSpatialListItems(starterElements, '/starter/elements') };\n}\n"
+		},
+		{
+			language: 'svelte',
+			code: "\u003cscript lang=\"ts\">\n\timport { HeadingSection } from '@page-sections/svelte';\n\timport { ContentPage, SpatialCardGridSection } from '@spatial-elements/sveltekit';\n\timport type { PageData } from './$types';\n\tlet { data }: { data: PageData } = $props();\n\u003c/script>\n\n\u003cContentPage hdr=\"/assets/demo/studio.hdr\" page={{ title: 'My collection' }}>\n\t\u003cHeadingSection section={{ id: 'collection-title', title: 'My collection', headingLevel: 1 }} />\n\t\u003cSpatialCardGridSection section={{ id: 'elements', title: 'Elements', headline: 'Elements' }} list={data.items} />\n\u003c/ContentPage>\n"
+		},
+		{
+			language: 'ts',
+			code: "import { error } from '@sveltejs/kit';\nimport { findSpatialElement } from '@spatial-elements/sveltekit';\nimport { starterElements } from '$lib/starter';\nimport type { PageLoad } from './$types';\n\nexport const load: PageLoad = ({ params }) => {\n\tconst element = findSpatialElement(starterElements, params.id);\n\tif (!element) error(404, 'Element not found');\n\treturn { element };\n};\n"
+		},
+		{
+			language: 'svelte',
+			code: "\u003cscript lang=\"ts\">\n\timport { SpatialElementPage, Section } from '@spatial-elements/sveltekit';\n\timport type { PageData } from './$types';\n\tlet { data }: { data: PageData } = $props();\n\u003c/script>\n\n\u003cSpatialElementPage spatialElement={data.element}>\n\t\u003cSection section={{ id: 'details', title: 'About this element', headline: 'About this element', background: { color: 'standard' } }}>\n\t\t\u003cp>Rotate the model, zoom in, or return to the collection.\u003c/p>\n\t\t\u003ca href=\"/starter/categories/list\">Back to the collection\u003c/a>\n\t\u003c/Section>\n\u003c/SpatialElementPage>\n"
+		}
+	];
+</script>
+
+<script lang="ts">
+	import type { PageData } from './$types';
+	let { data }: { data: PageData } = $props();
+	import WebsitePage from '$lib/WebsitePage.svelte';
+	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
+</script>
+
+<WebsitePage page={{ title: 'Your first experience' }} showContentMenu>
+	<HeadingSection
+		section={{
+			id: 'page-heading',
+			title: 'Your first experience',
+			headingLevel: 1,
+			headingSize: 'm',
+			background: { color: 'standard', size: 'standard' }
+		}}
+	/>
+	<Section
+		section={{
+			id: 'introduction',
+			title: 'Introduction',
+			headline: 'Introduction',
+			background: { color: 'standard', size: 'standard' }
+		}}
+		><div class="prose">
+			<p>
+				Build a collection and detail route using the current public components. The minimal demo in
+				this repository contains the complete example.
+			</p>
+			<p>Use an existing Svelte 5 / SvelteKit 2 application with Node.js 24 tooling:</p>
+
+			<CodeBlock
+				code={examples[0].code}
+				language={examples[0].language}
+				highlighted={data.highlights[0]}
+			/>
+			<p>
+				Three.js is a peer dependency; modern npm installs it automatically. If you import it
+				yourself, also declare <code>three@^0.186.1</code> (and <code>@types/three@^0.186.0</code> for
+				TypeScript).
+			</p>
+		</div></Section
+	>
+	<Section
+		section={{
+			id: 'chapter-1-supply-your-assets-and-element-data',
+			title: '1. Supply your assets and element data',
+			headline: '1. Supply your assets and element data',
+			background: { color: 'standard', size: 'standard' }
+		}}
+		><div class="prose">
+			<p>
+				Put a GLB model, an HDR environment and an optional poster in your application's <code
+					>static/assets/demo/</code
+				>
+				directory. The example uses <code>cube-high.glb</code>, <code>studio.hdr</code> and
+				<code>cube.svg</code>. These files are generated by <code>npm run assets:demo</code> in this repository;
+				npm packages do not bundle example assets. Replace the URLs with your own files in a real application.
+				The HDR supplies model lighting as well as the detail background. Set category lighting explicitly
+				with ContentPage.hdr; the detail view uses its own element.hdr.
+			</p>
+			<p>Create <code>src/lib/starter.ts</code>:</p>
+
+			<CodeBlock
+				code={examples[1].code}
+				language={examples[1].language}
+				highlighted={data.highlights[1]}
+			/>
+			<p>
+				Only <code>id</code>, <code>title</code>, <code>geometry</code> and <code>hdr</code> are
+				required on an element. Both <code>geometry.low</code> and <code>geometry.high</code> must
+				be supplied. Low is the lightweight version for categories/transitions; High is the detailed
+				version. For a small model, use the same URL twice: fetching and decoding are shared, not
+				duplicated. Both exports must use the same origin, scale and orientation. Posters are
+				recommended for loading, server rendering and devices without WebGPU. Optional fields
+				include <code>features</code>, <code>action</code>, <code>breadcrumbs</code>,
+				<code>background</code>, <code>model</code> and <code>camera</code>; see the
+				<a href="/docs/reference/api/">API reference</a>.
+			</p>
+			<p>
+				The theme supplies shared appearance and a namespace. <code>createSpatialTheme</code> fills
+				in defaults; customize only what you need, for example
+				<code>colors: &#123; accent: '#a33e36' &#125;</code>.
+			</p>
+		</div></Section
+	>
+	<Section
+		section={{
+			id: 'chapter-2-add-one-persistent-layout',
+			title: '2. Add one persistent layout',
+			headline: '2. Add one persistent layout',
+			background: { color: 'standard', size: 'standard' }
+		}}
+		><div class="prose">
+			<p>Create <code>src/routes/starter/+layout.svelte</code>:</p>
+
+			<CodeBlock
+				code={examples[2].code}
+				language={examples[2].language}
+				highlighted={data.highlights[2]}
+			/>
+			<p>
+				Keep the shell mounted while navigating between category and detail routes. It owns the
+				renderer and shared resources. Pages register their own data with this shell; the layout
+				never reads <code>page.data</code>, selects a model, or constructs a catalog.
+			</p>
+		</div></Section
+	>
+	<Section
+		section={{
+			id: 'chapter-3-build-the-category-page',
+			title: '3. Build the category page',
+			headline: '3. Build the category page',
+			background: { color: 'standard', size: 'standard' }
+		}}
+		><div class="prose">
+			<p>Create <code>src/routes/starter/categories/list/+page.ts</code>:</p>
+
+			<CodeBlock
+				code={examples[3].code}
+				language={examples[3].language}
+				highlighted={data.highlights[3]}
+			/>
+			<p>
+				<code>getSpatialListItems</code> derives titles, links, summary content, posters and 3D assets
+				from the same element documents used by the detail pages. There is no second catalog configuration
+				to maintain.
+			</p>
+			<p>Create <code>src/routes/starter/categories/list/+page.svelte</code>:</p>
+
+			<CodeBlock
+				code={examples[4].code}
+				language={examples[4].language}
+				highlighted={data.highlights[4]}
+			/>
+			<p>
+				The required <code>hdr</code> prop belongs to the category page. It can point to the same environment
+				as an element or a different one; changing the list order never changes the page environment.
+			</p>
+			<p>
+				A <code>ContentPage</code> can contain multiple <code>SpatialCardGridSection</code>,
+				<code>SpatialCarouselSection</code>
+				and ordinary <code>Section</code> components. Section IDs must be unique within the page. To
+				repeat the same element inside one section, supply a distinct <code>itemKey</code> on each occurrence.
+			</p>
+		</div></Section
+	>
+	<Section
+		section={{
+			id: 'chapter-4-build-the-detail-page',
+			title: '4. Build the detail page',
+			headline: '4. Build the detail page',
+			background: { color: 'standard', size: 'standard' }
+		}}
+		><div class="prose">
+			<p>Create <code>src/routes/starter/elements/[id]/+page.ts</code>:</p>
+
+			<CodeBlock
+				code={examples[5].code}
+				language={examples[5].language}
+				highlighted={data.highlights[5]}
+			/>
+			<p>Create <code>src/routes/starter/elements/[id]/+page.svelte</code>:</p>
+
+			<CodeBlock
+				code={examples[6].code}
+				language={examples[6].language}
+				highlighted={data.highlights[6]}
+			/>
+			<p>
+				<code>SpatialElementPage</code> reads the theme from its enclosing shell and supplies its
+				own model data to the renderer. Its <code>Section</code> children become anchored content and
+				generated detail navigation. Content without an action or feature list works without placeholder
+				buttons. The default media rail contains one interactive minimap.
+			</p>
+		</div></Section
+	>
+	<Section
+		section={{
+			id: 'chapter-5-run-and-extend',
+			title: '5. Run and extend',
+			headline: '5. Run and extend',
+			background: { color: 'standard', size: 'standard' }
+		}}
+		><div class="prose">
+			<p>
+				Start your application's dev server and open <code>/starter/categories/list</code>. Follow
+				the cube link, reload the detail page, and use browser Back. A working version of this
+				example is included in the public demo at the same URL and covered by browser tests,
+				including a JavaScript-disabled visit.
+			</p>
+			<p>
+				Current transition recipes recognize <code
+					>/:namespace/categories/&#123;list,carousel,mixed&#125;</code
+				>
+				and <code>/:namespace/elements/:id</code> (also <code>products/:id</code>). Use the theme ID
+				as the namespace. Arbitrary route patterns are not yet configurable. Resolve data in route
+				load functions before rendering; the returned property names (<code>items</code> and
+				<code>element</code> here) are your choice. An API or CMS can replace the local array.
+			</p>
+			<p>
+				WebGPU enhancement requires a capable browser/device and a secure context (HTTPS or
+				localhost). Semantic HTML, links and supplied posters remain available without it. If models
+				use Draco compression, serve Three.js's <code>examples/jsm/libs/draco/gltf/</code> decoder
+				files at <code>/assets/draco/gltf/</code>, or pass a different directory, with trailing
+				slash, as <code>dracoDecoderPath</code> on the shell. Adjust asset, decoder and link URLs for
+				your deployment base path.
+			</p>
+			<p>
+				The default 3D render budget is a maximum pixel ratio of 1 and 2,073,600 pixels per canvas.
+				HTML stays at native resolution. Only change <code>renderSettings</code> after measuring your
+				target devices. For larger assets, use genuinely simplified Low geometry and a detailed High export
+				in a shared coordinate frame. URL-only geometry is fitted from Low; generated bounds/transforms
+				are optional advanced metadata. Merely giving the same large model two roles does not reduce its
+				rendering cost.
+			</p>
+			<p>
+				Continue with the <a href="/docs/reference/api/">API reference</a>,
+				<a href="/docs/sections/composition/">composition guide</a>
+				and <a href="/docs/foundations/assets/">asset contract</a>.
+			</p>
+		</div></Section
+	>
+</WebsitePage>

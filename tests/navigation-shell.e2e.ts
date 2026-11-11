@@ -53,7 +53,7 @@ test('native menu links remain reachable on small screens', async ({ browser, ba
 	try {
 		const page = await context.newPage();
 		await page.goto('/demo/layout-cards');
-		await page.locator('.mobile-menu summary').click();
+		await page.locator('.mobile-menu > summary').click();
 		await page.locator('.mobile-menu').getByRole('link', { name: 'List', exact: true }).click();
 		await expect(page).toHaveURL(/\/demo\/categories\/list$/);
 	} finally { await context.close(); }
@@ -156,7 +156,7 @@ test('compact navigation stays above projected detail content and restores dropd
 	await page.keyboard.press('Escape');
 	await expect(page.locator('.settings-panel')).toBeHidden();
 	await expect(page.locator('.settings-panel')).not.toHaveAttribute('popover');
-	await page.locator('.mobile-menu summary').click();
+	await page.locator('.mobile-menu > summary').click();
 	await expect(page.locator('.mobile-panel')).toHaveAttribute('popover', 'manual');
 	await page.locator('.mobile-menu').getByRole('link', { name: 'List', exact: true }).click();
 	await expect(page).toHaveURL(/categories\/list$/);

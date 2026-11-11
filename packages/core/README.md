@@ -1,30 +1,25 @@
+<img src="https://raw.githubusercontent.com/LauridBergjohann/spatial-elements/main/apps/website/static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="48" height="48" />
+
 # @spatial-elements/core
 
-Framework-independent rendering and catalog runtime for Spatial Elements.
+The framework-independent runtime behind Spatial Elements: rendering, asset loading, spatial layout and transitions for interactive content experiences.
 
-See the [authoring guide](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/authoring.md) and [development guide](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/development.md).
+- Three.js/WebGPU rendering with shared asset loading and levels of detail.
+- Camera interaction, model fitting, spatial materials and transition coordination.
+- Framework-independent models and layout calculations for custom integrations.
 
-Beta API; MPL-2.0; see LICENSE.
+## Installation
 
-Read the [getting-started tutorial](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/getting-started.md), [API reference](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/api.md) and [configuration migration](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/configuration-migration.md).
+```sh
+npm install @spatial-elements/core@beta three@^0.186.1
+```
 
-Element content and required `geometry: { low, high }` belong in `SpatialElementData`; shared appearance belongs in `SpatialTheme`. Use `createSpatialTheme({ id, name })` for defaults. The SvelteKit shell needs only the theme; pages register their own data. These docs target version `1.0.0-beta.5` and newer.
+Requires Node >=22.12 for tooling. This is a beta package. Models and environments belong to your application and are not bundled.
 
-Installation:
+## Documentation and examples
 
-~~~sh
-npm install @spatial-elements/core@latest
-~~~
+**[Visit the Spatial Elements website](https://spatial-elements.bergjohann.com/)** for installation, interactive guides, the API reference and showcase. The website source is included in the repository under apps/website.
 
-Requires Node.js 22.12+ tooling.
+## License
 
-A visible “Built with Spatial Elements” link is appreciated, but not required. This does not replace your obligations under the MPL-2.0 license.
-
-Three.js is a required peer dependency (^0.186.1), shared with the application and other adapters.
-Modern npm installs it automatically. If the application imports Three.js directly, declare it
-explicitly with `npm install three@^0.186.1`. Do not bypass incompatible peer ranges with
-`--legacy-peer-deps`. Other package managers may require explicit peer installation.
-
-Category lighting is explicit: pass `hdr="/assets/category.hdr"` to `ContentPage` (also `SpatialListPage`). It is never inferred from an element. Identical geometry URLs share one cached fetch/decode.
-
-Common layout uses Page Sections 0.3.0, installed as a runtime dependency. See the [Page Sections migration guide](https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/page-sections-migration.md) for configurable media frames, equal-height cards and shared navigation.
+[Mozilla Public License 2.0](LICENSE).

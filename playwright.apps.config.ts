@@ -26,5 +26,5 @@ export default defineConfig({
 		{ name: 'basics', testMatch: 'basics.app.ts', use: { baseURL: 'http://127.0.0.1:4174' } },
 		{ name: 'showcase', testMatch: 'showcase.app.ts', use: { baseURL: 'http://127.0.0.1:4175' } }
 	],
-	webServer: [server('sveltekit-demo', 4174), server('showcase', 4175)]
+	webServer: [server('tests', 4174), server('website', 4175), server('demo', 4173)]
 });

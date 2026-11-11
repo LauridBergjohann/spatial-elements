@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
-import type { ScrollWarmupCheckpointApi } from '../apps/sveltekit-demo/src/routes/proof/deferred-scroll-warmup/checkpoints';
+import type { ScrollWarmupCheckpointApi } from '../apps/tests/src/routes/proof/deferred-scroll-warmup/checkpoints';
 import { decodeProofPng, proofPngDifference, proofPngRgbRange } from './helpers/proofPng';
 
 interface ProofResult {
