@@ -1,4 +1,6 @@
 <script lang="ts">
+import { HeadingSection } from '@page-sections/svelte';
+
 	import {
 		ContentPage,
 		SpatialCardGridSection,
@@ -10,6 +12,8 @@
 </script>
 
 <ContentPage page={{ title: 'Known dock endpoints' }} hdr="/assets/demo/studio.hdr">
+<HeadingSection section={{ id: 'catalog', title: 'Known dock endpoints', headingLevel: 1 }} />
+
 	{#if data.view === 'carousel'}<SpatialCarouselSection
 			section={{ id: 'collection', title: 'Collection' }}
 			list={data.items}

@@ -1,9 +1,13 @@
 <script lang="ts">
+import { HeadingSection } from '@page-sections/svelte';
+
 	import { ContentPage, Section, ContentGrid, ContentBlock } from '@spatial-elements/sveltekit';
 	import { layoutExamples } from '$lib/layoutExamples';
 </script>
 
 <ContentPage hdr="/assets/demo/studio.hdr" page={{ title: 'Layout examples' }}>
+<HeadingSection section={{ id: 'catalog', title: 'Layout examples', headingLevel: 1 }} />
+
 	<Section
 		section={{
 			id: 'examples',

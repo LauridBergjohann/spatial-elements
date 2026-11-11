@@ -1,4 +1,6 @@
 <script lang="ts">
+import { HeadingSection } from '@page-sections/svelte';
+
 	import type { SpatialCardGridOptions } from './spatialCardGrid.js';
 	import ContentPage from './ContentPage.svelte';
 	import SpatialCardGridSection from './SpatialCardGridSection.svelte';
@@ -31,6 +33,8 @@
 </script>
 
 <ContentPage {page} {hdr}>
+<HeadingSection section={{ id: 'catalog', title: (page).title, eyebrow: (page).eyebrow, introduction: (page).intro, headingLevel: 1 }} />
+
 	<SpatialCardGridSection
 		section={{ id: 'elements', title: 'Elements' }}
 		list={spatialElements}

@@ -1,4 +1,6 @@
 <script lang="ts">
+import { HeadingSection } from '@page-sections/svelte';
+
 	import { SpatialCarouselSection, ContentPage, Section } from '@spatial-elements/sveltekit';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
@@ -8,6 +10,8 @@
 	hdr="/assets/demo/studio.hdr"
 	page={{ title: 'Carousel layout contract', breadcrumbs: [{ label: 'Layout proof' }] }}
 >
+<HeadingSection section={{ id: 'catalog', title: 'Carousel layout contract', headingLevel: 1 }} />
+
 	<SpatialCarouselSection
 		section={{
 			id: 'layout-carousel',

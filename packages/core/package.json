@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "@3dconnexion/3dconnexionjs": "0.8.1",
-    "@page-sections/core": "0.3.0"
+    "@page-sections/core": "0.4.1"
   },
   "peerDependencies": {
     "three": "^0.186.1"

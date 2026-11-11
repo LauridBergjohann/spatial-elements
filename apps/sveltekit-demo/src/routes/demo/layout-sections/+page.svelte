@@ -1,4 +1,6 @@
 <script lang="ts">
+import { HeadingSection } from '@page-sections/svelte';
+
 	import { ContentPage, Section } from '@spatial-elements/sveltekit';
 	let changed = $state(false);
 </script>
@@ -8,6 +10,8 @@
 	background="#c8d8e8"
 	page={{ title: 'Section surfaces' }}
 >
+<HeadingSection section={{ id: 'catalog', title: 'Section surfaces', headingLevel: 1 }} />
+
 	<Section
 		section={{
 			id: 'surface-first',

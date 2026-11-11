@@ -1,4 +1,6 @@
 <script lang="ts">
+import { HeadingSection } from '@page-sections/svelte';
+
 	import {
 		ContentPage,
 		Section,
@@ -17,6 +19,8 @@
 		breadcrumbs: [{ label: 'Collection', href: '/demo/categories/list' }]
 	}}
 >
+<HeadingSection section={{ id: 'catalog', title: 'A study of form', eyebrow: 'SPATIAL ELEMENTS', headingLevel: 1 }} />
+
 	<Section
 		section={{
 			id: 'introduction',
@@ -36,6 +40,7 @@
 			headline: 'Collection',
 			background: { color: 'standard' }
 		}}
+        cardSize='m'
 		list={data.spatialElements}
 	/>
 	<Section
@@ -54,7 +59,7 @@
 			id: 'featured',
 			title: 'Forms in space',
 			headline: 'Forms in space',
-			background: { color: 'standard', size: 'full' }
+			background: { color: 'transparent', size: 'full' }
 		}}
 		list={data.spatialElements}
 	/>

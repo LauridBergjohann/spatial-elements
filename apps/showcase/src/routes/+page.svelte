@@ -1,4 +1,6 @@
 <script lang="ts">
+import { HeadingSection } from '@page-sections/svelte';
+
 	import { ContentPage, Section } from '@spatial-elements/sveltekit';
 </script>
 
@@ -10,6 +12,8 @@
 		eyebrow: 'SPATIAL ELEMENTS'
 	}}
 >
+<HeadingSection section={{ id: 'catalog', title: 'Showcase', eyebrow: 'SPATIAL ELEMENTS', headingLevel: 1 }} />
+
 	<Section section={{ id: 'introduction', title: 'A space for new perspectives' }}>
 		<div class="introduction">
 			<span class="accent-line" aria-hidden="true"></span>

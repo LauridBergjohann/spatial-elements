@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { setContext } from 'svelte';
-	import { ContentPage as PageContent, Section as PageSection } from '@page-sections/svelte';
+	import { ContentPage as PageContent } from '@page-sections/svelte';
 	import type { Snippet } from 'svelte';
 	import type { ContentPageData } from '@spatial-elements/core/spatial-element/types';
 	import { useSpatialTheme } from './brandContext.js';
-	import SpatialElementBreadcrumbs from './SpatialElementBreadcrumbs.svelte';
 	import { registerSpatialPage } from './spatialPageContext.js';
 	import './layout.generated.css';
 	import {
@@ -19,8 +18,12 @@
 		background?: string;
 		/** SpatialCardGridSection, SpatialCarouselSection and ordinary Section children. */
 		children?: Snippet;
+		leftSidebar?: Snippet;
+		footer?: Snippet;
+		showContentMenu?: boolean;
+		contentMenuLabel?: string;
 	}
-	let { page, hdr, background, children }: Props = $props();
+	let { page, hdr, background, children, leftSidebar, footer, showContentMenu = false, contentMenuLabel }: Props = $props();
 	const backgroundId = $props.id();
 	const backgroundScope = backgroundId.replace(/[^a-zA-Z0-9_-]/g, '_');
 	const backgroundRules = $derived.by(() => {
@@ -37,11 +40,7 @@
 </script>
 
 {#if background}<svelte:element this={'style'}>{backgroundRules}</svelte:element>{/if}
-<PageContent {page} class="content-page" aria-labelledby="catalog-title" data-catalog-list data-brand-id={brand.id}
+<PageContent {page} {leftSidebar} {footer} {showContentMenu} {contentMenuLabel} class="content-page" data-catalog-list data-brand-id={brand.id}
  data-spatial-page-background={background ? backgroundScope : undefined}>
- {#snippet header()}
-  {#if page.breadcrumbs?.length}<SpatialElementBreadcrumbs items={page.breadcrumbs} transition="exit" />{/if}
-  <PageSection section={{ id: 'catalog', title: page.title, headline: page.title, eyebrow: page.eyebrow, introduction: page.intro, headingLevel: 1 }} data-stage-dom-content data-catalog-transition-dom="exit" />
- {/snippet}
  {@render children?.()}
 </PageContent>

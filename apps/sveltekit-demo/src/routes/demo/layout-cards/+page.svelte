@@ -1,4 +1,6 @@
 <script lang="ts">
+import { HeadingSection } from '@page-sections/svelte';
+
 	import { ContentPage, SpatialCardGridSection } from '@spatial-elements/sveltekit';
 	import type { CardMediaAspect, CardVariant, SurfaceTone } from '@spatial-elements/sveltekit';
 	import type { PageData } from './$types';
@@ -37,6 +39,8 @@
 	<label><input type="checkbox" bind:checked={reversed} /> Reverse items</label>
 </div>
 <ContentPage hdr="/assets/demo/studio.hdr" page={{ title: 'Card layout reference' }}>
+<HeadingSection section={{ id: 'catalog', title: 'Card layout reference', headingLevel: 1 }} />
+
 	<SpatialCardGridSection
 		section={{ id: 'cards-small', title: 'Small cards', headline: 'Small cards' }}
 		cardSize="s"

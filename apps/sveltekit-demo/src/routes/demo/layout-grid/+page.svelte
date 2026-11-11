@@ -1,9 +1,13 @@
 <script lang="ts">
+import { HeadingSection } from '@page-sections/svelte';
+
 	import { ContentPage, ContentGrid, ContentBlock } from '@spatial-elements/sveltekit';
 	const widths = [356, 600, 840, 1200, 1536];
 </script>
 
 <ContentPage hdr="/assets/demo/studio.hdr" page={{ title: 'Content grid reference' }}>
+<HeadingSection section={{ id: 'catalog', title: 'Content grid reference', headingLevel: 1 }} />
+
 	<p class="introduction">
 		The same viewport contains independently sized grids. Blocks follow their authored order.
 	</p>

@@ -14,6 +14,7 @@
 		{
 			id: 'layouts',
 			label: 'Layouts',
+			href: '/demo/layouts',
 			children: [
 				{
 					id: 'overview',

@@ -39,8 +39,8 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@page-sections/core": "0.3.0",
-    "@page-sections/svelte": "0.3.0",
+    "@page-sections/core": "0.4.1",
+    "@page-sections/svelte": "0.4.1",
     "@spatial-elements/core": "1.0.0-beta.9",
     "lucide-svelte": "^1.0.1"
   },
