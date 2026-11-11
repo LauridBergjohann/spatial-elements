@@ -1,28 +1,32 @@
-name: Verify packages
-on:
-  push:
-  pull_request:
+name: CI
+on: [push, pull_request]
 permissions:
   contents: read
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      # Keep aligned with @playwright/test and package-lock.json (check:ci).
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      options: --ipc=host
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - run: npm run verify
       - run: npm run build:apps
-      - run: npx playwright install --with-deps chromium
+      - run: npm run check:docs
       - run: npm run test:e2e -- --grep "without JavaScript|GPU unavailable"
       - run: npm run test:apps
-      - uses: actions/upload-artifact@v4
-        if: failure()
+      - uses: actions/upload-artifact@v6
+        if: always() && (hashFiles('.artifacts/packages/*consumer.json') != '' || hashFiles('test-results/**') != '' || hashFiles('.artifacts/apps-preview/**') != '')
         with:
-          name: verification-output
+          name: verification
+          include-hidden-files: true
           path: |
+            .artifacts/packages/*consumer.json
             test-results/
-            .artifacts/packages/*.log
+            .artifacts/apps-preview/

@@ -1,6 +1,6 @@
 {
   "name": "@spatial-elements/core",
-  "version": "1.0.0-beta.9",
+  "version": "1.0.0-beta.10",
   "description": "Framework-independent rendering and catalog runtime for Spatial Elements.",
   "license": "MPL-2.0",
   "type": "module",
@@ -9,7 +9,7 @@
     "url": "https://github.com/LauridBergjohann/spatial-elements.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/LauridBergjohann/spatial-elements#readme",
+  "homepage": "https://spatial-elements.bergjohann.com/",
   "bugs": {
     "url": "https://github.com/LauridBergjohann/spatial-elements/issues"
   },

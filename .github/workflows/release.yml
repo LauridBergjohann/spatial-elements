@@ -1,4 +1,4 @@
-﻿name: Release packages
+name: Release packages
 on:
   push:
     branches: [main]
@@ -9,78 +9,44 @@ concurrency:
   group: npm-release
   cancel-in-progress: false
 jobs:
-  version:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    outputs:
-      has_changesets: ${{ steps.changesets.outputs.hasChangesets }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.sha }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
-      - uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1
-        id: changesets
-        with:
-          version: npm run release:version
-          title: 'chore: release Spatial Elements'
-          commit: 'chore: version Spatial Elements'
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_PR_TOKEN || github.token }}
-  plan:
-    needs: version
-    if: needs.version.outputs.has_changesets == 'false'
-    runs-on: ubuntu-latest
-    outputs:
-      pending: ${{ steps.plan.outputs.pending }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - run: npm run release:plan
-        id: plan
-      - name: Explain missing publishing setup
-        if: steps.plan.outputs.pending == 'true' && vars.NPM_TRUSTED_PUBLISHING_ENABLED != 'true'
-        run: |
-          echo "::error::Configure npm Trusted Publishing and set NPM_TRUSTED_PUBLISHING_ENABLED=true."
-          exit 1
   publish:
-    needs: plan
-    if: needs.plan.outputs.pending == 'true' && vars.NPM_TRUSTED_PUBLISHING_ENABLED == 'true'
-    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    container:
+      # Keep aligned with @playwright/test and package-lock.json (check:ci).
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      options: --ipc=host
     environment: npm
     permissions:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
+      - name: Check trusted publishing setup
+        run: |
+          if [ '${{ vars.NPM_TRUSTED_PUBLISHING_ENABLED }}' != 'true' ]; then
+            echo '::error::Configure npm trusted publishers and the npm environment first. See docs/release.md.'
+            exit 1
+          fi
       - run: npm install --global npm@11
       - run: npm ci
       - run: npm run verify
       - run: npm run build:apps
-      - run: npx playwright install --with-deps chromium
+      - run: npm run check:docs
       - run: npm run test:e2e -- --grep "without JavaScript|GPU unavailable"
       - run: npm run test:apps
-      - uses: actions/upload-artifact@v4
-        with:
-          name: npm-packages-${{ github.sha }}
-          path: .artifacts/packages/*.tgz
-          if-no-files-found: error
       - run: npm run release:publish
+      - run: npm run verify:published
+      - uses: actions/upload-artifact@v6
+        if: always() && (hashFiles('.artifacts/packages/*consumer.json') != '' || hashFiles('test-results/**') != '' || hashFiles('.artifacts/apps-preview/**') != '')
+        with:
+          name: published-consumer
+          include-hidden-files: true
+          path: |
+            .artifacts/packages/*consumer.json
+            test-results/
+            .artifacts/apps-preview/

@@ -11,13 +11,15 @@
 			headline: 'Give your content another dimension.',
 			eyebrow: 'Spatial Elements · SvelteKit',
 			headingLevel: 1,
+			composition: 'artwork',
+			textBackground: false,
 			introduction:
 				'Build interactive 3D collections and detail pages around real content. Shared layouts, persistent rendering and ordinary HTML bring models and stories together.',
 			image: {
-				src: '/assets/posters/watches-chronograph.png',
+				src: '/assets/posters/optimized/watches-chronograph.png',
 				alt: 'A watch from the spatial showcase',
-				width: 336,
-				height: 480
+				width: 640,
+				height: 640
 			},
 			actions: [
 				{ label: 'Get started', href: '/getting-started/', variant: 'primary' },
