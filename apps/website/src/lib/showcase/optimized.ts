@@ -12,7 +12,8 @@ export function optimizedSpatialElements(
 		if (!asset) throw new Error('Missing showcase assets: ' + brand + '/' + element.id);
 		return {
 			...element,
-			brandId: 'showcase/' + brand,
+			brandId: 'showcase',
+			pageTitle: element.title + ' | Spatial Elements',
 			eyebrow: 'Demonstration · ' + (brand === 'wera' ? 'Wera' : 'Rolex'),
 			geometry: geometryFromLodPair(asset.pair as unknown as SpatialElementLodPair),
 			fallbackImage: asset.poster.src,
@@ -21,11 +22,7 @@ export function optimizedSpatialElements(
 				label: brand === 'wera' ? 'Visit Wera — not sold here' : 'Visit Rolex — not sold here',
 				href: brand === 'wera' ? 'https://www.wera.de/' : 'https://www.rolex.com/'
 			},
-			breadcrumbs: [
-				{ label: 'Showcase', href: '/showcase/' },
-				{ label: brand === 'wera' ? 'Wera tools' : 'The watch', href: '/showcase/' + brand + '/' },
-				{ label: element.title }
-			]
+			breadcrumbs: [{ label: 'Showcase', href: '/showcase/' }, { label: element.title }]
 		};
 	});
 }

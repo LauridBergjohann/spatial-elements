@@ -1,9 +1,8 @@
 import { optimizedSpatialElements } from './optimized';
-import type { SpatialTheme, SpatialElementData } from '@spatial-elements/sveltekit';
+import type { SpatialElementData } from '@spatial-elements/sveltekit';
 
 /** Application-owned defaults shared by element documents; the layout needs no overview model. */
 export const watchesElementDefaults = {
-	background: { blurriness: 0.5, tint: '#b6deff', tintIntensity: 0 },
 	hdr: '/assets/lobe.hdr',
 	model: {
 		rotation: { x: Math.PI * 0.25 },
@@ -22,52 +21,7 @@ export const watchesElementDefaults = {
 			}
 		}
 	}
-} satisfies Pick<SpatialElementData, 'hdr' | 'background' | 'model'>;
-
-/** Visual language shared by the watch catalog. */
-export const watchesTheme: SpatialTheme = {
-	id: 'showcase/watches',
-	name: 'CHRONOS',
-	background: '#4d525e',
-	minimapTheme: {
-		expandedHeight: 244,
-		overlayColor: '#000000',
-		overlayOpacity: 0.4,
-		overlayBlur: 5,
-		contextColor: '#000000',
-		contextOpacity: 0,
-		viewportColor: '#f2c766'
-	},
-	interactionTheme: { outlineColor: '#f2c766' },
-	panelShape: { radius: 22, contentInset: 30 },
-	panelTheme: {
-		surface: 'glass',
-		backdropBlur: 5,
-		refraction: 20,
-		tint: '#1f1f1f',
-		tintOpacity: 0.6,
-		bezel: 20,
-		thickness: 0.45,
-		specularOpacity: 0.2,
-		shadowIntensity: 0.65,
-		opacity: 1
-	},
-	dockedPanelTheme: {
-		backdropBlur: 5,
-		tint: '#464646',
-		tintOpacity: 0.9,
-		shadowIntensity: 1
-	},
-	sectionTheme: { tint: '#2f3135', tintOpacity: 0.7, backdropBlur: 10 },
-	sectionBackgrounds: { standard: '#2f3135', muted: '#464646' },
-	colors: {
-		ink: '#fff',
-		body: '#f7f7f4',
-		accent: '#caa75c',
-		onAccent: '#161718',
-		tabBackground: 'rgb(29 30 32 / 0.76)'
-	}
-};
+} satisfies Pick<SpatialElementData, 'hdr' | 'model'>;
 
 /** Serializable watches addressable through `[productId]`. */
 export const watchesSpatialElements: readonly SpatialElementData[] = optimizedSpatialElements(
@@ -87,7 +41,6 @@ export const watchesSpatialElements: readonly SpatialElementData[] = optimizedSp
 			],
 			action: { label: 'Beratung vereinbaren' },
 
-			background: watchesElementDefaults.background,
 			hdr: watchesElementDefaults.hdr,
 			geometry: { low: '/assets/rolex.glb', high: '/assets/rolex.glb' },
 			fallbackImage: '/assets/posters/watches-chronograph.png',

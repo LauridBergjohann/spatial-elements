@@ -1,39 +1,46 @@
 <script lang="ts">
-	import { HeadingSection, CardGridSection } from '@page-sections/svelte';
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import {
+		ContentPage,
+		SpatialCardGridSection,
+		getSpatialListItems
+	} from '@spatial-elements/sveltekit';
+	import { HeadingSection, Section } from '@page-sections/svelte';
+	import { showcaseElements as elements } from '$lib/showcase/collection';
 </script>
 
-<WebsitePage page={{ title: 'Showcase' }}
-	><HeadingSection
+<ContentPage
+	page={{
+		title: 'Showcase',
+		breadcrumbs: []
+	}}
+	hdr="/assets/lobe.hdr"
+>
+	<HeadingSection
 		section={{
 			id: 'page-heading',
-			title: 'Objects with a story',
+			title: 'Showcase',
 			headingLevel: 1,
 			introduction:
-				'Interactive demonstrations built with Spatial Elements. These are examples, not shops.'
+				'Tools and timepieces in one spatial collection. Explore eight Wera tools and a Rolex watch. These products cannot be purchased here.'
 		}}
-	/><CardGridSection
-		section={{
-			id: 'collections',
-			title: 'Explore the collections',
-			headline: 'Explore the collections'
-		}}
+	/>
+	<Section
+		section={{ id: 'views', title: 'Explore the collection', headline: 'Explore the collection' }}
+		><p>
+			<a href="/showcase/categories/list/">Card grid</a> ·
+			<a href="/showcase/categories/carousel/">Carousel</a>
+			· <a href="/showcase/categories/mixed/">Mixed composition</a>
+		</p>
+		<p>
+			For products and purchasing information, visit <a href="https://www.wera.de/">Wera</a> or
+			<a href="https://www.rolex.com/">Rolex</a>.
+		</p></Section
+	>
+	<SpatialCardGridSection
+		section={{ id: 'collection', title: 'The collection', headline: 'The collection' }}
+		list={getSpatialListItems(elements, '/showcase/elements')}
+		cardSize="m"
 		cardTone="muted"
-		list={[
-			{
-				id: 'wera',
-				title: 'Wera tools',
-				description: 'Eight tools, three collection layouts and individual detail pages.',
-				href: '/showcase/wera/',
-				image: { src: '/assets/posters/wera-tool-check-plus.png', alt: 'Wera tool set' }
-			},
-			{
-				id: 'watch',
-				title: 'The watch',
-				description: 'A Rolex geometry study inspired by the Three.js watch example.',
-				href: '/showcase/watches/',
-				image: { src: '/assets/posters/watches-chronograph.png', alt: 'Watch' }
-			}
-		]}
-	/></WebsitePage
->
+		mediaAspect="3/2"
+	/>
+</ContentPage>

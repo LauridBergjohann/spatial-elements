@@ -1,56 +1,10 @@
 import { optimizedSpatialElements } from './optimized';
-import type { SpatialTheme, SpatialElementData } from '@spatial-elements/sveltekit';
+import type { SpatialElementData } from '@spatial-elements/sveltekit';
 
 /** Application-owned defaults shared by element documents; the layout needs no overview model. */
 export const weraElementDefaults = {
-	background: { blurriness: 0.5, tint: '#4b4b4b', tintIntensity: 0.6 },
 	hdr: '/assets/lobe.hdr'
-} satisfies Pick<SpatialElementData, 'hdr' | 'background' | 'model'>;
-
-/** Visual language shared by every Wera element route. */
-export const weraTheme: SpatialTheme = {
-	id: 'showcase/wera',
-	name: 'WERA',
-	background: '#3a3c3d',
-	minimapTheme: {
-		expandedHeight: 244,
-		overlayColor: '#000000',
-		overlayOpacity: 0.4,
-		overlayBlur: 5,
-		contextColor: '#000000',
-		contextOpacity: 0,
-		viewportColor: '#059669'
-	},
-	interactionTheme: { outlineColor: '#059669' },
-	panelShape: { radius: 12, contentInset: 30 },
-	panelTheme: {
-		surface: 'frosted',
-		backdropBlur: 5,
-		refraction: 20,
-		tint: '#1f1f1f',
-		tintOpacity: 0.6,
-		bezel: 14,
-		thickness: 0.5,
-		specularOpacity: 0.16,
-		shadowIntensity: 0.65,
-		opacity: 1
-	},
-	dockedPanelTheme: {
-		backdropBlur: 5,
-		tint: '#363636',
-		tintOpacity: 0.9,
-		shadowIntensity: 1
-	},
-	sectionTheme: { tint: '#1f1f1f', tintOpacity: 0.6, backdropBlur: 18 },
-	sectionBackgrounds: { standard: '#1f1f1f', muted: '#363636' },
-	colors: {
-		ink: '#fff',
-		body: '#f7f7f4',
-		accent: '#059669',
-		onAccent: '#161718',
-		tabBackground: 'rgb(29 30 32 / 0.76)'
-	}
-};
+} satisfies Pick<SpatialElementData, 'hdr' | 'model'>;
 
 /** Serializable Wera elements addressable through `[productId]`. */
 export const weraSpatialElements: readonly SpatialElementData[] = optimizedSpatialElements('wera', [
@@ -68,7 +22,6 @@ export const weraSpatialElements: readonly SpatialElementData[] = optimizedSpati
 		],
 		action: { label: 'Haendler finden' },
 
-		background: weraElementDefaults.background,
 		hdr: weraElementDefaults.hdr,
 		geometry: { low: '/assets/wera/tool-check-plus.glb', high: '/assets/wera/tool-check-plus.glb' },
 		fallbackImage: '/assets/posters/wera-tool-check-plus.png',
@@ -108,7 +61,6 @@ export const weraSpatialElements: readonly SpatialElementData[] = optimizedSpati
 		],
 		action: { label: 'Haendler finden' },
 
-		background: weraElementDefaults.background,
 		hdr: weraElementDefaults.hdr,
 		geometry: { low: '/assets/wera/joker.glb', high: '/assets/wera/joker.glb' },
 		fallbackImage: '/assets/posters/wera-tool-check-plus.png',
@@ -147,7 +99,6 @@ export const weraSpatialElements: readonly SpatialElementData[] = optimizedSpati
 		],
 		action: { label: 'Haendler finden' },
 
-		background: weraElementDefaults.background,
 		hdr: weraElementDefaults.hdr,
 		geometry: { low: '/assets/wera/kraftform-xxl.glb', high: '/assets/wera/kraftform-xxl.glb' },
 		fallbackImage: '/assets/posters/wera-tool-check-plus.png',
@@ -193,7 +144,6 @@ export const weraSpatialElements: readonly SpatialElementData[] = optimizedSpati
 		],
 		action: { label: 'Haendler finden' },
 
-		background: weraElementDefaults.background,
 		hdr: weraElementDefaults.hdr,
 		geometry: { low: '/assets/wera/ph-kreuzschlitz.glb', high: '/assets/wera/ph-kreuzschlitz.glb' },
 		fallbackImage: '/assets/posters/wera-tool-check-plus.png',
@@ -238,7 +188,6 @@ export const weraSpatialElements: readonly SpatialElementData[] = optimizedSpati
 		],
 		action: { label: 'Haendler finden' },
 
-		background: weraElementDefaults.background,
 		hdr: weraElementDefaults.hdr,
 		geometry: {
 			low: '/assets/wera/kraftform-kompakt.glb',
@@ -284,7 +233,6 @@ export const weraSpatialElements: readonly SpatialElementData[] = optimizedSpati
 		],
 		action: { label: 'Haendler finden' },
 
-		background: weraElementDefaults.background,
 		hdr: weraElementDefaults.hdr,
 		geometry: {
 			low: '/assets/wera/kraftform-kompakt-20.glb',
@@ -332,7 +280,6 @@ export const weraSpatialElements: readonly SpatialElementData[] = optimizedSpati
 		],
 		action: { label: 'Haendler finden' },
 
-		background: weraElementDefaults.background,
 		hdr: weraElementDefaults.hdr,
 		geometry: {
 			low: '/assets/wera/winkelschluessel.glb',
@@ -383,7 +330,6 @@ export const weraSpatialElements: readonly SpatialElementData[] = optimizedSpati
 		],
 		action: { label: 'Haendler finden' },
 
-		background: weraElementDefaults.background,
 		hdr: weraElementDefaults.hdr,
 		geometry: { low: '/assets/wera/zyklop-speed.glb', high: '/assets/wera/zyklop-speed.glb' },
 		fallbackImage: '/assets/posters/wera-tool-check-plus.png',

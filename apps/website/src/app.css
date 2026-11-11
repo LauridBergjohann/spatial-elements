@@ -11,36 +11,17 @@ body {
 .ps-shell a {
 	color: var(--ps-accent);
 }
-.brand-stage-shell[data-color-scheme='dark'] {
-	--ps-selection: rgba(255, 255, 255, 0.12);
-}
-.brand-stage-shell[data-color-scheme='light'] {
-	--ps-selection: rgba(0, 0, 0, 0.07);
-}
-/* Match bergjohann-com's neutral surfaces and green-teal link palette. */
+/* Appearance is defined once in lib/theme.ts for Page Sections and spatial surfaces. */
 .ps-shell[data-ps-theme='light'] {
-	--ps-background: #e0e4e3;
-	--ps-section-standard: #ffffff;
-	--ps-section-muted: #f2f2f2;
 	--ps-selection: #eeeeee;
-	--ps-ink: #141414;
-	--ps-body: #666666;
-	--ps-accent: #007b5e;
-	--ps-on-accent: #ffffff;
 	--ps-border: #d1d1d1;
-	--ps-radius: 12px;
 }
 .ps-shell[data-ps-theme='dark'] {
-	--ps-background: hsl(223.64, 8.8%, 24.51%);
-	--ps-section-standard: hsl(220, 10%, 12%);
-	--ps-section-muted: hsl(220, 14%, 16%);
 	--ps-selection: rgba(72, 77, 83, 0.5);
-	--ps-ink: hsl(220, 2%, 90%);
-	--ps-body: hsl(220, 5%, 65%);
-	--ps-accent: #09a782;
-	--ps-on-accent: hsl(220, 10%, 12%);
 	--ps-border: hsl(220, 15%, 32%);
-	--ps-radius: 12px;
+}
+.brand-stage-shell {
+	--ps-selection: var(--spatial-element-tab-background);
 }
 .ps-shell .site-brand {
 	display: inline-flex;

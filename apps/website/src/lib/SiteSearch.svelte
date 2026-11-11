@@ -15,13 +15,13 @@
 		},
 		{
 			title: 'Wera tools',
-			href: '/showcase/wera/',
+			href: '/showcase/',
 			group: 'Showcase',
 			description: 'Explore eight tools in a spatial collection.'
 		},
 		{
 			title: 'The watch',
-			href: '/showcase/watches/',
+			href: '/showcase/elements/chronograph/',
 			group: 'Showcase',
 			description: 'A Rolex watch study inspired by Three.js.'
 		},

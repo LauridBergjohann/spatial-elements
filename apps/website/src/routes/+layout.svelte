@@ -3,9 +3,7 @@
 	import { page } from '$app/state';
 	import { base } from '$app/paths';
 	import { BrandStageShell } from '@spatial-elements/sveltekit';
-	import { weraTheme } from '$lib/showcase/wera';
-	import { watchesTheme } from '$lib/showcase/watches';
-	import { theme as examplesTheme } from '$lib/forms';
+	import { websiteTheme } from '$lib/theme';
 	import { Navigation, PageShell } from '@page-sections/svelte';
 	import Menu from 'lucide-svelte/icons/menu';
 	import Settings from 'lucide-svelte/icons/settings';
@@ -39,16 +37,13 @@
 			/* The choice still applies in memory. */
 		}
 	}
-	const stageTheme = $derived(
-		page.url.pathname.startsWith('/showcase/wera/')
-			? weraTheme
-			: page.url.pathname.startsWith('/showcase/watches/')
-				? watchesTheme
-				: page.url.pathname.startsWith('/docs/examples/') ||
-					  page.url.pathname.startsWith('/docs/sections/playground/')
-					? examplesTheme
-					: undefined
+	const namespace = $derived(
+		page.url.pathname.startsWith('/docs/examples/') ||
+			page.url.pathname.startsWith('/docs/sections/playground/')
+			? 'docs/examples'
+			: 'showcase'
 	);
+	const stageTheme = $derived(websiteTheme(mode, namespace));
 	const items = $derived(resolveNavigation(navigationTree, { pathname: page.url.pathname }).items);
 </script>
 
@@ -105,21 +100,22 @@
 		</Navigation>
 	</header>
 {/snippet}
-<PageShell {mode}>
-	{#if stageTheme}
-		{#key stageTheme.id}
-			<BrandStageShell
-				theme={stageTheme}
-				colorScheme={stageTheme.id.startsWith('showcase/') ? 'dark' : 'light'}
-				navigation={siteNavigation}
-			>
-				<div id="main-content" tabindex="-1">{@render children()}</div>
-			</BrandStageShell>
-		{/key}
-	{:else}
-		{@render siteNavigation()}
+<PageShell
+	{mode}
+	theme={{
+		background: stageTheme.background,
+		ink: stageTheme.colors.ink,
+		body: stageTheme.colors.body,
+		accent: stageTheme.colors.accent,
+		onAccent: stageTheme.colors.onAccent,
+		standard: stageTheme.sectionBackgrounds?.standard,
+		muted: stageTheme.sectionBackgrounds?.muted,
+		radius: '12px'
+	}}
+>
+	<BrandStageShell theme={stageTheme} colorScheme={mode} navigation={siteNavigation}>
 		<div id="main-content" tabindex="-1">{@render children()}</div>
-	{/if}
+	</BrandStageShell>
 	<footer class="site-footer">
 		<a class="site-brand" href={base + '/'}
 			><img src={base + '/spatial-elements-logo.svg'} alt="" width="24" height="24" />Spatial

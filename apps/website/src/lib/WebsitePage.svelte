@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page as route } from '$app/state';
 	import type { ComponentProps } from 'svelte';
-	import { ContentPage, SidebarNavigation } from '@page-sections/svelte';
+	import { SidebarNavigation } from '@page-sections/svelte';
+	import { ContentPage } from '@spatial-elements/sveltekit';
 	import { resolveNavigation, type MenuItem } from '@page-sections/core';
 	import { navigationTree, readingNeighbors } from './navigation';
 	import NavigationIcon from './NavigationIcon.svelte';
@@ -11,8 +12,12 @@
 		children,
 		showContentMenu = false,
 		showSidebar,
+		hdr = '/assets/demo/studio.hdr',
 		...rest
-	}: ComponentProps<typeof ContentPage> & { showSidebar?: boolean } = $props();
+	}: Omit<ComponentProps<typeof ContentPage>, 'hdr'> & {
+		hdr?: string;
+		showSidebar?: boolean;
+	} = $props();
 	const navigation = $derived(resolveNavigation(navigationTree, { pathname: route.url.pathname }));
 	const neighbors = $derived(readingNeighbors(route.url.pathname));
 	const sidebar = $derived(showSidebar ?? navigation.root?.id === 'docs');
@@ -38,6 +43,7 @@
 {/snippet}
 
 <ContentPage
+	{hdr}
 	{...rest}
 	page={{
 		...page,

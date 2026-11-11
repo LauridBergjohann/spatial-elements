@@ -6,34 +6,30 @@
 		getSpatialListItems
 	} from '@spatial-elements/sveltekit';
 	import { HeadingSection, Section } from '@page-sections/svelte';
-	import { watchesSpatialElements as elements } from '$lib/showcase/watches';
-	const items = getSpatialListItems(elements, '/showcase/watches/elements');
+	import { showcaseElements as elements } from '$lib/showcase/collection';
+	const items = getSpatialListItems(elements, '/showcase/elements');
 </script>
 
 <ContentPage
 	hdr="/assets/lobe.hdr"
 	page={{
-		title: 'The watch · list',
-		breadcrumbs: [
-			{ label: 'Showcase', href: '/showcase/' },
-			{ label: 'The watch', href: '/showcase/watches/' },
-			{ label: 'list' }
-		]
+		title: 'Showcase · mixed',
+		breadcrumbs: [{ label: 'Showcase', href: '/showcase/' }, { label: 'mixed' }]
 	}}
 >
 	<HeadingSection
 		section={{
 			id: 'catalog',
-			title: 'The watch',
+			title: 'Showcase',
 			headingLevel: 1,
 			eyebrow: 'Interactive demonstration · Not a shop'
 		}}
 	/>
 	<Section section={{ id: 'views', title: 'Collection views' }}
 		><nav aria-label="Collection views">
-			<a href="/showcase/watches/categories/list/">Grid</a> ·
-			<a href="/showcase/watches/categories/carousel/">Carousel</a>
-			· <a href="/showcase/watches/categories/mixed/">Mixed</a>
+			<a href="/showcase/categories/list/">Grid</a> ·
+			<a href="/showcase/categories/carousel/">Carousel</a>
+			· <a href="/showcase/categories/mixed/">Mixed</a>
 		</nav></Section
 	>
 	<SpatialCardGridSection
@@ -47,5 +43,14 @@
 		cardTone="muted"
 		cardSize="m"
 		mediaAspect="3/2"
+	/>
+	<SpatialCarouselSection
+		section={{
+			id: 'carousel',
+			title: 'Explore in space',
+			headline: 'Explore in space',
+			background: { color: 'transparent', size: 'full' }
+		}}
+		list={items}
 	/>
 </ContentPage>

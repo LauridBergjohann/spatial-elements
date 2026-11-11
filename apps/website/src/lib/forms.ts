@@ -1,15 +1,8 @@
 import {
 	getSpatialListItems,
-	createSpatialTheme,
 	type SpatialElementData,
 	type SpatialElementLodPair
 } from '@spatial-elements/core';
-export const theme = createSpatialTheme({
-	id: 'docs/examples',
-	name: 'Spatial Elements',
-	sectionBackgrounds: { standard: '#ffffff', muted: '#f5f7f9' },
-	interactionTheme: { outlineColor: '#50a5ea' }
-});
 const identity: SpatialElementLodPair['assetToFrame'] = [
 	1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
 ];
@@ -37,7 +30,6 @@ export const spatialElements: SpatialElementData[] = [
 		],
 		action: { label: 'Explore features', href: '#features' },
 
-		background: { blurriness: 0.2, tint: '#e6edf4', tintIntensity: 0.3 },
 		hdr: '/assets/demo/studio.hdr',
 		geometry: {
 			status: 'provisional-shared-frame',

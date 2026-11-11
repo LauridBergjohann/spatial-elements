@@ -64,6 +64,11 @@
 				detail page.
 			</p>
 			<p>
+				The header and satellites share the theme's <code>panelTheme</code>: frosted surfaces use
+				its tint, opacity, backdrop blur and shadow, including without WebGPU. This website keeps
+				one shell and one light/dark palette across documentation and the combined showcase.
+			</p>
+			<p>
 				The Spatial Elements <code>ContentPage</code> accepts <code>leftSidebar</code> and
 				<code>footer</code>
 				snippets. Pass a <code>SidebarNavigation</code> into the left snippet. Set
@@ -95,8 +100,8 @@
 			<p>
 				Use <code>/your-collection/categories/list</code>,
 				<code>/your-collection/categories/carousel</code>
-				and <code>/your-collection/elements/[id]</code>. Nested namespaces work too: the Wera
-				showcase uses <code>/showcase/wera/</code>. Keep a matching theme ID and stable element IDs
+				and <code>/your-collection/elements/[id]</code>. Nested namespaces work too: the form
+				examples use <code>/docs/examples/</code>. Keep a matching theme ID and stable element IDs
 				within each collection.
 			</p>
 			<p>

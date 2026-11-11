@@ -4,7 +4,7 @@ test('home explains the library and docs use the shared navigation', async ({ pa
 	await page.goto('/');
 	await expect(page.getByRole('heading', { level: 1 })).toContainText('dimension');
 	await expect(page.locator('#features .ps-card')).toHaveCount(6);
-	await expect(page.locator('.stage')).toHaveCount(0);
+	await expect(page.locator('.stage')).toHaveCount(1);
 	await page.goto('/docs/foundations/assets/');
 	await expect(page.getByRole('navigation', { name: 'Documentation chapters' })).toBeVisible();
 	await expect(page.getByRole('navigation', { name: 'Breadcrumb', exact: true })).toContainText(
@@ -47,6 +47,46 @@ test('theme still changes when storage is blocked', async ({ page }) => {
 	await expect(page.locator('.ps-shell')).toHaveAttribute('data-ps-theme', 'dark');
 });
 
+test('one palette and frosted navigation follow the chosen mode across the website', async ({
+	page
+}) => {
+	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
+	await page.goto('/');
+	for (const mode of ['Dark', 'Light']) {
+		await page.getByRole('button', { name: mode, exact: true }).filter({ visible: true }).click();
+		let palette: unknown;
+		for (const route of [
+			'/',
+			'/docs/foundations/assets/',
+			'/showcase/',
+			'/showcase/elements/joker/',
+			'/showcase/elements/chronograph/'
+		]) {
+			await page.goto(route);
+			await expect(page.locator('.brand-stage-shell')).toHaveAttribute(
+				'data-color-scheme',
+				mode.toLowerCase()
+			);
+			const appearance = await page.locator('.ps-navigation .header').evaluate((element) => {
+				const style = getComputedStyle(element);
+				return {
+					accent: style.getPropertyValue('--ps-accent').trim(),
+					ink: style.getPropertyValue('--ps-ink').trim(),
+					surface: style.backgroundColor
+				};
+			});
+			palette ??= appearance;
+			expect(appearance).toEqual(palette);
+			for (const panel of ['.header', '.satellite.right']) {
+				const surface = page.locator('.ps-navigation ' + panel);
+				await expect(surface).toHaveCSS('backdrop-filter', 'blur(16px)');
+				await expect(surface).not.toHaveCSS('box-shadow', 'none');
+				await expect(surface).toHaveCSS('background-color', appearance.surface);
+			}
+		}
+	}
+});
+
 test('playground updates preview and source together and can reset', async ({ page }) => {
 	const errors: string[] = [];
 	page.on('pageerror', (error) => errors.push(error.message));
@@ -78,34 +118,60 @@ if (process.env.SPATIAL_GPU)
 	}, info) => {
 		const errors: string[] = [];
 		page.on('pageerror', (error) => errors.push(error.message));
-		await page.goto('/showcase/wera/categories/list/?stage-test=1');
+		await page.goto('/showcase/categories/list/?stage-test=1');
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', {
 			timeout: 60000
 		});
 		await expect(page.locator('[data-catalog-model-ready]').first()).toBeAttached({
 			timeout: 60000
 		});
+		await expect(page.locator('.ps-navigation .header')).toHaveAttribute(
+			'data-stage-panel-bound',
+			''
+		);
+		await expect(page.locator('.ps-navigation .satellite.right')).toHaveAttribute(
+			'data-stage-panel-bound',
+			''
+		);
 		await page.screenshot({ path: info.outputPath('wera-grid.png') });
 		await page.locator('a[data-catalog-card]').first().click();
-		await expect(page).toHaveURL(/\/showcase\/wera\/elements\//);
+		await expect(page).toHaveURL(/\/showcase\/elements\//);
 		await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
 		await expect(page.locator('#demo-notice')).toContainText('cannot purchase');
 		await page.goBack();
-		await expect(page).toHaveURL(/\/showcase\/wera\/categories\/list/);
+		await expect(page).toHaveURL(/\/showcase\/categories\/list/);
 		await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
-		await page.goto('/showcase/watches/elements/chronograph/');
+		await page.goto('/showcase/elements/chronograph/');
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', {
 			timeout: 60000
 		});
 		await expect(page.locator('canvas').first()).toBeVisible();
 		await page.screenshot({ path: info.outputPath('watch-detail.png') });
+		// The same shell also hosts documentation with a different collection namespace.
+		await page.keyboard.press('Control+k');
+		const search = page.getByRole('combobox', { name: 'Search documentation' });
+		await search.fill('spatial collection playground');
+		await search.press('Enter');
+		await expect(page).toHaveURL(/\/docs\/sections\/playground\/$/);
+		await expect(page.locator('[data-catalog-model-ready]').first()).toBeAttached({
+			timeout: 60000
+		});
+		await page
+			.locator('.desktop-menu')
+			.getByRole('link', { name: 'Showcase', exact: true })
+			.click();
+		await expect(page).toHaveURL(/\/showcase\/$/);
+		await expect(page.locator('[data-catalog-card]')).toHaveCount(9);
+		await expect(page.locator('[data-catalog-model-ready]').first()).toBeAttached({
+			timeout: 60000
+		});
 		expect(errors).toEqual([]);
 	});
 
 test('all Wera tools are reachable and clearly identified as demonstrations', async ({ page }) => {
 	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
-	await page.goto('/showcase/wera/');
-	await expect(page.locator('[data-catalog-card]')).toHaveCount(8);
+	await page.goto('/showcase/');
+	await expect(page.locator('[data-catalog-card]')).toHaveCount(9);
 	for (const id of [
 		'tool-check-plus',
 		'joker',
@@ -116,7 +182,7 @@ test('all Wera tools are reachable and clearly identified as demonstrations', as
 		'winkelschluessel',
 		'zyklop-speed'
 	]) {
-		const response = await page.goto('/showcase/wera/elements/' + id + '/');
+		const response = await page.goto('/showcase/elements/' + id + '/');
 		expect(response?.status()).toBe(200);
 		await expect(page.locator('#demo-notice')).toContainText('cannot purchase');
 		await expect(page.locator('#demo-notice a')).toHaveAttribute('href', 'https://www.wera.de/');
@@ -125,7 +191,7 @@ test('all Wera tools are reachable and clearly identified as demonstrations', as
 });
 
 test('watch credits its inspiration and links to the manufacturer', async ({ page }) => {
-	await page.goto('/showcase/watches/elements/chronograph/');
+	await page.goto('/showcase/elements/chronograph/');
 	await expect(page.locator('#demo-notice')).toContainText('cannot purchase');
 	await expect(page.locator('#demo-notice a[href="https://www.rolex.com/"]')).toBeVisible();
 	await expect(page.locator('#demo-notice a[href*="webgl_watch.html"]')).toBeVisible();
@@ -144,7 +210,7 @@ for (const width of [320, 840, 1920])
 				'/',
 				'/getting-started/',
 				'/docs/foundations/assets/',
-				'/showcase/wera/elements/joker/'
+				'/showcase/elements/joker/'
 			]) {
 				const response = await page.goto(route);
 				expect(response?.status()).toBe(200);

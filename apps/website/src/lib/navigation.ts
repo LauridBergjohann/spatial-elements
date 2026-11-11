@@ -13,11 +13,7 @@ export const navigationTree: MenuItem[] = [
 	{
 		id: 'showcase',
 		label: 'Showcase',
-		href: base + '/showcase/',
-		children: [
-			{ id: 'wera', label: 'Wera tools', href: base + '/showcase/wera/', icon: 'briefcase' },
-			{ id: 'watches', label: 'The watch', href: base + '/showcase/watches/', icon: 'layers' }
-		]
+		href: base + '/showcase/'
 	},
 	{ id: 'start', label: 'Getting started', href: base + '/getting-started/' },
 	{
