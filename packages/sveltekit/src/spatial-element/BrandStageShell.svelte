@@ -32,6 +32,8 @@
 		children?: Snippet;
 		/** Persistent main-menu content. The shell owns its box and surface. */
 		menu?: Snippet;
+		/** Complete application navigation; the spatial shell supplies positioning and surfaces. */
+		navigation?: Snippet;
 		/** Shared responsive navigation; menu remains a custom-content escape hatch. */
 		items?: MenuItem[];
 		brand?: Snippet;
@@ -43,7 +45,7 @@
 		right?: Snippet;
 	}
 
-	let { theme, colorScheme, messages, renderSettings, dracoDecoderPath, children, menu, items, brand, tools, summary, left, right, deviceOrientation = false }: Props = $props();
+	let { theme, colorScheme, messages, renderSettings, dracoDecoderPath, children, menu, navigation, items, brand, tools, summary, left, right, deviceOrientation = false }: Props = $props();
 	$effect(() => {
 		if (deviceOrientation) return retainDeviceOrientationPermission();
 	});
@@ -65,7 +67,7 @@
 		interactionTheme={theme.interactionTheme}
 		ariaLabel={`${theme.name} spatialElement stage`}
 	>
-		{#if menu || items || brand || left || right}<SpatialNavigationShell {menu} {items} {brand} {tools} {left} {right} />{/if}
+		{#if navigation || menu || items || brand || left || right}<SpatialNavigationShell {navigation} {menu} {items} {brand} {tools} {left} {right} />{/if}
 		<SpatialSummaryHost {summary}>{@render children?.()}</SpatialSummaryHost>
 	</Stage>
 	<PointerHint />

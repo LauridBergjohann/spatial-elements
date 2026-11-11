@@ -595,7 +595,10 @@
 	:global(.carousel-drag-section:has(.interactive)) {
 		touch-action: pan-y pinch-zoom;
 	}
-	:global(.carousel-drag-section > .ps-section-content > .headline) {
+	:global(.carousel-drag-section > .ps-section-content > .section-heading .headline) {
+		/* Match the carousel resolver's measured heading budget. */
+		font-size: var(--spatial-grid-headline-size);
+		line-height: var(--spatial-grid-headline-line-height);
 		pointer-events: none;
 	}
 	.drag-surface {

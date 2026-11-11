@@ -25,7 +25,7 @@ export function resolveCatalogJourney(
 	if (intent) return { kind: 'spatialElement', intent };
 	if (from.origin !== to.origin || (from.pathname === to.pathname && from.search === to.search))
 		return;
-	const pattern = /^\/([^/]+)\/categories\/(?:list|carousel|mixed)\/?$/;
+	const pattern = /^\/((?:[^/]+\/)*[^/]+)\/categories\/(?:list|carousel|mixed)\/?$/;
 	const source = pattern.exec(from.pathname),
 		target = pattern.exec(to.pathname);
 	if (!source || !target) return;

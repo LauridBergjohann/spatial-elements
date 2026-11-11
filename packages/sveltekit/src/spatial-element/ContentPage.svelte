@@ -44,3 +44,15 @@
  data-spatial-page-background={background ? backgroundScope : undefined}>
  {@render children?.()}
 </PageContent>
+
+<style>
+ /* The shared stage leaves its DOM layer transparent to model interaction.
+  * Ordinary Page Sections and navigation still need native hit targets. */
+ :global(.content-page .ps-section),
+ :global(.content-page .ps-left-sidebar),
+ :global(.content-page .ps-content-menu-slot),
+ :global(.content-page .breadcrumbs),
+ :global(.content-page nav) {
+  pointer-events: auto;
+ }
+</style>

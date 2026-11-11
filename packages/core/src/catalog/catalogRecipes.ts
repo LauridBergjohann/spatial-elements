@@ -21,7 +21,7 @@ export function resolveCatalogIntent(
 ): CatalogNavigationIntent | undefined {
 	if (from.origin !== to.origin) return;
 	const parse = (url: URL) => {
-		const match = /^\/([^/]+)\/(categories\/(?:list|carousel|mixed)|(?:elements|products)\/([^/]+))\/?$/.exec(
+		const match = /^\/((?:[^/]+\/)*[^/]+)\/(categories\/(?:list|carousel|mixed)|(?:elements|products)\/([^/]+))\/?$/.exec(
 			url.pathname
 		);
 		if (!match) return;

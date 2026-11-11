@@ -11,7 +11,7 @@
 	import { useSpatialTheme } from './brandContext.js';
 	import './layout.generated.css';
 
-	let { menu, items, brand, tools, left, right }: { menu?: Snippet; items?: MenuItem[]; brand?: Snippet; tools?: Snippet; left?: Snippet; right?: Snippet } = $props();
+	let { navigation, menu, items, brand, tools, left, right }: { navigation?: Snippet; menu?: Snippet; items?: MenuItem[]; brand?: Snippet; tools?: Snippet; left?: Snippet; right?: Snippet } = $props();
 	const stageContext = getContext<StageContext | undefined>(STAGE_CONTEXT_KEY);
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
@@ -115,7 +115,7 @@
 
 <div class="spatial-shell-track" data-spatial-navigation-shell>
  <div bind:this={rack} class="spatial-shell-rack" data-stage-scroll-shell data-catalog-shell data-spatial-navigation-glass={fixedDetail && theme.panelTheme.surface === 'glass' ? '' : undefined}>
-  <Navigation {menu} {items} {brand} {tools} {left} {right} />
+  {#if navigation}{@render navigation()}{:else}<Navigation {menu} {items} {brand} {tools} {left} {right} />{/if}
  </div>
 </div>
 <style>
