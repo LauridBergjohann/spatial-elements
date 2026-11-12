@@ -1,10 +1,20 @@
 import { expect, it } from 'vitest';
+import { CatalogNavigationRegistry } from './CatalogNavigationRegistry.js';
 import {
-	resolveCatalogJourney,
+	resolveCatalogJourney as resolveJourney,
 	planCatalogParticipants,
 	type CatalogParticipantEndpoint
 } from './catalogJourney.js';
 const url = (s: string) => new URL(s, 'https://catalog.example');
+const navigation = new CatalogNavigationRegistry();
+for (const path of ['/demo/categories/list', '/demo/categories/list?sort=title', '/demo/categories/carousel', '/demo/categories/mixed'])
+ navigation.record(url(path), { kind: 'content', brandId: 'demo', elements: ['column'] });
+for (const path of ['/demo/elements/column', '/demo/products/column', '/demo/elements/orb'])
+ navigation.record(url(path), { kind: 'detail', brandId: 'demo', spatialElementId: path.endsWith('orb') ? 'orb' : 'column' });
+navigation.record(url('/tools/elements/column'), { kind: 'detail', brandId: 'tools', spatialElementId: 'column' });
+navigation.record(url('/tools/categories/carousel'), { kind: 'content', brandId: 'tools', elements: ['column'] });
+
+const resolveCatalogJourney = (from: URL, to: URL, type: string) => resolveJourney(from, to, type, navigation);
 const endpoint = (
 	spatialElementId: string,
 	overrides: Partial<CatalogParticipantEndpoint> = {}
@@ -39,7 +49,7 @@ it('distinguishes content resources, spatialElement intent and ordinary document
 	for (const destination of [
 		'/demo/categories/list#modules',
 		'/tools/categories/carousel',
-		'/%zz/categories/carousel'
+		'https://other.example/arbitrary'
 	])
 		expect(
 			resolveCatalogJourney(url('/demo/categories/list'), url(destination), 'link')

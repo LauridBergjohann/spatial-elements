@@ -1,8 +1,18 @@
 import { expect, it } from 'vitest';
-import { resolveCatalogIntent, selectCatalogRecipe } from './catalogRecipes.js';
+import { resolveCatalogIntent as resolveIntent, selectCatalogRecipe } from './catalogRecipes.js';
+import { CatalogNavigationRegistry } from './CatalogNavigationRegistry.js';
 const url = (path: string) => new URL(path, 'https://catalog.example');
 const list = url('/demo/categories/list?sort=title');
 const hero = url('/demo/elements/column');
+const navigation = new CatalogNavigationRegistry();
+for (const path of ['/demo/categories/list', '/demo/categories/list?sort=title', '/demo/categories/carousel', '/demo/categories/mixed'])
+ navigation.record(url(path), { kind: 'content', brandId: 'demo', elements: ['column'] });
+for (const path of ['/demo/elements/column', '/demo/products/column', '/demo/elements/orb'])
+ navigation.record(url(path), { kind: 'detail', brandId: 'demo', spatialElementId: path.endsWith('orb') ? 'orb' : 'column' });
+navigation.record(url('/tools/elements/column'), { kind: 'detail', brandId: 'tools', spatialElementId: 'column' });
+navigation.record(url('/tools/categories/carousel'), { kind: 'content', brandId: 'tools', elements: ['column'] });
+
+const resolveCatalogIntent = (from: URL, to: URL, type: string) => resolveIntent(from, to, type, navigation);
 
 it('returns from partial docking with the hero and switches to the minimap only at the completed dock', () => {
 	const intent = resolveCatalogIntent(hero, list, 'popstate');

@@ -163,7 +163,7 @@
 		if (!onEarlyStart || navigation.type !== 'link' || navigation.willUnload ||
 			!navigation.from || !navigation.to?.route.id ||
 			navigation.to.url.origin !== navigation.from.url.origin ||
-			navigation.to.url.pathname === navigation.from.url.pathname) return false;
+			(navigation.to.url.pathname === navigation.from.url.pathname && navigation.to.url.search === navigation.from.url.search)) return false;
 		// Kit's BeforeNavigate does not expose the resolved link options. Keep
 		// explicitly authored focus/scroll/history policies on the ordinary path.
 		const anchor = earlyAnchors.get(navigation.event);
@@ -214,7 +214,7 @@
 		};
 		const intent =
 			navigation.from && navigation.to
-				? resolveCatalogIntent(navigation.from.url, navigation.to.url, navigation.type)
+				? resolveCatalogIntent(navigation.from.url, navigation.to.url, navigation.type, endpoints?.navigation)
 				: undefined;
 		const card =
 			intent?.direction === 'detail-to-list'
@@ -297,7 +297,7 @@
 		}
 		if (controller?.active && !navigation.willUnload && navigation.to && navigation.from &&
 			navigation.from.url.pathname !== navigation.to.url.pathname &&
-			navigation.from.url.pathname.split('/')[1] === navigation.to.url.pathname.split('/')[1]) onStart?.();
+			navigation.from.url.origin === navigation.to.url.origin) onStart?.();
 		const epoch = generation;
 		void navigation.complete
 			.catch(() => {})
@@ -350,7 +350,7 @@
 		pendingNavigation = true;
 		if (controller?.active && navigating.to && navigating.from &&
 			navigating.from.url.pathname !== navigating.to.url.pathname &&
-			navigating.from.url.pathname.split('/')[1] === navigating.to.url.pathname.split('/')[1]) onStart?.();
+			navigating.from.url.origin === navigating.to.url.origin) onStart?.();
 		const epoch = generation;
 		void complete
 			.catch(() => {})
@@ -365,7 +365,7 @@
 		const owner = controller;
 		const handled = handlesNavigation
 			? handlesNavigation(navigation)
-			: navigation.from?.url.pathname.split('/')[1] === destination.url.pathname.split('/')[1];
+			: navigation.from?.url.origin === destination.url.origin;
 		if (!owner?.active || !handled) return;
 		const viewContext =
 			navigation.type === 'popstate' ? {} : readCatalogViewContext(destination.url);

@@ -1,3 +1,4 @@
+import type { CatalogNavigationRegistry } from './CatalogNavigationRegistry.js';
 import type { CatalogEndpointAddress, CatalogIdentity } from './CatalogEndpointRegistry.js';
 import { resolveCatalogIntent, type CatalogNavigationIntent } from './catalogRecipes.js';
 
@@ -19,28 +20,18 @@ export type CatalogJourney =
 export function resolveCatalogJourney(
 	from: URL,
 	to: URL,
-	type: string
+	type: string,
+	navigation?: CatalogNavigationRegistry
 ): CatalogJourney | undefined {
-	const intent = resolveCatalogIntent(from, to, type);
+	const intent = resolveCatalogIntent(from, to, type, navigation);
 	if (intent) return { kind: 'spatialElement', intent };
-	if (from.origin !== to.origin || (from.pathname === to.pathname && from.search === to.search))
-		return;
-	const pattern = /^\/((?:[^/]+\/)*[^/]+)\/categories\/(?:list|carousel|mixed)\/?$/;
-	const source = pattern.exec(from.pathname),
-		target = pattern.exec(to.pathname);
-	if (!source || !target) return;
+	const pages = navigation?.resolve(from, to);
+	if (!pages || pages.source.kind !== 'content' || pages.target.kind !== 'content') return;
+	if (pages.target.elements && !pages.source.elements.some(id => pages.target.kind === 'content' && pages.target.elements?.includes(id))) return;
 	try {
-		const brandId = decodeURIComponent(source[1]);
-		if (brandId !== decodeURIComponent(target[1])) return;
-		return {
-			kind: 'content-view',
-			brandId,
-			history: type === 'popstate',
-			section: to.hash ? decodeURIComponent(to.hash.slice(1)) : undefined
-		};
-	} catch {
-		return;
-	}
+		return { kind: 'content-view', brandId: pages.source.brandId, history: type === 'popstate',
+			section: to.hash ? decodeURIComponent(to.hash.slice(1)) : undefined };
+	} catch { return; }
 }
 
 export interface CatalogParticipantEndpoint extends CatalogEndpointAddress {

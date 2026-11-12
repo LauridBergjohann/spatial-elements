@@ -499,6 +499,7 @@
 
 	let navigationTimings = { dataReady: 0, captured: 0, restoring: 0, bound: 0 };
 	function startEarlyNavigation(navigation: BeforeNavigate) {
+		if (navigation.from) recordNavigationPage(navigation.from.url);
 		// The opt-in is temporary while production frame/ownership gates are verified.
 		if (visualTestController) stage.dataset.catalogStagedDecision = `gate:${isEnhanced}:${Boolean(experience)}:${Boolean(presentationHost)}`;
 		if (!new URL(location.href).searchParams.has('stagedNavigation') || !isEnhanced || !experience || !presentationHost) return;
@@ -518,6 +519,7 @@
 	}
 	function captureNavigation(navigation: OnNavigate): undefined {
 		try {
+			if (navigation.from && !destroyed) recordNavigationPage(navigation.from.url);
 			navigationTimings = { dataReady: performance.now(), captured: 0, restoring: 0, bound: 0 };
 			const generation = ++navigationGeneration;
 			if (earlyTransition?.phase === 'held' && navigation.to?.url.href === earlyTransition.destination) {
@@ -568,11 +570,21 @@
 		experience?.flushCatalogFrame();
 	}
 
+	function recordNavigationPage(url: URL) {
+		const current = catalog;
+		const items = catalogSpatialElements;
+		catalogEndpoints.navigation.record(url,
+			current?.spatialElementId ? { kind: 'detail', brandId: current.brandId, spatialElementId: current.spatialElementId } :
+			current && items.length ? { kind: 'content', brandId: current.brandId, elements: items.map(item => item.id) } : { kind: 'ordinary' },
+			current ? items.map(item => ({ brandId: current.brandId, spatialElementId: item.id, href: item.href })) : []);
+	}
+
 	async function restoreNavigation() {
 		navigationTimings.restoring = performance.now();
 		const generation = navigationGeneration;
 		await tick();
 		if (destroyed || generation !== navigationGeneration) return;
+		recordNavigationPage(new URL(location.href));
 		// Preserve the real Svelte instance before page binding measures the new
 		// summary. This also applies when GPU motion is disabled or declined.
 		const transferredSlot = summaryTransfer?.adopt(); summaryTransfer = undefined;

@@ -7,7 +7,7 @@ export function websiteTheme(mode: 'light' | 'dark', namespace: string) {
 	const standard = dark ? '#1c1e22' : '#ffffff';
 	const muted = dark ? '#23262f' : '#f2f2f2';
 	return createSpatialTheme({
-		// The namespace matches collection URLs; it does not select a different appearance.
+		// Stable collection identity; independent of URL structure and visual appearance.
 		id: namespace,
 		name: 'Spatial Elements',
 		background,

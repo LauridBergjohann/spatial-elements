@@ -54,6 +54,30 @@
 	>
 	<Section
 		section={{
+			id: 'shared-elements',
+			title: 'Shared element transitions',
+			headline: 'Shared element transitions',
+			background: { color: 'standard', size: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				Transitions follow registered spatial elements, not URL patterns. Keep one
+				<code>BrandStageShell</code> across routes and use stable element IDs within its collection. Spatial
+				grids and carousels register their items and authored links automatically; detail pages register
+				the displayed element. Matching elements can animate between two grids, two carousels, mixed layouts,
+				or a collection and its detail page, including browser history.
+			</p>
+			<p>
+				The destination must expose a matching spatial endpoint in the same collection. The
+				transition retains up to five visible, prepared source models and confirms their targets
+				after navigation. Pages without a match, unavailable models and reduced-motion preferences
+				keep normal navigation. Native links remain usable without JavaScript or WebGPU.
+			</p>
+		</div>
+	</Section>
+	<Section
+		section={{
 			id: 'the-112px-rule',
 			title: 'The 112px rule',
 			headline: 'The 112px rule',

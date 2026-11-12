@@ -26,7 +26,7 @@ function compile(body: string) {
 const captureFactory = compile(`
  const { fullscreenController, navigationFeedback, transition, experience, pageSignature,
    setZoomFocusState, restingZoomFocus, earlyTransition, destroyed = false,
-   presentationHost, catalogEndpoints, prepareCatalogSummaryTransfer = () => undefined } = ports;
+   presentationHost, catalogEndpoints, recordNavigationPage = () => {}, prepareCatalogSummaryTransfer = () => undefined } = ports;
  let navigationTimings, navigationGeneration = 0, reuseCatalogPage = false, retainedPageSignature,
    summaryTransfer = ports.summaryTransfer;
  ${capture.getText(stage)}
@@ -112,6 +112,14 @@ test('synchronous capture preserves the same-page reuse owner instead of releasi
 	expect(capture.state()).toMatchObject({ reuseCatalogPage: true, retainedPageSignature: 'source-signature' });
 	expect(source.releasePage).not.toHaveBeenCalled();
 	expect(source.ports.fullscreenController.setFullscreen).toHaveBeenCalledExactlyOnceWith(false);
+});
+
+test('history capture records the mounted source under the router source URL, not the already changed browser URL', () => {
+	const source = sourceFixture(), nav = navigation('popstate');
+	const recordNavigationPage = vi.fn();
+	captureFactory({ ...source.ports, recordNavigationPage }).captureNavigation(nav.value);
+	expect(recordNavigationPage).toHaveBeenCalledExactlyOnceWith(nav.value.from.url);
+	expect(recordNavigationPage.mock.invocationCallOrder[0]).toBeLessThan(source.snapshot.mock.invocationCallOrder[0]);
 });
 
 test('the real summary is retained before snapshotting and held only after its decorative source has been captured', () => {

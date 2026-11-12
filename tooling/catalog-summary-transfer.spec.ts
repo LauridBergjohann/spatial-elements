@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { prepareCatalogSummaryTransfer } from '../packages/sveltekit/src/catalog/catalogSummaryTransfer.js';
 import type { CatalogEndpointRegistry } from '../packages/core/src/catalog/CatalogEndpointRegistry.js';
+import { CatalogNavigationRegistry } from '../packages/core/src/catalog/CatalogNavigationRegistry.js';
 import type { SpatialSummaryHostController } from '../packages/sveltekit/src/spatial-element/spatialSummaryHost.svelte.js';
 
 function style() {
@@ -19,11 +20,14 @@ function fixture(returning = false) {
 	vi.stubGlobal('document', { createElement: () => hold, body: { append: vi.fn() } });
 	const retained = { record: { kind: 'summary', root }, hold: vi.fn(), adopt: vi.fn(() => true),
 		unfreeze: vi.fn(), restore: vi.fn(() => false), release: vi.fn() };
-	const endpoints = { getContentSlot: () => 'carousel.front', getPreferredContentSlot: () => 'carousel.front',
+	const navigation = new CatalogNavigationRegistry();
+	const endpoints = { navigation, getContentSlot: () => 'carousel.front', getPreferredContentSlot: () => 'carousel.front',
 		resolve: vi.fn((_address: { slot: string }) => surface) };
 	const host = { retainByElement: vi.fn(() => retained) };
 	const source = new URL('https://example.com/demo/categories/carousel');
 	const target = new URL('https://example.com/demo/products/column');
+	navigation.record(source, { kind: 'content', brandId: 'demo', elements: ['column'] });
+	navigation.record(target, { kind: 'detail', brandId: 'demo', spatialElementId: 'column' });
 	const prepare = () => prepareCatalogSummaryTransfer({ from: returning ? target : source, to: returning ? source : target,
 		type: returning ? 'popstate' : 'link', endpoints: endpoints as unknown as CatalogEndpointRegistry,
 		host: host as unknown as SpatialSummaryHostController });

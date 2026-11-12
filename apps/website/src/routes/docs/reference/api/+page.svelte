@@ -337,7 +337,9 @@
 				<tbody>
 					<tr>
 						<td>id / name</td>
-						<td>Namespace matching the route prefix / accessible brand name.</td>
+						<td
+							>Stable collection identity, independent of URL structure / accessible brand name.</td
+						>
 					</tr>
 					<tr>
 						<td>background</td>
@@ -725,7 +727,7 @@
 			</p>
 			<p>
 				Keep ordinary anchor links and supply all required data through route load functions.
-				Current transition route patterns and deployment requirements are documented in <a
+				Transition matching and deployment requirements are documented in <a
 					href="/docs/foundations/first-experience/">Getting started</a
 				>.
 			</p>

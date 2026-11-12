@@ -80,21 +80,6 @@ function copyRichContent(target: HTMLElement, source: HTMLElement) {
 	target.append(copy);
 }
 
-/** Only the forward list-to-hero edge is part of the first vertical slice. */
-export function resolveCatalogTransition(
-	from: URL,
-	to: URL,
-	type: string
-): CatalogTransitionIdentity | undefined {
-	if (
-		type === 'popstate' ||
-		to.hash ||
-		!from.pathname.replace(/\/$/, '').endsWith('/categories/list')
-	)
-		return;
-	return selectCatalogRecipe(resolveCatalogIntent(from, to, type), 'list', 'hero')?.identity;
-}
-
 /** A stale animation completion cannot settle a newer navigation. */
 export class CatalogTransitionSequence {
 	private generation = 0;
@@ -340,22 +325,10 @@ export class CatalogTransition {
 	/** Pause at the last submitted DOM/GPU frame while a compatible navigation resolves. */
 	supersede(destination: URL) {
 		const capture = this.captureState;
-		const path = destination.pathname.replace(/\/$/, '');
-		const compatible =
-			capture &&
-			destination.origin === location.origin &&
-			(Boolean(
-				resolveCatalogIntent(
-					new URL(
-						`/${encodeURIComponent(capture.identity.brandId)}/elements/${encodeURIComponent(capture.identity.spatialElementId)}`,
-						location.href
-					),
-					destination,
-					'link'
-				)
-			) ||
-				path ===
-					`/${encodeURIComponent(capture.identity.brandId)}/elements/${encodeURIComponent(capture.identity.spatialElementId)}`);
+		const target = this.endpoints.navigation?.get(destination);
+		const compatible = capture && destination.origin === location.origin && target &&
+			target.kind !== 'ordinary' && target.brandId === capture.identity.brandId &&
+			(target.kind === 'detail' ? target.spatialElementId === capture.identity.spatialElementId : target.elements.includes(capture.identity.spatialElementId));
 		if (!capture || !compatible) {
 			this.cancel();
 			return;
@@ -372,7 +345,7 @@ export class CatalogTransition {
 		capture.paused = true;
 		capture.resolve?.();
 		capture.resolve = undefined;
-		const reverse = /\/categories\/(?:list|carousel|mixed)$/.test(path);
+		const reverse = target?.kind === 'content';
 		if (
 			capture.view ||
 			capture.retarget ||
@@ -506,12 +479,9 @@ export class CatalogTransition {
 	}
 
 	private matchesDestination(capture: TransitionCapture, destination: URL) {
-		return (
-			destination.origin === location.origin &&
-			!destination.hash &&
-			destination.pathname.replace(/\/$/, '') ===
-				`/${encodeURIComponent(capture.identity.brandId)}/elements/${encodeURIComponent(capture.identity.spatialElementId)}`
-		);
+		const target = this.endpoints.navigation?.get(destination);
+		return destination.origin === location.origin && !destination.hash && target?.kind === 'detail' &&
+			target.brandId === capture.identity.brandId && target.spatialElementId === capture.identity.spatialElementId;
 	}
 
 	private createActor(
@@ -628,7 +598,7 @@ export class CatalogTransition {
 		const retained = this.captureState;
 
 		if (retained?.paused && retained.retarget) {
-			const journey = resolveCatalogJourney(fromURL, toURL, type);
+			const journey = resolveCatalogJourney(fromURL, toURL, type, this.endpoints.navigation);
 			if (journey?.kind === 'content-view') {
 				const context = type === 'popstate' ? {} : readCatalogViewContext(toURL);
 				const previousPairs = retained.view?.pairs ?? [];
@@ -670,7 +640,7 @@ export class CatalogTransition {
 					return false;
 				}
 			}
-			const intent = resolveCatalogIntent(fromURL, toURL, type);
+			const intent = resolveCatalogIntent(fromURL, toURL, type, this.endpoints.navigation);
 			const reverse = intent?.direction === 'detail-to-list';
 			const content =
 				retained.recipe.source.startsWith('carousel.') ||
@@ -713,7 +683,7 @@ export class CatalogTransition {
 			return true;
 		}
 		this.cancel();
-		const journey = resolveCatalogJourney(fromURL, toURL, type);
+		const journey = resolveCatalogJourney(fromURL, toURL, type, this.endpoints.navigation);
 		const context = type === 'popstate' ? {} : readCatalogViewContext(toURL);
 		const inventory =
 			journey?.kind === 'content-view' ? this.contentEndpoints(journey.brandId) : [];
@@ -751,7 +721,7 @@ export class CatalogTransition {
 					history: type === 'popstate',
 					target: 'hero' as const
 				}
-			: resolveCatalogIntent(fromURL, toURL, type);
+			: resolveCatalogIntent(fromURL, toURL, type, this.endpoints.navigation);
 		const reverse = intent?.direction === 'detail-to-list';
 		const contentSlot = intent
 			? reverse
@@ -1115,9 +1085,7 @@ export class CatalogTransition {
 				capture.view.pairs = pairs;
 				const pair = pairs[0];
 				if (
-					!pair ||
-					pair.source.slot === pair.target.slot ||
-					(pair.source.slot.startsWith('carousel.') && pair.target.slot.startsWith('carousel.'))
+					!pair
 				) {
 					this.cancel();
 					return;
@@ -1149,6 +1117,10 @@ export class CatalogTransition {
 					pair.target.slot as 'catalog.card' | 'carousel.front' | 'carousel.neighbour'
 				);
 				capture.recipe.targetGeometry = capture.recipe.targetShared = pair.target.slot;
+				capture.recipe.id = pair.source.slot === 'catalog.card'
+					? pair.target.slot === 'catalog.card' ? 'list-to-list' : 'list-to-carousel'
+					: pair.target.slot === 'catalog.card' ? 'carousel-to-list' : 'carousel-to-carousel';
+				this.root.dataset.catalogRecipe = capture.recipe.id;
 				if (pair.target.slot === 'carousel.neighbour') {
 					for (const actor of capture.actors) capture.exiting.push(actor.element);
 					capture.actors = [];

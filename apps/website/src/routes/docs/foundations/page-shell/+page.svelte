@@ -98,17 +98,19 @@
 	>
 		<div class="prose">
 			<p>
-				Use <code>/your-collection/categories/list</code>,
-				<code>/your-collection/categories/carousel</code>
-				and <code>/your-collection/elements/[id]</code>. Nested namespaces work too: the form
-				examples use <code>/docs/examples/</code>. Keep a matching theme ID and stable element IDs
-				within each collection.
+				Choose URLs that suit your content, such as <code>/showcase/</code>,
+				<code>/gallery/</code> and <code>/products/[slug]/</code>. Transitions match registered
+				elements across spatial grids, carousels and detail pages. The theme ID identifies the
+				collection; it does not have to match a URL prefix. Keep it and your element IDs stable.
 			</p>
 			<p>
 				Use native links so navigation also works without JavaScript. <code
 					>getSpatialListItems</code
-				> derives detail links from your element data and an explicit route prefix. Supply a poster for
-				each model so cards and detail pages stay useful without WebGPU.
+				>
+				derives detail links from your element data and an explicit route prefix. You can also provide
+				each item's own <code>href</code>. Spatial sections register those destinations
+				automatically. Supply a poster for each model so cards and detail pages stay useful without
+				WebGPU.
 			</p>
 			<p>
 				<a href="/docs/foundations/first-experience/"

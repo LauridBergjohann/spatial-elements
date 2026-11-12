@@ -2,6 +2,10 @@
 
 ## 1.0.0-beta.10
 
+### Patch Changes
+
+- Match transitions using registered spatial element identities and authored links instead of URL conventions. Support grid-to-grid and carousel-to-carousel transitions alongside mixed layouts, and preserve history navigation across arbitrary route prefixes.
+
 ### Minor Changes
 
 - Adopt Page Sections 0.4.1 with composable page headings and shared sidebar navigation. Support nested collection/detail route namespaces. Allow a complete navigation snippet inside BrandStageShell, preserve native input on ordinary Page Sections, and align carousel heading measurements with the shared heading markup. Add a public documentation and showcase website, separate minimal demo and test applications, and a single-PR release workflow. Documentation and package READMEs now point to spatial-elements.bergjohann.com.

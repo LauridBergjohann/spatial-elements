@@ -113,12 +113,10 @@ test('playground updates preview and source together and can reset', async ({ pa
 });
 
 if (process.env.SPATIAL_GPU)
-	test('showcase models enhance and nested collection navigation survives history', async ({
-		page
-	}, info) => {
+	test('showcase root animates into details and back through history', async ({ page }, info) => {
 		const errors: string[] = [];
 		page.on('pageerror', (error) => errors.push(error.message));
-		await page.goto('/showcase/categories/list/?stage-test=1');
+		await page.goto('/showcase/?stage-test=1');
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', {
 			timeout: 60000
 		});
@@ -134,12 +132,42 @@ if (process.env.SPATIAL_GPU)
 			''
 		);
 		await page.screenshot({ path: info.outputPath('wera-grid.png') });
+		await page.evaluate(() => {
+			const recipes: string[] = [];
+			Object.assign(window, { showcaseTransitionRecipes: recipes });
+			const sample = () => {
+				const stage = document.querySelector<HTMLElement>('.stage');
+				if (stage?.dataset.catalogTransition === 'animating')
+					recipes.push(stage.dataset.catalogRecipe!);
+				requestAnimationFrame(sample);
+			};
+			requestAnimationFrame(sample);
+		});
+		const observedRecipes = () =>
+			page.evaluate(
+				() =>
+					(window as unknown as { showcaseTransitionRecipes: string[] }).showcaseTransitionRecipes
+			);
 		await page.locator('a[data-catalog-card]').first().click();
 		await expect(page).toHaveURL(/\/showcase\/elements\//);
+		try {
+			await expect.poll(observedRecipes).toContain('list-to-hero');
+		} catch (error) {
+			console.log(
+				await page.evaluate(() => ({
+					decision:
+						document.querySelector<HTMLElement>('.stage')?.dataset.catalogTransitionDecision,
+					endpoints: window.__stageVisualTest?.getCatalogEndpoints(),
+					timings: window.__stageVisualTest?.getNavigationTimings()
+				}))
+			);
+			throw error;
+		}
 		await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
 		await expect(page.locator('#demo-notice')).toContainText('cannot purchase');
 		await page.goBack();
-		await expect(page).toHaveURL(/\/showcase\/categories\/list/);
+		await expect(page).toHaveURL(/\/showcase\/\?stage-test=1$/);
+		await expect.poll(observedRecipes).toContain('hero-to-list');
 		await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
 		await page.goto('/showcase/elements/chronograph/');
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', {

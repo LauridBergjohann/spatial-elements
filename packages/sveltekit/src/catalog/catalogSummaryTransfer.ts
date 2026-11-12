@@ -11,7 +11,7 @@ export function prepareCatalogSummaryTransfer(options: {
 	host: SpatialSummaryHostController;
 }) {
 	const { endpoints, host } = options;
-	const intent = resolveCatalogIntent(options.from, options.to, options.type);
+	const intent = resolveCatalogIntent(options.from, options.to, options.type, endpoints.navigation);
 	if (!intent) return;
 	const returning = intent.direction === 'detail-to-list';
 	const contentSlot = returning

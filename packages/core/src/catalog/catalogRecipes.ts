@@ -1,3 +1,4 @@
+import type { CatalogNavigationRegistry } from './CatalogNavigationRegistry.js';
 import type {
 	CatalogIdentity,
 	CatalogEndpointSlot,
@@ -17,38 +18,21 @@ export interface CatalogNavigationIntent {
 export function resolveCatalogIntent(
 	from: URL,
 	to: URL,
-	type: string
+	type: string,
+	navigation?: CatalogNavigationRegistry
 ): CatalogNavigationIntent | undefined {
-	if (from.origin !== to.origin) return;
-	const parse = (url: URL) => {
-		const match = /^\/((?:[^/]+\/)*[^/]+)\/(categories\/(?:list|carousel|mixed)|(?:elements|products)\/([^/]+))\/?$/.exec(
-			url.pathname
-		);
-		if (!match) return;
-		try {
-			return {
-				brandId: decodeURIComponent(match[1]),
-				spatialElementId: match[3] ? decodeURIComponent(match[3]) : undefined
-			};
-		} catch {
-			return;
-		}
-	};
-	const source = parse(from);
-	const target = parse(to);
-	if (
-		!source ||
-		!target ||
-		source.brandId !== target.brandId ||
-		Boolean(source.spatialElementId) === Boolean(target.spatialElementId)
-	)
-		return;
+	const pages = navigation?.resolve(from, to);
+	if (!pages || pages.source.kind === pages.target.kind) return;
+	const { source, target } = pages;
+	const detail = source.kind === 'detail' ? source : target.kind === 'detail' ? target : undefined;
+	const content = source.kind === 'content' ? source : target.kind === 'content' ? target : undefined;
+	if (!detail || !content || (content.elements && !content.elements.includes(detail.spatialElementId))) return;
 	const history = type === 'popstate';
 	return {
-		identity: { brandId: target.brandId, spatialElementId: (source.spatialElementId ?? target.spatialElementId)! },
-		direction: target.spatialElementId ? 'list-to-detail' : 'detail-to-list',
+		identity: { brandId: detail.brandId, spatialElementId: detail.spatialElementId },
+		direction: target.kind === 'detail' ? 'list-to-detail' : 'detail-to-list',
 		history,
-		target: history ? 'restored' : to.hash ? 'section' : target.spatialElementId ? 'hero' : 'list'
+		target: history ? 'restored' : to.hash ? 'section' : target.kind === 'detail' ? 'hero' : 'list'
 	};
 }
 
@@ -63,7 +47,9 @@ export interface CatalogRecipe {
 		| 'carousel-to-dock'
 		| 'dock-to-carousel'
 		| 'list-to-carousel'
-		| 'carousel-to-list';
+		| 'carousel-to-list'
+		| 'list-to-list'
+		| 'carousel-to-carousel';
 	identity: CatalogIdentity;
 	source: CatalogEndpointSlot;
 	targetGeometry: CatalogEndpointSlot;
