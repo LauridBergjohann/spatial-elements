@@ -108,7 +108,8 @@
 			<p>
 				Models, poster images, environments and documentation images are served with this website.
 				Manufacturer and source links open external services with their own privacy notices. The
-				media playground loads external video players only after you select that media.
+				media playground and product pages load external video players only after you select that
+				media.
 			</p>
 			<h3>Email contact</h3>
 			<p>

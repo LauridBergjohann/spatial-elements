@@ -1,0 +1,1336 @@
+[
+  {
+    "brandId": "watches",
+    "spatialElementId": "chronograph",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "watches-chronograph-source-frame-1",
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.0043947696685791016,
+        0.2637765391336212,
+        0.012085676193237305,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.2500457763671875,
+          -0.3292034880651703,
+          -0.4419519901275635
+        ],
+        "max": [
+          0.2500457763671875,
+          0.3292034880651703,
+          0.4419519901275635
+        ]
+      },
+      "sourceUrl": "/assets/showcase/chronograph/chronograph-high.glb",
+      "low": {
+        "url": "/assets/showcase/chronograph/chronograph-low.glb",
+        "format": "glb",
+        "revision": "30bab4a381a73d6d4ed8361542230a7ef5833529c44200b8bbb8df0121ad4d5a",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression",
+            "KHR_materials_sheen",
+            "KHR_texture_transform"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/chronograph/chronograph-high.glb",
+        "format": "glb",
+        "revision": "e9531fbaa94a4a59f3073c4b6ae8ff102668b7c5839bee2ad327bca28f00c894",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression",
+            "KHR_materials_sheen",
+            "KHR_texture_transform"
+          ]
+        }
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/chronograph/chronograph-poster.webp",
+      "alt": "Rolex chronograph in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wera",
+    "spatialElementId": "tool-check-plus",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "tool-check-plus-source-frame-2",
+      "sourceUrl": "/assets/showcase/tool-check-plus/tool-check-plus-high.glb",
+      "low": {
+        "url": "/assets/showcase/tool-check-plus/tool-check-plus-low.glb",
+        "format": "glb",
+        "revision": "a85255f381e706fa42caaa6a94eef2e6e7c6972e4a85e57001c43ddcd7106a82",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/tool-check-plus/tool-check-plus-high.glb",
+        "format": "glb",
+        "revision": "cdd8508fb4091e617db01ce61bb717dd7a916381fbd4528c9ab8b26c41385b36",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.0000012218952178955078,
+        0.000011460855603218079,
+        0.0000017136335372924805,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.311073899269104,
+          -0.0379341971129179,
+          -0.16030116379261017
+        ],
+        "max": [
+          0.311073899269104,
+          0.0379341971129179,
+          0.16030116379261017
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/tool-check-plus/tool-check-plus-poster.webp",
+      "alt": "wera tool-check-plus in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wera",
+    "spatialElementId": "joker",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "joker-source-frame-2",
+      "sourceUrl": "/assets/showcase/joker/joker-high.glb",
+      "low": {
+        "url": "/assets/showcase/joker/joker-low.glb",
+        "format": "glb",
+        "revision": "74bbc6d74d20349ea22e542be896f0003db4058c4994a2af1c616f15800ce7ab",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/joker/joker-high.glb",
+        "format": "glb",
+        "revision": "bb3fc50537374a605f2e4dc1437e3e0f3e97774990179286a14325841a679d5b",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.0032052919268608093,
+        -0.0002932964125648141,
+        -0.00013972539454698563,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.09218765795230865,
+          -0.003509341855533421,
+          -0.014762251637876034
+        ],
+        "max": [
+          0.09218765795230865,
+          0.003509341855533421,
+          0.014762251637876034
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/joker/joker-poster.webp",
+      "alt": "wera joker in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wera",
+    "spatialElementId": "kraftform-xxl",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "kraftform-xxl-source-frame-2",
+      "sourceUrl": "/assets/showcase/kraftform-xxl/kraftform-xxl-high.glb",
+      "low": {
+        "url": "/assets/showcase/kraftform-xxl/kraftform-xxl-low.glb",
+        "format": "glb",
+        "revision": "b8c9f73e2cb5b16107e2f1289c07b393beb4b2429a4e3dfaa2b9fa4c93516c5c",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/kraftform-xxl/kraftform-xxl-high.glb",
+        "format": "glb",
+        "revision": "a39386b07dd016c5a897c91f496b06f3369b37ab48a5ba342b293534f0097c65",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.004593908786773682,
+        -0.005436129868030548,
+        0.0011008009314537048,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.13318052887916565,
+          -0.12612011283636093,
+          -0.10233718156814575
+        ],
+        "max": [
+          0.13318052887916565,
+          0.12612011283636093,
+          0.10233718156814575
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/kraftform-xxl/kraftform-xxl-poster.webp",
+      "alt": "wera kraftform-xxl in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wera",
+    "spatialElementId": "ph-kreuzschlitz",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "ph-kreuzschlitz-source-frame-2",
+      "sourceUrl": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-high.glb",
+      "low": {
+        "url": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-low.glb",
+        "format": "glb",
+        "revision": "b55b1df65cd67a88f43d51d627db955ec66f7cc978e9d4233d46743d15d62cf6",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-high.glb",
+        "format": "glb",
+        "revision": "ebe232cf399aeeee8beb4bed6d8149fff1eb5157004666667cd754a21843094c",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -2.2351741790771484e-8,
+        -4.6566128730773926e-9,
+        -0.010751001536846161,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.017196688801050186,
+          -0.017196697182953358,
+          -0.10016529262065887
+        ],
+        "max": [
+          0.017196688801050186,
+          0.017196697182953358,
+          0.10016529262065887
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-poster.webp",
+      "alt": "wera ph-kreuzschlitz in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wera",
+    "spatialElementId": "kraftform-kompakt",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "kraftform-kompakt-source-frame-2",
+      "sourceUrl": "/assets/showcase/kraftform-kompakt/kraftform-kompakt-high.glb",
+      "low": {
+        "url": "/assets/showcase/kraftform-kompakt/kraftform-kompakt-low.glb",
+        "format": "glb",
+        "revision": "a322e40627a1ce2527f2bb0c5f2ffc4b8729b5a7194e720cbcb1d2feb116a9a9",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/kraftform-kompakt/kraftform-kompakt-high.glb",
+        "format": "glb",
+        "revision": "96a7ebac643fd7258505809c5d1d0a26f0e575e93cdce44d34be3b11701af3e0",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.0006481558084487915,
+        -0.025670237868325785,
+        -0.00019793212413787842,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.19487187266349792,
+          -0.024831660062773153,
+          -0.15081246197223663
+        ],
+        "max": [
+          0.19487187266349792,
+          0.024831660062773153,
+          0.15081246197223663
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/kraftform-kompakt/kraftform-kompakt-poster.webp",
+      "alt": "wera kraftform-kompakt in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wera",
+    "spatialElementId": "kraftform-kompakt-20",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "kraftform-kompakt-20-source-frame-2",
+      "sourceUrl": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-high.glb",
+      "low": {
+        "url": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-low.glb",
+        "format": "glb",
+        "revision": "117bb6f3e1292fd4593b118a171a6c09f1616d47ffabc8f5a1899c23688c5f09",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-high.glb",
+        "format": "glb",
+        "revision": "6717ca087d9e99c88db76af6112f0d6ab8d7fdc4715cade84ff1cb1946e3976d",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.00042073462158073727,
+        -0.015750012294150316,
+        -0.000018013641238212585,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.1075824451533115,
+          -0.019036666028382,
+          -0.019097791984677315
+        ],
+        "max": [
+          0.1075824451533115,
+          0.019036666028382,
+          0.019097791984677315
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-poster.webp",
+      "alt": "wera kraftform-kompakt-20 in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wera",
+    "spatialElementId": "winkelschluessel",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "winkelschluessel-source-frame-2",
+      "sourceUrl": "/assets/showcase/winkelschluessel/winkelschluessel-high.glb",
+      "low": {
+        "url": "/assets/showcase/winkelschluessel/winkelschluessel-low.glb",
+        "format": "glb",
+        "revision": "6df0676af1261910451e34b6bcca53789511a6cfb7431fca9e64a09124ece730",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/winkelschluessel/winkelschluessel-high.glb",
+        "format": "glb",
+        "revision": "126c6e284293bc5d7bbe6c030e87cf1b1239e81208561393e4071785e5cbee9c",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.0009121433831751347,
+        -0.06684592989489466,
+        -0.00001670124816952577,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.04365226021036506,
+          -0.06684583595941439,
+          -0.01473587458459221
+        ],
+        "max": [
+          0.04365226021036506,
+          0.0668458359594144,
+          0.01473587458459221
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/winkelschluessel/winkelschluessel-poster.webp",
+      "alt": "wera winkelschluessel in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wera",
+    "spatialElementId": "zyklop-speed",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "zyklop-speed-source-frame-2",
+      "sourceUrl": "/assets/showcase/zyklop-speed/zyklop-speed-high.glb",
+      "low": {
+        "url": "/assets/showcase/zyklop-speed/zyklop-speed-low.glb",
+        "format": "glb",
+        "revision": "2ac14ea73fde4f2df5203bb02b943e0d6f25ac246ed8143295e5c9df0c91bdc7",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/zyklop-speed/zyklop-speed-high.glb",
+        "format": "glb",
+        "revision": "f1b5b9a190ec1d10e8ba5b558e85dca2e01ea2a36f27a5457f42b1a5fa81acc1",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.000021504703909158707,
+        -0.014668231111946626,
+        0.000057076689724337194,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.07365970686078072,
+          -0.014668517243949108,
+          -0.014219763208987237
+        ],
+        "max": [
+          0.07365970686078072,
+          0.014668517243949106,
+          0.014219763208987237
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/zyklop-speed/zyklop-speed-poster.webp",
+      "alt": "wera zyklop-speed in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "logitech",
+    "spatialElementId": "logitech-brio-500",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "logitech-brio-500-normalized-source-frame-2",
+      "sourceUrl": "/assets/showcase/logitech-brio-500/logitech-brio-500-high.glb",
+      "low": {
+        "url": "/assets/showcase/logitech-brio-500/logitech-brio-500-low.glb",
+        "format": "glb",
+        "revision": "8ee792080f4349b6860194f6ed1fa97eb0f9b18eb904d308576cb10b9bc16203",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/logitech-brio-500/logitech-brio-500-high.glb",
+        "format": "glb",
+        "revision": "beca142c65f56aaded3f401698331db0f7057760e86f1a53152c46669feab67d",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        9.09093257939719,
+        0,
+        0,
+        0,
+        0,
+        9.09093257939719,
+        0,
+        0,
+        0,
+        0,
+        9.09093257939719,
+        0,
+        0,
+        -0.3385911210275786,
+        -0.004323382733884432,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.5,
+          -0.42865179725424946,
+          -0.3998361060397304
+        ],
+        "max": [
+          0.5,
+          0.42865179725424946,
+          0.3998361060397304
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-poster.webp",
+      "alt": "logitech logitech-brio-500 in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "logitech",
+    "spatialElementId": "logitech-ergo-k860",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "logitech-ergo-k860-normalized-source-frame-2",
+      "sourceUrl": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-high.glb",
+      "low": {
+        "url": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-low.glb",
+        "format": "glb",
+        "revision": "1cdf2fad08fa1bc23dd2a1f872fe0d80822602fc38b7def950f8be19cf929285",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-high.glb",
+        "format": "glb",
+        "revision": "8e960c21da4ae164bb83925e58673de047063d04fa76d0448274474df22cdb9c",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        2.185481869458512,
+        0,
+        0,
+        0,
+        0,
+        2.185481869458512,
+        0,
+        0,
+        0,
+        0,
+        2.185481869458512,
+        0,
+        0.00013659899981981113,
+        -0.05116972939300712,
+        -0.006339004724323721,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.5,
+          -0.05158720961625306,
+          -0.258539226256807
+        ],
+        "max": [
+          0.5,
+          0.05158720961625305,
+          0.258539226256807
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-poster.webp",
+      "alt": "logitech logitech-ergo-k860 in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "logitech",
+    "spatialElementId": "logitech-m750",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "logitech-m750-normalized-source-frame-2",
+      "sourceUrl": "/assets/showcase/logitech-m750/logitech-m750-high.glb",
+      "low": {
+        "url": "/assets/showcase/logitech-m750/logitech-m750-low.glb",
+        "format": "glb",
+        "revision": "0cdd4cba0ac60ab58de5b67bb1fd701e944fd96d11ac912d7489a04ad6a786ae",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/logitech-m750/logitech-m750-high.glb",
+        "format": "glb",
+        "revision": "8ee8fa66805fdb40f475ee421af87c79a9848cc5d2cf06941b81d092e48af533",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        8.463959990810691,
+        0,
+        0,
+        0,
+        0,
+        8.463959990810691,
+        0,
+        0,
+        0,
+        0,
+        8.463959990810691,
+        0,
+        0.00003854096361398859,
+        -0.17528861791258266,
+        -0.0012526519690265027,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.2773512811588822,
+          -0.17532245036230992,
+          -0.5
+        ],
+        "max": [
+          0.2773512811588822,
+          0.17532245036230992,
+          0.5
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/logitech-m750/logitech-m750-poster.webp",
+      "alt": "logitech logitech-m750 in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "logitech",
+    "spatialElementId": "logitech-z407",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "logitech-z407-normalized-source-frame-2",
+      "sourceUrl": "/assets/showcase/logitech-z407/logitech-z407-high.glb",
+      "low": {
+        "url": "/assets/showcase/logitech-z407/logitech-z407-low.glb",
+        "format": "glb",
+        "revision": "eac5fc0b0a7145763b3cfa6b19cd949d4b24681cb1f2510460187376edb3a736",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/logitech-z407/logitech-z407-high.glb",
+        "format": "glb",
+        "revision": "8c1b844776daa834a07626dd0d1492bf6b1ea5fd046f5b0cd5bb95625a931eee",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        2.2226719824456613,
+        0,
+        0,
+        0,
+        0,
+        2.2226719824456613,
+        0,
+        0,
+        0,
+        0,
+        2.2226719824456613,
+        0,
+        -0.00909177985616343,
+        -0.2398420786953303,
+        -0.143001163359401,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.49999999999999994,
+          -0.23987722507595208,
+          -0.3841321448758059
+        ],
+        "max": [
+          0.49999999999999994,
+          0.2398772250759521,
+          0.3841321448758059
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/logitech-z407/logitech-z407-poster.webp",
+      "alt": "logitech logitech-z407 in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "item",
+    "spatialElementId": "item-profile",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "item-profile-normalized-source-frame-2",
+      "sourceUrl": "/assets/showcase/item-profile/item-profile-high.glb",
+      "low": {
+        "url": "/assets/showcase/item-profile/item-profile-low.glb",
+        "format": "glb",
+        "revision": "2002d4e24192d4716cad3f7bf9414e30dd9279b0ae9965a0bdf389fcdcf05ebc",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression",
+            "KHR_materials_ior",
+            "KHR_materials_specular"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/item-profile/item-profile-high.glb",
+        "format": "glb",
+        "revision": "0bbc23faca06c27c09b3432ea0296e75946e42c0d10b21ee6fab737f3906634f",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression",
+            "KHR_materials_ior",
+            "KHR_materials_specular"
+          ]
+        }
+      },
+      "assetToFrame": [
+        9.900988089229823,
+        0,
+        0,
+        0,
+        0,
+        9.900988089229823,
+        0,
+        0,
+        0,
+        0,
+        9.900988089229823,
+        0,
+        0,
+        -0.2000000044432957,
+        -2.6871768259686497e-8,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.19801978096430448,
+          -0.19801987382733002,
+          -0.5
+        ],
+        "max": [
+          0.19801978096430448,
+          0.19801987382733,
+          0.5
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/item-profile/item-profile-poster.webp",
+      "alt": "item item-profile in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "item",
+    "spatialElementId": "item-connector",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "item-connector-normalized-source-frame-2",
+      "sourceUrl": "/assets/showcase/item-connector/item-connector-high.glb",
+      "low": {
+        "url": "/assets/showcase/item-connector/item-connector-low.glb",
+        "format": "glb",
+        "revision": "87b759076d7ea7938b574744c9a818d1a846ed51938c7d5bb381d805b3ab858b",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression",
+            "KHR_materials_ior",
+            "KHR_materials_specular",
+            "KHR_texture_transform"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/item-connector/item-connector-high.glb",
+        "format": "glb",
+        "revision": "0749d7566eeea424ca7769cf87bb53b0aeb4e91c39aa6192c937061b5b4f903a",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression",
+            "KHR_materials_ior",
+            "KHR_materials_specular",
+            "KHR_texture_transform"
+          ]
+        }
+      },
+      "assetToFrame": [
+        28.571424910566936,
+        0,
+        0,
+        0,
+        0,
+        28.571424910566936,
+        0,
+        0,
+        0,
+        0,
+        28.571424910566936,
+        0,
+        0,
+        -7.255431188558371e-10,
+        -1.4203647993928054e-8,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.2428571131234979,
+          -0.34857144417288144,
+          -0.5
+        ],
+        "max": [
+          0.2428571131234979,
+          0.34857144417288144,
+          0.5
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/item-connector/item-connector-poster.webp",
+      "alt": "item item-connector in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "item",
+    "spatialElementId": "item-end-cap",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "item-end-cap-normalized-source-frame-2",
+      "sourceUrl": "/assets/showcase/item-end-cap/item-end-cap-high.glb",
+      "low": {
+        "url": "/assets/showcase/item-end-cap/item-end-cap-low.glb",
+        "format": "glb",
+        "revision": "f574621b1dd2954bd9c7034b8fd9eac495d8a76df271c7c072c40c5d59f61be8",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression",
+            "KHR_materials_specular",
+            "KHR_texture_transform"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/item-end-cap/item-end-cap-high.glb",
+        "format": "glb",
+        "revision": "1e08a964c426866bb015f6129706c3c61dc1a6afdc297821ee195064c91d45dd",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression",
+            "KHR_materials_specular",
+            "KHR_texture_transform"
+          ]
+        }
+      },
+      "assetToFrame": [
+        24.99999421959097,
+        0,
+        0,
+        0,
+        0,
+        24.99999421959097,
+        0,
+        0,
+        0,
+        0,
+        24.99999421959097,
+        0,
+        0,
+        4.198717203544848e-9,
+        6.717941228626994e-9,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.4999998732159511,
+          -0.05000005776529622,
+          -0.5
+        ],
+        "max": [
+          0.4999998732159511,
+          0.05000005776529622,
+          0.5
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/item-end-cap/item-end-cap-poster.webp",
+      "alt": "item item-end-cap in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "item",
+    "spatialElementId": "item-impact-protector",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "item-impact-protector-normalized-source-frame-2",
+      "sourceUrl": "/assets/showcase/item-impact-protector/item-impact-protector-high.glb",
+      "low": {
+        "url": "/assets/showcase/item-impact-protector/item-impact-protector-low.glb",
+        "format": "glb",
+        "revision": "8920fdf0ef8c2e98da0975aea19c800ef7e621f75f3bb0f746716d198baeb5af",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression",
+            "KHR_materials_specular"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/item-impact-protector/item-impact-protector-high.glb",
+        "format": "glb",
+        "revision": "1c6689f6aa458c224b41799204c03781c29350c46968a2cd25175cf975918d41",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression",
+            "KHR_materials_specular"
+          ]
+        }
+      },
+      "assetToFrame": [
+        2.4691351377045576,
+        0,
+        0,
+        0,
+        0,
+        2.4691351377045576,
+        0,
+        0,
+        0,
+        0,
+        2.4691351377045576,
+        0,
+        0,
+        1.6587508447442412e-9,
+        6.635003641112886e-8,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.24691350825150865,
+          -0.5,
+          -0.24691354225590387
+        ],
+        "max": [
+          0.24691350825150865,
+          0.5,
+          0.24691354225590387
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/item-impact-protector/item-impact-protector-poster.webp",
+      "alt": "item item-impact-protector in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "item",
+    "spatialElementId": "item-robot",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "item-robot-normalized-source-frame-2",
+      "sourceUrl": "/assets/showcase/item-robot/item-robot-high.glb",
+      "low": {
+        "url": "/assets/showcase/item-robot/item-robot-low.glb",
+        "format": "glb",
+        "revision": "73bf46c41cd5fa91c699dd717a78fc372b625a83f73b66643665894bdad6e968",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression",
+            "KHR_materials_specular"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/item-robot/item-robot-high.glb",
+        "format": "glb",
+        "revision": "53e850096b61a4a155946990d2d86ea7aae5bfa2e77583a18d2125fd1aaac85d",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "EXT_texture_webp",
+            "KHR_draco_mesh_compression",
+            "KHR_materials_specular"
+          ]
+        }
+      },
+      "assetToFrame": [
+        4.830916129505293,
+        0,
+        0,
+        0,
+        0,
+        4.830916129505293,
+        0,
+        0,
+        0,
+        0,
+        4.830916129505293,
+        0,
+        0,
+        -0.49999999402507894,
+        -1.0093544709506594e-7,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.4356909200355184,
+          -0.49999999999999994,
+          -0.2246376554244439
+        ],
+        "max": [
+          0.4356909200355184,
+          0.49999999999999994,
+          0.2246376554244439
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/item-robot/item-robot-poster.webp",
+      "alt": "item item-robot in the interactive detail view",
+      "width": 1024,
+      "height": 1024
+    }
+  }
+]

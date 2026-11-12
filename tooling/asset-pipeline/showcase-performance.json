@@ -1,0 +1,795 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "baseline": {
+    "commit": "99c91f3",
+    "products": 9,
+    "cardSize": "m",
+    "rawReport": ".artifacts/performance/runtime-before.json"
+  },
+  "comparison": {
+    "revision": "working tree including runtime commit 159db8d and optimized showcase assets without embedded exporter lights, before the final large-card showcase layout",
+    "products": 18,
+    "cardSize": "m",
+    "rawReport": ".artifacts/performance/showcase-final.json"
+  },
+  "environment": {
+    "before": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+      "width": 1700,
+      "height": 900,
+      "deviceScaleFactor": 1,
+      "adapter": {
+        "vendor": "intel",
+        "architecture": "gen-11",
+        "description": ""
+      }
+    },
+    "after": {
+      "product": "tool-check-plus",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+      "width": 1700,
+      "height": 900,
+      "deviceScaleFactor": 1,
+      "adapter": {
+        "vendor": "intel",
+        "architecture": "gen-11",
+        "description": ""
+      }
+    }
+  },
+  "methodology": {
+    "build": "Production website, Vite preview, fresh headless Chrome context, no simultaneous GPU workload.",
+    "selectedProduct": "tool-check-plus",
+    "selectionEvidence": "The baseline loaded wera-tool-check-plus/high-12637cd6494c.glb as its only high-detail asset. The comparison explicitly selects its data-spatial-element-id instead of relying on card order.",
+    "settling": "Wait for an enhanced stage and one prepared model, then 1800 ms; hover the selected product for 1500 ms before clicking.",
+    "scroll": "40 wheel gestures, +70px for 20 gestures then -70px for 20, with a 32ms wait after each and 500ms after the last.",
+    "navigation": "Measure click through transition completion and high-detail readiness, including a final 500ms wait. History return also includes a final 500ms wait.",
+    "counters": "Real requestAnimationFrame intervals, Long Tasks API, Chrome DevTools Performance metrics and the query-gated stage diagnostics.",
+    "limitations": [
+      "One end-to-end run per revision on this machine. These are comparative observations, not a portable frame-rate guarantee or a statistically repeated benchmark.",
+      "The collection grew from 9 to 18 products. Scroll measurements compare the actual old and new showcase, not scenes normalized to identical content or scroll range. Baseline scroll range was not recorded.",
+      "The main before/after comparison retains medium cards. The final website uses large cards so the 18-product catalog does not display more models simultaneously than the 16-instance runtime budget; its verification is recorded separately.",
+      "In the medium-card comparison the runtime held 16 actors for 18 cards, leaving two card posters visible. Those estimates therefore describe the observed bounded working set, not all 18 models resident simultaneously.",
+      "Navigation elapsed time includes routing, preparation and deliberate settling waits; it is not the configured animation duration.",
+      "Estimated resident bytes describe the asset manager estimate, not measured process memory or exact GPU VRAM.",
+      "The DOM snapshot microbenchmark below disables WebGPU and measures only header cloning/style capture. It is separate from complete navigation and GPU work."
+    ]
+  },
+  "scenarios": [
+    {
+      "name": "grid-scroll",
+      "before": {
+        "elapsedMs": 3643.7,
+        "frames": {
+          "count": 202,
+          "median": 16.7,
+          "p95": 33.1,
+          "max": 66.6,
+          "over50ms": 2
+        },
+        "phases": {
+          "settled": {
+            "count": 202,
+            "median": 16.7,
+            "p95": 33.1,
+            "max": 66.6,
+            "over50ms": 2
+          }
+        },
+        "cpuMs": {
+          "TaskDuration": 1514.2,
+          "ScriptDuration": 1194.8,
+          "LayoutDuration": 0.3,
+          "RecalcStyleDuration": 58.2
+        },
+        "domCounts": {
+          "LayoutCount": 2,
+          "RecalcStyleCount": 99
+        },
+        "computedStyleReads": 8,
+        "longTasks": {
+          "count": 0,
+          "totalMs": 0,
+          "maxMs": 0
+        },
+        "initial": {
+          "cards": 9,
+          "preparedModels": 9,
+          "estimatedResidentBytes": 207455874
+        },
+        "final": {
+          "cards": 9,
+          "preparedModels": 9,
+          "estimatedResidentBytes": 207455874
+        }
+      },
+      "after": {
+        "elapsedMs": 4206.2,
+        "frames": {
+          "count": 208,
+          "median": 16.7,
+          "p95": 33.2,
+          "max": 299.8,
+          "over50ms": 3
+        },
+        "phases": {
+          "settled": {
+            "count": 208,
+            "median": 16.7,
+            "p95": 33.2,
+            "max": 299.8,
+            "over50ms": 3
+          }
+        },
+        "cpuMs": {
+          "TaskDuration": 1366.3,
+          "ScriptDuration": 836.3,
+          "LayoutDuration": 1.7,
+          "RecalcStyleDuration": 73
+        },
+        "domCounts": {
+          "LayoutCount": 5,
+          "RecalcStyleCount": 194
+        },
+        "computedStyleReads": 14,
+        "longTasks": {
+          "count": 2,
+          "totalMs": 126,
+          "maxMs": 71
+        },
+        "scrollRangePx": 609,
+        "initial": {
+          "cards": 18,
+          "preparedModels": 12,
+          "estimatedResidentBytes": 81582982
+        },
+        "final": {
+          "cards": 18,
+          "preparedModels": 16,
+          "estimatedResidentBytes": 81582982
+        }
+      }
+    },
+    {
+      "name": "grid-to-detail",
+      "before": {
+        "elapsedMs": 8238.6,
+        "frames": {
+          "count": 69,
+          "median": 16.8,
+          "p95": 1033,
+          "max": 1850.2,
+          "over50ms": 12
+        },
+        "phases": {
+          "settled": {
+            "count": 41,
+            "median": 16.7,
+            "p95": 49.8,
+            "max": 1850.2,
+            "over50ms": 2
+          },
+          "captured": {
+            "count": 4,
+            "median": 1333.4,
+            "p95": 1482.9,
+            "max": 1482.9,
+            "over50ms": 3
+          },
+          "animating": {
+            "count": 24,
+            "median": 33.3,
+            "p95": 300.4,
+            "max": 1033,
+            "over50ms": 7
+          }
+        },
+        "cpuMs": {
+          "TaskDuration": 4754.1,
+          "ScriptDuration": 1399.5,
+          "LayoutDuration": 104.1,
+          "RecalcStyleDuration": 421.8
+        },
+        "domCounts": {
+          "LayoutCount": 33,
+          "RecalcStyleCount": 104
+        },
+        "computedStyleReads": 570,
+        "longTasks": {
+          "count": 9,
+          "totalMs": 4018,
+          "maxMs": 2766
+        },
+        "captureMs": 2428.8,
+        "bindingMs": 361.5,
+        "initial": {
+          "cards": 9,
+          "preparedModels": 9,
+          "estimatedResidentBytes": 324069388
+        },
+        "final": {
+          "cards": 0,
+          "preparedModels": 0,
+          "estimatedResidentBytes": 265419560
+        }
+      },
+      "after": {
+        "elapsedMs": 5234.2,
+        "frames": {
+          "count": 65,
+          "median": 16.8,
+          "p95": 283.3,
+          "max": 1549.9,
+          "over50ms": 14
+        },
+        "phases": {
+          "settled": {
+            "count": 39,
+            "median": 16.7,
+            "p95": 283.3,
+            "max": 1549.9,
+            "over50ms": 2
+          },
+          "captured": {
+            "count": 4,
+            "median": 33.6,
+            "p95": 816.2,
+            "max": 816.2,
+            "over50ms": 1
+          },
+          "animating": {
+            "count": 22,
+            "median": 66.3,
+            "p95": 199.9,
+            "max": 450.1,
+            "over50ms": 11
+          }
+        },
+        "cpuMs": {
+          "TaskDuration": 2605.9,
+          "ScriptDuration": 924.1,
+          "LayoutDuration": 74.1,
+          "RecalcStyleDuration": 699
+        },
+        "domCounts": {
+          "LayoutCount": 35,
+          "RecalcStyleCount": 110
+        },
+        "computedStyleReads": 426,
+        "longTasks": {
+          "count": 13,
+          "totalMs": 2138,
+          "maxMs": 790
+        },
+        "captureMs": 557.5,
+        "bindingMs": 372.6,
+        "scrollRangePx": 0,
+        "initial": {
+          "cards": 18,
+          "preparedModels": 16,
+          "estimatedResidentBytes": 160491977
+        },
+        "final": {
+          "cards": 0,
+          "preparedModels": 0,
+          "estimatedResidentBytes": 119185483
+        }
+      }
+    },
+    {
+      "name": "detail-to-grid",
+      "before": {
+        "elapsedMs": 2657.2,
+        "frames": {
+          "count": 35,
+          "median": 33.3,
+          "p95": 283.2,
+          "max": 983.3,
+          "over50ms": 8
+        },
+        "phases": {
+          "captured": {
+            "count": 12,
+            "median": 17,
+            "p95": 283.2,
+            "max": 283.2,
+            "over50ms": 3
+          },
+          "animating": {
+            "count": 11,
+            "median": 33.6,
+            "p95": 983.3,
+            "max": 983.3,
+            "over50ms": 2
+          },
+          "settled": {
+            "count": 12,
+            "median": 33.3,
+            "p95": 133.2,
+            "max": 133.2,
+            "over50ms": 3
+          }
+        },
+        "cpuMs": {
+          "TaskDuration": 2764.7,
+          "ScriptDuration": 650.9,
+          "LayoutDuration": 7.6,
+          "RecalcStyleDuration": 221.5
+        },
+        "domCounts": {
+          "LayoutCount": 20,
+          "RecalcStyleCount": 71
+        },
+        "computedStyleReads": 404,
+        "longTasks": {
+          "count": 9,
+          "totalMs": 1958,
+          "maxMs": 842
+        },
+        "captureMs": 172.8,
+        "bindingMs": 411.4,
+        "initial": {
+          "cards": 0,
+          "preparedModels": 0,
+          "estimatedResidentBytes": 265419560
+        },
+        "final": {
+          "cards": 9,
+          "preparedModels": 9,
+          "estimatedResidentBytes": 324069388
+        }
+      },
+      "after": {
+        "elapsedMs": 2079.8,
+        "frames": {
+          "count": 64,
+          "median": 16.7,
+          "p95": 83.3,
+          "max": 350,
+          "over50ms": 6
+        },
+        "phases": {
+          "captured": {
+            "count": 22,
+            "median": 16.7,
+            "p95": 83.3,
+            "max": 283.5,
+            "over50ms": 2
+          },
+          "animating": {
+            "count": 12,
+            "median": 33.6,
+            "p95": 350,
+            "max": 350,
+            "over50ms": 3
+          },
+          "settled": {
+            "count": 30,
+            "median": 16.7,
+            "p95": 50,
+            "max": 83.4,
+            "over50ms": 1
+          }
+        },
+        "cpuMs": {
+          "TaskDuration": 1910.1,
+          "ScriptDuration": 416,
+          "LayoutDuration": 14.8,
+          "RecalcStyleDuration": 363.4
+        },
+        "domCounts": {
+          "LayoutCount": 26,
+          "RecalcStyleCount": 136
+        },
+        "computedStyleReads": 367,
+        "longTasks": {
+          "count": 4,
+          "totalMs": 741,
+          "maxMs": 314
+        },
+        "captureMs": 214,
+        "bindingMs": 445.2,
+        "scrollRangePx": 0,
+        "initial": {
+          "cards": 0,
+          "preparedModels": 0,
+          "estimatedResidentBytes": 119185483
+        },
+        "final": {
+          "cards": 18,
+          "preparedModels": 12,
+          "estimatedResidentBytes": 160491977
+        }
+      }
+    },
+    {
+      "name": "carousel-scroll",
+      "before": {
+        "elapsedMs": 6498.5,
+        "frames": {
+          "count": 177,
+          "median": 16.8,
+          "p95": 50.4,
+          "max": 1383.5,
+          "over50ms": 13
+        },
+        "phases": {
+          "settled": {
+            "count": 177,
+            "median": 16.8,
+            "p95": 50.4,
+            "max": 1383.5,
+            "over50ms": 13
+          }
+        },
+        "cpuMs": {
+          "TaskDuration": 2640.1,
+          "ScriptDuration": 2099,
+          "LayoutDuration": 23.8,
+          "RecalcStyleDuration": 99.9
+        },
+        "domCounts": {
+          "LayoutCount": 66,
+          "RecalcStyleCount": 128
+        },
+        "computedStyleReads": 10,
+        "longTasks": {
+          "count": 8,
+          "totalMs": 484,
+          "maxMs": 83
+        },
+        "initial": {
+          "cards": 0,
+          "preparedModels": 4,
+          "estimatedResidentBytes": 159660760
+        },
+        "final": {
+          "cards": 0,
+          "preparedModels": 4,
+          "estimatedResidentBytes": 159660760
+        }
+      },
+      "after": {
+        "elapsedMs": 4798.1,
+        "frames": {
+          "count": 194,
+          "median": 16.7,
+          "p95": 50,
+          "max": 117.3,
+          "over50ms": 8
+        },
+        "phases": {
+          "settled": {
+            "count": 194,
+            "median": 16.7,
+            "p95": 50,
+            "max": 117.3,
+            "over50ms": 8
+          }
+        },
+        "cpuMs": {
+          "TaskDuration": 2042.6,
+          "ScriptDuration": 1398.2,
+          "LayoutDuration": 35.1,
+          "RecalcStyleDuration": 140.5
+        },
+        "domCounts": {
+          "LayoutCount": 77,
+          "RecalcStyleCount": 156
+        },
+        "computedStyleReads": 8,
+        "longTasks": {
+          "count": 1,
+          "totalMs": 57,
+          "maxMs": 57
+        },
+        "scrollRangePx": 363,
+        "initial": {
+          "cards": 0,
+          "preparedModels": 4,
+          "estimatedResidentBytes": 29594986
+        },
+        "final": {
+          "cards": 0,
+          "preparedModels": 4,
+          "estimatedResidentBytes": 29594986
+        }
+      }
+    }
+  ],
+  "snapshotMicrobenchmark": {
+    "fixture": "Identical pre-change production showcase header, 1700x900 viewport, WebGPU disabled, fresh page for each sample.",
+    "order": [
+      "full",
+      "pruned",
+      "pruned",
+      "full"
+    ],
+    "before": {
+      "nodes": 302,
+      "serializedBytes": 3140930,
+      "samplesMs": [
+        1354.2,
+        1646.2
+      ],
+      "meanMs": 1500.2
+    },
+    "after": {
+      "nodes": 54,
+      "serializedBytes": 524696,
+      "samplesMs": [
+        96.3,
+        113.4
+      ],
+      "meanMs": 104.9
+    },
+    "rawReport": ".artifacts/performance/snapshot-comparison.json"
+  },
+  "embeddedLightInvestigation": {
+    "cause": "Four item source GLBs included a Blender point light. Revealing these actors at scrollY=140 changed the lights in the shared catalog scene and rebuilt shaders for already visible Wera and watch materials.",
+    "evidence": "Chrome trace recorded a 2773.3ms WebGPU command-buffer flush on CrGpuMain, while the longest corresponding renderer-main long task was 529ms. Asset downloads and optional transition preparation were inactive.",
+    "control": "A separate browser-only control removed node KHR_lights_punctual references from the same GLB responses. Mesh buffers, materials, textures, viewport and 18-product collection were unchanged. No repository assets were changed for this control.",
+    "fix": "The asset pipeline removes imported scene lights and cameras. The authored Stage lighting remains the shared lighting source. The main comparison above uses the regenerated assets without response rewriting.",
+    "generatedPipelinesDuringScroll": {
+      "before": 16,
+      "afterControl": 4
+    },
+    "samples": [
+      {
+        "name": "grid-scroll",
+        "before": {
+          "elapsedMs": 6466.8,
+          "frames": {
+            "count": 212,
+            "median": 16.7,
+            "p95": 17.2,
+            "max": 1850.4,
+            "over50ms": 3
+          },
+          "scriptMs": 1228
+        },
+        "afterControl": {
+          "elapsedMs": 4325.5,
+          "frames": {
+            "count": 214,
+            "median": 16.7,
+            "p95": 17.1,
+            "max": 200.5,
+            "over50ms": 2
+          },
+          "scriptMs": 820.3
+        }
+      },
+      {
+        "name": "grid-scroll-repeat-1",
+        "before": {
+          "elapsedMs": 4076.3,
+          "frames": {
+            "count": 213,
+            "median": 16.7,
+            "p95": 17,
+            "max": 466.5,
+            "over50ms": 1
+          },
+          "scriptMs": 1079.9
+        },
+        "afterControl": {
+          "elapsedMs": 3666.5,
+          "frames": {
+            "count": 219,
+            "median": 16.6,
+            "p95": 17.1,
+            "max": 33.7,
+            "over50ms": 0
+          },
+          "scriptMs": 612.4
+        }
+      },
+      {
+        "name": "grid-scroll-repeat-2",
+        "before": {
+          "elapsedMs": 3984.5,
+          "frames": {
+            "count": 214,
+            "median": 16.7,
+            "p95": 17.1,
+            "max": 383.5,
+            "over50ms": 1
+          },
+          "scriptMs": 1024.9
+        },
+        "afterControl": {
+          "elapsedMs": 3654.9,
+          "frames": {
+            "count": 216,
+            "median": 16.7,
+            "p95": 17.1,
+            "max": 33.6,
+            "over50ms": 0
+          },
+          "scriptMs": 638.8
+        }
+      }
+    ],
+    "rawReports": [
+      ".artifacts/performance/grid-diagnostic-1.json",
+      ".artifacts/performance/grid-diagnostic-1-grid.trace.json",
+      ".artifacts/performance/grid-diagnostic-2.json",
+      ".artifacts/performance/grid-diagnostic-3-gpu-calls.json",
+      ".artifacts/performance/grid-without-embedded-lights.json",
+      ".artifacts/performance/grid-without-embedded-lights-gpu-calls.json"
+    ],
+    "limitations": "Diagnostic runs isolate the regression and first versus repeated use; they are not a cross-machine benchmark. The control records GPU API calls, while the first diagnostic run also adds CPU profiling and tracing overhead."
+  },
+  "finalLayoutVerification": {
+    "cardSize": "l",
+    "products": 18,
+    "runtimeInstanceLimit": 16,
+    "reason": "Large cards show fewer products simultaneously and allow both final products to enter the bounded 3D working set. The prior medium grid showed 18 cards simultaneously and left the final two as posters.",
+    "methodology": "Same machine, viewport and 40-wheel protocol. Large cards increase the measured scroll range from 609 to 1400px, so these values are not the same-workload before/after comparison above. After scrolling, a real wheel gesture centers the Tool Check Plus card; the profiler requires stagedReady and fully visible projected card bounds before clicking. Final-card residency is verified outside measured scenarios.",
+    "results": [
+      {
+        "name": "grid-scroll",
+        "elapsedMs": 5506.2,
+        "frames": {
+          "count": 221,
+          "median": 16.7,
+          "p95": 49.9,
+          "max": 333.7,
+          "over50ms": 11
+        },
+        "scriptMs": 1444.4,
+        "scrollRangePx": 1400,
+        "estimatedResidentBytes": 81192608
+      },
+      {
+        "name": "grid-to-detail",
+        "elapsedMs": 3743.7,
+        "frames": {
+          "count": 71,
+          "median": 16.8,
+          "p95": 166.5,
+          "max": 883.4,
+          "over50ms": 10
+        },
+        "scriptMs": 571.9,
+        "scrollRangePx": 321,
+        "captureMs": 417,
+        "animationFrames": 24,
+        "estimatedResidentBytes": 124691109
+      },
+      {
+        "name": "detail-to-grid",
+        "elapsedMs": 1685.3,
+        "frames": {
+          "count": 46,
+          "median": 16.8,
+          "p95": 83.5,
+          "max": 350.1,
+          "over50ms": 5
+        },
+        "scriptMs": 357.4,
+        "scrollRangePx": 321,
+        "captureMs": 229.2,
+        "animationFrames": 12,
+        "estimatedResidentBytes": 126614247
+      },
+      {
+        "name": "carousel-scroll",
+        "elapsedMs": 4215,
+        "frames": {
+          "count": 192,
+          "median": 16.7,
+          "p95": 49.7,
+          "max": 116.7,
+          "over50ms": 7
+        },
+        "scriptMs": 1401,
+        "scrollRangePx": 363,
+        "estimatedResidentBytes": 29594986
+      }
+    ],
+    "selectedCardBounds": {
+      "x": 160,
+      "y": 234.2,
+      "width": 444,
+      "height": 416,
+      "top": 234.2,
+      "right": 604,
+      "bottom": 650.2,
+      "left": 160
+    },
+    "lastCards": [
+      {
+        "id": "item-impact-protector",
+        "ready": true,
+        "top": 963.2,
+        "bottom": 1379.2,
+        "visible": false
+      },
+      {
+        "id": "item-robot",
+        "ready": true,
+        "top": 963.2,
+        "bottom": 1379.2,
+        "visible": false
+      }
+    ],
+    "activeInstancesAtLastCards": 15,
+    "browserRegression": {
+      "file": "tests/apps/showcase.app.ts",
+      "test": "showcase root animates into details and back through history",
+      "status": "passed",
+      "durationSeconds": 31.6,
+      "conditions": [
+        "Each of item-impact-protector and item-robot is at least 99% inside the viewport and model-ready after real wheel scrolling.",
+        "The first product is then centered, model-ready and stagedReady; navigation into its detail and back through history visibly enters the shared transition.",
+        "Playground-to-showcase navigation still works."
+      ],
+      "note": "This separate browser regression verifies actual visibility. The raw lastCards snapshot above was intentionally captured earlier, while the same loaded cards were still in the near-viewport overscan."
+    },
+    "partialCardDiagnostic": {
+      "reason": "source-visibility",
+      "cardBounds": {
+        "x": 158.5,
+        "y": 553.8,
+        "width": 447.1,
+        "height": 415.9,
+        "top": 553.8,
+        "right": 605.5,
+        "bottom": 969.7,
+        "left": 158.5
+      },
+      "stagedReady": true,
+      "conclusion": "The existing clipping guard intentionally falls back for a card extending below the 900px viewport. It is not a reload/readiness regression, and its fallback elapsed times are excluded from transition results."
+    },
+    "residualCost": "First-use shader preparation still causes sub-second frames; neither the medium nor large layout is guaranteed to sustain 60fps. Two repeated medium-grid scrolls after the asset fix had 33.5ms maximum intervals and no frames above 50ms on this machine.",
+    "mediumWarmScrollSamples": [
+      {
+        "elapsedMs": 3948,
+        "frames": {
+          "count": 232,
+          "median": 16.6,
+          "p95": 17.1,
+          "max": 33.5,
+          "over50ms": 0
+        },
+        "scriptMs": 826.8
+      },
+      {
+        "elapsedMs": 3625,
+        "frames": {
+          "count": 214,
+          "median": 16.7,
+          "p95": 17.1,
+          "max": 33.5,
+          "over50ms": 0
+        },
+        "scriptMs": 598.6
+      }
+    ],
+    "rawReports": [
+      ".artifacts/performance/showcase-final-large-centered.json",
+      ".artifacts/performance/showcase-final-large-centered-residency.json",
+      ".artifacts/performance/large-transition-decision.json",
+      ".artifacts/performance/grid-final.json"
+    ]
+  },
+  "browserIssues": {
+    "before": {
+      "errors": [],
+      "failedRequests": [
+        {
+          "url": "http://127.0.0.1:4237/showcase/elements/spatial-elements-logo.svg",
+          "status": 404
+        }
+      ]
+    },
+    "after": {
+      "errors": [],
+      "failedRequests": []
+    }
+  },
+  "reproduce": "Build the current website, then run node scripts/profile-showcase.mjs my-run for the final large-card layout. Defaults: 1700x900, DPR1, Tool Check Plus, with a wheel-centered, fully visible and staged-ready source card. PROFILE_WIDTH, PROFILE_HEIGHT, PROFILE_DPR, PROFILE_PRODUCT and PROFILE_PORT override them; PROFILE_GRID_ONLY=3 measures repeated grid scrolling. Historical medium-card values are archived above, not recreated by the current large-card build."
+}

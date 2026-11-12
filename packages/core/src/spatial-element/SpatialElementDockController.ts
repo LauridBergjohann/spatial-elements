@@ -22,6 +22,7 @@ import {
 
 const TABS_DOCK_MORPH_DISTANCE = 24;
 const MINIMAP_ANCHOR = '[data-spatial-element-dock-minimap-anchor]';
+const MEDIA_RAIL = '[data-spatial-element-media-rail]';
 const PANEL_FRAME = '[data-stage-panel-fallback]';
 const STICKY_HEADER = '[data-spatial-element-sticky-header]';
 const STICKY_MINIMAP_ACTION = '[data-spatial-element-sticky-minimap-action]';
@@ -52,6 +53,7 @@ interface ContentPresentation {
 export class SpatialElementDockController {
 	private minimapAnchor?: HTMLElement;
 	private minimapFrame?: HTMLElement;
+	private mediaRail?: HTMLElement;
 	private stickyHeader?: HTMLElement;
 	private stickyMinimapAction?: HTMLElement;
 	private stickyAction?: HTMLElement;
@@ -128,6 +130,7 @@ export class SpatialElementDockController {
 
 		this.minimapAnchor = this.root.querySelector<HTMLElement>(MINIMAP_ANCHOR) ?? undefined;
 		this.minimapFrame = this.minimapAnchor?.querySelector<HTMLElement>(PANEL_FRAME) ?? undefined;
+		this.mediaRail = this.minimapAnchor?.closest<HTMLElement>(MEDIA_RAIL) ?? undefined;
 		this.stickyHeader = this.root.querySelector<HTMLElement>(STICKY_HEADER) ?? undefined;
 		this.stickyMinimapAction =
 			this.stickyHeader?.querySelector<HTMLElement>(STICKY_MINIMAP_ACTION) ?? undefined;
@@ -261,6 +264,9 @@ export class SpatialElementDockController {
 		this.restoreMinimap();
 		this.setMinimapSurfaceOpacity(decorationOpacity);
 		const minimapRect = toRect(this.minimapFrame.getBoundingClientRect());
+		// Thumbnail scrolling must not move the page's docking threshold. Measure
+		// the first thumbnail in its unscrolled rail while preserving outer/page scroll.
+		const minimapPageTop = minimapRect.top + (this.mediaRail?.scrollTop ?? 0) + this.scrollY;
 		const tabsWidth = this.sourceTabsList?.querySelector<HTMLElement>(TABS_LINKS)?.scrollWidth ?? 0;
 		const metrics = this.readLayoutMetrics?.() ?? {
 			width: window.innerWidth, height: window.innerHeight,
@@ -306,10 +312,10 @@ export class SpatialElementDockController {
 		this.root.style.setProperty('--spatial-element-summary-sticky-top', `${this.stickyHeaderBottom + 10}px`);
 		this.measureDepartingContent();
 		this.breakpoint = getSpatialElementDockBreakpoint(
-			minimapRect.top + this.scrollY,
+			minimapPageTop,
 			this.minimapDock.top
 		);
-		this.presentationEndScrollY = Math.max(minimapRect.top + this.scrollY + minimapRect.height, 0);
+		this.presentationEndScrollY = Math.max(minimapPageTop + minimapRect.height, 0);
 		this.stickyHeader.style.setProperty('--spatial-element-sticky-minimap-reserve', `${geometry.titleReserve}px`);
 		this.root.style.setProperty('--spatial-element-section-scroll-offset', `${geometry.sectionOffset}px`);
 

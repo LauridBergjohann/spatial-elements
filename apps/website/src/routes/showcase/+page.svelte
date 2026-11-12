@@ -6,6 +6,7 @@
 	} from '@spatial-elements/sveltekit';
 	import { HeadingSection, Section } from '@page-sections/svelte';
 	import { showcaseElements as elements } from '$lib/showcase/collection';
+	import { showcaseHdr } from '$lib/showcase/optimized';
 </script>
 
 <ContentPage
@@ -13,15 +14,14 @@
 		title: 'Showcase',
 		breadcrumbs: []
 	}}
-	hdr="/assets/lobe.hdr"
+	hdr={showcaseHdr}
 >
 	<HeadingSection
 		section={{
 			id: 'page-heading',
 			title: 'Showcase',
 			headingLevel: 1,
-			introduction:
-				'Tools and timepieces in one spatial collection. Explore eight Wera tools and a Rolex watch. These products cannot be purchased here.'
+			introduction: `Tools, desk essentials, industrial components and a timepiece. Explore ${elements.length} models from Wera, Logitech, item and Rolex, with product photographs and videos where available. This is a demonstration, not a shop.`
 		}}
 	/>
 	<Section
@@ -32,14 +32,15 @@
 			· <a href="/showcase/categories/mixed/">Mixed composition</a>
 		</p>
 		<p>
-			For products and purchasing information, visit <a href="https://www.wera.de/">Wera</a> or
-			<a href="https://www.rolex.com/">Rolex</a>.
+			For products and purchasing information, visit <a href="https://www.wera.de/">Wera</a>,
+			<a href="https://www.logitech.com/">Logitech</a>,
+			<a href="https://www.item24.com/">item</a> or <a href="https://www.rolex.com/">Rolex</a>.
 		</p></Section
 	>
 	<SpatialCardGridSection
 		section={{ id: 'collection', title: 'The collection', headline: 'The collection' }}
 		list={getSpatialListItems(elements, '/showcase/elements')}
-		cardSize="m"
+		cardSize="l"
 		cardTone="muted"
 		mediaAspect="3/2"
 	/>

@@ -7,14 +7,15 @@
 	} from '@spatial-elements/sveltekit';
 	import { HeadingSection, Section } from '@page-sections/svelte';
 	import { showcaseElements as elements } from '$lib/showcase/collection';
+	import { showcaseHdr } from '$lib/showcase/optimized';
 	const items = getSpatialListItems(elements, '/showcase/elements');
 </script>
 
 <ContentPage
-	hdr="/assets/lobe.hdr"
+	hdr={showcaseHdr}
 	page={{
-		title: 'Showcase · mixed',
-		breadcrumbs: [{ label: 'Showcase', href: '/showcase/' }, { label: 'mixed' }]
+		title: 'Showcase · Mixed composition',
+		breadcrumbs: [{ label: 'Showcase', href: '/showcase/' }, { label: 'Mixed composition' }]
 	}}
 >
 	<HeadingSection
@@ -41,7 +42,7 @@
 		}}
 		list={items}
 		cardTone="muted"
-		cardSize="m"
+		cardSize="l"
 		mediaAspect="3/2"
 	/>
 	<SpatialCarouselSection

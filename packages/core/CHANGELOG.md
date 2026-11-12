@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- Scrolling inside a long detail media rail no longer docks the page header prematurely or blocks the first thumbnail. The dock threshold follows the page position independently of the rail's own scroll offset.
+- Allow small image thumbnails independently of full-resolution media. Expand the website showcase with reviewed Wera, Logitech and item geometry, bounded WebP images and actual-model fallback renders; preserve sensitive overlapping grip surfaces while reducing material submissions and texture memory.
+- Avoid resolving and copying styles for hidden navigation subtrees during transitions. Preserve the displayed image URL in decorative snapshots so route changes do not trigger broken or duplicate responsive-image requests.
 - Match transitions using registered spatial element identities and authored links instead of URL conventions. Support grid-to-grid and carousel-to-carousel transitions alongside mixed layouts, and preserve history navigation across arbitrary route prefixes.
 
 ### Minor Changes

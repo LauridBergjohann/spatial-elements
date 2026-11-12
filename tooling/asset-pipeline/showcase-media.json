@@ -1,0 +1,274 @@
+{
+	"schemaVersion": 1,
+	"products": [
+		{
+			"id": "joker",
+			"directory": "wera Joker",
+			"images": [
+				{
+					"source": "joker.png",
+					"alt": "Wera Joker wrench with its open end and ratchet ring",
+					"label": "Complete wrench"
+				},
+				{
+					"source": "csm_Application-image-wrench-019_f75dbc598c.webp",
+					"alt": "Joker wrench being used on a threaded assembly",
+					"label": "Working on an assembly"
+				},
+				{
+					"source": "csm_Application-image-wrench-052_9c0356c8e6.webp",
+					"alt": "Close view of the Joker wrench around a nut",
+					"label": "Wrench head in use"
+				},
+				{
+					"source": "csm_Application-image-wrench-053_9965259097.webp",
+					"alt": "Joker wrench in a confined metal assembly",
+					"label": "Access in tight spaces"
+				}
+			]
+		},
+		{
+			"id": "ph-kreuzschlitz",
+			"directory": "ph kreuzschlitz",
+			"images": [
+				{
+					"source": "350_ph.webp",
+					"alt": "Phillips screwdriver with a green and black Kraftform handle",
+					"label": "Complete screwdriver"
+				},
+				{
+					"source": "_10144.webp",
+					"alt": "Technician working with a screwdriver inside a machine",
+					"label": "Screwdriver in use"
+				}
+			]
+		},
+		{
+			"id": "kraftform-kompakt",
+			"directory": "wera kraftform kompakt",
+			"images": [
+				{
+					"source": "kraftform_kompakt_w1_wartung.webp",
+					"alt": "Open Wera tool case with a handle, sockets, bits and other tools",
+					"label": "The complete tool collection"
+				}
+			]
+		},
+		{
+			"id": "kraftform-kompakt-20",
+			"directory": "wera kraftform kompakt 20",
+			"images": [
+				{
+					"source": "kraftform_kompakt_20_tool_finder_1.webp",
+					"alt": "Kraftform Kompakt 20 handle, detachable blade and storage pouch",
+					"label": "Handle, blade and pouch"
+				},
+				{
+					"source": "kk20__toolfinder_1_vorteil_griff_wechselklingensystem.webp",
+					"alt": "Kraftform Kompakt 20 with its blade extended and a selection of bits",
+					"label": "Interchangeable bits"
+				},
+				{
+					"source": "Vorteil_KK20_2.webp",
+					"alt": "Hand extending the Kraftform Kompakt 20 blade",
+					"label": "Extending the blade"
+				},
+				{
+					"source": "ANW_KK20_Multicolour_3226_CB.webp",
+					"alt": "Technician using a Kraftform Kompakt tool overhead",
+					"label": "Tool in use"
+				}
+			]
+		},
+		{
+			"id": "kraftform-xxl",
+			"directory": "wera kraftform xxl",
+			"images": [
+				{
+					"source": "kraftform_xxl.webp",
+					"alt": "Kraftform XXL screwdriver collection arranged in two holders",
+					"label": "The screwdriver collection"
+				}
+			]
+		},
+		{
+			"id": "winkelschluessel",
+			"directory": "wera winkelschlüssel",
+			"images": [
+				{
+					"source": "950_9_hex-plus_multicolour_2.webp",
+					"alt": "Colour-coded Hex-Plus L-keys in a black Wera storage clip",
+					"label": "Colour-coded L-keys"
+				}
+			]
+		},
+		{
+			"id": "zyklop-speed",
+			"directory": "wera zyklop speed",
+			"images": [
+				{
+					"source": "8000_a.webp",
+					"alt": "Zyklop Speed ratchet with a green and black Kraftform handle",
+					"label": "Complete ratchet"
+				},
+				{
+					"source": "_10334.webp",
+					"alt": "Technician working with a ratchet inside a metal structure",
+					"label": "Ratchet in use"
+				}
+			]
+		},
+		{
+			"id": "logitech-brio-500",
+			"directory": "Logitech Brio 500",
+			"images": [
+				{
+					"source": "brio-500-gallery-graphite-1.webp",
+					"alt": "Graphite Logitech Brio 500 webcam and adjustable monitor mount",
+					"label": "Camera and monitor mount"
+				},
+				{
+					"source": "brio-500-gallery-graphite-2.webp",
+					"alt": "Brio 500 with its integrated privacy shutter closed",
+					"label": "Closed privacy shutter"
+				},
+				{
+					"source": "brio-500-gallery-graphite-3.webp",
+					"alt": "Front view of the Brio 500 webcam and monitor mount",
+					"label": "Front view"
+				},
+				{
+					"source": "brio-500-gallery-graphite-4.webp",
+					"alt": "Brio 500 tilted on its monitor mount",
+					"label": "Adjustable camera angle"
+				},
+				{
+					"source": "brio-500-gallery-graphite-6.webp",
+					"alt": "Brio 500 camera body viewed straight on",
+					"label": "Camera body"
+				},
+				{
+					"source": "brio-500-gallery-graphite-8.webp",
+					"alt": "Side view of the Brio 500, its mount and attached USB cable",
+					"label": "Mount and cable"
+				},
+				{
+					"source": "brio-500-video-thumbnail.webp",
+					"alt": "Brio 500 webcam mounted above a monitor showing a video call",
+					"label": "Brio 500 video preview",
+					"role": "video-poster"
+				}
+			]
+		},
+		{
+			"id": "logitech-ergo-k860",
+			"directory": "Logitech Ergo K860",
+			"images": [
+				{
+					"source": "ergo-k860-gallery-1-deu-new.webp",
+					"alt": "Logitech ERGO K860 keyboard with German keys and a wide wrist rest",
+					"label": "Keyboard and wrist rest"
+				},
+				{
+					"source": "ergo-k860-gallery-deu-wide-2.webp",
+					"alt": "Low front view showing the curved ERGO K860 key frame",
+					"label": "Curved key frame"
+				},
+				{
+					"source": "ergo-k860-gallery-deu-wide-3.webp",
+					"alt": "Angled view of the ERGO K860 split key layout and number pad",
+					"label": "Split layout from above"
+				},
+				{
+					"source": "ergo-k860-video-thumbnail.webp",
+					"alt": "ERGO K860 keyboard on a desk with its model name above it",
+					"label": "ERGO K860 video preview",
+					"role": "video-poster"
+				}
+			]
+		},
+		{
+			"id": "logitech-m750",
+			"directory": "Logitech M750",
+			"images": [
+				{
+					"source": "m750-large-graphite-top-angle-gallery-1.webp",
+					"alt": "Top view of the graphite Logitech Signature Plus M750 L mouse",
+					"label": "Top view"
+				},
+				{
+					"source": "m750-large-graphite-3qtr-back-angle-gallery-2.webp",
+					"alt": "Rear three-quarter view of the M750 L and its side buttons",
+					"label": "Rear and side buttons"
+				},
+				{
+					"source": "m750-large-graphite-bottom-angle-gallery-3.webp",
+					"alt": "Underside of the M750 L mouse showing the sensor and controls",
+					"label": "Underside and controls"
+				},
+				{
+					"source": "m750-large-graphite-profile-angle-gallery-4.webp",
+					"alt": "Side profile of the M750 L with its textured grip and side buttons",
+					"label": "Side profile"
+				},
+				{
+					"source": "m750-large-graphite-3qtr-front-angle-gallery-5.webp",
+					"alt": "Front three-quarter view of the M750 L wheel and contoured body",
+					"label": "Wheel and contoured body"
+				},
+				{
+					"source": "m750-mouse-graphite-lifestyle-gallery-1.webp",
+					"alt": "Graphite M750 mouse on a blue pad beside a keyboard",
+					"label": "Mouse on a desk"
+				},
+				{
+					"source": "m750-mouse-graphite-lifestyle-gallery-2.webp",
+					"alt": "A hand using the M750 mouse beside a keyboard",
+					"label": "Mouse in use"
+				}
+			]
+		},
+		{
+			"id": "logitech-z407",
+			"directory": "Logitech Z407",
+			"images": [
+				{
+					"source": "z407-gallery-01.webp",
+					"alt": "Logitech Z407 subwoofer, two upright satellite speakers and wireless dial",
+					"label": "The complete speaker system"
+				},
+				{
+					"source": "z407-gallery-02.webp",
+					"alt": "Z407 satellite speakers shown upright and horizontal",
+					"label": "Two speaker orientations"
+				},
+				{
+					"source": "z407-gallery-03.webp",
+					"alt": "Single Z407 satellite speaker beside the wireless control dial",
+					"label": "Speaker and wireless dial"
+				},
+				{
+					"source": "z407-gallery-04.webp",
+					"alt": "Top view of the round Z407 wireless control dial",
+					"label": "Wireless control dial"
+				},
+				{
+					"source": "z407-gallery-05.webp",
+					"alt": "Underside of the Z407 wireless dial showing its controls",
+					"label": "Dial controls"
+				},
+				{
+					"source": "z407-bluetooth-speaker-video-thumbnail.webp",
+					"alt": "Z407 speaker system arranged with one horizontal satellite",
+					"label": "Z407 system video preview",
+					"role": "video-poster"
+				},
+				{
+					"source": "z407-video-thumbnail.webp",
+					"alt": "Z407 speakers and a subwoofer arranged around a desktop computer",
+					"label": "Speakers in a desktop setup"
+				}
+			]
+		}
+	]
+}

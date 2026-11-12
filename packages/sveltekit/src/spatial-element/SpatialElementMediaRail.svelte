@@ -41,7 +41,7 @@
 	});
 </script>
 
-<aside bind:this={rail} class="spatial-element-rail" aria-label="SpatialElement images">
+<aside bind:this={rail} class="spatial-element-rail" data-spatial-element-media-rail aria-label="SpatialElement images">
 	{#each spatialElement.media as media (media.id)}
 		{@const active = selectedId ? selectedId === media.id : media.kind === 'minimap'}
 		<div

@@ -1,0 +1,224 @@
+{
+	"tool-check-plus": {
+		"camera": {
+			"azimuth": 15,
+			"elevation": 60,
+			"fitScale": 1.1
+		},
+		"minimap": {
+			"hoverModelScale": 1.2,
+			"expandedHoverModelScale": 1.05
+		}
+	},
+	"joker": {
+		"camera": {
+			"azimuth": 30,
+			"elevation": 60,
+			"fitScale": 1.2
+		},
+		"minimap": {
+			"hoverModelScale": 1.2,
+			"expandedHoverModelScale": 1.15
+		}
+	},
+	"kraftform-xxl": {
+		"camera": {
+			"azimuth": 40,
+			"elevation": 20,
+			"fitScale": 1.1
+		},
+		"minimap": {
+			"hoverModelScale": 1.2,
+			"expandedHoverModelScale": 1.15
+		}
+	},
+	"ph-kreuzschlitz": {
+		"camera": {
+			"azimuth": -135,
+			"elevation": 35,
+			"fitScale": 1.5
+		},
+		"minimap": {
+			"modelScale": 1.9,
+			"hoverModelScale": 1.6,
+			"expandedHoverModelScale": 0.95,
+			"dockedView": {
+				"scale": 1.2,
+				"azimuth": -135,
+				"elevation": 35
+			}
+		}
+	},
+	"kraftform-kompakt": {
+		"camera": {
+			"azimuth": 5,
+			"elevation": 60,
+			"fitScale": 1.1
+		},
+		"minimap": {
+			"hoverModelScale": 1.2,
+			"expandedHoverModelScale": 1.15,
+			"dockedView": {
+				"scale": 1.6
+			}
+		}
+	},
+	"kraftform-kompakt-20": {
+		"camera": {
+			"azimuth": -55,
+			"elevation": 30,
+			"fitScale": 1.5
+		},
+		"minimap": {
+			"modelScale": 1.9,
+			"hoverModelScale": 1.6,
+			"expandedHoverModelScale": 0.5,
+			"dockedView": {
+				"scale": 1.2,
+				"azimuth": -55,
+				"elevation": 30
+			}
+		}
+	},
+	"winkelschluessel": {
+		"model": {
+			"rotation": {
+				"z": 1.5707963267948966
+			}
+		},
+		"camera": {
+			"azimuth": 20,
+			"elevation": 20,
+			"fitScale": 1.5
+		},
+		"minimap": {
+			"modelScale": 1.2,
+			"hoverModelScale": 1.4,
+			"expandedHoverModelScale": 1,
+			"dockedView": {
+				"azimuth": 0,
+				"elevation": 0,
+				"scale": 1.2
+			}
+		}
+	},
+	"zyklop-speed": {
+		"model": {
+			"rotation": {
+				"x": 1.5707963267948966
+			}
+		},
+		"camera": {
+			"azimuth": 35,
+			"elevation": 30,
+			"fitScale": 1.6
+		},
+		"minimap": {
+			"modelScale": 1,
+			"hoverModelScale": 1.4,
+			"expandedHoverModelScale": 1.2,
+			"dockedView": {
+				"scale": 1.4
+			}
+		}
+	},
+	"chronograph": {
+		"model": {
+			"rotation": {
+				"x": 0.7853981633974483
+			},
+			"excludeMeshes": ["floor"],
+			"materialOverrides": {
+				"glass": {
+					"type": "physical",
+					"color": "#020205",
+					"transparent": true,
+					"opacity": 0.8,
+					"metalness": 0,
+					"roughness": 0,
+					"iridescence": 0.3,
+					"clearcoat": 1,
+					"blending": "additive"
+				}
+			}
+		},
+		"camera": {
+			"fitScale": 1.25,
+			"azimuth": 30,
+			"elevation": 20
+		},
+		"minimap": {
+			"modelScale": 1.4,
+			"hoverModelScale": 1.6,
+			"expandedHoverModelScale": 1.05,
+			"dockedView": {
+				"scale": 1.2,
+				"azimuth": -20,
+				"elevation": 20
+			}
+		}
+	},
+	"logitech-brio-500": {
+		"camera": {
+			"azimuth": 30,
+			"elevation": 20,
+			"fitScale": 1.15
+		}
+	},
+	"logitech-ergo-k860": {
+		"camera": {
+			"azimuth": -20,
+			"elevation": 42,
+			"fitScale": 1.15
+		}
+	},
+	"logitech-m750": {
+		"camera": {
+			"azimuth": 30,
+			"elevation": 20,
+			"fitScale": 1.15
+		}
+	},
+	"logitech-z407": {
+		"camera": {
+			"azimuth": 30,
+			"elevation": 20,
+			"fitScale": 1.15
+		}
+	},
+	"item-profile": {
+		"camera": {
+			"azimuth": 30,
+			"elevation": 20,
+			"fitScale": 1.15
+		}
+	},
+	"item-connector": {
+		"camera": {
+			"azimuth": 30,
+			"elevation": 20,
+			"fitScale": 1.15
+		}
+	},
+	"item-end-cap": {
+		"camera": {
+			"azimuth": 30,
+			"elevation": 20,
+			"fitScale": 1.15
+		}
+	},
+	"item-impact-protector": {
+		"camera": {
+			"azimuth": 30,
+			"elevation": 20,
+			"fitScale": 1.15
+		}
+	},
+	"item-robot": {
+		"camera": {
+			"azimuth": 30,
+			"elevation": 20,
+			"fitScale": 1.15
+		}
+	}
+}

@@ -1,20 +1,20 @@
 <script lang="ts">
 	import {
 		ContentPage,
-		SpatialCardGridSection,
 		SpatialCarouselSection,
 		getSpatialListItems
 	} from '@spatial-elements/sveltekit';
 	import { HeadingSection, Section } from '@page-sections/svelte';
 	import { showcaseElements as elements } from '$lib/showcase/collection';
+	import { showcaseHdr } from '$lib/showcase/optimized';
 	const items = getSpatialListItems(elements, '/showcase/elements');
 </script>
 
 <ContentPage
-	hdr="/assets/lobe.hdr"
+	hdr={showcaseHdr}
 	page={{
-		title: 'Showcase · carousel',
-		breadcrumbs: [{ label: 'Showcase', href: '/showcase/' }, { label: 'carousel' }]
+		title: 'Showcase · Carousel',
+		breadcrumbs: [{ label: 'Showcase', href: '/showcase/' }, { label: 'Carousel' }]
 	}}
 >
 	<HeadingSection

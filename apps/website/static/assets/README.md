@@ -1,9 +1,15 @@
-# Showcase assets
+# Website assets
 
-Add your own GLB models, HDR environments, images and videos here. They are served
-at `/assets/...`. No content from the retired private brand-examples repository is
-copied into this application. Only commit assets that may be distributed publicly.
+- `showcase/<product-id>/`: the product's lightweight and detailed GLBs, rendered
+  WebP poster, and numbered WebP photographs with smaller responsive variants.
+- `environments/studio.hdr`: the shared 1024 × 512 showcase lighting environment.
+- `draco/gltf/`: the locally served Draco decoder used by compressed models.
+- `demo/`: generated examples copied from `fixtures/demo-assets` during builds;
+  these files are ignored by Git.
 
-`studio.hdr` is the original, constant-color environment from
-`fixtures/demo-assets/studio.hdr` (MPL-2.0). Replace it with your own environment
-when authoring the showcase scenes.
+Product descriptions, media and presentation settings are authored in
+`apps/website/src/lib/showcase`. Original product files remain outside the website
+in the author's source library. They are not copied into deployed output.
+
+See `tooling/asset-pipeline/README.md` for reproducible model, photo and poster
+generation and quality checks, and `ATTRIBUTION.md` for asset provenance.

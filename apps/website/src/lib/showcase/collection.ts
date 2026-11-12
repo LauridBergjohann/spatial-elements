@@ -1,4 +1,4 @@
-import { weraSpatialElements } from './wera';
-import { watchesSpatialElements } from './watches';
+import { optimizedSpatialElement } from './optimized';
+import { showcaseProducts } from './products';
 
-export const showcaseElements = [...weraSpatialElements, ...watchesSpatialElements];
+export const showcaseElements = showcaseProducts.map(optimizedSpatialElement);

@@ -1,5 +1,10 @@
 <script module lang="ts">
-	export const examples: Array<{ language: string; code: string }> = [];
+	export const examples: Array<{ language: string; code: string }> = [
+		{
+			language: 'sh',
+			code: 'npm run assets:showcase\nnpm run assets:showcase:render\nnpm run assets:showcase:check\n'
+		}
+	];
 </script>
 
 <script lang="ts">
@@ -73,15 +78,57 @@
 				measurements.
 			</p>
 			<p>
-				The public procedural fixtures are reproducible and redistributable. Brand production
-				sources, optimized outputs, comparison images and their provenance remain in the private
-				application. See <a href="/docs/sections/composition/">authoring</a> for consumer
-				configuration and
-				<a
-					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/migration-audit.md"
-					>migration audit</a
-				> for preservation of historical evidence.
+				The procedural fixtures are reproducible and redistributable. The website also serves
+				prepared product models and photographs for its <a href="/showcase/">public showcase</a>.
+				These product assets have separate provenance and rights; they are not part of the package
+				license. See <a href="/docs/sections/composition/">authoring</a> for consumer configuration
+				and the <a href="/assets/ATTRIBUTION.md">asset attribution</a> for the website's media.
 			</p>
 		</div></Section
 	>
+	<Section
+		section={{
+			id: 'showcase-pipeline',
+			title: 'Preparing a product collection',
+			headline: 'Preparing a product collection',
+			background: { color: 'standard', size: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				The showcase keeps the product description, photos, presentation pose and geometry manifests
+				separate. One product ID joins them together. Generated assets live in
+				<code>apps/website/static/assets/showcase/&lt;product-id&gt;/</code>; source assets remain
+				outside the published static directory.
+			</p>
+			<p>
+				Each model has a low-detail variant for category grids, carousels and minimaps, and a
+				higher-detail variant for the product view. Simplification preserves their common frame and
+				reuses the source's materials, textures and normal maps where present. Texture resizing and
+				material consolidation reduce work as well as triangle counts. This pipeline does not
+				automatically bake arbitrary geometric detail into new normal maps.
+			</p>
+			<p>
+				Fallback images use the same authored model pose and camera orientation as the detail view.
+				The transparent 1024 × 1024 WebP remains useful while the interactive model loads, without
+				JavaScript or on a browser without WebGPU. Supplied photographs are converted to WebP
+				without upscaling, with a 1600-pixel maximum edge and smaller 640-pixel alternatives for
+				responsive galleries and media selectors.
+			</p>
+			<CodeBlock
+				code={examples[0].code}
+				language={examples[0].language}
+				highlighted={data.highlights[0]}
+			/>
+			<p>
+				Run these commands from the repository root. Generation needs the source collection; poster
+				rendering also needs a browser with WebGPU. The committed outputs are sufficient to build
+				the website. The <a
+					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/tooling/asset-pipeline/README.md"
+					>asset pipeline instructions</a
+				> describe the inputs, commands and quality checks. Inspect silhouettes, materials and Low/High
+				alignment alongside the generated resource reports before publishing a new model.
+			</p>
+		</div>
+	</Section>
 </WebsitePage>

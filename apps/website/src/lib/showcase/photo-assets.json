@@ -1,0 +1,697 @@
+[
+  {
+    "productId": "joker",
+    "images": [
+      {
+        "id": "joker-image-01",
+        "alt": "Wera Joker wrench with its open end and ratchet ring",
+        "label": "Complete wrench",
+        "role": "gallery",
+        "src": "/assets/showcase/joker/joker-image-01.webp",
+        "width": 341,
+        "height": 192,
+        "bytes": 4880,
+        "small": {
+          "src": "/assets/showcase/joker/joker-image-01.webp",
+          "width": 341,
+          "height": 192,
+          "bytes": 4880
+        }
+      },
+      {
+        "id": "joker-image-02",
+        "alt": "Joker wrench being used on a threaded assembly",
+        "label": "Working on an assembly",
+        "role": "gallery",
+        "src": "/assets/showcase/joker/joker-image-02.webp",
+        "width": 1013,
+        "height": 570,
+        "bytes": 37796,
+        "small": {
+          "src": "/assets/showcase/joker/joker-image-02-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 16070
+        }
+      },
+      {
+        "id": "joker-image-03",
+        "alt": "Close view of the Joker wrench around a nut",
+        "label": "Wrench head in use",
+        "role": "gallery",
+        "src": "/assets/showcase/joker/joker-image-03.webp",
+        "width": 1013,
+        "height": 571,
+        "bytes": 33940,
+        "small": {
+          "src": "/assets/showcase/joker/joker-image-03-small.webp",
+          "width": 640,
+          "height": 361,
+          "bytes": 12078
+        }
+      },
+      {
+        "id": "joker-image-04",
+        "alt": "Joker wrench in a confined metal assembly",
+        "label": "Access in tight spaces",
+        "role": "gallery",
+        "src": "/assets/showcase/joker/joker-image-04.webp",
+        "width": 1013,
+        "height": 570,
+        "bytes": 38560,
+        "small": {
+          "src": "/assets/showcase/joker/joker-image-04-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 12970
+        }
+      }
+    ]
+  },
+  {
+    "productId": "ph-kreuzschlitz",
+    "images": [
+      {
+        "id": "ph-kreuzschlitz-image-01",
+        "alt": "Phillips screwdriver with a green and black Kraftform handle",
+        "label": "Complete screwdriver",
+        "role": "gallery",
+        "src": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-image-01.webp",
+        "width": 832,
+        "height": 832,
+        "bytes": 9126,
+        "small": {
+          "src": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-image-01-small.webp",
+          "width": 640,
+          "height": 640,
+          "bytes": 6440
+        }
+      },
+      {
+        "id": "ph-kreuzschlitz-image-02",
+        "alt": "Technician working with a screwdriver inside a machine",
+        "label": "Screwdriver in use",
+        "role": "gallery",
+        "src": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-image-02.webp",
+        "width": 1013,
+        "height": 570,
+        "bytes": 68906,
+        "small": {
+          "src": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-image-02-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 30182
+        }
+      }
+    ]
+  },
+  {
+    "productId": "kraftform-kompakt",
+    "images": [
+      {
+        "id": "kraftform-kompakt-image-01",
+        "alt": "Open Wera tool case with a handle, sockets, bits and other tools",
+        "label": "The complete tool collection",
+        "role": "gallery",
+        "src": "/assets/showcase/kraftform-kompakt/kraftform-kompakt-image-01.webp",
+        "width": 600,
+        "height": 600,
+        "bytes": 25666,
+        "small": {
+          "src": "/assets/showcase/kraftform-kompakt/kraftform-kompakt-image-01.webp",
+          "width": 600,
+          "height": 600,
+          "bytes": 25666
+        }
+      }
+    ]
+  },
+  {
+    "productId": "kraftform-kompakt-20",
+    "images": [
+      {
+        "id": "kraftform-kompakt-20-image-01",
+        "alt": "Kraftform Kompakt 20 handle, detachable blade and storage pouch",
+        "label": "Handle, blade and pouch",
+        "role": "gallery",
+        "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-01.webp",
+        "width": 832,
+        "height": 832,
+        "bytes": 62738,
+        "small": {
+          "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-01-small.webp",
+          "width": 640,
+          "height": 640,
+          "bytes": 35962
+        }
+      },
+      {
+        "id": "kraftform-kompakt-20-image-02",
+        "alt": "Kraftform Kompakt 20 with its blade extended and a selection of bits",
+        "label": "Interchangeable bits",
+        "role": "gallery",
+        "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-02.webp",
+        "width": 416,
+        "height": 416,
+        "bytes": 5458,
+        "small": {
+          "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-02.webp",
+          "width": 416,
+          "height": 416,
+          "bytes": 5458
+        }
+      },
+      {
+        "id": "kraftform-kompakt-20-image-03",
+        "alt": "Hand extending the Kraftform Kompakt 20 blade",
+        "label": "Extending the blade",
+        "role": "gallery",
+        "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-03.webp",
+        "width": 416,
+        "height": 416,
+        "bytes": 4142,
+        "small": {
+          "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-03.webp",
+          "width": 416,
+          "height": 416,
+          "bytes": 4142
+        }
+      },
+      {
+        "id": "kraftform-kompakt-20-image-04",
+        "alt": "Technician using a Kraftform Kompakt tool overhead",
+        "label": "Tool in use",
+        "role": "gallery",
+        "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-04.webp",
+        "width": 1013,
+        "height": 570,
+        "bytes": 60286,
+        "small": {
+          "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-04-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 23060
+        }
+      }
+    ]
+  },
+  {
+    "productId": "kraftform-xxl",
+    "images": [
+      {
+        "id": "kraftform-xxl-image-01",
+        "alt": "Kraftform XXL screwdriver collection arranged in two holders",
+        "label": "The screwdriver collection",
+        "role": "gallery",
+        "src": "/assets/showcase/kraftform-xxl/kraftform-xxl-image-01.webp",
+        "width": 832,
+        "height": 832,
+        "bytes": 43404,
+        "small": {
+          "src": "/assets/showcase/kraftform-xxl/kraftform-xxl-image-01-small.webp",
+          "width": 640,
+          "height": 640,
+          "bytes": 31982
+        }
+      }
+    ]
+  },
+  {
+    "productId": "winkelschluessel",
+    "images": [
+      {
+        "id": "winkelschluessel-image-01",
+        "alt": "Colour-coded Hex-Plus L-keys in a black Wera storage clip",
+        "label": "Colour-coded L-keys",
+        "role": "gallery",
+        "src": "/assets/showcase/winkelschluessel/winkelschluessel-image-01.webp",
+        "width": 832,
+        "height": 832,
+        "bytes": 24876,
+        "small": {
+          "src": "/assets/showcase/winkelschluessel/winkelschluessel-image-01-small.webp",
+          "width": 640,
+          "height": 640,
+          "bytes": 17854
+        }
+      }
+    ]
+  },
+  {
+    "productId": "zyklop-speed",
+    "images": [
+      {
+        "id": "zyklop-speed-image-01",
+        "alt": "Zyklop Speed ratchet with a green and black Kraftform handle",
+        "label": "Complete ratchet",
+        "role": "gallery",
+        "src": "/assets/showcase/zyklop-speed/zyklop-speed-image-01.webp",
+        "width": 832,
+        "height": 832,
+        "bytes": 12522,
+        "small": {
+          "src": "/assets/showcase/zyklop-speed/zyklop-speed-image-01-small.webp",
+          "width": 640,
+          "height": 640,
+          "bytes": 9072
+        }
+      },
+      {
+        "id": "zyklop-speed-image-02",
+        "alt": "Technician working with a ratchet inside a metal structure",
+        "label": "Ratchet in use",
+        "role": "gallery",
+        "src": "/assets/showcase/zyklop-speed/zyklop-speed-image-02.webp",
+        "width": 1013,
+        "height": 570,
+        "bytes": 55490,
+        "small": {
+          "src": "/assets/showcase/zyklop-speed/zyklop-speed-image-02-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 24450
+        }
+      }
+    ]
+  },
+  {
+    "productId": "logitech-brio-500",
+    "images": [
+      {
+        "id": "logitech-brio-500-image-01",
+        "alt": "Graphite Logitech Brio 500 webcam and adjustable monitor mount",
+        "label": "Camera and monitor mount",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-01.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 51878,
+        "small": {
+          "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-01-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 10728
+        }
+      },
+      {
+        "id": "logitech-brio-500-image-02",
+        "alt": "Brio 500 with its integrated privacy shutter closed",
+        "label": "Closed privacy shutter",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-02.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 52660,
+        "small": {
+          "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-02-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 10402
+        }
+      },
+      {
+        "id": "logitech-brio-500-image-03",
+        "alt": "Front view of the Brio 500 webcam and monitor mount",
+        "label": "Front view",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-03.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 35430,
+        "small": {
+          "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-03-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 6370
+        }
+      },
+      {
+        "id": "logitech-brio-500-image-04",
+        "alt": "Brio 500 tilted on its monitor mount",
+        "label": "Adjustable camera angle",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-04.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 42798,
+        "small": {
+          "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-04-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 9238
+        }
+      },
+      {
+        "id": "logitech-brio-500-image-05",
+        "alt": "Brio 500 camera body viewed straight on",
+        "label": "Camera body",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-05.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 20280,
+        "small": {
+          "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-05-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 4928
+        }
+      },
+      {
+        "id": "logitech-brio-500-image-06",
+        "alt": "Side view of the Brio 500, its mount and attached USB cable",
+        "label": "Mount and cable",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-06.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 28758,
+        "small": {
+          "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-06-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 6946
+        }
+      },
+      {
+        "id": "logitech-brio-500-image-07",
+        "alt": "Brio 500 webcam mounted above a monitor showing a video call",
+        "label": "Brio 500 video preview",
+        "role": "video-poster",
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-07.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 45424,
+        "small": {
+          "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-07-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 13284
+        }
+      }
+    ]
+  },
+  {
+    "productId": "logitech-ergo-k860",
+    "images": [
+      {
+        "id": "logitech-ergo-k860-image-01",
+        "alt": "Logitech ERGO K860 keyboard with German keys and a wide wrist rest",
+        "label": "Keyboard and wrist rest",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-01.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 116370,
+        "small": {
+          "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-01-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 19126
+        }
+      },
+      {
+        "id": "logitech-ergo-k860-image-02",
+        "alt": "Low front view showing the curved ERGO K860 key frame",
+        "label": "Curved key frame",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-02.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 51654,
+        "small": {
+          "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-02-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 10402
+        }
+      },
+      {
+        "id": "logitech-ergo-k860-image-03",
+        "alt": "Angled view of the ERGO K860 split key layout and number pad",
+        "label": "Split layout from above",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-03.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 68722,
+        "small": {
+          "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-03-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 13312
+        }
+      },
+      {
+        "id": "logitech-ergo-k860-image-04",
+        "alt": "ERGO K860 keyboard on a desk with its model name above it",
+        "label": "ERGO K860 video preview",
+        "role": "video-poster",
+        "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-04.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 94134,
+        "small": {
+          "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-04-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 22298
+        }
+      }
+    ]
+  },
+  {
+    "productId": "logitech-m750",
+    "images": [
+      {
+        "id": "logitech-m750-image-01",
+        "alt": "Top view of the graphite Logitech Signature Plus M750 L mouse",
+        "label": "Top view",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-01.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 19090,
+        "small": {
+          "src": "/assets/showcase/logitech-m750/logitech-m750-image-01-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 4678
+        }
+      },
+      {
+        "id": "logitech-m750-image-02",
+        "alt": "Rear three-quarter view of the M750 L and its side buttons",
+        "label": "Rear and side buttons",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-02.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 22662,
+        "small": {
+          "src": "/assets/showcase/logitech-m750/logitech-m750-image-02-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 4746
+        }
+      },
+      {
+        "id": "logitech-m750-image-03",
+        "alt": "Underside of the M750 L mouse showing the sensor and controls",
+        "label": "Underside and controls",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-03.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 22458,
+        "small": {
+          "src": "/assets/showcase/logitech-m750/logitech-m750-image-03-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 4918
+        }
+      },
+      {
+        "id": "logitech-m750-image-04",
+        "alt": "Side profile of the M750 L with its textured grip and side buttons",
+        "label": "Side profile",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-04.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 19200,
+        "small": {
+          "src": "/assets/showcase/logitech-m750/logitech-m750-image-04-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 3974
+        }
+      },
+      {
+        "id": "logitech-m750-image-05",
+        "alt": "Front three-quarter view of the M750 L wheel and contoured body",
+        "label": "Wheel and contoured body",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-05.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 23646,
+        "small": {
+          "src": "/assets/showcase/logitech-m750/logitech-m750-image-05-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 5190
+        }
+      },
+      {
+        "id": "logitech-m750-image-06",
+        "alt": "Graphite M750 mouse on a blue pad beside a keyboard",
+        "label": "Mouse on a desk",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-06.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 69086,
+        "small": {
+          "src": "/assets/showcase/logitech-m750/logitech-m750-image-06-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 15508
+        }
+      },
+      {
+        "id": "logitech-m750-image-07",
+        "alt": "A hand using the M750 mouse beside a keyboard",
+        "label": "Mouse in use",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-07.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 83658,
+        "small": {
+          "src": "/assets/showcase/logitech-m750/logitech-m750-image-07-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 15908
+        }
+      }
+    ]
+  },
+  {
+    "productId": "logitech-z407",
+    "images": [
+      {
+        "id": "logitech-z407-image-01",
+        "alt": "Logitech Z407 subwoofer, two upright satellite speakers and wireless dial",
+        "label": "The complete speaker system",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-01.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 27554,
+        "small": {
+          "src": "/assets/showcase/logitech-z407/logitech-z407-image-01-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 7840
+        }
+      },
+      {
+        "id": "logitech-z407-image-02",
+        "alt": "Z407 satellite speakers shown upright and horizontal",
+        "label": "Two speaker orientations",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-02.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 27284,
+        "small": {
+          "src": "/assets/showcase/logitech-z407/logitech-z407-image-02-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 7224
+        }
+      },
+      {
+        "id": "logitech-z407-image-03",
+        "alt": "Single Z407 satellite speaker beside the wireless control dial",
+        "label": "Speaker and wireless dial",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-03.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 18588,
+        "small": {
+          "src": "/assets/showcase/logitech-z407/logitech-z407-image-03-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 4896
+        }
+      },
+      {
+        "id": "logitech-z407-image-04",
+        "alt": "Top view of the round Z407 wireless control dial",
+        "label": "Wireless control dial",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-04.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 17534,
+        "small": {
+          "src": "/assets/showcase/logitech-z407/logitech-z407-image-04-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 4752
+        }
+      },
+      {
+        "id": "logitech-z407-image-05",
+        "alt": "Underside of the Z407 wireless dial showing its controls",
+        "label": "Dial controls",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-05.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 27528,
+        "small": {
+          "src": "/assets/showcase/logitech-z407/logitech-z407-image-05-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 7240
+        }
+      },
+      {
+        "id": "logitech-z407-image-06",
+        "alt": "Z407 speaker system arranged with one horizontal satellite",
+        "label": "Z407 system video preview",
+        "role": "video-poster",
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-06.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 13650,
+        "small": {
+          "src": "/assets/showcase/logitech-z407/logitech-z407-image-06-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 3928
+        }
+      },
+      {
+        "id": "logitech-z407-image-07",
+        "alt": "Z407 speakers and a subwoofer arranged around a desktop computer",
+        "label": "Speakers in a desktop setup",
+        "role": "gallery",
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-07.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 40152,
+        "small": {
+          "src": "/assets/showcase/logitech-z407/logitech-z407-image-07-small.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 9916
+        }
+      }
+    ]
+  }
+]

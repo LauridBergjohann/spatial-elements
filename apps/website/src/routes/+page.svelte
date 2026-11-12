@@ -16,10 +16,10 @@
 			introduction:
 				'Build interactive 3D collections and detail pages around real content. Shared layouts, persistent rendering and ordinary HTML bring models and stories together.',
 			image: {
-				src: '/assets/posters/optimized/watches-chronograph.png',
+				src: '/assets/showcase/chronograph/chronograph-poster.webp',
 				alt: 'A watch from the spatial showcase',
-				width: 640,
-				height: 640
+				width: 1024,
+				height: 1024
 			},
 			actions: [
 				{ label: 'Get started', href: '/getting-started/', variant: 'primary' },
