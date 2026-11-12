@@ -73,11 +73,11 @@
 					</button>
 				{:else if media.kind === 'image'}
 					<button type="button" aria-label={media.label} aria-pressed={active} onclick={() => onselect?.(media)} class="thumb thumb-image" class:active>
-						<img src={media.src} alt={media.alt} />
+						<img src={media.thumbnail ?? media.src} alt={media.alt} loading="lazy" decoding="async" />
 					</button>
 				{:else}
 					<button type="button" aria-label={media.label} aria-pressed={active} onclick={() => onselect?.(media)} class="thumb thumb-image" class:active>
-						{#if media.poster}<img src={media.poster} alt="" />{:else}<span aria-hidden="true">▶</span>{/if}
+						{#if media.poster}<img src={media.poster} alt="" loading="lazy" decoding="async" />{:else}<span aria-hidden="true">▶</span>{/if}
 					</button>
 				{/if}
 			</Panel>
@@ -154,7 +154,7 @@
 		transition: opacity 240ms ease;
 	}
 
-	:global(.stage-enhanced) .minimap-poster { opacity: 0; }
+	:global(.stage-enhanced[data-stage-page-ready]) .minimap-poster { opacity: 0; }
 
 	@media (prefers-reduced-motion: reduce) {
 		.minimap-poster { transition: none; }

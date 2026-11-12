@@ -158,7 +158,11 @@ export type SpatialElementMediaItem =
 	| { id: string; kind: 'minimap'; label: string }
 	/** @deprecated A drawing needs a real source. Use kind: 'image' instead. */
 	| { id: string; kind: 'drawing'; label: string }
-	| { id: string; kind: 'image'; label: string; src: string; alt: string }
+	| {
+		id: string; kind: 'image'; label: string; src: string; alt: string;
+		/** Smaller image for the media selector. The full view always uses src. */
+		thumbnail?: string;
+	}
 	| {
 		id: string; kind: 'video'; label: string; src: string; poster?: string;
 		/** Optional WebVTT caption tracks. Native controls remain available. */

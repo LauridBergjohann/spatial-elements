@@ -2,7 +2,7 @@
 	export const examples: Array<{ language: string; code: string }> = [
 		{
 			language: 'ts',
-			code: "media: [\n  { id: 'model', kind: 'minimap', label: '3D view' },\n  { id: 'front', kind: 'image', label: 'Front view', src: '/front.webp', alt: 'Front of the enclosure' },\n  { id: 'assembly', kind: 'video', label: 'Assembly', src: '/assembly.webm', poster: '/assembly.webp',\n    captions: [{ src: '/assembly-en.vtt', language: 'en', label: 'English', default: true }] },\n  { id: 'demo', kind: 'youtube', label: 'Demonstration', videoId: 'M7lc1UVf-VE' }\n]\n"
+			code: "media: [\n  { id: 'model', kind: 'minimap', label: '3D view' },\n  { id: 'front', kind: 'image', label: 'Front view', src: '/front.webp',\n    thumbnail: '/front-small.webp', alt: 'Front of the enclosure' },\n  { id: 'assembly', kind: 'video', label: 'Assembly', src: '/assembly.webm', poster: '/assembly.webp',\n    captions: [{ src: '/assembly-en.vtt', language: 'en', label: 'English', default: true }] },\n  { id: 'demo', kind: 'youtube', label: 'Demonstration', videoId: 'M7lc1UVf-VE' }\n]\n"
 		}
 	];
 </script>
@@ -47,6 +47,12 @@
 				Images need meaningful alt text. Use native WebVTT tracks for relevant audio. Replace the
 				old source-less <code>drawing</code> entry with a real <code>image</code>; missing source
 				data produces an unavailable message.
+			</p>
+			<p>
+				Provide an optional <code>thumbnail</code> for each image to keep the media selector light.
+				The rail loads these previews lazily; selecting an image uses its full <code>src</code>. A
+				small <code>poster</code> serves the same purpose for videos. Without a thumbnail, the rail uses
+				the image source directly.
 			</p>
 		</div></Section
 	>

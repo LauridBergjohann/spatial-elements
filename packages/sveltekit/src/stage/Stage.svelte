@@ -150,6 +150,9 @@
 	let status = $state('Loading stage');
 	let showStatus = $state(false);
 	let isEnhanced = $state(false);
+	// The device survives navigation; the destination still needs its own first
+	// submitted frame before its detail and minimap posters can fade away.
+	let isPageReady = $state(false);
 	let fullscreen = $state(false);
 	let fullscreenController: StageFullscreenController | undefined;
 	let isFallback = $state(true);
@@ -365,6 +368,7 @@
 
 			// Paint the prepared scene before posters and fallback surfaces start fading.
 			instance.flushCatalogFrame();
+			isPageReady = true;
 			isEnhanced = true;
 			isFallback = false;
 			showStatus = false;
@@ -553,6 +557,7 @@
 			experience?.releasePage();
 			setZoomFocusState(restingZoomFocus);
 		} finally {
+			if (!reuseCatalogPage) isPageReady = false;
 			// Leaving fullscreen refits the live camera and restores source DOM/scroll.
 			// Retain its visible pose and release page bindings before that mutation.
 			fullscreenController?.setFullscreen(false);
@@ -604,6 +609,7 @@
 					await transition?.play();
 					return;
 				}
+				isPageReady = false;
 				transition?.cancel();
 			}
 			if (nextPageBinding) {
@@ -656,6 +662,7 @@
 				]);
 				if (destroyed || generation !== navigationGeneration) return;
 			}
+			isPageReady = true;
 			isEnhanced = true;
 			isFallback = false;
 			stageState = 'enhanced';
@@ -869,6 +876,7 @@
 	class:stage-fallback={isFallback}
 	style:--stage-dom-opacity={domLayerOpacity}
 	data-stage-state={stageState}
+	data-stage-page-ready={isEnhanced && isPageReady ? '' : undefined}
 	data-stage-focus={zoomFocusState.focus.toFixed(3)}
 	data-stage-ui-focus={zoomFocusState.uiFocus.toFixed(3)}
 	data-stage-minimap-focus={zoomFocusState.minimapFocus.toFixed(3)}

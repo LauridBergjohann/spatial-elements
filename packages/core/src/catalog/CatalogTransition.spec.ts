@@ -165,7 +165,7 @@ describe('catalog transition DOM work', () => {
 		const activity: string[] = [];
 		const attached: unknown[] = [];
 		const createNode = (name: string) => ({
-			name, parentElement: null, dataset: {} as Record<string, string>, attributes: [],
+			name, parentElement: null, dataset: {} as Record<string, string>, attributes: [], children: [],
 			style: inlineStyle(() => activity.push('write')),
 			querySelectorAll: () => [], closest: () => null, matches: () => false,
 			hasAttribute: () => false, setAttribute: vi.fn(), removeAttribute: vi.fn(),

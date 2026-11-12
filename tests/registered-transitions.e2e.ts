@@ -80,6 +80,54 @@ test('authored card links animate into arbitrary detail routes and back through 
 	await animated(page, 'hero-to-list');
 });
 
+test('outgoing snapshots omit hidden menus and preserve relative images after a route change', async ({ page }) => {
+	const failedImages: string[] = [];
+	page.on('response', response => {
+		if (response.status() >= 400 && response.url().includes('column.svg')) failedImages.push(response.url());
+	});
+	await page.goto('/curated?stage-test=1');
+	await enhanced(page);
+	await observe(page);
+	await page.evaluate(async () => {
+		const shell = document.createElement('div');
+		shell.dataset.catalogShell = '';
+		shell.style.cssText = 'position:fixed;top:8px;left:8px;width:40px;height:40px;pointer-events:none;';
+		const picture = document.createElement('picture');
+		const candidate = document.createElement('source');
+		candidate.srcset = 'assets/demo/column.svg';
+		const image = document.createElement('img');
+		image.src = 'assets/demo/column.svg';
+		image.alt = 'Retained navigation image';
+		image.width = image.height = 40;
+		picture.append(candidate, image);
+		const hidden = document.createElement('nav');
+		hidden.className = 'hidden-snapshot-menu';
+		hidden.style.display = 'none';
+		for (let index = 0; index < 100; index++) hidden.append(document.createElement('span'));
+		shell.append(picture, hidden);
+		document.querySelector('.stage')!.append(shell);
+		await image.decode();
+		const samples: { src: string; hiddenChildren: number }[] = [];
+		Object.assign(window, { snapshotSamples: samples });
+		new MutationObserver(() => {
+			for (const copy of document.querySelectorAll('[data-catalog-shell-copy]')) {
+				const img = copy.querySelector<HTMLImageElement>('img[alt="Retained navigation image"]');
+				if (img) samples.push({ src: img.currentSrc || img.src,
+					hiddenChildren: copy.querySelector('.hidden-snapshot-menu')!.childElementCount });
+			}
+		}).observe(document.body, { childList: true, subtree: true });
+	});
+	await page.locator('[data-catalog-card][data-spatial-element-id="column"]').click();
+	await expect(page).toHaveURL(/\/story\/column$/);
+	await animated(page, 'list-to-hero');
+	const samples = await page.evaluate(() => (window as unknown as {
+		snapshotSamples: { src: string; hiddenChildren: number }[]
+	}).snapshotSamples);
+	expect(samples.length).toBeGreaterThan(0);
+	expect(samples.every(sample => sample.src.endsWith('/assets/demo/column.svg') && sample.hiddenChildren === 0)).toBe(true);
+	expect(failedImages).toEqual([]);
+});
+
 for (const [source, target, recipe] of [
 	['curated', 'gallery', 'list-to-list'],
 	['curated', 'exhibition', 'list-to-carousel'],

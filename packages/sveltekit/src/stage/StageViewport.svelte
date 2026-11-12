@@ -69,7 +69,7 @@
 		transition: opacity 240ms ease;
 	}
 
-	:global(.stage-enhanced) .stage-viewport-fallback-image {
+	:global(.stage-enhanced[data-stage-page-ready]) .stage-viewport-fallback-image {
 		opacity: 0;
 	}
 

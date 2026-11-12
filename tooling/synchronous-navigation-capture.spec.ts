@@ -27,10 +27,10 @@ const captureFactory = compile(`
  const { fullscreenController, navigationFeedback, transition, experience, pageSignature,
    setZoomFocusState, restingZoomFocus, earlyTransition, destroyed = false,
    presentationHost, catalogEndpoints, recordNavigationPage = () => {}, prepareCatalogSummaryTransfer = () => undefined } = ports;
- let navigationTimings, navigationGeneration = 0, reuseCatalogPage = false, retainedPageSignature,
+ let navigationTimings, navigationGeneration = 0, reuseCatalogPage = false, retainedPageSignature, isPageReady = true,
    summaryTransfer = ports.summaryTransfer;
  ${capture.getText(stage)}
- return { captureNavigation, state: () => ({ navigationTimings, reuseCatalogPage, retainedPageSignature }) };
+ return { captureNavigation, state: () => ({ navigationTimings, reuseCatalogPage, retainedPageSignature, isPageReady }) };
 `);
 const bridgeFactory = compile(`
  const { controller, onCapture, interruptVisuals, onRestored, disableScrollHandling,
@@ -91,6 +91,7 @@ test.each(['link', 'goto', 'popstate'] as const)(
 		expect(source.snapshot).toHaveBeenCalledExactlyOnceWith(nav.value.from.url, nav.value.to.url, type);
 		expect(source.readPainted).not.toHaveBeenCalled();
 		expect(source.releasePage).toHaveBeenCalledOnce();
+		expect(capture.state().isPageReady).toBe(false);
 		expect(source.order).toEqual(['capture', 'release', 'leave']);
 		expect(source.ports.fullscreenController.setFullscreen).toHaveBeenCalledExactlyOnceWith(false);
 		expect(router.ports.disableScrollHandling).toHaveBeenCalledOnce();
@@ -109,6 +110,7 @@ test('synchronous capture preserves the same-page reuse owner instead of releasi
 	const source = sourceFixture(); source.snapshot.mockReturnValue(true);
 	const capture = captureFactory(source.ports);
 	expect(capture.captureNavigation(navigation().value)).toBeUndefined();
+	expect(capture.state().isPageReady).toBe(true);
 	expect(capture.state()).toMatchObject({ reuseCatalogPage: true, retainedPageSignature: 'source-signature' });
 	expect(source.releasePage).not.toHaveBeenCalled();
 	expect(source.ports.fullscreenController.setFullscreen).toHaveBeenCalledExactlyOnceWith(false);

@@ -26,6 +26,7 @@ import {
 	type CatalogEndpointRegistry
 } from './CatalogEndpointRegistry.js';
 import { resolveCatalogIntent, selectCatalogRecipe, type CatalogRecipe } from './catalogRecipes.js';
+import { snapshotCatalogDom } from './catalogDomSnapshot.js';
 export { catalogSharedKey } from './CatalogEndpointRegistry.js';
 export type { CatalogSharedRole } from './CatalogEndpointRegistry.js';
 import {
@@ -43,27 +44,14 @@ function isRichRole(role: CatalogSharedRole) {
 	return role === 'features' || role === 'primary-action';
 }
 
-/** One CSS parse per detached clone instead of hundreds of CSSOM mutations.
- * Retain all computed properties (including SVG and authored custom properties).
- */
-function freezeComputedStyle(target: HTMLElement | SVGElement, style: CSSStyleDeclaration) {
-	let css = '';
-	for (const property of style) css += property + ':' + style.getPropertyValue(property) + ';';
-	target.style.cssText = css;
-}
-
 /** Full summaries retain authored row/icon layout; temporary controls never become interactive. */
 function copyRichContent(target: HTMLElement, source: HTMLElement) {
-	const copy = source.cloneNode(true) as HTMLElement;
-	const originals = [source, ...source.querySelectorAll<HTMLElement | SVGElement>('*')];
-	const copies = [copy, ...copy.querySelectorAll<HTMLElement | SVGElement>('*')];
-	for (let index = 0; index < originals.length; index++) {
-		const style = getComputedStyle(originals[index]);
-		freezeComputedStyle(copies[index], style);
-		copies[index].style.visibility = 'visible';
-		copies[index].removeAttribute('id');
-		for (const attribute of [...copies[index].attributes])
-			if (attribute.name.startsWith('data-')) copies[index].removeAttribute(attribute.name);
+	const { copy, elements } = snapshotCatalogDom(source);
+	for (const { copy: element } of elements) {
+		element.style.visibility = 'visible';
+		element.removeAttribute('id');
+		for (const attribute of [...element.attributes])
+			if (attribute.name.startsWith('data-')) element.removeAttribute(attribute.name);
 	}
 	Object.assign(copy.style, {
 		position: 'relative',
@@ -921,15 +909,9 @@ export class CatalogTransition {
 			const rect = source.getBoundingClientRect();
 			if (!hasSize(rect) || rect.bottom <= 0 || rect.top >= window.innerHeight) continue;
 			if (!visiblyPresented(source)) continue;
-			const copy = source.cloneNode(true) as HTMLElement;
-			const style = getComputedStyle(source);
-			const originals = [source, ...source.querySelectorAll<HTMLElement | SVGElement>('*')];
-			const copies = [copy, ...copy.querySelectorAll<HTMLElement | SVGElement>('*')];
-			for (let index = 0; index < originals.length; index++) {
-				const computed = getComputedStyle(originals[index]);
-				freezeComputedStyle(copies[index], computed);
-			}
-			for (const element of [copy, ...copy.querySelectorAll('*')]) {
+			const { copy, elements } = snapshotCatalogDom(source);
+			const style = elements[0].style;
+			for (const { copy: element } of elements) {
 				element.removeAttribute('id');
 				for (const attribute of [...element.attributes]) {
 					if (
@@ -946,10 +928,9 @@ export class CatalogTransition {
 						element.removeAttribute(attribute.name);
 				}
 			}
-			for (let index = 0; index < originals.length; index++) {
-				const original = originals[index];
+			for (const { source: original, copy: cloned } of elements) {
 				if (original.matches('[data-catalog-card], [data-carousel-spatial-element]'))
-					(copies[index] as HTMLElement).dataset.catalogExitOccurrence = (
+					(cloned as HTMLElement).dataset.catalogExitOccurrence = (
 						original as HTMLElement
 					).dataset.catalogOccurrence;
 			}
@@ -1365,16 +1346,12 @@ export class CatalogTransition {
 							)
 								continue;
 							const rect = source.getBoundingClientRect();
-							const copy = source.cloneNode(true) as HTMLElement;
-							const originals = [source, ...source.querySelectorAll<HTMLElement | SVGElement>('*')];
-							const copies = [copy, ...copy.querySelectorAll<HTMLElement | SVGElement>('*')];
-							for (let index = 0; index < originals.length; index++) {
-								const style = getComputedStyle(originals[index]);
-								freezeComputedStyle(copies[index], style);
+							const { copy, elements } = snapshotCatalogDom(source);
+							for (const { copy: element } of elements) {
 								// The live destination is deliberately masked during binding.
-								copies[index].style.visibility = 'visible';
+								element.style.visibility = 'visible';
 							}
-							for (const element of [copy, ...copy.querySelectorAll('*')]) {
+							for (const { copy: element } of elements) {
 								element.removeAttribute('id');
 								for (const attribute of [...element.attributes])
 									if (attribute.name.startsWith('data-')) element.removeAttribute(attribute.name);
