@@ -5,7 +5,7 @@
 	import Play from 'lucide-svelte/icons/play';
 	import OverflowControls from './OverflowControls.svelte';
 	import SpatialMediaIndicator from './SpatialMediaIndicator.svelte';
-	import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
+	import { STAGE_PANEL_LAYOUT_EVENT, STAGE_PANEL_VISUAL_EVENT } from '@spatial-elements/core/stage/panelContext';
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
@@ -27,6 +27,7 @@
 		(stage.getZoomUiFocus?.() ?? 0) > 0.01 || (stage.isFullscreen?.() ?? false)
 	);
 	let minimapInRail = $state(true);
+	let minimapDocked = $state(false);
 	$effect(() => {
 		if (!focused || !rail) return;
 		// Zoom keeps the live minimap available even after browsing a long rail.
@@ -62,8 +63,13 @@
 	});
 	onMount(() => {
 		const element = rail!;
+		const minimapFrame = element.querySelector<HTMLElement>('[data-spatial-element-dock-minimap-anchor] .stage-panel-fallback');
+		const updateDock = () => { minimapDocked = Number(minimapFrame?.dataset.stageMinimapDockProgress ?? 0) > 0; };
+		window.addEventListener(STAGE_PANEL_VISUAL_EVENT, updateDock);
+		updateDock();
 		element.addEventListener('scroll', refreshProjection, { passive: true });
 		return () => {
+			window.removeEventListener(STAGE_PANEL_VISUAL_EVENT, updateDock);
 			element.removeEventListener('scroll', refreshProjection);
 			cancelAnimationFrame(refreshFrame);
 		};
@@ -103,8 +109,8 @@
 						: undefined}
 					transitionGroup="enter"
 					nativeContent={media.kind !== 'minimap'}
-					pointerReactive
-					visible={media.kind !== 'minimap' || minimapInRail || focused}
+					pointerReactive={media.kind === 'minimap'}
+					visible={media.kind !== 'minimap' || minimapInRail || focused || minimapDocked}
 					minimapSelected={active}
 					class={`thumbnail-panel ${active ? 'active' : ''}`}
 					shape={{ ...theme.panelShape, radius: radii.control, contentInset: 0 }}
@@ -312,39 +318,47 @@
 	}
 
 	.thumb-image img {
+		position: absolute;
+		left: 0;
+		top: 0;
 		display: block;
 		width: 100%;
 		height: 100%;
 		min-height: 0;
 		min-width: 0;
 		object-fit: contain;
-		transform: translateZ(0);
-		transition: transform 220ms ease;
+		transition: width 220ms ease, height 220ms ease, left 220ms ease, top 220ms ease, transform 220ms ease;
 	}
-	.thumb-image { perspective: 600px; }
-	.thumb-image:global([data-mouse-hover])[data-media-fit='contain'] img,
-	.thumb-image[data-media-fit='contain']:focus-visible img {
-		transform: translate3d(var(--stage-panel-parallax-x, 0px), var(--stage-panel-parallax-y, 0px), 24px) scale(1.035);
+	.thumb-image[data-media-fit='contain'] img {
+		left: 8px;
+		top: 8px;
+		width: calc(100% - 16px);
+		height: calc(100% - 16px);
 	}
-	/* The photograph moves behind the tilted frame, like looking through a window.
-	 * Overscan covers the small displacement; the rail remains the clipping owner. */
-	.thumb-image:global([data-mouse-hover])[data-media-fit='cover'] img,
-	.thumb-image[data-media-fit='cover']:focus-visible img {
-		transform: translate(calc(-1 * var(--stage-panel-parallax-x, 0px)), calc(-1 * var(--stage-panel-parallax-y, 0px))) scale(1.12);
-	}
-	.thumb-video:global([data-mouse-hover]) img,
-	.thumb-video:focus-visible img { transform: scale(1.04); }
 	.play-indicator { transition: transform 220ms ease; }
-	.thumb-video:global([data-mouse-hover]) .play-indicator,
-	.thumb-video:focus-visible .play-indicator { transform: translate(-50%, -50%) scale(1.15); }
+	@media (prefers-reduced-motion: no-preference) {
+		/* Cut-out products expand into their inset, never beyond the frame. */
+		.thumb-image:global([data-mouse-hover])[data-media-fit='contain'] img,
+		.thumb-image[data-media-fit='contain']:focus-visible img {
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+		}
+		.thumb-image:global([data-mouse-hover])[data-media-fit='cover'] img,
+		.thumb-image[data-media-fit='cover']:focus-visible img {
+			left: -8px;
+			top: -8px;
+			width: calc(100% + 16px);
+			height: calc(100% + 16px);
+		}
+		.thumb-video:global([data-mouse-hover]) img,
+		.thumb-video:focus-visible img { transform: scale(1.04); }
+		.thumb-video:global([data-mouse-hover]) .play-indicator,
+		.thumb-video:focus-visible .play-indicator { transform: translate(-50%, -50%) scale(1.15); }
+	}
 	@media (prefers-reduced-motion: reduce) {
 		.thumb-image img, .play-indicator { transition: none; }
-		.thumb-image:global([data-mouse-hover]) img,
-		.thumb-image:focus-visible img,
-		.thumb-image:global([data-mouse-hover])[data-media-fit] img,
-		.thumb-image[data-media-fit]:focus-visible img { transform: none; }
-		.thumb-video:global([data-mouse-hover]) .play-indicator,
-		.thumb-video:focus-visible .play-indicator { transform: translate(-50%, -50%); }
 	}
 
 	.drawing-sheet {

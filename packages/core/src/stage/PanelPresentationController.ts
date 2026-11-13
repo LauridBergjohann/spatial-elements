@@ -524,12 +524,6 @@ export class PanelPresentationController {
 			? ` perspective(${this.panelCamera.position.z}px) translateZ(${lift}px) rotateX(${-panel.group.rotation.x}rad) rotateY(${panel.group.rotation.y}rad)` : '';
 		surface.style.transformOrigin = '50% 50%';
 		surface.style.transform = `translate(${focusOffset.x}px, ${-focusOffset.y - (panel.pointerReactive === 'lift' ? panel.pointerLift : 0)}px) scale(${scale})${hover}`;
-		if (panel.pointerReactive) {
-			// Child artwork follows the same damped pointer pose, without its own RAF
-			// or measuring transformed thumbnails back into the stage layout.
-			target.content.style.setProperty('--stage-panel-parallax-x', `${panel.group.rotation.y * 24}px`);
-			target.content.style.setProperty('--stage-panel-parallax-y', `${-panel.group.rotation.x * 24}px`);
-		}
 		surface.style.visibility = viewportVisible && opacity >= 0.01 ? '' : 'hidden';
 		const interactive = viewportVisible && !transitionBlocked && opacity >= 0.12;
 		setInertLease(surface, this, !interactive);

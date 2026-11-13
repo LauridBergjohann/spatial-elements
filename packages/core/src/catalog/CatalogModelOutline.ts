@@ -1,5 +1,6 @@
 import * as THREE from 'three/webgpu';
 import { texture } from 'three/tsl';
+import { inverseAcesToneMapping } from '../stage/LiquidGlassPanel.js';
 import { createOutlineOpacity, createOutlineUniforms, isOutlineMesh } from '../stage/interactionOutline.js';
 import { isMesh } from '../stage/stageSceneUtils.js';
 import type { StageInteractionTheme } from '../stage/stageTypes.js';
@@ -42,7 +43,7 @@ export class CatalogModelOutline {
 			this.capture.texture.generateMipmaps = false;
 			this.maskMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, toneMapped: false });
 			this.material = new THREE.MeshBasicNodeMaterial({ transparent: true, depthTest: false, depthWrite: false, toneMapped: false });
-			this.material.colorNode = this.controls.color;
+			this.material.colorNode = inverseAcesToneMapping(this.controls.color.rgb);
 			this.material.opacityNode = createOutlineOpacity(texture(this.capture.texture), this.controls);
 			this.quad = new THREE.QuadMesh(this.material);
 			this.offscreenQuad = new THREE.QuadMesh(this.material);

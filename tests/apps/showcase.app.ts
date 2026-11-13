@@ -553,6 +553,41 @@ if (process.env.SPATIAL_GPU) test('Z407 has a measured submenu after a direct lo
 	await expect(page.locator('[data-spatial-element-tab-list="panel"]')).toBeVisible();
 });
 
+if (process.env.SPATIAL_GPU) test('scrolled-away minimap returns in the dock and submenu matches navigation', async ({ page }, info) => {
+	await page.setViewportSize({ width: 1920, height: 900 });
+	await page.goto('/showcase/elements/logitech-m750/?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+	const tabs = page.locator('[data-spatial-element-tab-list="panel"]');
+	const overview = tabs.locator('[data-spatial-element-tab-id="overview"]');
+	const product = tabs.locator('[data-spatial-element-tab-id="product"]');
+	await expect(overview).toHaveCSS('font-weight', '650');
+	await expect(product).toHaveCSS('font-weight', '400');
+	await expect(overview.locator('svg')).toHaveCSS('opacity', '1');
+	await expect(overview.locator('svg')).toHaveAttribute('stroke-width', '1.6');
+	for (const icon of await page.locator('[data-spatial-view-icon]').all())
+		await expect(icon).toHaveAttribute('stroke-width', '1.6');
+	await expect.poll(() => tabs.locator('[data-spatial-element-tab-selection]').evaluate(node => getComputedStyle(node, '::after').width)).toBe('24px');
+	await page.getByRole('button', { name: 'Next media', exact: true }).click();
+	await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().visibleMinimaps)).toBe(0);
+	await product.click();
+	await expect(page.locator('[data-spatial-element-sticky-header]')).toHaveAttribute('aria-hidden', 'false');
+	await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().visibleMinimaps)).toBe(1);
+	// Docking moves the same navigation node; it does not create a second menu.
+	const dockTabs = tabs;
+	await expect(dockTabs.locator('[data-spatial-element-tab-id="product"]')).toHaveCSS('font-weight', '650');
+	await expect(dockTabs.locator('[data-spatial-element-tab-id="overview"] svg')).toHaveCSS('opacity', '0.55');
+	const rect = await page.evaluate(() => window.__stageVisualTest!.getMinimapModelRect());
+	expect(rect).not.toBeNull();
+	expect(rect!.y).toBeGreaterThanOrEqual(0);
+	expect(rect!.y + rect!.height).toBeLessThan(180);
+	await page.screenshot({ path: info.outputPath('scrolled-minimap-docked.png') });
+	await dockTabs.locator('[data-spatial-element-tab-id="overview"]').click();
+	await expect(page.locator('[data-spatial-element-sticky-header]')).toHaveAttribute('aria-hidden', 'true');
+	await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().visibleMinimaps)).toBe(0);
+	await page.getByRole('button', { name: 'Previous media', exact: true }).click();
+	await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().visibleMinimaps)).toBe(1);
+});
+
 if (process.env.SPATIAL_GPU) test('view selection fades continuously and submenu stays neutral across themes', async ({ page }) => {
 	await page.goto('/showcase/elements/winkelschluessel/?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
@@ -582,7 +617,7 @@ if (process.env.SPATIAL_GPU) test('view selection fades continuously and submenu
 	}
 });
 
-if (process.env.SPATIAL_GPU) test('media hover tilts panels, lifts photos and enlarges play without losing selection', async ({ page }, info) => {
+if (process.env.SPATIAL_GPU) test('media hover consumes the cutout inset without tilt or cropping and enlarges play', async ({ page }, info) => {
 	const errors: string[] = [];
 	page.on('pageerror', error => errors.push(error.message));
 	await page.setViewportSize({ width: 1920, height: 1000 });
@@ -590,13 +625,21 @@ if (process.env.SPATIAL_GPU) test('media hover tilts panels, lifts photos and en
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
 	const photo = page.locator('.thumb-image[data-media-fit="contain"]').first();
 	const imageScale = (locator: Locator) => locator.evaluate(image => new DOMMatrixReadOnly(getComputedStyle(image).transform).m11);
+	const inset = (locator: Locator) => locator.evaluate(button => {
+		const image = button.querySelector('img')!.getBoundingClientRect();
+		const frame = button.getBoundingClientRect();
+		return { left: image.left - frame.left, right: frame.right - image.right };
+	});
 	const tilt = () => photo.evaluate(button => {
 		const surface = button.closest<HTMLElement>('[data-stage-panel-css-surface]')!;
 		return Math.abs(Number(surface.style.transform.match(/rotateY\(([^r]+)rad\)/)?.[1] ?? 0));
 	});
+	await page.mouse.move(1800, 950);
+	await expect.poll(async () => (await inset(photo)).left).toBeCloseTo(8, 1);
 	await photo.hover({ position: { x: 25, y: 25 } });
-	await expect.poll(() => imageScale(photo.locator('img'))).toBeGreaterThan(1.03);
-	await expect.poll(tilt).toBeGreaterThan(0.005);
+	await expect.poll(async () => (await inset(photo)).left).toBeCloseTo(0, 1);
+	await expect.poll(async () => (await inset(photo)).right).toBeCloseTo(0, 1);
+	expect(await tilt()).toBe(0);
 	await photo.click();
 	await expect(photo).toHaveAttribute('aria-pressed', 'true');
 	await expect(page.locator('.thumb[aria-pressed="true"]')).toHaveCount(1);
@@ -608,7 +651,7 @@ if (process.env.SPATIAL_GPU) test('media hover tilts panels, lifts photos and en
 	await page.emulateMedia({ reducedMotion: 'reduce' });
 	await expect.poll(() => imageScale(video.locator('.play-indicator'))).toBe(1);
 	await photo.hover({ position: { x: 25, y: 25 } });
-	await expect.poll(() => imageScale(photo.locator('img'))).toBe(1);
+	await expect.poll(async () => (await inset(photo)).left).toBeCloseTo(8, 1);
 	await expect.poll(tilt).toBeLessThan(0.001);
 	await page.emulateMedia({ reducedMotion: 'no-preference' });
 	await page.goto('/showcase/elements/logitech-m750/?stage-test=1');
@@ -619,7 +662,7 @@ if (process.env.SPATIAL_GPU) test('media hover tilts panels, lifts photos and en
 	await expect(next).toBeHidden();
 	await expect(cover).toBeInViewport({ ratio: 0.95 });
 	await cover.hover({ position: { x: 25, y: 25 } });
-	await expect.poll(() => imageScale(cover.locator('img'))).toBeGreaterThan(1.11);
+	await expect.poll(async () => (await inset(cover)).left).toBeCloseTo(-8, 1);
 	await cover.click();
 	await expect(cover).toHaveAttribute('aria-pressed', 'true');
 	await page.screenshot({ path: info.outputPath('cover-hover.png') });

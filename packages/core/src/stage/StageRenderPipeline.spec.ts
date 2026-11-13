@@ -91,6 +91,18 @@ test('half-mask probe preserves target identity across viewport resizes and High
 	expect(disposed).toHaveBeenCalledOnce();
 });
 
+test('silhouette and scene use the same pixel budget on large viewports', () => {
+	vi.stubGlobal('window', { innerWidth: 3840, innerHeight: 2160, devicePixelRatio: 2, location: { search: '' } });
+	const pipeline = new StageRenderPipeline({ interactionTheme: () => DEFAULT_INTERACTION_THEME,
+		isInteractionMesh: () => true } as unknown as StageRenderPorts);
+	try {
+		pipeline.resizeOutline(3840, 2160);
+		pipeline.createModelOutline(new THREE.Group());
+		const target = pipeline.getRenderTargets()[0];
+		expect([target.width, target.height]).toEqual([1920, 1080]);
+	} finally { pipeline.releaseOutline(); }
+});
+
 test('fused halo renders the live mask without a separate composite submission', () => {
 	vi.stubGlobal('window', { location: { search: '?stage-test=1&render-measurement=halo-fused' } });
 	const f = rendererFixture();

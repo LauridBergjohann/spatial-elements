@@ -511,7 +511,7 @@ export class StageRenderPipeline {
 			depthWrite: false,
 			transparent: true
 		});
-		material.colorNode = this.outlineColor;
+		material.colorNode = inverseAcesToneMapping(this.outlineColor.rgb);
 		material.opacityNode = this.createOutlineOpacity(texture(maskTexture));
 		material.toneMapped = false;
 		return material;
@@ -548,7 +548,7 @@ export class StageRenderPipeline {
 		if (this.fuseOutline) {
 			this.emptyOutlineMask.needsUpdate = true;
 			const source = this.stageDisplayTextureNode;
-			const haloColor = this.outlineColor;
+			const haloColor = inverseAcesToneMapping(this.outlineColor.rgb);
 			const haloOpacity = this.createOutlineOpacity(this.displayOutlineMask);
 			// Merge into the existing linear display pass before the canvas output transform.
 			this.stageDisplayMaterial.fragmentNode = Fn(() => {
@@ -1291,7 +1291,7 @@ export class StageRenderPipeline {
 	resizeOutline(width: number, height: number) {
 		this.outlineWidth = width;
 		this.outlineHeight = height;
-		const scale = this.renderMeasurement === 'halo-half-mask' ? 0.5 : 1;
+		const scale = this.renderMeasurement === 'halo-half-mask' ? 0.5 : typeof window === 'undefined' ? 1 : this.getFullPixelRatio();
 		this.outlineMaskTarget?.setSize(
 			Math.max(1, Math.round(width * scale)),
 			Math.max(1, Math.round(height * scale))

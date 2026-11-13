@@ -8,7 +8,8 @@
 
 ### Patch Changes
 
-- Blend view-button backgrounds and icon colors continuously with zoom. Keep submenu text neutral in both themes. Add subtle tilt, cutout lift, photo parallax and video-play hover feedback to the media rail, with reduced-motion support.
+- Keep media photos flat, with an 8px cutout inset consumed by hover zoom. Restore the docked minimap after scrolling its rail out of view. Align submenu weights and active indicators with navigation, and use 1.6px strokes for the authored detail icons.
+- Blend view-button backgrounds and icon colors continuously with zoom. Keep submenu text neutral in both themes, and respect reduced-motion preferences in media hover feedback.
 - Restore minimap hover and media selection after grid/carousel navigation. Suppress destination fallback images while the captured 3D model owns the transition, measure portaled submenus reliably, and fade the subtle corner indicator with its panel. Use flat, full-span directional controls for overflowing media rails and section menus.
 - Fit photographs within the stage and thumbnail panels, synchronize exclusive media selection, and identify 3D/video entries. Add directional overflow controls to rails and section menus, clear rail controls during zoom/fullscreen, and align view buttons with appearance controls. The website adds a featured product carousel and removes transparent padding from product images.
 - Keep detail and minimap posters visible while a new route's model is loading, even when the shared WebGPU stage is already enhanced. Media rails can load small image thumbnails independently of the full-size selected image.

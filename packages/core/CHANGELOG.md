@@ -4,7 +4,8 @@
 
 ### Patch Changes
 
-- Use a crisp 3px hover outline by default, skip optional halo sampling when disabled, and retain bounded, reusable silhouette targets. Native media panels now follow the damped pointer tilt while preserving rail clipping and respecting reduced motion.
+- Smooth silhouette outlines with denser edge sampling and coverage that closes pale antialiasing seams. Match detail-mask resolution to the rendered scene and preserve the theme accent through the stage's tone mapping.
+- Use a crisp 3px hover outline by default, skip optional halo sampling when disabled, and retain bounded, reusable silhouette targets. Native media panels preserve rail clipping during zoom and docking.
 - Release overlapping transition and zoom interaction locks independently so detail media stays selectable after navigation. Keep bound submenu references when panels are portaled, and synchronize glass-panel decorations with the docking fade.
 - Add per-image contain/cover framing for detail media. Read minimap selection without rebuilding its live model, and let native media panels follow zoom visibility while retaining their scroll clipping.
 - Scrolling inside a long detail media rail no longer docks the page header prematurely or blocks the first thumbnail. The dock threshold follows the page position independently of the rail's own scroll offset.

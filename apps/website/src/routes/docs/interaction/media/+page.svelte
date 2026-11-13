@@ -62,10 +62,11 @@
 				arrows scroll the rail without moving the page.
 			</p>
 			<p>
-				With a mouse, media panels gently tilt alongside the live minimap. Contained product images
-				lift forward, cover photographs move behind their frame, and video previews enlarge their
-				play symbol. These decorative movements respect reduced-motion preferences and do not change
-				media selection or the rail's clipping area.
+				The live minimap retains its spatial hover response. Image and video panels stay still:
+				contained product images have an 8px inset and expand to the frame on hover, keeping the
+				entire product visible. Cover photographs fill the panel and zoom by the same 8px per side.
+				Video previews gently zoom and enlarge their play symbol. These movements respect
+				reduced-motion preferences.
 			</p>
 		</div></Section
 	>

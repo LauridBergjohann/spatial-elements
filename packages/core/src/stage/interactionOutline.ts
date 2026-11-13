@@ -22,46 +22,23 @@ export function createOutlineOpacity(mask: THREE.TextureNode, controls: ReturnTy
 	const calculate = () => Fn(() => {
 		const texel = controls.texel;
 		const glowTexel = controls.glowTexel;
-		const sampleMaskRing = (sampleTexel: typeof texel, scale = 1) => {
+		const sampleMaskRing = (sampleTexel: typeof texel, scale = 1, samples = 8) => {
 			const centerUv = uv();
-			const sampleX = sampleTexel.x.mul(scale);
-			const sampleY = sampleTexel.y.mul(scale);
-			const left = mask.sample(centerUv.sub(vec2(sampleX, 0))).r;
-			const right = mask.sample(centerUv.add(vec2(sampleX, 0))).r;
-			const up = mask.sample(centerUv.add(vec2(0, sampleY))).r;
-			const down = mask.sample(centerUv.sub(vec2(0, sampleY))).r;
-			// Diagonal samples lie on the same circle, preserving the CSS-pixel width.
-			const diagonal = vec2(sampleX, sampleY).mul(Math.SQRT1_2);
-			const upLeft = mask.sample(centerUv.add(vec2(diagonal.x.negate(), diagonal.y))).r;
-			const upRight = mask.sample(centerUv.add(diagonal)).r;
-			const downLeft = mask.sample(centerUv.sub(diagonal)).r;
-			const downRight = mask.sample(centerUv.add(vec2(diagonal.x, diagonal.y.negate()))).r;
-
-			return {
-				average: left
-					.add(right)
-					.add(up)
-					.add(down)
-					.add(upLeft)
-					.add(upRight)
-					.add(downLeft)
-					.add(downRight)
-					.div(8),
-				max: tslMax(
-					tslMax(tslMax(left, right), tslMax(up, down)),
-					tslMax(tslMax(upLeft, upRight), tslMax(downLeft, downRight))
-				),
-				min: tslMin(
-					tslMin(tslMin(left, right), tslMin(up, down)),
-					tslMin(tslMin(upLeft, upRight), tslMin(downLeft, downRight))
-				)
-			};
+			const taps = Array.from({ length: samples }, (_, i) => {
+				const angle = i * Math.PI * 2 / samples;
+				return mask.sample(centerUv.add(sampleTexel.mul(vec2(Math.cos(angle) * scale, Math.sin(angle) * scale)))).r;
+			});
+			return { average: taps.reduce((sum, tap) => sum.add(tap)).div(samples),
+				max: taps.reduce((value, tap) => tslMax(value, tap)) };
 		};
-		const edgeNeighbor = sampleMaskRing(texel);
+		// More directions smooth curved silhouettes without a blurred halo.
+		const edgeNeighbor = sampleMaskRing(texel, 1, 16);
 		const center = mask.sample(uv()).r;
-		const edgeGradient = edgeNeighbor.max.sub(center).max(0);
+		// Cover the partially covered inner edge instead of subtracting its MSAA
+		// coverage twice (once in the model and once here), which leaves a pale seam.
+		const edgeGradient = edgeNeighbor.max.mul(center.smoothstep(0.8, 1).oneMinus());
 		const opacity = edgeGradient.mul(controls.strength).toVar();
-		// The default crisp outline needs only eight neighbour samples. Explicit
+		// The default crisp outline needs only sixteen neighbour samples. Explicit
 		// glow themes retain their halo without paying its 24 extra taps otherwise.
 		If(controls.glow.greaterThan(0), () => {
 			const near = sampleMaskRing(glowTexel, 0.45).average.mul(0.6);
