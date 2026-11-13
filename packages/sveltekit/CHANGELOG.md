@@ -8,6 +8,8 @@
 
 ### Patch Changes
 
+- Use the authored Spatial Elements logo in the demo, website and package documentation. Lead the website with its introduction before the featured carousel.
+
 - Synchronize content sidebars with virtual scrolling, retaining viewport bounds and native scrolling. Add a subtle divider to the 3XL detail header. Organize the website showcase into Consumer, Workbench, Industrial and Exclusive collections with matching detail URLs, search and breadcrumbs.
 
 - Keep media photos flat, with an 8px cutout inset consumed by hover zoom. Restore the docked minimap after scrolling its rail out of view. Align submenu weights and active indicators with navigation, and use 1.6px strokes for the authored detail icons.

@@ -10,14 +10,6 @@
 	hdr={showcaseHdr}
 	page={{ title: 'Spatial Elements — content with another dimension' }}
 >
-	<SpatialCarouselSection
-		section={{
-			id: 'featured-products',
-			title: 'Explore selected products',
-			background: { color: 'transparent', size: 'full' }
-		}}
-		list={featuredItems}
-	/>
 	<HeroSection
 		section={{
 			id: 'welcome',
@@ -61,6 +53,14 @@
 			</p>
 		</div></Section
 	>
+	<SpatialCarouselSection
+		section={{
+			id: 'featured-products',
+			title: 'Explore selected products',
+			background: { color: 'transparent', size: 'full' }
+		}}
+		list={featuredItems}
+	/>
 	<CardGridSection
 		section={{
 			id: 'features',

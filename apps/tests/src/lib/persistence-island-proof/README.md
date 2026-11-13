@@ -1,3 +1,5 @@
+<img src="../../../../website/static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="64" />
+
 # Native-flow persistent summary proof
 
 This is an isolated integration gate for layout-plan step 08, not a production API. It complements the simpler step-06 persistent-layout proof. Run `npx playwright test --config playwright.persistent-island.config.ts --output .artifacts/persistent-island-proof`; the dedicated development server uses port 4190.

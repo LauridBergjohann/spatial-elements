@@ -1,3 +1,5 @@
+<img src="../../../apps/website/static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="64" />
+
 # Responsive layout contract
 
 This directory is the canonical engineering specification for the responsive layout redesign. The implementation follows the [incremental plan](../../layout-system-implementation-plan.md). Measurements are CSS pixels, not device pixels.

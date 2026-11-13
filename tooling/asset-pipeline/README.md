@@ -1,3 +1,5 @@
+<img src="../../apps/website/static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="64" />
+
 # Asset tooling
 
 ## Procedural examples

@@ -1,3 +1,5 @@
+<img src="../../../../website/static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="64" />
+
 # Persistent summary integration gate
 
 This fixture is intentionally outside the demo's existing Stage/BrandStageShell. Open `/proof/persistent-summary/source`, `/target` or `/wide`. Add `?hold=1` to hold the movement until **Finish motion** is pressed. These are engineering fixtures, not a proposed production component API.

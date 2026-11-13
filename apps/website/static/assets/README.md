@@ -1,3 +1,5 @@
+<img src="../spatial-elements-logo.svg" alt="Spatial Elements logo" width="64" />
+
 # Website assets
 
 - `showcase/<product-id>/`: the product's lightweight and detailed GLBs, rendered

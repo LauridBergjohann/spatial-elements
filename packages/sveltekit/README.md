@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/LauridBergjohann/spatial-elements/main/apps/website/static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="48" height="48" />
+<img src="https://raw.githubusercontent.com/LauridBergjohann/spatial-elements/main/packages/sveltekit/logo.svg" alt="Spatial Elements logo" width="64" />
 
 # @spatial-elements/sveltekit
 

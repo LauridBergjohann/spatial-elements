@@ -1,5 +1,24 @@
 # One pull request per release
 
+## Prepared website release
+
+Both public packages are already prepared as `1.0.0-beta.10`. For this release, commit and merge the prepared branch without running `changeset` or `release:version` again. The release workflow publishes this version under **beta**; it does not move **latest**. Consumers can explicitly install it with:
+
+```sh
+npm install @spatial-elements/core@beta @spatial-elements/sveltekit@beta
+```
+
+Before the first merge with the new publishing workflow:
+
+1. Configure an npm trusted publisher on **both** `@spatial-elements/core` and `@spatial-elements/sveltekit`: GitHub owner `LauridBergjohann`, repository `spatial-elements`, workflow filename `release.yml`, environment `npm`, direct npm publication.
+2. Create/check the GitHub Actions environment `npm`. Set the repository or environment **variable** `NPM_TRUSTED_PUBLISHING_ENABLED` to `true` after configuring both publishers. No npm token secret is needed. If the environment has reviewers, approve the release job when requested.
+3. Push the feature branch and create one pull request targeting `main`. Wait for the Verify workflow and inspect the Vercel preview before merging.
+4. After merging, check the Release workflow, including its final registry consumer verification, and the separate Vercel production deployment. A failed partial publication can be retried by rerunning Release on `main`.
+
+See [npm trusted publishers](https://docs.npmjs.com/trusted-publishers/) for account-side setup and [website hosting](hosting.md) for Vercel configuration.
+
+## Subsequent releases
+
 Prepare versions on the feature branch before merging:
 
 ```sh

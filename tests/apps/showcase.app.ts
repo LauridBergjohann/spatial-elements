@@ -70,7 +70,9 @@ test('home explains the library and docs use the shared navigation', async ({ pa
 	await expect(page.getByRole('heading', { level: 1 })).toContainText('dimension');
 	await expect(page.locator('#features .ps-card')).toHaveCount(6);
 	await expect(page.locator('#featured-products [data-carousel-spatial-element]')).toHaveCount(4);
-	await expect(page.locator('main section[id]').first()).toHaveAttribute('id', 'featured-products');
+	const firstSections = await page.locator('main section[id]')
+		.evaluateAll(nodes => nodes.slice(0, 3).map(node => node.id));
+	expect(firstSections).toEqual(['welcome', 'what-is-spatial-elements', 'featured-products']);
 	await expect(page.locator('.stage')).toHaveCount(1);
 	await page.goto('/docs/foundations/assets/');
 	await expect(page.getByRole('navigation', { name: 'Documentation chapters' })).toBeVisible();
@@ -542,9 +544,13 @@ if (process.env.SPATIAL_GPU) test('featured carousel renders the selected produc
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
 	const carousel = page.locator('#featured-products');
 	await expect(carousel.locator('[data-carousel-spatial-element]')).toHaveCount(4);
-	await expect(carousel.locator('[data-catalog-model-ready]').first()).toBeAttached({ timeout: 60000 });
 	for (const mode of ['Light', 'Dark']) {
+		await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+		await expect.poll(async () => (await page.locator('.ps-navigation .header').boundingBox())!.y)
+			.toBeCloseTo(16, 0);
 		await page.getByRole('button', { name: mode, exact: true }).filter({ visible: true }).click();
+		await page.mouse.wheel(0, await carousel.evaluate(node => node.getBoundingClientRect().top));
+		await expect(carousel.locator('[data-catalog-model-ready]').first()).toBeAttached({ timeout: 60000 });
 		const selected = carousel.locator('.carousel-spatial-element.selected .spatial-element-target');
 		await expect(selected).toHaveAttribute('href', '/showcase/workbench/kraftform-kompakt/');
 		await selected.hover();
@@ -560,12 +566,10 @@ if (process.env.SPATIAL_GPU) for (const source of ['grid', 'carousel']) {
 		const card = source === 'grid'
 			? page.locator('[data-catalog-card][data-spatial-element-id="logitech-ergo-k860"]')
 			: page.locator('#featured-products .carousel-spatial-element.selected');
-		if (source === 'grid') {
-			const bounds = (await card.boundingBox())!;
-			await page.mouse.move(1900, 500);
-			await page.mouse.wheel(0, bounds.y + bounds.height / 2 - 500);
-			await expect(card).toBeInViewport({ ratio: 0.99 });
-		}
+		const bounds = (await card.boundingBox())!;
+		await page.mouse.move(1900, 500);
+		await page.mouse.wheel(0, bounds.y + bounds.height / 2 - 500);
+		await expect(card).toBeInViewport({ ratio: 0.99 });
 		await expect(card).toHaveAttribute('data-catalog-model-ready', '', { timeout: 60000 });
 		await page.evaluate(() => {
 			const samples: { phase: string; posters: number[] }[] = [];

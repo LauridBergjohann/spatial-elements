@@ -1,3 +1,5 @@
+<img src="../apps/website/static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="64" />
+
 # Contributor documentation
 
 Public usage documentation lives in [apps/website/src/routes/docs](../apps/website/src/routes/docs) as Svelte/HTML. There is no second Markdown or Wiki version.

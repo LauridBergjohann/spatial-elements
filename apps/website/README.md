@@ -1,3 +1,5 @@
+<img src="static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="64" />
+
 # Spatial Elements website
 
 Public documentation and showcase, authored directly in Svelte/HTML. Run npm run dev:website from the repository root. Page Sections supplies ordinary documentation layout; related spatial routes share BrandStageShell.

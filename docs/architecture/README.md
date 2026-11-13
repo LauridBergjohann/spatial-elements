@@ -1,3 +1,5 @@
+<img src="../../apps/website/static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="64" />
+
 # Spatial Elements architecture
 
 Current implementation baseline: 2026-10-31, including the SpatialElement API migration and shared responsive layout. This is implementation documentation, not a proposal for an additional rewrite. The [layout architecture](layout.md) describes token, viewport, DOM-ownership and scroll contracts in detail.

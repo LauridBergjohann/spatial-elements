@@ -16,7 +16,8 @@
   "files": [
     "dist",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "logo.svg"
   ],
   "exports": {
     ".": {

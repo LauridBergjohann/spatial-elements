@@ -1,4 +1,4 @@
-<img src="apps/website/static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="64" height="64" />
+<img src="apps/website/static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="64" />
 
 # Spatial Elements
 

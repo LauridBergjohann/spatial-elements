@@ -27,10 +27,11 @@ for(const name of ['core','sveltekit']) {
  const files=packed.files.map(file=>file.path);
  for(const file of files) {
   assert(!/Product[A-Z]|product[A-Z]|product-detail/.test(file),'Outdated artifact name: '+file);
-  assert(/^(dist\/|package\.json$|README\.md$|LICENSE$)/.test(file),'Unexpected packed file: '+file);
+  assert(/^(dist\/|package\.json$|README\.md$|LICENSE$|logo\.svg$)/.test(file),'Unexpected packed file: '+file);
   assert(!/\.(spec|test|e2e)\.|generated\/|\.(glb|hdr|png)$/.test(file),'Fixture in runtime package: '+file);
  }
- for(const required of ['dist/index.js','dist/index.d.ts','LICENSE','README.md'])assert(files.includes(required),'Missing '+required);
+ for(const required of ['dist/index.js','dist/index.d.ts','LICENSE','README.md','logo.svg'])assert(files.includes(required),'Missing '+required);
+ assert.equal(readFileSync(join(pkgDir,'logo.svg'),'utf8'),readFileSync(join(root,'apps/website/static/spatial-elements-logo.svg'),'utf8'));
  assert.equal(readFileSync(join(pkgDir,'LICENSE'),'utf8'),readFileSync(join(root,'LICENSE'),'utf8'));
  for(const value of Object.values(pkg.exports['.']))assert(files.includes(value.slice(2)),'Missing exported file '+value);
  tarballs[pkg.name]='file:'+join(directory,packed.filename).replaceAll('\\','/');console.log(pkg.name+': '+files.length+' allowlisted files');
@@ -38,6 +39,7 @@ for(const name of ['core','sveltekit']) {
 // Outside the repository: no parent node_modules or workspace aliases can mask a missing dependency.
 const consumer=mkdtempSync(join(tmpdir(),'spatial-elements-consumer-'));
 cpSync(join(root,'apps/demo/src'),join(consumer,'src'),{recursive:true});
+cpSync(join(root,'apps/demo/static'),join(consumer,'static'),{recursive:true});
 cpSync(join(root,'fixtures/demo-assets'),join(consumer,'static/assets/demo'),{recursive:true});
 for(const file of ['svelte.config.js','vite.config.ts','tsconfig.json'])cpSync(join(root,'apps/demo',file),join(consumer,file));
 const workspace=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
