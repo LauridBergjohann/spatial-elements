@@ -1,3 +1,4 @@
+import { setInertLease } from '../stage/inertLease.js';
 import {
 	geometryEndpoint,
 	type CatalogGeometryEndpoint,
@@ -187,7 +188,7 @@ interface TransitionCapture {
 	resolve?: () => void;
 	observer?: MutationObserver;
 	layoutObserver?: ResizeObserver;
-	inert: Map<HTMLElement, boolean>;
+	inert: Set<HTMLElement>;
 	content?: HTMLElement;
 	focus?: HTMLElement;
 }
@@ -825,7 +826,7 @@ export class CatalogTransition {
 				exiting: [],
 				restore: [],
 				frame: 0,
-				inert: new Map(),
+				inert: new Set(),
 				timeout: setTimeout(() => {
 					if (this.captureState === capture) { this.hooks.diagnose?.('capture-timeout'); this.cancel(); }
 				}, 5000)
@@ -998,8 +999,8 @@ export class CatalogTransition {
 			'[data-catalog-transition-dom], [data-catalog-transition-group]'
 		)) {
 			if (capture.inert.has(element)) continue;
-			capture.inert.set(element, element.inert);
-			element.inert = true;
+			capture.inert.add(element);
+			setInertLease(element, capture, true);
 		}
 	}
 
@@ -1594,11 +1595,12 @@ export class CatalogTransition {
 		capture.host.remove();
 		for (const copy of capture.exiting) copy.remove();
 		for (const restore of capture.restore.reverse()) restore();
-		for (const [element, inert] of capture.inert) {
+		for (const element of capture.inert) {
 			// Docking can change during route scroll restoration after this lock was acquired.
 			// Preserve the controller's current semantic state instead of reviving a stale lock snapshot.
 			const dock = element.matches('[data-spatial-element-sticky-header], [data-spatial-element-sticky-tabs]');
-			element.inert = dock ? element.getAttribute('aria-hidden') === 'true' : inert;
+			setInertLease(element, capture, false);
+			if (dock) element.inert = element.getAttribute('aria-hidden') === 'true';
 		}
 		if (
 			capture.focus?.isConnected &&

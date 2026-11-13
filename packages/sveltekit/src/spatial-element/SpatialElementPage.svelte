@@ -67,6 +67,7 @@
 	let sections = $state<SpatialElementSectionNavigationItem[]>([]);
 	let activeSectionId = $state<string | undefined>(SPATIAL_ELEMENT_OVERVIEW_SECTION.id);
 	let mainElement: HTMLElement;
+	let tabList = $state<HTMLElement>();
 	let splitPane = $state(false);
 	let paneController = $state.raw<SpatialElementPaneController>();
 	const paneTint = $derived(typeof brand.panelTheme.tint === 'number'
@@ -143,7 +144,7 @@
 		paneController = new SpatialElementPaneController(mainElement,
 			() => stageContext?.getLayoutMetrics?.('stable'), (split) => { splitPane = split; });
 		paneController.start();
-		const dock = new SpatialElementDockController(mainElement, () => stageContext?.getLayoutMetrics?.('stable'));
+		const dock = new SpatialElementDockController(mainElement, () => stageContext?.getLayoutMetrics?.('stable'), () => tabList);
 		dock.start();
 		const unregisterPresentation = endpoints?.registerPresentation(
 			{ brandId: brand.id, spatialElementId: spatialElement.id },
@@ -256,7 +257,7 @@
 			<SectionSurfaceGroup>{@render children?.()}</SectionSurfaceGroup>
 		</div>
 		<!-- Read after the section snippet has registered its metadata during SSR. -->
-		<SpatialElementTabs {activeSectionId} sections={[SPATIAL_ELEMENT_OVERVIEW_SECTION, ...sections]} />
+		<SpatialElementTabs bind:tabList {activeSectionId} sections={[SPATIAL_ELEMENT_OVERVIEW_SECTION, ...sections]} />
 	</div>
 	</div>
 	</div>

@@ -85,15 +85,14 @@
 	}
 	button {
 		position: absolute;
-		top: 50%;
-		transform: translateY(-50%);
+		top: 0;
 		display: grid;
 		place-items: center;
 		width: 28px;
-		height: 28px;
+		height: 100%;
 		padding: 0;
 		border: 1px solid var(--ps-border, transparent);
-		border-radius: 50%;
+		border-radius: var(--spatial-element-control-radius, 12px);
 		background: var(--ps-section-standard, #fff);
 		color: var(--spatial-element-navigation-ink, var(--spatial-element-ink));
 		box-shadow: 0 2px 8px #0003;
@@ -101,22 +100,23 @@
 		pointer-events: auto;
 	}
 	.before {
-		left: 2px;
+		left: 0;
 	}
 	.after {
-		right: 2px;
+		right: 0;
 	}
 	.vertical button {
-		left: 50%;
+		left: 0;
 		right: auto;
-		transform: translateX(-50%);
+		width: 100%;
+		height: 28px;
 	}
 	.vertical .before {
-		top: 2px;
+		top: 0;
 	}
 	.vertical .after {
 		top: auto;
-		bottom: 2px;
+		bottom: 0;
 	}
 	button:focus-visible {
 		outline: 2px solid var(--spatial-element-accent);

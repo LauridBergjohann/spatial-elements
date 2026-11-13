@@ -398,6 +398,12 @@ for (const width of [390, 1920]) {
 		const next = page.getByRole('button', { name: 'Next media', exact: true });
 		const previous = page.getByRole('button', { name: 'Previous media', exact: true });
 		await expect(next).toBeVisible();
+		const controlBounds = (await next.boundingBox())!;
+		const railBounds = (await rail.boundingBox())!;
+		expect(width >= 840 ? controlBounds.width : controlBounds.height).toBeCloseTo(
+			width >= 840 ? railBounds.width : railBounds.height, 0
+		);
+		expect(width >= 840 ? controlBounds.height : controlBounds.width).toBeLessThanOrEqual(28);
 		await expect(previous).toHaveCount(0);
 		await next.click();
 		await expect(previous).toBeVisible();
@@ -482,4 +488,67 @@ if (process.env.SPATIAL_GPU) test('featured carousel renders the selected produc
 		await selected.hover();
 		await page.screenshot({ path: info.outputPath(`featured-carousel-${mode}.png`) });
 	}
+});
+
+if (process.env.SPATIAL_GPU) for (const source of ['grid', 'carousel']) {
+	test(`${source} detail transition retains exclusive geometry, media interaction and submenu`, async ({ page }, info) => {
+		await page.setViewportSize({ width: 1920, height: 1000 });
+		await page.goto(source === 'grid' ? '/showcase/?stage-test=1' : '/?stage-test=1');
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
+		const card = source === 'grid'
+			? page.locator('[data-catalog-card][data-spatial-element-id="logitech-ergo-k860"]')
+			: page.locator('#featured-products .carousel-spatial-element.selected');
+		if (source === 'grid') {
+			const bounds = (await card.boundingBox())!;
+			await page.mouse.move(1900, 500);
+			await page.mouse.wheel(0, bounds.y + bounds.height / 2 - 500);
+			await expect(card).toBeInViewport({ ratio: 0.99 });
+		}
+		await expect(card).toHaveAttribute('data-catalog-model-ready', '', { timeout: 60000 });
+		await page.evaluate(() => {
+			const samples: { phase: string; posters: number[] }[] = [];
+			Object.assign(window, { detailTransitionSamples: samples });
+			const sample = () => {
+				const phase = document.querySelector<HTMLElement>('.stage')?.dataset.catalogTransition;
+				if (phase) samples.push({ phase, posters: [...document.querySelectorAll('.stage-viewport-fallback-image')]
+					.map(image => Number(getComputedStyle(image).opacity)) });
+				if (samples.length < 300) requestAnimationFrame(sample);
+			};
+			requestAnimationFrame(sample);
+		});
+		await (source === 'grid' ? card : card.locator('.spatial-element-target')).click();
+		await expect(page).toHaveURL(/\/showcase\/elements\//);
+		await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
+		const samples = await page.evaluate(() => (window as unknown as {
+			detailTransitionSamples: { phase: string; posters: number[] }[]
+		}).detailTransitionSamples);
+		expect(samples.some(sample => sample.phase === 'animating')).toBe(true);
+		expect(samples.some(sample => sample.posters.length > 0)).toBe(true);
+		expect(samples.flatMap(sample => sample.posters).every(opacity => opacity === 0)).toBe(true);
+		const tabs = page.locator('[data-spatial-element-tab-list="panel"]');
+		await expect(tabs).toBeVisible();
+		await expect(page.locator('[data-spatial-element-tabs-panel-anchor]')).toHaveAttribute('data-spatial-element-tabs-measured', '');
+		const photo = page.locator('.thumb-image').first();
+		await photo.click();
+		await expect(photo).toHaveAttribute('aria-pressed', 'true');
+		await page.getByRole('button', { name: 'Interactive 3D view', exact: true }).click();
+		await expect(page.locator('.thumb-minimap')).toHaveAttribute('aria-pressed', 'true');
+		await page.mouse.move(1000, 100);
+		const resting = await page.evaluate(() => window.__stageVisualTest!.getMinimapModelRect()!.width);
+		await page.locator('.thumb-minimap').hover();
+		await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getMinimapModelRect()!.width)).toBeGreaterThan(resting * 1.02);
+		await page.screenshot({ path: info.outputPath('detail-interactive.png') });
+		await tabs.locator('[data-spatial-element-tab-id="product"]').click();
+		await expect(page.locator('[data-spatial-element-sticky-header]')).toHaveAttribute('aria-hidden', 'false');
+		await expect(page.locator('.media-indicator')).toHaveCSS('opacity', '0');
+		await page.screenshot({ path: info.outputPath('detail-docked.png') });
+	});
+}
+
+if (process.env.SPATIAL_GPU) test('Z407 has a measured submenu after a direct load', async ({ page }) => {
+	await page.goto('/showcase/elements/logitech-z407/?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+	await expect(page.locator('[data-spatial-element-tabs-panel-anchor]')).toHaveAttribute('data-spatial-element-tabs-measured', '');
+	await expect(page.locator('[data-spatial-element-tab-list="panel"]')).toContainText('Explore the details');
+	await expect(page.locator('[data-spatial-element-tab-list="panel"]')).toBeVisible();
 });

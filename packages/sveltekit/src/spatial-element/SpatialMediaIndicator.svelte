@@ -1,8 +1,8 @@
 <!-- Author supplied assets/box3d-indicator.svg. -->
 <svg
 	aria-hidden="true"
-	width="18"
-	height="18"
+	width="14"
+	height="14"
 	viewBox="0 0 12 12"
 	fill="none"
 	xmlns="http://www.w3.org/2000/svg"

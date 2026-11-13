@@ -105,7 +105,8 @@ export class SpatialElementDockController {
 	private tabsDocked = false;
 	private readonly layoutRoot?: HTMLElement;
 
-	constructor(private readonly root: HTMLElement, private readonly readLayoutMetrics?: () => ResponsiveLayoutInput | undefined) {
+	constructor(private readonly root: HTMLElement, private readonly readLayoutMetrics?: () => ResponsiveLayoutInput | undefined,
+		private readonly readTabsList?: () => HTMLElement | undefined) {
 		this.layoutRoot = root.closest<HTMLElement>(SPATIAL_ELEMENT_LAYOUT_ROOT) ?? undefined;
 	}
 
@@ -137,7 +138,7 @@ export class SpatialElementDockController {
 		this.stickyAction = this.stickyHeader?.querySelector<HTMLElement>('[data-spatial-element-dock-action]') ?? undefined;
 		this.tabsAnchor = this.root.querySelector<HTMLElement>(TABS_ANCHOR) ?? undefined;
 		this.tabsFrame = this.tabsAnchor?.querySelector<HTMLElement>(PANEL_FRAME) ?? undefined;
-		this.sourceTabsList = this.tabsFrame?.querySelector<HTMLElement>(TABS_LIST) ?? undefined;
+		this.sourceTabsList = this.readTabsList?.() ?? this.tabsFrame?.querySelector<HTMLElement>(TABS_LIST) ?? undefined;
 		this.stickyTabs = this.stickyHeader?.querySelector<HTMLElement>(STICKY_TABS) ?? undefined;
 		this.paneTabs = this.root.querySelector<HTMLElement>('[data-spatial-detail-pane-submenu]') ?? undefined;
 		this.tabsListOriginalParent = this.sourceTabsList?.parentElement ?? undefined;

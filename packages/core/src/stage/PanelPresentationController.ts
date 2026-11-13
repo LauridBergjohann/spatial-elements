@@ -1,4 +1,5 @@
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
+import { setInertLease } from './inertLease.js';
 import { parseRenderMeasurement } from './renderMeasurement.js';
 import { dampAndSnap } from './damping.js';
 import * as THREE from 'three/webgpu';
@@ -122,7 +123,7 @@ export class PanelPresentationController {
 		this.panelRuntimes[index] = runtime;
 	}
 	release() {
-		for (const [element, inert] of this.nativeShellInteractivity) element.inert = inert;
+		for (const element of this.nativeShellInteractivity) setInertLease(element, this, false);
 		this.nativeShellInteractivity.clear();
 		for (const runtime of this.panelRuntimes) {
 			runtime.content?.removeFromParent();
@@ -190,7 +191,7 @@ export class PanelPresentationController {
 		HTMLElement,
 		{ parent: Node; next: ChildNode | null; style: string | null; draggable: string | null; shell: string | null }
 	>();
-	private readonly nativeShellInteractivity = new Map<HTMLElement, boolean>();
+	private readonly nativeShellInteractivity = new Set<HTMLElement>();
 	private readonly minimapCssLocalCorners = [
 		new THREE.Vector3(),
 		new THREE.Vector3(),
@@ -512,7 +513,7 @@ export class PanelPresentationController {
 		const target = this.panelTargets[index];
 		if (!target?.nativeContent || this.minimaps.has(index)) return;
 		const surface = target.surfaceElement;
-		if (!this.nativeShellInteractivity.has(surface)) this.nativeShellInteractivity.set(surface, surface.inert);
+		this.nativeShellInteractivity.add(surface);
 		// Native shell content has no CSS3DObject. Project its existing surface from
 		// the same focus pose as the GPU panel, keeping the measured frame untouched.
 		// In particular, do not feed the zoom transform back into cached scroll boxes.
@@ -521,7 +522,7 @@ export class PanelPresentationController {
 		surface.style.transform = `translate(${focusOffset.x}px, ${-focusOffset.y}px) scale(${scale})`;
 		surface.style.visibility = viewportVisible && opacity >= 0.01 ? '' : 'hidden';
 		const interactive = viewportVisible && !transitionBlocked && opacity >= 0.12;
-		surface.inert = this.nativeShellInteractivity.get(surface)! || !interactive;
+		setInertLease(surface, this, !interactive);
 		surface.style.pointerEvents = interactive ? '' : 'none';
 		target.content.style.setProperty('--stage-panel-content-opacity', String(opacity));
 		target.content.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : '';
@@ -729,6 +730,11 @@ export class PanelPresentationController {
 					panel.surface === 'glass'
 						? contentObject.element
 						: (this.panelTargets[index]?.content ?? contentObject.element);
+				// Glass content is portaled independently of its surface. Decorations
+				// such as the 3D indicator still follow the dock-controlled surface fade.
+				if (panel.surface === 'glass') {
+					interactiveContent.style.setProperty('--stage-panel-surface-opacity', surfaceOpacity.toFixed(4));
+				}
 				const pointerProximityValue = pointerProximity.toFixed(4);
 				if (
 					interactiveContent.style.getPropertyValue('--stage-panel-pointer-proximity') !==

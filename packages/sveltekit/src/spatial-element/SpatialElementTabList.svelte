@@ -9,12 +9,13 @@
 	import type { SpatialElementSectionNavigationItem } from '@spatial-elements/core/spatial-element/types';
 
 	interface Props {
+		element?: HTMLElement;
 		activeSectionId?: string;
 		sections: SpatialElementSectionNavigationItem[];
 		variant: 'panel' | 'docked';
 	}
 
-	let { activeSectionId, sections, variant }: Props = $props();
+	let { activeSectionId, sections, variant, element = $bindable() }: Props = $props();
 	let linksElement = $state<HTMLDivElement>(null!);
 	let presentationFrame = 0;
 	let readyFrame = 0;
@@ -83,6 +84,7 @@
 </script>
 
 <nav
+	bind:this={element}
 	use:mouseHover
 	class="spatial-element-tab-list"
 	data-spatial-element-tab-list={variant}

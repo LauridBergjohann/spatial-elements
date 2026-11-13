@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- Release overlapping transition and zoom interaction locks independently so detail media stays selectable after navigation. Keep bound submenu references when panels are portaled, and synchronize glass-panel decorations with the docking fade.
 - Add per-image contain/cover framing for detail media. Read minimap selection without rebuilding its live model, and let native media panels follow zoom visibility while retaining their scroll clipping.
 - Scrolling inside a long detail media rail no longer docks the page header prematurely or blocks the first thumbnail. The dock threshold follows the page position independently of the rail's own scroll offset.
 - Allow small image thumbnails independently of full-resolution media. Expand the website showcase with reviewed Wera, Logitech and item geometry, bounded WebP images and actual-model fallback renders; preserve sensitive overlapping grip surfaces while reducing material submissions and texture memory.

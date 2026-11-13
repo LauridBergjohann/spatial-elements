@@ -8,6 +8,7 @@
 
 ### Patch Changes
 
+- Restore minimap hover and media selection after grid/carousel navigation. Suppress destination fallback images while the captured 3D model owns the transition, measure portaled submenus reliably, and fade the subtle corner indicator with its panel. Use flat, full-span directional controls for overflowing media rails and section menus.
 - Fit photographs within the stage and thumbnail panels, synchronize exclusive media selection, and identify 3D/video entries. Add directional overflow controls to rails and section menus, clear rail controls during zoom/fullscreen, and align view buttons with appearance controls. The website adds a featured product carousel and removes transparent padding from product images.
 - Keep detail and minimap posters visible while a new route's model is loading, even when the shared WebGPU stage is already enhanced. Media rails can load small image thumbnails independently of the full-size selected image.
 - Register spatial page identities and item links automatically for URL-independent transitions, including the showcase root and browser history. Document collection identity independently of URL structure.

@@ -9,9 +9,11 @@
 	import type { SpatialElementSectionNavigationItem } from '@spatial-elements/core/spatial-element/types';
 
 	let {
+		tabList = $bindable(),
 		activeSectionId,
 		sections
 	}: {
+		tabList?: HTMLElement;
 		activeSectionId?: string;
 		sections: SpatialElementSectionNavigationItem[];
 	} = $props();
@@ -25,7 +27,6 @@
 		let mutationObserver: MutationObserver | undefined;
 		let measureFrame = 0;
 		let measuredNaturalWidth = 0;
-		let tabList: HTMLElement | null = null;
 		let disposed = false;
 
 		const measure = () => {
@@ -34,7 +35,8 @@
 			const anchor = anchorElement;
 			if (disposed || !anchor?.isConnected) return;
 			const frame = anchor.querySelector<HTMLElement>('[data-stage-panel-fallback]');
-			tabList ??= anchor.querySelector<HTMLElement>('[data-spatial-element-tab-list]');
+			// The panel renderer can portal the list before the first measurement.
+			// Keep its bound reference instead of searching the emptied frame.
 			const links = tabList?.querySelector<HTMLElement>('[data-spatial-element-tab-links]');
 			if (!frame || !tabList || !links) return;
 			if (getComputedStyle(anchor).display === 'none') return;
@@ -122,7 +124,7 @@
 		theme={theme.panelTheme}
 		contentClass="spatial-element-tabs-panel-content"
 	>
-		<SpatialElementTabList {activeSectionId} {sections} variant="panel" />
+		<SpatialElementTabList bind:element={tabList} {activeSectionId} {sections} variant="panel" />
 	</Panel>
 </div>
 

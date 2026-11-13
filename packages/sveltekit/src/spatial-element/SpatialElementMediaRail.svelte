@@ -102,7 +102,7 @@
 						: undefined}
 					transitionGroup="enter"
 					nativeContent={media.kind !== 'minimap'}
-					pointerReactive={false}
+					pointerReactive={media.kind === 'minimap'}
 					visible={media.kind !== 'minimap' || minimapInRail || focused}
 					minimapSelected={active}
 					class={`thumbnail-panel ${active ? 'active' : ''}`}
@@ -258,8 +258,12 @@
 	}
 	.media-indicator {
 		position: absolute;
-		bottom: 10px;
-		right: 10px;
+		bottom: 4px;
+		right: 4px;
+		display: grid;
+		color: color-mix(in srgb, var(--spatial-element-ink) 45%, transparent);
+		opacity: var(--stage-panel-surface-opacity, 1);
+		pointer-events: none;
 	}
 	.play-indicator {
 		position: absolute;
@@ -291,6 +295,10 @@
 
 	:global(.stage-enhanced[data-stage-page-ready]) .minimap-poster {
 		opacity: 0;
+	}
+	:global(.stage-enhanced[data-catalog-transition]) .minimap-poster {
+		opacity: 0;
+		transition: none;
 	}
 
 	@media (prefers-reduced-motion: reduce) {

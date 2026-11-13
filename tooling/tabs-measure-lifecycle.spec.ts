@@ -19,8 +19,9 @@ const factory = new Function('ports', ts.transpileModule(`
    requestAnimationFrame, cancelAnimationFrame, getComputedStyle } = ports;
  const STAGE_PANEL_LAYOUT_EVENT = 'panel-layout';
  let anchorElement = ports.anchor;
+ let tabList = ports.tabList;
  const mount = ${registration.expression.arguments[0].getText(script)};
- return { mount, bind(value) { anchorElement = value; } };
+ return { mount, bind(value) { anchorElement = value; tabList = value ? ports.tabList : undefined; } };
 `, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText);
 
 function deferred() {
@@ -46,12 +47,13 @@ function fixture() {
 	const frame = {};
 	const anchor = {
 		isConnected: true,
-		querySelector: vi.fn(selector => selector === '[data-stage-panel-fallback]' ? frame : tabList),
+		// The list has already been portaled out of this anchor by the renderer.
+		querySelector: vi.fn(selector => selector === '[data-stage-panel-fallback]' ? frame : null),
 		style: { setProperty: vi.fn() },
 		toggleAttribute: vi.fn()
 	};
 	const ports = {
-		anchor, tick: () => initialTick.promise,
+		anchor, tabList, tick: () => initialTick.promise,
 		window: {
 			ResizeObserver: Observer, MutationObserver: Observer,
 			addEventListener: vi.fn((event, callback) => listeners.set(event, callback)),
@@ -153,7 +155,7 @@ test('initial tick does not lose ownership of a RAF already scheduled by font re
 	expect(() => callback()).not.toThrow();
 });
 
-test('connected mounts retain ordinary measurement, deduplication and resize behavior', async () => {
+test('portaled menus retain measurement, deduplication and resize behavior through their bound reference', async () => {
 	const f = fixture(); await f.start();
 	expect(f.observers).toHaveLength(2);
 	expect(f.anchor.style.setProperty).toHaveBeenCalledExactlyOnceWith('--spatial-element-tabs-natural-width', '240px');
