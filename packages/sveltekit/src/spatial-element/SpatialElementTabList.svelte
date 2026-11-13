@@ -200,7 +200,7 @@
 		visibility: visible;
 	}
 
-	a {
+	.spatial-element-tab-list a {
 		display: grid;
 		position: relative;
 		z-index: 1;

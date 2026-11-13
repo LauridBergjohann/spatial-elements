@@ -552,3 +552,76 @@ if (process.env.SPATIAL_GPU) test('Z407 has a measured submenu after a direct lo
 	await expect(page.locator('[data-spatial-element-tab-list="panel"]')).toContainText('Explore the details');
 	await expect(page.locator('[data-spatial-element-tab-list="panel"]')).toBeVisible();
 });
+
+if (process.env.SPATIAL_GPU) test('view selection fades continuously and submenu stays neutral across themes', async ({ page }) => {
+	await page.goto('/showcase/elements/winkelschluessel/?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+	// Reproduce a host stylesheet loaded after the component styles.
+	await page.addStyleTag({ content: '.ps-shell a { color: var(--ps-accent); }' });
+	const detail = page.getByRole('button', { name: 'Detail view', exact: true });
+	const selection = () => detail.evaluate(button => parseFloat((button as HTMLElement).style.getPropertyValue('--selection')));
+	for (const mode of ['Light', 'Dark']) {
+		await page.getByRole('button', { name: mode, exact: true }).filter({ visible: true }).click();
+		await expect(page.locator('[data-spatial-element-tab-id="product"]').filter({ visible: true }))
+			.toHaveCSS('color', mode === 'Light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)');
+		await page.evaluate(() => window.__stageVisualTest!.reset());
+		await expect.poll(selection).toBeGreaterThan(99);
+		const colors: string[] = [];
+		let previous = 100;
+		// Camera travel starts before the UI-clearance interval. Sample within it.
+		for (const zoom of [0.35, 0.45, 0.55]) {
+			await page.evaluate(zoom => window.__stageVisualTest!.setView({ zoom }), zoom);
+			await expect.poll(selection).toBeLessThan(previous - 3);
+			await expect.poll(selection).toBeGreaterThan(2);
+			previous = await selection();
+			colors.push(await detail.evaluate(button => getComputedStyle(button).color));
+		}
+		expect(new Set(colors).size).toBe(3);
+		await page.evaluate(() => window.__stageVisualTest!.reset());
+		await expect.poll(selection).toBeGreaterThan(99);
+	}
+});
+
+if (process.env.SPATIAL_GPU) test('media hover tilts panels, lifts photos and enlarges play without losing selection', async ({ page }, info) => {
+	const errors: string[] = [];
+	page.on('pageerror', error => errors.push(error.message));
+	await page.setViewportSize({ width: 1920, height: 1000 });
+	await page.goto('/showcase/elements/winkelschluessel/?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+	const photo = page.locator('.thumb-image[data-media-fit="contain"]').first();
+	const imageScale = (locator: Locator) => locator.evaluate(image => new DOMMatrixReadOnly(getComputedStyle(image).transform).m11);
+	const tilt = () => photo.evaluate(button => {
+		const surface = button.closest<HTMLElement>('[data-stage-panel-css-surface]')!;
+		return Math.abs(Number(surface.style.transform.match(/rotateY\(([^r]+)rad\)/)?.[1] ?? 0));
+	});
+	await photo.hover({ position: { x: 25, y: 25 } });
+	await expect.poll(() => imageScale(photo.locator('img'))).toBeGreaterThan(1.03);
+	await expect.poll(tilt).toBeGreaterThan(0.005);
+	await photo.click();
+	await expect(photo).toHaveAttribute('aria-pressed', 'true');
+	await expect(page.locator('.thumb[aria-pressed="true"]')).toHaveCount(1);
+	await page.screenshot({ path: info.outputPath('cutout-hover.png') });
+	const video = page.locator('.thumb-video').first();
+	await video.hover();
+	await expect.poll(() => imageScale(video.locator('.play-indicator'))).toBeGreaterThan(1.14);
+	await page.screenshot({ path: info.outputPath('video-hover.png') });
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	await expect.poll(() => imageScale(video.locator('.play-indicator'))).toBe(1);
+	await photo.hover({ position: { x: 25, y: 25 } });
+	await expect.poll(() => imageScale(photo.locator('img'))).toBe(1);
+	await expect.poll(tilt).toBeLessThan(0.001);
+	await page.emulateMedia({ reducedMotion: 'no-preference' });
+	await page.goto('/showcase/elements/logitech-m750/?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+	const cover = page.locator('.thumb-image[data-media-fit="cover"]').last();
+	const next = page.getByRole('button', { name: 'Next media', exact: true });
+	await next.click();
+	await expect(next).toBeHidden();
+	await expect(cover).toBeInViewport({ ratio: 0.95 });
+	await cover.hover({ position: { x: 25, y: 25 } });
+	await expect.poll(() => imageScale(cover.locator('img'))).toBeGreaterThan(1.11);
+	await cover.click();
+	await expect(cover).toHaveAttribute('aria-pressed', 'true');
+	await page.screenshot({ path: info.outputPath('cover-hover.png') });
+	expect(errors).toEqual([]);
+});

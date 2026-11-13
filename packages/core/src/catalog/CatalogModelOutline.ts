@@ -30,7 +30,7 @@ export class CatalogModelOutline {
 		model: THREE.Object3D, bounds: BlurRect, clip: BlurRect,
 		opacity: number, theme: StageInteractionTheme, warmOutput?: CatalogWarmOutputContext) {
 		if (opacity <= 0.001) return;
-		const padding = Math.ceil(theme.outlineThickness * Math.max(1, theme.outlineGlowThickness) + 2);
+		const padding = Math.ceil(theme.outlineThickness * (theme.outlineGlow > 0 ? Math.max(1, theme.outlineGlowThickness) : 1) + 2);
 		const left = Math.max(0, clip.left, Math.floor(bounds.left - padding));
 		const top = Math.max(0, clip.top, Math.floor(bounds.top - padding));
 		const right = Math.min(innerWidth, clip.left + clip.width, Math.ceil(bounds.left + bounds.width + padding));
@@ -70,7 +70,12 @@ export class CatalogModelOutline {
 			0, 0, 0, 1
 		).multiply(camera.projectionMatrix));
 		this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
-		const changed = this.source !== model || !this.modelMatrix.equals(model.matrixWorld) ||
+		// Keep the silhouette close to CSS-pixel resolution, with a bounded budget.
+		// Bucket dimensions so a moving/hovering model does not reallocate its GPU target every pixel.
+		const maskWidth = Math.min(1024, Math.ceil(width / 64) * 64), maskHeight = Math.min(1024, Math.ceil(height / 64) * 64);
+		const resized = this.capture.width !== maskWidth || this.capture.height !== maskHeight;
+		if (resized) this.capture.setSize(maskWidth, maskHeight);
+		const changed = resized || this.source !== model || !this.modelMatrix.equals(model.matrixWorld) ||
 			!this.cameraMatrix.equals(camera.matrixWorld) || !this.projection.equals(this.camera.projectionMatrix);
 		if (this.source !== model) {
 			this.scene.clear();

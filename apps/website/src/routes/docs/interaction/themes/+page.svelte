@@ -205,8 +205,9 @@
 				Each label also provides its default tooltip; the host supplies the language. Buttons expose <code
 					>aria-pressed</code
 				>, native keyboard activation and focus outlines. The optional <code>selection</code> strength
-				fades the selected background independently of semantic selection, as used by the detail button
-				while zooming. The component does not store state or know about themes or languages.
+				fades the selected background and icon/text color independently of semantic selection, as used
+				by the detail button while zooming. The component does not store state or know about themes or
+				languages.
 			</p>
 			<p>
 				Custom core integrations can call <code

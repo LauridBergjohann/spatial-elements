@@ -85,8 +85,8 @@ export const DEFAULT_GLB = '';
 /** Default element hover outline, tuned to remain visible on light and dark scenes. */
 export const DEFAULT_INTERACTION_THEME = {
 	outlineColor: '#7db7ff',
-	outlineOpacity: 0.3,
-	outlineThickness: 1,
-	outlineGlow: 0.9,
+	outlineOpacity: 0.96,
+	outlineThickness: 3,
+	outlineGlow: 0,
 	outlineGlowThickness: 8
 } satisfies StageInteractionTheme;

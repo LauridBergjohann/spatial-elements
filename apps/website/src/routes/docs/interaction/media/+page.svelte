@@ -61,6 +61,12 @@
 				media item is outlined. A cube identifies the 3D view; a play symbol identifies videos. Overflow
 				arrows scroll the rail without moving the page.
 			</p>
+			<p>
+				With a mouse, media panels gently tilt alongside the live minimap. Contained product images
+				lift forward, cover photographs move behind their frame, and video previews enlarge their
+				play symbol. These decorative movements respect reduced-motion preferences and do not change
+				media selection or the rail's clipping area.
+			</p>
 		</div></Section
 	>
 	<Section

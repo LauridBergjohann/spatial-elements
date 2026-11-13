@@ -518,8 +518,18 @@ export class PanelPresentationController {
 		// the same focus pose as the GPU panel, keeping the measured frame untouched.
 		// In particular, do not feed the zoom transform back into cached scroll boxes.
 		const scale = this.panelCamera.position.z / Math.max(this.panelCamera.position.z - focusOffset.z, 1);
+		const panel = this.panelRuntimes[index];
+		const lift = panel.pointerReactive === 'lift' ? 0 : panel.pointerLift;
+		const hover = panel.pointerReactive
+			? ` perspective(${this.panelCamera.position.z}px) translateZ(${lift}px) rotateX(${-panel.group.rotation.x}rad) rotateY(${panel.group.rotation.y}rad)` : '';
 		surface.style.transformOrigin = '50% 50%';
-		surface.style.transform = `translate(${focusOffset.x}px, ${-focusOffset.y}px) scale(${scale})`;
+		surface.style.transform = `translate(${focusOffset.x}px, ${-focusOffset.y - (panel.pointerReactive === 'lift' ? panel.pointerLift : 0)}px) scale(${scale})${hover}`;
+		if (panel.pointerReactive) {
+			// Child artwork follows the same damped pointer pose, without its own RAF
+			// or measuring transformed thumbnails back into the stage layout.
+			target.content.style.setProperty('--stage-panel-parallax-x', `${panel.group.rotation.y * 24}px`);
+			target.content.style.setProperty('--stage-panel-parallax-y', `${-panel.group.rotation.x * 24}px`);
+		}
 		surface.style.visibility = viewportVisible && opacity >= 0.01 ? '' : 'hidden';
 		const interactive = viewportVisible && !transitionBlocked && opacity >= 0.12;
 		setInertLease(surface, this, !interactive);
@@ -530,6 +540,7 @@ export class PanelPresentationController {
 	updatePanelPointerInteraction(delta: number) {
 		const viewportWidth = window.innerWidth;
 		const viewportHeight = window.innerHeight;
+		const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 		const uiFocus = this.panelUiFocus;
 		const layouts = this.panelRuntimes.map((panel, index) =>
 			this.getPanelPointerLayout(panel, index, viewportWidth, viewportHeight, panel.focusReactive === false ? 0 : uiFocus)
@@ -616,7 +627,7 @@ export class PanelPresentationController {
 			let targetPointerLift = 0;
 			let pointerInfluence = 0;
 
-			if (panel.pointerReactive && this.pointer.active && viewportVisible && !transitionBlocked) {
+			if (panel.pointerReactive && this.pointer.active && viewportVisible && !transitionBlocked && !reducedMotion) {
 				const pointerX = this.pointer.x - centerX;
 				const pointerY = this.pointer.y - centerY;
 				const outsideX = Math.max(Math.abs(pointerX) - halfWidth, 0);

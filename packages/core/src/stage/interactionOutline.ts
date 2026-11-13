@@ -19,7 +19,7 @@ export function createOutlineUniforms() {
 
 /** Shared silhouette and outer halo for detail and catalog geometry. */
 export function createOutlineOpacity(mask: THREE.TextureNode, controls: ReturnType<typeof createOutlineUniforms>, unconditional = false) {
-	const calculate = () => {
+	const calculate = () => Fn(() => {
 		const texel = controls.texel;
 		const glowTexel = controls.glowTexel;
 		const sampleMaskRing = (sampleTexel: typeof texel, scale = 1) => {
@@ -30,10 +30,12 @@ export function createOutlineOpacity(mask: THREE.TextureNode, controls: ReturnTy
 			const right = mask.sample(centerUv.add(vec2(sampleX, 0))).r;
 			const up = mask.sample(centerUv.add(vec2(0, sampleY))).r;
 			const down = mask.sample(centerUv.sub(vec2(0, sampleY))).r;
-			const upLeft = mask.sample(centerUv.add(vec2(0, sampleY)).sub(vec2(sampleX, 0))).r;
-			const upRight = mask.sample(centerUv.add(vec2(sampleX, sampleY))).r;
-			const downLeft = mask.sample(centerUv.sub(vec2(sampleX, sampleY))).r;
-			const downRight = mask.sample(centerUv.add(vec2(sampleX, 0)).sub(vec2(0, sampleY))).r;
+			// Diagonal samples lie on the same circle, preserving the CSS-pixel width.
+			const diagonal = vec2(sampleX, sampleY).mul(Math.SQRT1_2);
+			const upLeft = mask.sample(centerUv.add(vec2(diagonal.x.negate(), diagonal.y))).r;
+			const upRight = mask.sample(centerUv.add(diagonal)).r;
+			const downLeft = mask.sample(centerUv.sub(diagonal)).r;
+			const downRight = mask.sample(centerUv.add(vec2(diagonal.x, diagonal.y.negate()))).r;
 
 			return {
 				average: left
@@ -56,34 +58,23 @@ export function createOutlineOpacity(mask: THREE.TextureNode, controls: ReturnTy
 			};
 		};
 		const edgeNeighbor = sampleMaskRing(texel);
-		const glowNearNeighbor = sampleMaskRing(glowTexel, 0.45);
-		const glowMidNeighbor = sampleMaskRing(glowTexel, 0.7);
-		const glowFarNeighbor = sampleMaskRing(glowTexel);
 		const center = mask.sample(uv()).r;
-		const outside = center.oneMinus();
 		const edgeGradient = edgeNeighbor.max.sub(center).max(0);
-		const core = edgeGradient.mul(controls.strength);
-		// Average neighbouring coverage, rather than dilating a solid band. Keep the
-		// halo outside the spatialElement so it cannot be mistaken for painted geometry.
-		const glowNear = glowNearNeighbor.average
-			.mul(outside)
-			.mul(controls.glow.mul(0.6));
-		const glowMid = glowMidNeighbor.average
-			.mul(outside)
-			.mul(controls.glow.mul(0.3));
-		const glowFar = glowFarNeighbor.average
-			.mul(outside)
-			.mul(controls.glow.mul(0.1));
-		const opacity = tslMin(core.add(glowNear).add(glowMid).add(glowFar), 1).mul(
-			controls.opacityScale
-		);
-
-		return opacity;
-	};
+		const opacity = edgeGradient.mul(controls.strength).toVar();
+		// The default crisp outline needs only eight neighbour samples. Explicit
+		// glow themes retain their halo without paying its 24 extra taps otherwise.
+		If(controls.glow.greaterThan(0), () => {
+			const near = sampleMaskRing(glowTexel, 0.45).average.mul(0.6);
+			const mid = sampleMaskRing(glowTexel, 0.7).average.mul(0.3);
+			const far = sampleMaskRing(glowTexel).average.mul(0.1);
+			opacity.addAssign(near.add(mid).add(far).mul(center.oneMinus()).mul(controls.glow));
+		});
+		return tslMin(opacity, 1).mul(controls.opacityScale);
+	})();
 	if (unconditional) return calculate();
 	return Fn(() => {
 		const opacity = float(0).toVar();
-		// A fully covered pixel has zero outer halo. Skip all 32 neighbour taps there.
+		// Fully covered pixels do not need any outer-edge samples.
 		If(mask.sample(uv()).r.lessThan(1), () => {
 			opacity.assign(calculate());
 		});

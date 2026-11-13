@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
+	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
 	import Play from 'lucide-svelte/icons/play';
 	import OverflowControls from './OverflowControls.svelte';
@@ -102,7 +103,7 @@
 						: undefined}
 					transitionGroup="enter"
 					nativeContent={media.kind !== 'minimap'}
-					pointerReactive={media.kind === 'minimap'}
+					pointerReactive
 					visible={media.kind !== 'minimap' || minimapInRail || focused}
 					minimapSelected={active}
 					class={`thumbnail-panel ${active ? 'active' : ''}`}
@@ -139,6 +140,8 @@
 						</button>
 					{:else if media.kind === 'image'}
 						<button
+							use:mouseHover
+							data-media-fit={media.fit ?? 'contain'}
 							type="button"
 							aria-label={media.label}
 							aria-pressed={active}
@@ -156,11 +159,12 @@
 						</button>
 					{:else}
 						<button
+							use:mouseHover
 							type="button"
 							aria-label={media.label}
 							aria-pressed={active}
 							onclick={() => onselect?.(media)}
-							class="thumb thumb-image"
+							class="thumb thumb-image thumb-video"
 							class:active
 						>
 							{#if media.poster}<img
@@ -314,6 +318,33 @@
 		min-height: 0;
 		min-width: 0;
 		object-fit: contain;
+		transform: translateZ(0);
+		transition: transform 220ms ease;
+	}
+	.thumb-image { perspective: 600px; }
+	.thumb-image:global([data-mouse-hover])[data-media-fit='contain'] img,
+	.thumb-image[data-media-fit='contain']:focus-visible img {
+		transform: translate3d(var(--stage-panel-parallax-x, 0px), var(--stage-panel-parallax-y, 0px), 24px) scale(1.035);
+	}
+	/* The photograph moves behind the tilted frame, like looking through a window.
+	 * Overscan covers the small displacement; the rail remains the clipping owner. */
+	.thumb-image:global([data-mouse-hover])[data-media-fit='cover'] img,
+	.thumb-image[data-media-fit='cover']:focus-visible img {
+		transform: translate(calc(-1 * var(--stage-panel-parallax-x, 0px)), calc(-1 * var(--stage-panel-parallax-y, 0px))) scale(1.12);
+	}
+	.thumb-video:global([data-mouse-hover]) img,
+	.thumb-video:focus-visible img { transform: scale(1.04); }
+	.play-indicator { transition: transform 220ms ease; }
+	.thumb-video:global([data-mouse-hover]) .play-indicator,
+	.thumb-video:focus-visible .play-indicator { transform: translate(-50%, -50%) scale(1.15); }
+	@media (prefers-reduced-motion: reduce) {
+		.thumb-image img, .play-indicator { transition: none; }
+		.thumb-image:global([data-mouse-hover]) img,
+		.thumb-image:focus-visible img,
+		.thumb-image:global([data-mouse-hover])[data-media-fit] img,
+		.thumb-image[data-media-fit]:focus-visible img { transform: none; }
+		.thumb-video:global([data-mouse-hover]) .play-indicator,
+		.thumb-video:focus-visible .play-indicator { transform: translate(-50%, -50%); }
 	}
 
 	.drawing-sheet {

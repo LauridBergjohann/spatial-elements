@@ -122,7 +122,7 @@
 			var(--ps-selection, var(--ps-section-muted, #eeeeee)) var(--selection),
 			transparent
 		);
-		color: var(--spatial-element-ink, inherit);
+		color: color-mix(in srgb, var(--spatial-element-accent) var(--selection), var(--spatial-element-ink));
 		cursor: pointer;
 		touch-action: manipulation;
 		transition: background-color 180ms ease;
@@ -132,7 +132,6 @@
 		padding: 0;
 	}
 	button { border-radius: max(0px, calc(var(--control-radius) - 2px)); }
-	button[aria-pressed='true'] { color: var(--spatial-element-accent); }
 	.button-group:global([data-mouse-hover]) button:enabled:hover {
 		background: color-mix(in srgb, var(--spatial-element-body, currentColor) 8%, transparent);
 	}

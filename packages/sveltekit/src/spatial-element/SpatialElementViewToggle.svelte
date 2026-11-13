@@ -18,7 +18,7 @@
 	const readMessages = useSpatialMessages();
 	const messages = $derived(readMessages());
 	const fullscreen = $derived(stage.isFullscreen?.() ?? false);
-	const zoomFocus = $derived(stage.getZoomFocus?.() ?? 0);
+	const zoomFocus = $derived(stage.getZoomUiFocus?.() ?? stage.getZoomFocus?.() ?? 0);
 	function select(value: string) {
 		onchange();
 		stage.setFullscreen?.(value === 'fullscreen');
