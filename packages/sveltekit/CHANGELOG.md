@@ -8,6 +8,8 @@
 
 ### Patch Changes
 
+- Synchronize content sidebars with virtual scrolling, retaining viewport bounds and native scrolling. Add a subtle divider to the 3XL detail header. Organize the website showcase into Consumer, Workbench, Industrial and Exclusive collections with matching detail URLs, search and breadcrumbs.
+
 - Keep media photos flat, with an 8px cutout inset consumed by hover zoom. Restore the docked minimap after scrolling its rail out of view. Align submenu weights and active indicators with navigation, and use 1.6px strokes for the authored detail icons.
 - Blend view-button backgrounds and icon colors continuously with zoom. Keep submenu text neutral in both themes, and respect reduced-motion preferences in media hover feedback.
 - Restore minimap hover and media selection after grid/carousel navigation. Suppress destination fallback images while the captured 3D model owns the transition, measure portaled submenus reliably, and fade the subtle corner indicator with its panel. Use flat, full-span directional controls for overflowing media rails and section menus.

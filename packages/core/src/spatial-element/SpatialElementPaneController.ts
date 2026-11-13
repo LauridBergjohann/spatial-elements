@@ -216,7 +216,7 @@ export class SpatialElementPaneController {
 		if (!pane || !this.body) return;
 		this.body.style.setProperty('--spatial-pane-focus-origin-y', `${pose.pivotY - this.bodyTop + this.scrollY}px`);
 		for (const region of this.regions) {
-			const top = region.hasAttribute('data-spatial-detail-pane-submenu-shell') ? pane.surface.y + pane.surface.height
+			const top = region.hasAttribute('data-spatial-detail-pane-submenu-shell') ? this.layout!.submenu!.y
 				: region.hasAttribute('data-spatial-detail-pane-header') || region.hasAttribute('data-spatial-detail-pane-surface') ? pane.surface.y : undefined;
 			if (top !== undefined) region.style.setProperty('--spatial-pane-focus-origin-y', `${pose.pivotY - top}px`);
 		}
@@ -229,7 +229,8 @@ export class SpatialElementPaneController {
 		if (!(target instanceof HTMLElement) || !this.body?.contains(target)) return;
 		const rect = target.getBoundingClientRect();
 		const viewport = this.layout.pane.body;
-		if (rect.top >= viewport.y && rect.bottom <= viewport.y + viewport.height) return;
-		window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - viewport.y - Math.max(0, (viewport.height - rect.height) / 2)), behavior: 'instant' });
+		const bottom = Math.min(viewport.y + viewport.height, this.layout.submenu?.y ?? Infinity);
+		if (rect.top >= viewport.y && rect.bottom <= bottom) return;
+		window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - viewport.y - Math.max(0, (bottom - viewport.y - rect.height) / 2)), behavior: 'instant' });
 	};
 }

@@ -137,7 +137,7 @@
 				Rotate and zoom the model to explore its form and materials. Its image remains visible while
 				the interactive view loads, or when interactive rendering is unavailable.
 			</p>
-			<p><a href="/showcase/">Return to the collection</a></p>
+			<p><a href={'/showcase/' + data.product.segment.id + '/'}>Return to the collection</a></p>
 		</div>
 	</Section>
 </SpatialElementPage>

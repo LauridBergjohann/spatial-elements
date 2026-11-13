@@ -1,5 +1,6 @@
 import { base } from '$app/paths';
 import type { MenuItem } from '@page-sections/core';
+import { showcaseSegments } from './showcase/segments';
 import { documents } from './catalog';
 const groups = [
 	['Foundations', 'foundations', 'layers'],
@@ -13,7 +14,12 @@ export const navigationTree: MenuItem[] = [
 	{
 		id: 'showcase',
 		label: 'Showcase',
-		href: base + '/showcase/'
+		href: base + '/showcase/',
+		children: showcaseSegments.map((segment) => ({
+			id: segment.id,
+			label: segment.title,
+			href: base + '/showcase/' + segment.id + '/'
+		}))
 	},
 	{ id: 'start', label: 'Getting started', href: base + '/getting-started/' },
 	{

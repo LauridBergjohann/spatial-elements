@@ -26,8 +26,8 @@ requires JavaScript, as it did previously.
 
 ## One scroll coordinate rule
 
-The native document implements the 112px bound with a sticky rack inside a containing block
-extended by 112px. A matching negative bottom margin removes that extra document reservation.
+The native document implements the 32px bound with a sticky rack inside a containing block
+extended by 32px. A matching negative bottom margin removes that extra document reservation.
 Menu and satellites share the rack, so their different heights cannot cause different thresholds.
 
 The enhanced virtual document already translates all content by `-visualScrollY`. Its rack therefore

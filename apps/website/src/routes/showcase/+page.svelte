@@ -1,47 +1,51 @@
 <script lang="ts">
-	import {
-		ContentPage,
-		SpatialCardGridSection,
-		getSpatialListItems
-	} from '@spatial-elements/sveltekit';
-	import { HeadingSection, Section } from '@page-sections/svelte';
-	import { showcaseElements as elements } from '$lib/showcase/collection';
+	import { ContentPage, SpatialCarouselSection } from '@spatial-elements/sveltekit';
+	import { HeadingSection, CardGridSection } from '@page-sections/svelte';
+	import { showcaseSegments } from '$lib/showcase/segments';
+	import { showcaseProducts } from '$lib/showcase/products';
+	import { featuredItems } from '$lib/showcase/collection';
 	import { showcaseHdr } from '$lib/showcase/optimized';
+	const areas = showcaseSegments.map((segment) => {
+		const product = showcaseProducts.find((product) => product.segment.id === segment.id)!;
+		return {
+			id: segment.id,
+			title: segment.title,
+			description: segment.description,
+			href: '/showcase/' + segment.id + '/',
+			image: {
+				src: '/assets/showcase/' + product.id + '/' + product.id + '-poster.webp',
+				alt: segment.title + ' collection',
+				width: 1024,
+				height: 1024
+			}
+		};
+	});
 </script>
 
-<ContentPage
-	page={{
-		title: 'Showcase',
-		breadcrumbs: []
-	}}
-	hdr={showcaseHdr}
->
+<ContentPage page={{ title: 'Showcase', breadcrumbs: [] }} hdr={showcaseHdr}>
 	<HeadingSection
 		section={{
 			id: 'page-heading',
 			title: 'Showcase',
 			headingLevel: 1,
-			introduction: `Tools, desk essentials, industrial components and a timepiece. Explore ${elements.length} models from Wera, Logitech, item and Rolex, with product photographs and videos where available. This is a demonstration, not a shop.`
+			introduction:
+				'Explore spatial experiences for everyday technology, tools, industry and luxury. These collections are demonstrations, not shops.'
 		}}
 	/>
-	<Section
-		section={{ id: 'views', title: 'Explore the collection', headline: 'Explore the collection' }}
-		><p>
-			<a href="/showcase/categories/list/">Card grid</a> ·
-			<a href="/showcase/categories/carousel/">Carousel</a>
-			· <a href="/showcase/categories/mixed/">Mixed composition</a>
-		</p>
-		<p>
-			For products and purchasing information, visit <a href="https://www.wera.de/">Wera</a>,
-			<a href="https://www.logitech.com/">Logitech</a>,
-			<a href="https://www.item24.com/">item</a> or <a href="https://www.rolex.com/">Rolex</a>.
-		</p></Section
-	>
-	<SpatialCardGridSection
-		section={{ id: 'collection', title: 'The collection', headline: 'The collection' }}
-		list={getSpatialListItems(elements, '/showcase/elements')}
-		cardSize="l"
-		cardTone="muted"
+	<CardGridSection
+		section={{ id: 'areas', title: 'Explore the collections', headline: 'Explore the collections' }}
+		list={areas}
+		cardSize="m"
+		cardTone="standard"
 		mediaAspect="3/2"
+	/>
+	<SpatialCarouselSection
+		section={{
+			id: 'featured-products',
+			title: 'Selected products',
+			headline: 'Selected products',
+			background: { color: 'transparent', size: 'full' }
+		}}
+		list={featuredItems}
 	/>
 </ContentPage>

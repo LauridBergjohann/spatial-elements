@@ -1,14 +1,9 @@
 <script lang="ts">
 	import { HeroSection, Section, CardGridSection } from '@page-sections/svelte';
 	import WebsitePage from '$lib/WebsitePage.svelte';
-	import { SpatialCarouselSection, getSpatialListItems } from '@spatial-elements/sveltekit';
-	import { showcaseElements } from '$lib/showcase/collection';
+	import { SpatialCarouselSection } from '@spatial-elements/sveltekit';
+	import { featuredItems } from '$lib/showcase/collection';
 	import { showcaseHdr } from '$lib/showcase/optimized';
-	const featured = ['kraftform-kompakt', 'chronograph', 'logitech-ergo-k860', 'logitech-z407'];
-	const featuredItems = getSpatialListItems(
-		featured.flatMap((id) => showcaseElements.filter((element) => element.id === id)),
-		'/showcase/elements'
-	);
 </script>
 
 <WebsitePage

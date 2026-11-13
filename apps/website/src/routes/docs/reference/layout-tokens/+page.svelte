@@ -288,7 +288,7 @@
 					</tr>
 					<tr>
 						<td>scrollThreshold</td>
-						<td>112</td>
+						<td>32</td>
 					</tr>
 				</tbody>
 			</table>

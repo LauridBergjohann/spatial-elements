@@ -1,3 +1,4 @@
+import { productSegment, productHref } from './segments';
 import documents from './products.json' with { type: 'json' };
 import photoAssets from './photo-assets.json' with { type: 'json' };
 
@@ -14,6 +15,8 @@ export const showcaseProducts = documents.map((document) => {
 	const photos = images.filter((image) => image.role === 'gallery');
 	return {
 		...document,
+		segment: productSegment(document.manufacturer),
+		href: productHref({ id: document.id, manufacturerId: document.manufacturer }),
 		manufacturer,
 		manufacturerId: document.manufacturer,
 		photos,

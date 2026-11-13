@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getContext, onMount, tick, type Snippet } from 'svelte';
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
-	import { resolveMenuOffset } from '@spatial-elements/core/spatial-element/responsiveLayout';
+	import { resolveMenuOffset, spatialLayoutTokens } from '@spatial-elements/core/spatial-element/responsiveLayout';
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { getStageVisualScrollPosition, STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
 	import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
@@ -113,7 +113,7 @@
 	});
 </script>
 
-<div class="spatial-shell-track" data-spatial-navigation-shell>
+<div class="spatial-shell-track" style:--ps-sticky-range={`${spatialLayoutTokens.menu.scrollThreshold}px`} data-spatial-navigation-shell>
  <div bind:this={rack} class="spatial-shell-rack" data-stage-scroll-shell data-catalog-shell data-spatial-navigation-glass={fixedDetail && theme.panelTheme.surface === 'glass' ? '' : undefined}>
   {#if navigation}{@render navigation()}{:else}<Navigation {menu} {items} {brand} {tools} {left} {right} />{/if}
  </div>

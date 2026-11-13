@@ -1,5 +1,5 @@
 import { chromium } from '@playwright/test';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -13,6 +13,10 @@ const height = Number(process.env.PROFILE_HEIGHT ?? 900);
 const port = Number(process.env.PROFILE_PORT ?? 4237);
 const product = process.env.PROFILE_PRODUCT ?? 'tool-check-plus';
 if (!/^[a-z\d-]+$/i.test(product)) throw Error('Use a product slug for PROFILE_PRODUCT');
+const products = JSON.parse(await readFile(new URL('../apps/website/src/lib/showcase/products.json', import.meta.url), 'utf8'));
+const manufacturer = products.find(item => item.id === product)?.manufacturer;
+const segment = { wera: 'workbench', logitech: 'consumer', item: 'industrial', watches: 'exclusive' }[manufacturer];
+if (!segment) throw Error('Unknown showcase product: ' + product);
 const output = new URL('../.artifacts/performance/', import.meta.url);
 await mkdir(output, { recursive: true });
 const server = spawn(process.execPath, [
@@ -124,7 +128,7 @@ try {
     await page.waitForFunction(() => document.querySelector('[data-catalog-model-ready]'), null, { timeout: 120000 });
     await page.waitForTimeout(1800);
   };
-  await page.goto(`http://127.0.0.1:${port}/showcase/?stage-test=1`);
+  await page.goto(`http://127.0.0.1:${port}/showcase/${segment}/?stage-test=1`);
   await ready();
   const environment = await page.evaluate(async product => {
     const adapter = await navigator.gpu?.requestAdapter();
@@ -240,7 +244,7 @@ try {
     }, product, { timeout: 5000 });
     await measure('grid-to-detail', async () => {
       await card.click();
-      await page.waitForURL(new RegExp(`/showcase/elements/${product}/?$`));
+      await page.waitForURL(new RegExp(`/showcase/${segment}/${product}/?$`));
       await page.waitForFunction(() => !document.querySelector('[data-catalog-transition]') && window.__stageVisualTest?.getCatalogPresentation()?.representations.state === 'high', null, { timeout: 120000 });
       await page.waitForTimeout(500);
     });
@@ -248,11 +252,11 @@ try {
     await page.waitForTimeout(1500);
     await measure('detail-to-grid', async () => {
       await page.goBack();
-      await page.waitForURL(/\/showcase\/\?stage-test=1$/);
+      await page.waitForURL(url => url.pathname === '/showcase/' + segment + '/' && url.search === '?stage-test=1');
       await page.waitForFunction(() => !document.querySelector('[data-catalog-transition]'), null, { timeout: 120000 });
       await page.waitForTimeout(500);
     });
-    await page.goto(`http://127.0.0.1:${port}/showcase/categories/carousel/?stage-test=1`);
+    await page.goto(`http://127.0.0.1:${port}/showcase/${segment}/?stage-test=1`);
     await ready();
     await measure('carousel-scroll', scroll);
     await page.screenshot({ path: fileURLToPath(new URL(`${label}-carousel.png`, output)) });

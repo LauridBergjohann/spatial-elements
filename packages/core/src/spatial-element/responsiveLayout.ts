@@ -3,14 +3,19 @@ import { layoutTokens, resolveContentGrid, contentSpanWidth, resolvePageLayout,
   resolveCardLayout as resolveSharedCardLayout, type CardLayoutOptions, type ResponsiveLayoutInput,
   type LayoutRect, type LayoutInsets } from '@page-sections/core';
 export { contentGridSizes, viewportLayoutSizes, resolveContentGrid, resolveContentSpan,
-  contentSpanWidth, resolveViewportLayout, resolveMenuOffset } from '@page-sections/core';
+  contentSpanWidth, resolveViewportLayout } from '@page-sections/core';
 export type { ContentGridSize, ViewportLayoutSize, ContentSpan, LayoutRect, LayoutInsets,
   ResponsiveLayoutInput, CardLayoutOptions, CardMediaAspect, CardMediaFit, SurfaceTone } from '@page-sections/core';
 export type { LayoutCardSize as SpatialCardSize } from '@page-sections/core';
 import type { LayoutCardSize as SpatialCardSize } from '@page-sections/core';
 
 /** Shared layout tokens plus spatial-only detail, docking and carousel settings. */
-const tokens = { ...layoutTokens, ...spatialTokens };
+const tokens = { ...layoutTokens, ...spatialTokens, menu: { ...layoutTokens.menu, scrollThreshold: 32 } };
+/** Keep native navigation and projected surfaces on the same short sticky track. */
+export function resolveMenuOffset(scrollY: number, fixed = false) {
+ const delta = (Number.isFinite(scrollY) ? scrollY : 0) - tokens.menu.scrollThreshold;
+ return fixed || delta <= 0 ? 0 : -delta;
+}
 export const spatialLayoutTokens = tokens;
 
 /** A natural-height panel has a known width and anchor, never an invented rectangle. */
@@ -71,11 +76,11 @@ export function resolveResponsiveLayout(input: ResponsiveLayoutInput) {
 	const pane = {
 		x: paneLeft, y: available.y + tokens.pane.top,
 		width: Math.min(tokens.contentMax, Math.max(0, layoutWidth - safeArea.right - tokens.pane.rightInset - paneLeft)),
-		height: Math.max(0, available.height - tokens.pane.top - tokens.pane.bottom - tokens.pane.submenuHeight)
+		height: Math.max(0, available.height - tokens.pane.top - tokens.pane.bottom - tokens.pane.submenuHeight / 2)
 	};
 	const paneGrid = resolveContentGrid(pane.width);
 	const paneSubmenu: LayoutRect = {
-		x: pane.x, y: pane.y + pane.height,
+		x: pane.x, y: pane.y + Math.max(0, pane.height - tokens.pane.submenuHeight / 2),
 		width: pane.width, height: Math.min(tokens.pane.submenuHeight,
 			Math.max(0, available.height - tokens.pane.top - tokens.pane.bottom))
 	};

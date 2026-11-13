@@ -78,24 +78,27 @@
 	</Section>
 	<Section
 		section={{
-			id: 'the-112px-rule',
-			title: 'The 112px rule',
-			headline: 'The 112px rule',
+			id: 'the-32px-rule',
+			title: 'The 32px rule',
+			headline: 'The 32px rule',
 			background: { color: 'standard', size: 'standard' }
 		}}
 		><div class="prose">
 			<p><img src="/documentation/images/menu-scroll.png" alt="" loading="lazy" /></p>
 			<p><em>The same position rule drives native sticky layout and enhanced compensation.</em></p>
 			<p>
-				The ordinary shell stays at its starting position for the first 112px of document scroll.
-				Beyond that it moves upward by <code>scrollY − 112</code>. It is not a direction-sensitive
-				hide/reveal header. At scroll positions 0, 64, 112 and 160, its offsets are 0, 0, 0 and
-				−48px.
+				The ordinary shell stays at its starting position for the first 32px of document scroll.
+				Beyond that it moves upward by <code>scrollY − 32</code>. It is not a direction-sensitive
+				hide/reveal header. At scroll positions 0, 16, 32 and 80, its offsets are 0, 0, 0 and −48px.
 			</p>
 			<p>
 				Detail 3XL is the exception: its menu remains fixed. The native sticky layout and enhanced
 				virtual-scroll compensation follow the same equation. Compensation is applied once; the
 				renderer does not subtract the document scroll again from a fixed-region panel.
+			</p>
+			<p>
+				ContentPage sidebars follow the same visual scroll timeline as the stage, sticking 16px from
+				the viewport edge while their contents remain independently scrollable.
 			</p>
 			<p>
 				The shell is not keyed to the current route and keeps its owner through navigation. When

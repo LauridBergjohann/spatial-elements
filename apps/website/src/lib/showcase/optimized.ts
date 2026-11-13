@@ -30,7 +30,11 @@ export function optimizedSpatialElement(product: ShowcaseProduct): SpatialElemen
 			label: `Visit ${product.manufacturer.name} — not sold here`,
 			href: product.sourceUrl
 		},
-		breadcrumbs: [{ label: 'Showcase', href: '/showcase/' }, { label: product.title }],
+		breadcrumbs: [
+			{ label: 'Showcase', href: '/showcase/' },
+			{ label: product.segment.title, href: '/showcase/' + product.segment.id + '/' },
+			{ label: product.title }
+		],
 		media: [
 			{ id: 'three-dimensional-view', kind: 'minimap', label: 'Interactive 3D view' },
 			...product.photos.map((photo) => ({

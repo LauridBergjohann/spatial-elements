@@ -3,6 +3,8 @@
 	import { base } from '$app/paths';
 	import { afterNavigate } from '$app/navigation';
 	import Search from 'lucide-svelte/icons/search';
+	import { showcaseSegments } from './showcase/segments';
+	import { showcaseProducts } from './showcase/products';
 	import { documents } from './catalog';
 
 	const entries = [
@@ -13,18 +15,18 @@
 			group: 'Start here',
 			description: 'Install Spatial Elements and build your first collection.'
 		},
-		{
-			title: 'Wera tools',
-			href: '/showcase/',
+		...showcaseSegments.map((segment) => ({
+			title: segment.title,
+			href: '/showcase/' + segment.id + '/',
 			group: 'Showcase',
-			description: 'Explore eight tools in a spatial collection.'
-		},
-		{
-			title: 'The watch',
-			href: '/showcase/elements/chronograph/',
-			group: 'Showcase',
-			description: 'A Rolex watch study inspired by Three.js.'
-		},
+			description: segment.description
+		})),
+		...showcaseProducts.map((product) => ({
+			title: product.title,
+			href: product.href,
+			group: 'Showcase ? ' + product.segment.title,
+			description: product.description
+		})),
 		{
 			title: 'About',
 			href: '/about/',

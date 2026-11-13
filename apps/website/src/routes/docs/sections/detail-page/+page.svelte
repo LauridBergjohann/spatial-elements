@@ -123,7 +123,9 @@
 				horizontal rail confines its horizontal scroll direction; a summary with overflowing content
 				scrolls locally until its edge, then passes the gesture to the page. Breadcrumbs use the
 				centered content width in flow layouts and the pane width in 3XL. Detail and fullscreen
-				controls use the dedicated box icons from the layout design.
+				controls use the dedicated box icons from the layout design. The 3XL pane header has a
+				subtle divider and shadow. Its section menu straddles the bottom edge of the pane, with half
+				its height overlapping the content surface.
 			</p>
 		</div></Section
 	>

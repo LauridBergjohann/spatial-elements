@@ -8,7 +8,7 @@ test.each([2300, 2456, 3128, 3440])('pane paint and native document coordinates 
 	for (const scrollY of [0, 100, 500.5, bodyHeight - 900]) {
 		const clip = resolvePaneScrollClip(0, bodyHeight, pane.body.y, pane.body.y + pane.body.height, scrollY);
 		expect(clip.top - scrollY).toBe(182);
-		expect(bodyHeight - clip.bottom - scrollY).toBe(840);
+		expect(bodyHeight - clip.bottom - scrollY).toBe(862);
 		expect(bodyHeight - clip.top - clip.bottom).toBe(pane.body.height);
 	}
 });

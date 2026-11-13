@@ -91,14 +91,14 @@ describe('responsive layout contract', () => {
 		expect(safe.pane.x).toBe(1208);
 		expect(safe.pane.width).toBe(1160);
 		expect(safe.pane.y).toBe(116);
-		expect(safe.pane.height).toBe(714);
+		expect(safe.pane.height).toBe(736);
 		expect(safe.paneHeader).toEqual({ x: 1208, y: 116, width: 1160, height: 86 });
-		expect(safe.paneBody).toEqual({ x: 1208, y: 202, width: 1160, height: 628 });
+		expect(safe.paneBody).toEqual({ x: 1208, y: 202, width: 1160, height: 650 });
 		expect(safe.paneSubmenu).toEqual({ x: 1208, y: 830, width: 1160, height: 44 });
 	});
 
-	it('keeps the header until 112px and does not reveal it merely on upward scrolling', () => {
-		expect([0, 48, 112, 140, 300, 140].map(y => resolveMenuOffset(y))).toEqual([0, 0, 0, -28, -188, -28]);
+	it('keeps the header until 32px and does not reveal it merely on upward scrolling', () => {
+		expect([0, 16, 32, 48, 140, 300, 140].map(y => resolveMenuOffset(y))).toEqual([0, 0, 0, -16, -108, -268, -108]);
 		expect(resolveMenuOffset(300, true)).toBe(0);
 		expect(resolvePanelHeight(700, 400)).toBe(400);
 		expect(resolvePanelHeight(700)).toBe(700);
@@ -185,9 +185,9 @@ describe('detail presentation constraints', () => {
 		expect(detail.rail.rect).toEqual({ x: 28, y: 96, width: 138, height: 788 });
 		expect(detail.rail.gap).toBe(24);
 		expect(detail.pane).toEqual({
-			surface: { x: 1158, y: 96, width: 1122, height: 744 },
+			surface: { x: 1158, y: 96, width: 1122, height: 766 },
 			header: { x: 1158, y: 96, width: 1122, height: 86 },
-			body: { x: 1158, y: 182, width: 1122, height: 658 }
+			body: { x: 1158, y: 182, width: 1122, height: 680 }
 		});
 		expect(detail.summary).toEqual({ x: 1158, width: 1122,
 			anchor: { y: 182, alignment: 'start' }, height: { kind: 'natural' }, placement: 'pane' });

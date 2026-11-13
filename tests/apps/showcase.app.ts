@@ -2,6 +2,68 @@
 
 import type { Locator } from '@playwright/test';
 import { showcaseProducts } from '../../apps/website/src/lib/showcase/products';
+import { showcaseSegments } from '../../apps/website/src/lib/showcase/segments';
+
+test('showcase collections own their products, card sizes and breadcrumbs', async ({ page }) => {
+	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
+	await page.goto('/showcase/');
+	await expect(page.locator('#areas .ps-card')).toHaveCount(4);
+	await expect(page.locator('#featured-products [data-carousel-spatial-element]')).toHaveCount(4);
+	for (const segment of showcaseSegments) {
+		await page.goto('/showcase/' + segment.id + '/');
+		const products = showcaseProducts.filter(product => product.segment.id === segment.id);
+		await expect(page.locator('#collection [data-catalog-card]')).toHaveCount(products.length);
+		await expect(page.locator('#collection [data-card-size]').first()).toHaveAttribute('data-card-size', segment.cardSize);
+		await expect(page.locator('#new-products')).toHaveCount(segment.id === 'exclusive' ? 0 : 1);
+		await expect(page.locator('#collection')).toContainText(products[0].title);
+		await page.locator('#collection').getByRole('link', {name: products[0].title, exact: true}).click();
+		await expect(page).toHaveURL(new RegExp(products[0].href + '$'));
+		const crumb = page.getByRole('navigation', {name:'Breadcrumb',exact:true}).filter({visible:true}).first();
+		await expect(crumb.getByRole('link', {name:segment.title,exact:true})).toHaveAttribute('href','/showcase/' + segment.id + '/');
+	}
+	const response = await page.goto('/showcase/industrial/logitech-z407/');
+	expect(response?.status()).toBe(404);
+});
+
+for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
+	test(`docs sidebars stick and the header leaves after 32px (enhanced: ${enhanced})`, async ({page}, info) => {
+		if (!enhanced) await page.addInitScript(() => Object.defineProperty(navigator,'gpu',{value:undefined}));
+		await page.setViewportSize({width:1920,height:900});
+		await page.goto('/docs/reference/layout-tokens/');
+		if (enhanced) await expect(page.locator('.stage')).toHaveAttribute('data-stage-state','enhanced',{timeout:60000});
+		const header = page.locator('.ps-navigation .header');
+		for (const [scroll, top] of [[16,16],[32,16],[80,-32]]) {
+			await page.evaluate(y => window.scrollTo({top:y,behavior:'instant'}), scroll);
+			await expect.poll(async () => (await header.boundingBox())!.y).toBeCloseTo(top,0);
+		}
+		for (const scroll of [600,1500]) {
+			await page.evaluate(y => window.scrollTo({top:y,behavior:'instant'}),scroll);
+			for (const selector of ['.ps-left-sidebar > .sidebar-panel','.ps-content-menu-slot > .desktop']) {
+				const sidebar=page.locator(selector);
+				await expect.poll(async () => (await sidebar.boundingBox())!.y).toBeCloseTo(16,0);
+				await expect.poll(async () => {const box=(await sidebar.boundingBox())!;return box.y+box.height;}).toBeLessThanOrEqual(885);
+			}
+		}
+		await page.screenshot({path:info.outputPath('sticky-docs.png')});
+		await page.setViewportSize({width:1000,height:800});
+		await expect(page.locator('.ps-left-sidebar')).toBeHidden();
+		await expect.poll(async () => (await page.locator('.ps-content-menu-slot').boundingBox())!.y).toBeCloseTo(16,0);
+	});
+
+	test(`3XL detail header is separated and submenu overlaps halfway (enhanced: ${enhanced})`, async ({page},info) => {
+		if (!enhanced) await page.addInitScript(() => Object.defineProperty(navigator,'gpu',{value:undefined}));
+		await page.setViewportSize({width:2456,height:1000});
+		await page.goto('/showcase/consumer/logitech-z407/');
+		if (enhanced) await expect(page.locator('.stage')).toHaveAttribute('data-stage-state','enhanced',{timeout:60000});
+		await expect(page.locator('[data-spatial-detail-pane-header]')).not.toHaveCSS('box-shadow','none');
+		const surface=page.locator('[data-spatial-detail-pane-surface]');
+		const submenu=page.locator('[data-spatial-detail-pane-submenu-shell]');
+		await expect.poll(async()=>{const p=(await surface.boundingBox())!, m=(await submenu.boundingBox())!;return Math.abs(p.y+p.height-m.y-m.height/2);}).toBeLessThan(1);
+		await page.mouse.wheel(0,500);
+		await expect.poll(async()=>{const p=(await surface.boundingBox())!, m=(await submenu.boundingBox())!;return Math.abs(p.y+p.height-m.y-m.height/2);}).toBeLessThan(1);
+		await page.screenshot({path:info.outputPath('pane-overlap.png')});
+	});
+}
 
 test('home explains the library and docs use the shared navigation', async ({ page }) => {
 	await page.goto('/');
@@ -64,8 +126,8 @@ test('one palette and frosted navigation follow the chosen mode across the websi
 			'/',
 			'/docs/foundations/assets/',
 			'/showcase/',
-			'/showcase/elements/joker/',
-			'/showcase/elements/chronograph/'
+			'/showcase/workbench/joker/',
+			'/showcase/exclusive/chronograph/'
 		]) {
 			await page.goto(route);
 			await expect(page.locator('.brand-stage-shell')).toHaveAttribute(
@@ -118,10 +180,10 @@ test('playground updates preview and source together and can reset', async ({ pa
 });
 
 if (process.env.SPATIAL_GPU)
-	test('showcase root animates into details and back through history', async ({ page }, info) => {
+	test('workbench grid animates into details and back through history', async ({ page }, info) => {
 		const errors: string[] = [];
 		page.on('pageerror', (error) => errors.push(error.message));
-		await page.goto('/showcase/?stage-test=1');
+		await page.goto('/showcase/workbench/?stage-test=1');
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', {
 			timeout: 60000
 		});
@@ -145,7 +207,7 @@ if (process.env.SPATIAL_GPU)
 		};
 		// The final products must receive real 3D models when scrolled into view,
 		// even though the complete collection is larger than the active-model budget.
-		for (const product of showcaseProducts.slice(-2)) {
+		for (const product of showcaseProducts.filter(product => product.segment.id === "workbench").slice(-2)) {
 			const card = page.locator(`[data-catalog-card][data-spatial-element-id="${product.id}"]`);
 			await centerCard(card);
 			await expect(card).toHaveAttribute('data-catalog-model-ready', '', { timeout: 60000 });
@@ -187,7 +249,7 @@ if (process.env.SPATIAL_GPU)
 					(window as unknown as { showcaseTransitionRecipes: string[] }).showcaseTransitionRecipes
 			);
 		await transitionCard.click();
-		await expect(page).toHaveURL(/\/showcase\/elements\//);
+		await expect(page).toHaveURL(/\/showcase\/(consumer|workbench|industrial|exclusive)\/[^/]+\//);
 		try {
 			await expect.poll(observedRecipes).toContain('list-to-hero');
 		} catch (error) {
@@ -204,10 +266,10 @@ if (process.env.SPATIAL_GPU)
 		await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
 		await expect(page.locator('#demo-notice')).toContainText('cannot purchase');
 		await page.goBack();
-		await expect(page).toHaveURL(/\/showcase\/\?stage-test=1$/);
+		await expect(page).toHaveURL(/\/showcase\/workbench\/\?stage-test=1$/);
 		await expect.poll(observedRecipes).toContain('hero-to-list');
 		await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
-		await page.goto('/showcase/elements/chronograph/');
+		await page.goto('/showcase/exclusive/chronograph/');
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', {
 			timeout: 60000
 		});
@@ -227,7 +289,7 @@ if (process.env.SPATIAL_GPU)
 			.getByRole('link', { name: 'Showcase', exact: true })
 			.click();
 		await expect(page).toHaveURL(/\/showcase\/$/);
-		await expect(page.locator('[data-catalog-card]')).toHaveCount(showcaseProducts.length);
+		await expect(page.locator('#areas .ps-card')).toHaveCount(4);
 		await expect(page.locator('[data-catalog-model-ready]').first()).toBeAttached({
 			timeout: 60000
 		});
@@ -239,9 +301,9 @@ test('all products have a complete fallback image and identify the manufacturer'
 }) => {
 	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
 	await page.goto('/showcase/');
-	await expect(page.locator('[data-catalog-card]')).toHaveCount(showcaseProducts.length);
+	await expect(page.locator('#areas .ps-card')).toHaveCount(4);
 	for (const product of showcaseProducts) {
-		const response = await page.goto('/showcase/elements/' + product.id + '/');
+		const response = await page.goto(product.href);
 		expect(response?.status()).toBe(200);
 		await expect(page.locator('#demo-notice')).toContainText('cannot purchase');
 		await expect(page.locator(`#demo-notice a[href="${product.manufacturer.href}"]`)).toBeVisible();
@@ -274,7 +336,7 @@ test('product media selects full photographs and loads YouTube only on request',
 		await route.fulfill({ contentType: 'text/html', body: '<p>Local video player fixture</p>' });
 	});
 	const product = showcaseProducts.find((item) => item.id === 'logitech-brio-500')!;
-	await page.goto(`/showcase/elements/${product.id}/`);
+	await page.goto(product.href);
 	const header = page.locator('[data-spatial-element-sticky-header]');
 	const rail = page.locator('[data-spatial-element-media-rail]');
 	await expect(header).toHaveAttribute('aria-hidden', 'true');
@@ -320,13 +382,13 @@ test('product media selects full photographs and loads YouTube only on request',
 });
 
 test('watch credits its inspiration and links to the manufacturer', async ({ page }) => {
-	await page.goto('/showcase/elements/chronograph/');
+	await page.goto('/showcase/exclusive/chronograph/');
 	await expect(page.locator('#demo-notice')).toContainText('cannot purchase');
 	await expect(page.locator('#demo-notice a[href="https://www.rolex.com/"]')).toBeVisible();
 	await expect(page.locator('#demo-notice a[href*="webgl_watch.html"]')).toBeVisible();
 });
 
-for (const width of [320, 840, 1920])
+for (const width of [320, 840, 1920, 2456])
 	test(`website stays usable without JavaScript at ${width}px`, async ({ browser, baseURL }) => {
 		const context = await browser.newContext({
 			baseURL,
@@ -339,8 +401,8 @@ for (const width of [320, 840, 1920])
 				'/',
 				'/getting-started/',
 				'/docs/foundations/assets/',
-				'/showcase/elements/joker/',
-				'/showcase/elements/logitech-brio-500/'
+				'/showcase/workbench/joker/',
+				'/showcase/consumer/logitech-brio-500/'
 			]) {
 				const response = await page.goto(route);
 				expect(response?.status()).toBe(200);
@@ -392,7 +454,7 @@ for (const width of [390, 1920]) {
 	test(`media framing and overflow controls stay inside their viewport at ${width}px`, async ({ page }, info) => {
 		await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
 		await page.setViewportSize({ width, height: 900 });
-		await page.goto('/showcase/elements/logitech-m750/');
+		await page.goto('/showcase/consumer/logitech-m750/');
 		const rail = page.locator('[data-spatial-element-media-rail]');
 		await expect(rail).toHaveCSS('scrollbar-width', 'none');
 		const next = page.getByRole('button', { name: 'Next media', exact: true });
@@ -438,7 +500,7 @@ if (process.env.SPATIAL_GPU) test('enhanced media clips thumbnails and clears co
 	const errors: string[] = [];
 	page.on('pageerror', error => errors.push(error.message));
 	await page.setViewportSize({ width: 1920, height: 900 });
-	await page.goto('/showcase/elements/logitech-m750/?stage-test=1');
+	await page.goto('/showcase/consumer/logitech-m750/?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
 	const product = showcaseProducts.find(product => product.id === 'logitech-m750')!;
@@ -484,7 +546,7 @@ if (process.env.SPATIAL_GPU) test('featured carousel renders the selected produc
 	for (const mode of ['Light', 'Dark']) {
 		await page.getByRole('button', { name: mode, exact: true }).filter({ visible: true }).click();
 		const selected = carousel.locator('.carousel-spatial-element.selected .spatial-element-target');
-		await expect(selected).toHaveAttribute('href', '/showcase/elements/kraftform-kompakt');
+		await expect(selected).toHaveAttribute('href', '/showcase/workbench/kraftform-kompakt/');
 		await selected.hover();
 		await page.screenshot({ path: info.outputPath(`featured-carousel-${mode}.png`) });
 	}
@@ -493,7 +555,7 @@ if (process.env.SPATIAL_GPU) test('featured carousel renders the selected produc
 if (process.env.SPATIAL_GPU) for (const source of ['grid', 'carousel']) {
 	test(`${source} detail transition retains exclusive geometry, media interaction and submenu`, async ({ page }, info) => {
 		await page.setViewportSize({ width: 1920, height: 1000 });
-		await page.goto(source === 'grid' ? '/showcase/?stage-test=1' : '/?stage-test=1');
+		await page.goto(source === 'grid' ? '/showcase/consumer/?stage-test=1' : '/?stage-test=1');
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
 		const card = source === 'grid'
 			? page.locator('[data-catalog-card][data-spatial-element-id="logitech-ergo-k860"]')
@@ -517,7 +579,7 @@ if (process.env.SPATIAL_GPU) for (const source of ['grid', 'carousel']) {
 			requestAnimationFrame(sample);
 		});
 		await (source === 'grid' ? card : card.locator('.spatial-element-target')).click();
-		await expect(page).toHaveURL(/\/showcase\/elements\//);
+		await expect(page).toHaveURL(/\/showcase\/(consumer|workbench|industrial|exclusive)\/[^/]+\//);
 		await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
 		const samples = await page.evaluate(() => (window as unknown as {
 			detailTransitionSamples: { phase: string; posters: number[] }[]
@@ -546,7 +608,7 @@ if (process.env.SPATIAL_GPU) for (const source of ['grid', 'carousel']) {
 }
 
 if (process.env.SPATIAL_GPU) test('Z407 has a measured submenu after a direct load', async ({ page }) => {
-	await page.goto('/showcase/elements/logitech-z407/?stage-test=1');
+	await page.goto('/showcase/consumer/logitech-z407/?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
 	await expect(page.locator('[data-spatial-element-tabs-panel-anchor]')).toHaveAttribute('data-spatial-element-tabs-measured', '');
 	await expect(page.locator('[data-spatial-element-tab-list="panel"]')).toContainText('Explore the details');
@@ -555,7 +617,7 @@ if (process.env.SPATIAL_GPU) test('Z407 has a measured submenu after a direct lo
 
 if (process.env.SPATIAL_GPU) test('scrolled-away minimap returns in the dock and submenu matches navigation', async ({ page }, info) => {
 	await page.setViewportSize({ width: 1920, height: 900 });
-	await page.goto('/showcase/elements/logitech-m750/?stage-test=1');
+	await page.goto('/showcase/consumer/logitech-m750/?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
 	const tabs = page.locator('[data-spatial-element-tab-list="panel"]');
 	const overview = tabs.locator('[data-spatial-element-tab-id="overview"]');
@@ -589,7 +651,7 @@ if (process.env.SPATIAL_GPU) test('scrolled-away minimap returns in the dock and
 });
 
 if (process.env.SPATIAL_GPU) test('view selection fades continuously and submenu stays neutral across themes', async ({ page }) => {
-	await page.goto('/showcase/elements/winkelschluessel/?stage-test=1');
+	await page.goto('/showcase/workbench/winkelschluessel/?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
 	// Reproduce a host stylesheet loaded after the component styles.
 	await page.addStyleTag({ content: '.ps-shell a { color: var(--ps-accent); }' });
@@ -621,7 +683,7 @@ if (process.env.SPATIAL_GPU) test('media hover consumes the cutout inset without
 	const errors: string[] = [];
 	page.on('pageerror', error => errors.push(error.message));
 	await page.setViewportSize({ width: 1920, height: 1000 });
-	await page.goto('/showcase/elements/winkelschluessel/?stage-test=1');
+	await page.goto('/showcase/workbench/winkelschluessel/?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
 	const photo = page.locator('.thumb-image[data-media-fit="contain"]').first();
 	const imageScale = (locator: Locator) => locator.evaluate(image => new DOMMatrixReadOnly(getComputedStyle(image).transform).m11);
@@ -654,7 +716,7 @@ if (process.env.SPATIAL_GPU) test('media hover consumes the cutout inset without
 	await expect.poll(async () => (await inset(photo)).left).toBeCloseTo(8, 1);
 	await expect.poll(tilt).toBeLessThan(0.001);
 	await page.emulateMedia({ reducedMotion: 'no-preference' });
-	await page.goto('/showcase/elements/logitech-m750/?stage-test=1');
+	await page.goto('/showcase/consumer/logitech-m750/?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
 	const cover = page.locator('.thumb-image[data-media-fit="cover"]').last();
 	const next = page.getByRole('button', { name: 'Next media', exact: true });
