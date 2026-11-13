@@ -35,7 +35,7 @@ test.each(gradients)('%s retains its gradient only for an effective full content
 			if (pageKind === 'content' && size === 'full') continue;
 			const result = normalizeSectionBackground({ color, size }, { pageKind });
 			expect(result).toMatchObject({ color: endColor, size: 'standard', gradient: false });
-			expect(result.cssBackground).toBe(endColor === 'transparent' ? 'transparent' : `var(--spatial-element-section-${endColor})`);
+			expect(result.cssBackground).toBe(endColor === 'transparent' ? 'transparent' : `var(--ps-section-${endColor})`);
 			expect(result.diagnostic).toMatchObject({ requestedColor: color, requestedSize: size, pageKind, effectiveColor: endColor });
 		}
 	}
@@ -47,7 +47,7 @@ test('transparent gradient endpoints keep the opaque endpoint hue', () => {
 		['transparentToMuted', 'muted'], ['mutedToTransparent', 'muted']
 	] satisfies Array<[SectionBackgroundColor, string]>) {
 		const result = normalizeSectionBackground({ color, size: 'full' }, { pageKind: 'content' });
-		expect(result.cssBackground).toContain(`color-mix(in srgb, var(--spatial-element-section-${opaque}) 0%, transparent)`);
+		expect(result.cssBackground).toContain(`color-mix(in srgb, var(--ps-section-${opaque}) 0%, transparent)`);
 	}
 });
 

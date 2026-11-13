@@ -1,155 +1,40 @@
-﻿# Releases and GitHub Flow
+# One pull request per release
 
-## Daily development
+## Prepared website release
 
-Use short-lived branches and pull requests into main. Add a release note for changes to shipped
-packages with:
+Both public packages are already prepared as `1.0.0-beta.10`. For this release, commit and merge the prepared branch without running `changeset` or `release:version` again. The release workflow publishes this version under **beta**; it does not move **latest**. Consumers can explicitly install it with:
 
-~~~sh
+```sh
+npm install @spatial-elements/core@beta @spatial-elements/sveltekit@beta
+```
+
+Before the first merge with the new publishing workflow:
+
+1. Configure an npm trusted publisher on **both** `@spatial-elements/core` and `@spatial-elements/sveltekit`: GitHub owner `LauridBergjohann`, repository `spatial-elements`, workflow filename `release.yml`, environment `npm`, direct npm publication.
+2. Create/check the GitHub Actions environment `npm`. Set the repository or environment **variable** `NPM_TRUSTED_PUBLISHING_ENABLED` to `true` after configuring both publishers. No npm token secret is needed. If the environment has reviewers, approve the release job when requested.
+3. Push the feature branch and create one pull request targeting `main`. Wait for the Verify workflow and inspect the Vercel preview before merging.
+4. After merging, check the Release workflow, including its final registry consumer verification, and the separate Vercel production deployment. A failed partial publication can be retried by rerunning Release on `main`.
+
+See [npm trusted publishers](https://docs.npmjs.com/trusted-publishers/) for account-side setup and [website hosting](hosting.md) for Vercel configuration.
+
+## Subsequent releases
+
+Prepare versions on the feature branch before merging:
+
+```sh
 npm run changeset
-~~~
-
-Select the affected package(s), patch/minor/major, and a short user-facing explanation. Commit the
-generated .changeset/*.md file with the implementation. Documentation/tooling-only changes do not
-need a changeset unless the documentation ships in the package, e.g. its README.
-
-After merging, release.yml runs automatically. Changesets opens or updates a **release pull request**
-with coordinated versions and per-package changelogs. Review and merge that PR into main: the
-workflow then verifies, builds and publishes the missing npm versions automatically. No local
-npm publish or additional workflow dispatch is needed. Several feature PRs can share one release PR.
-
-core and sveltekit form a fixed version group. The version script keeps the adapter's core dependency
-and demo dependencies exact, refreshes the lockfile, and selects beta/latest from the version.
-The private root and demo applications are never published. This remains GitHub Flow, with no develop
-or permanent release branch. Package-level CHANGELOG.md files are generated release history; the root
-changelog records the initial release.
-
-## Beta and stable versions
-
-The repository is in Changesets prerelease mode (beta). The prepared release is `1.0.0-beta.8`;
-the major version reflects the earlier breaking authoring API changes. Further betas increment the prerelease counter.
-Changesets accumulates patch/minor/major intent for the eventual stable release. Humans classify the
-API impact; version numbers, dependency updates and changelogs are automated.
-
-To prepare stable publication, run npm exec changeset pre exit on a reviewed branch and merge that
-change. Review the resulting release PR carefully. Stable versions use latest; beta versions default to beta.
-Explicit per-version exceptions in `release-channels.json` select latest for a reviewed beta release.
-The version synchronization, metadata checks and publishing command all use this same policy.
-Do not hand-edit pre.json or package versions during normal releases.
-
-For `1.0.0-beta.8`, both packages publish directly with `--tag latest`. This intentionally makes the
-new beta the default installation. The existing beta tag is not moved by this release. Subsequent
-betas return to the beta tag unless another explicit version exception is reviewed.
-
-## Publish the prepared 1.0.0-beta.8 release
-
-The versions, changelogs, exact dependencies and lockfile are already updated. Commit these changes
-with the implementation and merge the branch into main through the normal reviewed PR workflow.
-**Merging triggers publication automatically** when trusted publishing is configured. No second
-version bump or release PR is needed for the already-consumed Changesets. Alternatively, use
-Actions > Release packages > Run workflow on main to retry the prepared release.
-
-Confirm that both npm package pages show version `1.0.0-beta.8` under `latest` after the workflow:
-
-~~~sh
-npm view @spatial-elements/core dist-tags --json
-npm view @spatial-elements/sveltekit dist-tags --json
-~~~
-
-This release introduces the shared responsive layout contract, content grids, card sizes,
-carousel summaries, detail media and the document-scrolled 3XL content pane. It fixes touch
-scrolling, geometry fitting, docking and catalog return transitions, while preserving live
-summary-panel state across navigation. Read [layout migration](layout-migration.md) before
-upgrading applications that customize layout or section backgrounds; the illustrated guides
-in [docs/wiki](wiki/) explain the layout rules and their rationale.
-
-Catalog navigation provides immediate preparation feedback. The source-first transition path
-remains opt-in via `?stagedNavigation=1` while production performance acceptance is evaluated.
-The repository now includes separate Basics and Showcase apps with independent dev, build
-and preview commands. Both are private and are not included in the published packages.
-See [development](development.md) for local commands and [theming](theming.md) for the
-persistent Showcase theme shell. This version remains a prerelease.
-
-## One-time GitHub and npm configuration
-
-1. GitHub Settings > Actions > General: allow GitHub Actions to create and approve pull requests.
-   The version job requests contents:write and pull-requests:write.
-2. Configure a trusted publisher for **each** npm package:
-   user LauridBergjohann, repository spatial-elements, workflow release.yml, environment npm.
-   Enable direct npm publish in the publisher's allowed actions.
-3. Configure GitHub environment npm for main deployments. To publish immediately after the merge,
-   do not require an additional environment approval or wait timer; the reviewed release PR is the gate.
-4. Set repository Actions variable NPM_TRUSTED_PUBLISHING_ENABLED=true.
-   Missing setup is reported as a failed release plan when an unpublished version exists.
-
-Only the publishing job receives id-token:write, on a GitHub-hosted runner with Node 24 / npm 11.
-No npm token is needed. This checkout cannot configure npm account settings; verify these settings
-in the respective UIs. See [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/).
-
-By default, Changesets uses GITHUB_TOKEN for the release PR. GitHub does not run ordinary push/PR
-workflows in response to that bot token. If required PR checks remain pending, close and reopen the
-release PR yourself to trigger them. For a fully automatic PR-check experience, optionally supply
-RELEASE_PR_TOKEN from a suitably scoped fine-grained token (contents and pull requests write), or
-adapt the workflow to generate a GitHub App token. Never weaken required checks to bypass this.
-The final publication always runs its own full verification regardless of PR checks.
-
-## Publication and recovery
-
-The workflow runs on pushes to main and also supports workflow_dispatch for retries.
-The plan checks the public npm registry: existing versions are skipped; network/auth/server errors
-fail rather than being mistaken for absent versions. If all versions exist, there is no upload.
-Pending Changesets go through the release PR first.
-
-Before uploading, the exact triggering commit passes metadata validation, unit tests, independent
-tarball consumer checks, both demo builds, fallback browser tests and app smoke tests. The verified tarballs are archived
-as a workflow artifact. Upload order is core, then sveltekit. No workspace-wide publish is used.
-If only core succeeds, rerun the workflow: the existing core version is skipped and the adapter
-is retried. Published versions cannot be overwritten.
-
-Useful read-only/local checks:
-
-~~~sh
-npm run check:release
-npm run test:release
-npm run release:plan
+npm run release:version
 npm run verify
 npm run build:apps
 npm run test:apps
-npm run test:e2e
-~~~
+```
 
-release:plan queries npm but never uploads. release:publish is restricted to Actions on main.
-The npm environment, publisher identity and repository variable are still required.
-Git tags and GitHub Release pages are optional follow-up metadata; this workflow does not create them.
+Commit the implementation, generated package versions, changelogs, exact internal/app dependencies, prerelease state and lockfile in the same PR. Both public packages form a fixed version group. Package README changes need a release to update npm; website-only changes do not.
 
-## Three.js and compatibility
+Merging to main runs release.yml: verification, builds, browser checks, publication of missing exact versions with provenance, then independent registry consumer verification. It creates no second PR and does not bump versions. Already published versions are skipped, so retries after partial publication are safe. Registry visibility is retried before the consumer installation.
 
-Three.js is a required peer dependency of both runtime packages. This expresses one compatible
-application-level Three.js version, important when sharing objects/materials with other libraries.
-A normal dependency could resolve to a second incompatible installation. Modern npm automatically
-installs a missing peer; explicit installation is only needed when the app imports Three.js itself,
-or for package managers/configurations that do not install peers automatically.
+The repository remains in Changesets beta mode. New prereleases use the beta npm tag unless explicitly promoted in release-channels.json. Historical latest promotions remain untouched. To leave prerelease mode, run npm exec changeset pre exit and npm run release:version in a reviewed PR; do not manually edit pre.json.
 
-Svelte 5 / SvelteKit 2, Three.js ^0.186.1, Node 22.12+ tooling.
-Semantic HTML and poster fallbacks remain available without GPU rendering.
-Packages include MPL-2.0; attribution is appreciated, not a license condition.
-Private brand assets remain outside the public repository and tarballs.
-The existing optional 3Dconnexion and renderer chunk build warnings remain unchanged.
+Configure a trusted publisher for each npm package: owner LauridBergjohann, repository spatial-elements, workflow release.yml, environment npm, direct npm publish. Set NPM_TRUSTED_PUBLISHING_ENABLED=true once configured. OIDC requires no committed token. Environment review rules may still require approval. RELEASE_PR_TOKEN and permission for Actions to create PRs are no longer needed.
 
-## References
-
-- [Changesets v2 / Action v1](https://github.com/changesets/action/tree/maintenance/v1)
-- [GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow)
-- [npm peer dependencies](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#peerdependencies)
-
-## Automation validation (2026-09-26)
-
-- Five release tests cover beta/latest routing, no-op runs, partial retries and registry failures.
-- Isolated Changesets simulations passed for 0.1.0-beta.1 -> 0.1.0-beta.2 and beta exit -> 0.1.0.
-- 222 runtime unit tests, all workspace type checks, demo build and six Chrome browser tests passed.
-- The independent tarball consumer installs Three.js automatically without a direct three dependency;
-  its type check and production/SSR build passed.
-- Workflow YAML and separation of version-job and publishing-job permissions were checked.
-- Live npm lookup confirms both initial versions exist; release:plan correctly performs no upload.
-- Actual GitHub PR creation and OIDC publication require the one-time account settings above and
-  have not been exercised by this local validation. No package was published during this change.
+Vercel deploys the website independently from main. The workflow does not create a GitHub release or tag. Check both jobs before declaring the whole release complete.

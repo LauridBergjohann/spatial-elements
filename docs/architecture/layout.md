@@ -1,6 +1,6 @@
 # Shared layout and DOM presentation
 
-The responsive layout separates known page geometry from natural content measurement. `packages/core/src/spatial-element/layoutTokens.json` supplies pure TypeScript resolvers and `scripts/generate-layout-css.mjs`. The generated stylesheet is available during SSR; no browser measurement is required to choose grid columns, media fits or fixed pane regions.
+The responsive layout separates known page geometry from natural content measurement. `@page-sections/core` supplies common layout values and resolvers; `packages/core/src/spatial-element/layoutTokens.json` adds spatial-only detail, docking and carousel settings. Both feed `scripts/generate-layout-css.mjs`. The generated stylesheet is available during SSR; no browser measurement is required to choose grid columns, media fits or fixed pane regions.
 
 ```mermaid
 flowchart LR

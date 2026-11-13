@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { decodeProofPng, proofPngDifference, proofPngRgbRange } from './helpers/proofPng';
-import type { BackgroundCheckpointApi } from '../apps/sveltekit-demo/src/routes/proof/background-layer-output/checkpoints';
-import type { CatalogWarmMode, CatalogWarmEvidence, CatalogWarmRow, WarmGpuCall } from '../apps/sveltekit-demo/src/routes/proof/catalog-warm-output/proof';
+import type { BackgroundCheckpointApi } from '../apps/tests/src/routes/proof/background-layer-output/checkpoints';
+import type { CatalogWarmMode, CatalogWarmEvidence, CatalogWarmRow, WarmGpuCall } from '../apps/tests/src/routes/proof/catalog-warm-output/proof';
 
 interface WarmProofResult { protocol: string; warmMode: CatalogWarmMode; rows: CatalogWarmRow[]; calls: WarmGpuCall[]; gpuErrors: string[]; limits: string[]; error?: string; stack?: string }
 declare global {

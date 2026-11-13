@@ -1,25 +1,51 @@
 <script lang="ts">
+import { HeadingSection } from '@page-sections/svelte';
+
+	import type { SpatialCardGridOptions } from './spatialCardGrid.js';
 	import ContentPage from './ContentPage.svelte';
-	import ListSection from './ListSection.svelte';
+	import SpatialCardGridSection from './SpatialCardGridSection.svelte';
 	import Section from './Section.svelte';
 	import { useCatalogNavigation } from '../catalog/catalogNavigation.js';
-	import type { SpatialListItem, ContentPageData } from '@spatial-elements/core/spatial-element/types';
+	import type {
+		SpatialListItem,
+		ContentPageData
+	} from '@spatial-elements/core/spatial-element/types';
 	let {
 		spatialElements,
 		hdr,
 		sectionLink,
+		cardSize,
+		cardVariant,
+		itemSpan,
+		textAlign,
+		mediaAspect,
+		mediaFit,
+		cardTone,
 		...page
-	}: ContentPageData & {
-		/** Explicit environment for the collection. */
-		hdr: string;
-		spatialElements: SpatialListItem[];
-		sectionLink?: { href: string; label: string };
-	} = $props();
+	}: ContentPageData &
+		SpatialCardGridOptions & {
+			/** Explicit environment for the collection. */
+			hdr: string;
+			spatialElements: SpatialListItem[];
+			sectionLink?: { href: string; label: string };
+		} = $props();
 	const { href } = useCatalogNavigation();
 </script>
 
 <ContentPage {page} {hdr}>
-	<ListSection section={{ id: 'elements', title: 'Elements' }} list={spatialElements} />
+<HeadingSection section={{ id: 'catalog', title: (page).title, eyebrow: (page).eyebrow, introduction: (page).intro, headingLevel: 1 }} />
+
+	<SpatialCardGridSection
+		section={{ id: 'elements', title: 'Elements' }}
+		list={spatialElements}
+		{cardSize}
+		{cardVariant}
+		{itemSpan}
+		{textAlign}
+		{mediaAspect}
+		{mediaFit}
+		{cardTone}
+	/>
 	{#if sectionLink}<Section section={{ id: 'more', title: 'More information' }}
 			><a href={href(sectionLink.href)}>{sectionLink.label}</a></Section
 		>{/if}

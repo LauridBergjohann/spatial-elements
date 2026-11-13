@@ -1,26 +1,40 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import { getContext } from 'svelte';
+	import { Card, type CardElements } from '@page-sections/svelte';
+	import type {
+		CardMediaAspect,
+		CardMediaFit,
+		CardVariant,
+		SurfaceTone
+	} from '@page-sections/core';
 	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
-	import { truncatedTitle } from './truncatedTitle.js';
-	import { useSpatialTheme } from './brandContext.js';
-	import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
-	import { spatialLayoutTokens, type SpatialCardSize } from '@spatial-elements/core/spatial-element/responsiveLayout';
-	import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
+	import { catalogViewLink } from '@spatial-elements/core/catalog/catalogViewLink';
 	import {
 		CATALOG_ENDPOINTS,
-		type CatalogEndpointRegistry
+		type CatalogEndpointRegistry,
+		type CatalogEndpointRole
 	} from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
-
-	import { CATALOG_SECTIONS, type CatalogSections } from '@spatial-elements/core/catalog/CatalogSections';
+	import {
+		CATALOG_SECTIONS,
+		type CatalogSections
+	} from '@spatial-elements/core/catalog/CatalogSections';
+	import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
+	import type { SpatialCardSize } from '@spatial-elements/core/spatial-element/responsiveLayout';
+	import { useSpatialTheme } from './brandContext.js';
 	import { useCatalogNavigation } from '../catalog/catalogNavigation.js';
-	import { catalogViewLink } from '@spatial-elements/core/catalog/catalogViewLink';
+	import { truncatedTitle } from './truncatedTitle.js';
 	let {
 		spatialElement,
 		occurrence,
 		order = 0,
 		cardSize = 'm',
 		textAlign = 'start',
-		active = true
+		active = true,
+		mediaAspect = '1/1',
+		mediaFit = 'contain',
+		reserveEyebrow = false,
+		cardTone = 'standard',
+		cardVariant = 'catalog'
 	}: {
 		spatialElement: SpatialListItem;
 		occurrence: string;
@@ -28,59 +42,99 @@
 		cardSize?: SpatialCardSize;
 		textAlign?: 'start' | 'center';
 		active?: boolean;
+		mediaAspect?: CardMediaAspect;
+		mediaFit?: CardMediaFit;
+		reserveEyebrow?: boolean;
+		cardTone?: SurfaceTone;
+		cardVariant?: CardVariant;
 	} = $props();
-	const card = $derived(spatialLayoutTokens.cards[cardSize]);
-	const hasEyebrow = $derived(cardSize !== 's' && Boolean(spatialElement.eyebrow?.trim()));
 	const readTheme = useSpatialTheme();
 	const brand = $derived(readTheme());
-	const catalogEndpoint = createCatalogEndpointAction();
 	const endpoints = getContext<CatalogEndpointRegistry | undefined>(CATALOG_ENDPOINTS);
-
 	const sections = getContext<CatalogSections | undefined>(CATALOG_SECTIONS);
 	const { href, prepare, pending } = useCatalogNavigation();
-	const resolve = href;
-	let busySpatialElement = $state<string>();
-
+	const item = $derived({ ...spatialElement, href: href(spatialElement.href) });
+	let busy = $state(false);
 	$effect(() => {
 		const target = pending();
-		busySpatialElement = undefined;
-		if (!active || !target || new URL(href(spatialElement.href), target).pathname !== target.pathname) return;
-		const timer = setTimeout(() => (busySpatialElement = spatialElement.id), 150);
+		busy = false;
+		if (
+			!active ||
+			!target ||
+			new URL(href(spatialElement.href), target).pathname !== target.pathname
+		)
+			return;
+		const timer = setTimeout(() => {
+			busy = true;
+		}, 150);
 		return () => clearTimeout(timer);
 	});
-</script>
-
-<a
-	use:mouseHover
-	use:catalogViewLink={{ spatialElementId: spatialElement.id, targetPresentation: spatialElement.targetPresentation }}
-	use:catalogEndpoint={active ? {
-		brandId: brand.id,
-		spatialElementId: spatialElement.id,
-		slot: 'catalog.card',
-		occurrence,
-		role: 'container'
-	} : undefined}
-	class="spatial-element-card"
-	style:--card-grid-span={cardSize === 'l' ? `var(--spatial-card-large-span, ${card.span})` : card.span}
-	style:--card-title-size={`${card.titleSize}px`}
-	style:--card-title-weight={card.titleWeight}
-	style:--card-eyebrow-size={`${card.eyebrowSize}px`}
-	style:--card-eyebrow-weight={card.eyebrowWeight}
-	style:--card-line-height={`${card.lineHeight}px`}
-	style:--card-text-rows={card.rows}
-	style:--card-title-rows={card.rows - (hasEyebrow ? 1 : 0)}
-	style:--card-text-inset-inline={`${spatialLayoutTokens.cardTextInset.inline}px`}
-	style:--card-text-inset-block={`${spatialLayoutTokens.cardTextInset.block}px`}
-	style:--card-text-align={textAlign}
-	data-card-size={cardSize}
-	href={resolve(spatialElement.href)}
-	onpointerenter={() => { if (active) prepare(spatialElement); }}
-	onfocus={(event) => {
-		if (active && !event.currentTarget.hasAttribute('data-catalog-restoring-focus')) prepare(spatialElement);
-	}}
-	onpointerdown={() => { if (active) prepare(spatialElement); }}
-	onclick={(event) => {
-		if (!active) { event.preventDefault(); return; }
+	// Resizing keeps the same endpoints: spatial measurement uses the actual media rectangle.
+	const ready = $derived.by(() => {
+		void reserveEyebrow;
+		void cardSize;
+		void cardVariant;
+		const enabled = active,
+			themeId = brand.id,
+			current = spatialElement,
+			key = occurrence;
+		return (parts: CardElements) => {
+			const cleanups: (() => void)[] = [];
+			const bind = (node: HTMLElement | null, role: CatalogEndpointRole, className?: string) => {
+				if (!node) return;
+				if (className) node.classList.add(className);
+				node.dataset.spatialElementId = current.id;
+				if (role !== 'container' && role !== 'geometry') node.dataset.sharedRole = role;
+				if (enabled) {
+					const stop = endpoints?.register(
+						{
+							brandId: themeId,
+							spatialElementId: current.id,
+							slot: 'catalog.card',
+							occurrence: key,
+							role
+						},
+						node
+					);
+					if (stop) cleanups.push(stop);
+				}
+			};
+			bind(parts.root, 'container');
+			bind(parts.surface, 'summary-surface', 'spatial-element-card-surface');
+			bind(parts.media, 'geometry', 'spatial-element-card-geometry');
+			bind(parts.title, 'title');
+			bind(
+				parts.copy.querySelector('[data-ps-card-part="eyebrow"]'),
+				'eyebrow',
+				'spatial-element-card-eyebrow'
+			);
+			parts.copy.classList.add('spatial-element-card-copy');
+			parts.media.dataset.catalogGeometry = '';
+			parts.media.dataset.catalogOccurrence = key;
+			parts.media.dataset.catalogSlot = 'catalog.card';
+			cleanups.push(mouseHover(parts.root).destroy);
+			const link = parts.root.matches('a')
+				? (parts.root as HTMLAnchorElement)
+				: parts.title.querySelector('a');
+			if (link) {
+				link.dataset.catalogFocusKey = 'catalog:' + JSON.stringify([themeId, current.id, key]);
+				cleanups.push(
+					catalogViewLink(link, {
+						spatialElementId: current.id,
+						targetPresentation: current.targetPresentation
+					}).destroy
+				);
+			}
+			parts.title.removeAttribute('title');
+			cleanups.push(truncatedTitle(parts.title, current.title).destroy);
+			return () => cleanups.reverse().forEach((stop) => stop());
+		};
+	});
+	function activate(event: MouseEvent) {
+		if (!active) {
+			event.preventDefault();
+			return;
+		}
 		endpoints?.prefer(brand.id, spatialElement.id, occurrence);
 		sections?.activate({
 			brandId: brand.id,
@@ -88,118 +142,139 @@
 			occurrence,
 			slot: 'catalog.card'
 		});
-		// Touch activation need not focus links natively; record the same history origin as keyboard use.
-		event.currentTarget.focus({ preventScroll: true });
-	}}
-	aria-busy={busySpatialElement === spatialElement.id ? true : undefined}
+		const link = (event.target as HTMLElement).closest('a');
+		link?.focus({ preventScroll: true });
+	}
+</script>
+
+<Card
+	{item}
+	{cardSize}
+	{textAlign}
+	{mediaAspect}
+	{mediaFit}
+	{reserveEyebrow}
+	tone={cardTone}
+	variant={cardVariant}
+	headingLevel={3}
+	class="spatial-element-card"
+	onready={ready}
+	data-card-size={cardSize}
 	data-catalog-card
 	data-catalog-order={order}
 	data-catalog-occurrence={occurrence}
 	data-spatial-element-id={spatialElement.id}
-	data-catalog-focus-key={`catalog:${JSON.stringify([brand.id, spatialElement.id, occurrence])}`}
-	aria-labelledby={`catalog-spatial-element-${encodeURIComponent(occurrence)}`}
+	data-catalog-focus-key={cardVariant === 'catalog'
+		? `catalog:${JSON.stringify([brand.id, spatialElement.id, occurrence])}`
+		: undefined}
+	aria-busy={busy || undefined}
+	onclick={activate}
+	onpointerenter={() => {
+		if (active) prepare(spatialElement);
+	}}
+	onpointerdown={() => {
+		if (active) prepare(spatialElement);
+	}}
+	onfocus={(event) => {
+		if (
+			active &&
+			!(event.currentTarget as HTMLElement).hasAttribute('data-catalog-restoring-focus')
+		)
+			prepare(spatialElement);
+	}}
 >
-	{#if busySpatialElement === spatialElement.id}
-		<span class="catalog-loading" aria-hidden="true"></span>
-	{/if}
-	<div
-		class="spatial-element-card-surface"
-		style:--card-panel-tint={typeof brand.panelTheme.tint === 'number'
-			? '#' + brand.panelTheme.tint.toString(16).padStart(6, '0')
-			: typeof brand.panelTheme.tint === 'object'
-				? brand.panelTheme.tint.getStyle()
-				: (brand.panelTheme.tint ?? '#ffffff')}
-		style:--card-panel-tint-opacity={Math.min(
-			1,
-			Math.max(0, brand.panelTheme.tintOpacity ?? 0.28)
-		) *
-			100 +
-			'%'}
-		use:catalogEndpoint={active ? {
-			brandId: brand.id,
-			spatialElementId: spatialElement.id,
-			slot: 'catalog.card',
-			occurrence,
-			role: 'summary-surface'
-		} : undefined}
-		data-shared-role="summary-surface"
-		data-spatial-element-id={spatialElement.id}
-		aria-hidden="true"
-	></div>
-	<div
-		class="spatial-element-card-geometry"
-		use:catalogEndpoint={active ? {
-			brandId: brand.id,
-			spatialElementId: spatialElement.id,
-			slot: 'catalog.card',
-			occurrence,
-			role: 'geometry'
-		} : undefined}
-		data-catalog-geometry
-		data-catalog-occurrence={occurrence}
-		data-spatial-element-id={spatialElement.id}
-		data-catalog-slot="catalog.card"
-	>
-		{#if spatialElement.fallbackImage}
-			<img
+	{#snippet media()}
+		{#if spatialElement.fallbackImage}<img
 				class="catalog-poster"
 				data-catalog-poster
 				loading="lazy"
 				decoding="async"
 				src={spatialElement.fallbackImage}
-				alt={`${brand.name} ${spatialElement.title}`}
-			/>
-		{/if}
-	</div>
-	<div class="spatial-element-card-copy">
-		{#if hasEyebrow}
-		<p
-			class="spatial-element-card-eyebrow"
-			data-shared-role="eyebrow"
-			data-spatial-element-id={spatialElement.id}
-			use:catalogEndpoint={active ? {
-				brandId: brand.id,
-				spatialElementId: spatialElement.id,
-				slot: 'catalog.card',
-				occurrence,
-				role: 'eyebrow'
-			} : undefined}
-		>
-			{spatialElement.eyebrow}
-		</p>
-		{/if}
-		<h3
-			use:truncatedTitle={spatialElement.title}
-			use:catalogEndpoint={active ? {
-				brandId: brand.id,
-				spatialElementId: spatialElement.id,
-				slot: 'catalog.card',
-				occurrence,
-				role: 'title'
-			} : undefined}
-			id={`catalog-spatial-element-${encodeURIComponent(occurrence)}`}
-			data-shared-role="title"
-			data-spatial-element-id={spatialElement.id}
-		>
-			{spatialElement.title}
-		</h3>
-	</div>
-</a>
-<span class="catalog-status" role="status">{busySpatialElement ? 'Opening spatialElement…' : ''}</span>
+				alt=""
+			/>{/if}
+		{#if busy}<span class="catalog-loading" aria-hidden="true"></span>{/if}
+	{/snippet}
+</Card>
+<span class="catalog-status" role="status">{busy ? 'Opening spatial element…' : ''}</span>
 
 <style>
-	.spatial-element-card-eyebrow {
-		margin: 0;
-		color: var(--spatial-element-accent);
-		font-size: var(--card-eyebrow-size);
-		font-weight: var(--card-eyebrow-weight);
-		line-height: var(--card-line-height);
-		flex: 0 0 var(--card-line-height);
-		min-width: 0;
-		overflow: hidden;
-		white-space: nowrap;
-		text-overflow: ellipsis;
+	:global(.ps-card.spatial-element-card[data-catalog-card]) {
+		isolation: auto;
+		--ps-radius: var(--spatial-element-control-radius);
+		pointer-events: auto;
+		transform-origin: center;
+		transform-style: preserve-3d;
+		transform: perspective(1000px) translate3d(0, var(--catalog-lift, 0px), 0)
+			rotateX(var(--catalog-rotate-x, 0deg)) rotateY(var(--catalog-rotate-y, 0deg));
+	}
+	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='media-frame']) {
+		overflow: visible;
+	}
+	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='media']),
+	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='copy']) {
+		transform-style: preserve-3d;
+	}
+	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='surface']) {
+		box-shadow: 0 12px 32px rgb(0 0 0 / 6%);
+		transition: border-color 180ms ease;
+	}
+	:global(
+		.ps-card.spatial-element-card[data-catalog-card]:is([data-mouse-hover], :focus-visible)
+			[data-ps-card-part='surface']
+	) {
+		border-color: var(--ps-accent);
+	}
+	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='surface']::after) {
+		content: '';
+		position: absolute;
+		inset: -1px;
+		border-radius: inherit;
+		box-shadow:
+			0 0 0 1px color-mix(in srgb, var(--ps-accent) 25%, transparent),
+			0 0 18px color-mix(in srgb, var(--ps-accent) 18%, transparent);
+		opacity: 0;
+		transition: opacity 180ms ease;
+	}
+	:global(
+		.ps-card.spatial-element-card[data-catalog-card]:is([data-mouse-hover], :focus-visible)
+			[data-ps-card-part='surface']::after
+	) {
+		opacity: 1;
+	}
+	:global([data-spatial-card-appearance-frozen]::after) {
+		opacity: var(--spatial-card-frozen-after-opacity) !important;
+		transition-property: none !important;
+	}
+	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='title']) {
+		transform: translateZ(var(--card-title-depth, 0px));
+	}
+	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='eyebrow']) {
 		transform: translateZ(var(--card-eyebrow-depth, 0px));
+	}
+	:global(.ps-card.spatial-element-card[data-catalog-card] [data-shared-role='title']),
+	:global(.ps-card.spatial-element-card[data-catalog-card] [data-shared-role='eyebrow']) {
+		text-shadow: var(--card-text-shadow, 0 0 0 transparent);
+		transition:
+			transform 260ms ease,
+			text-shadow 260ms ease;
+	}
+	:global(.ps-card.spatial-element-card[data-catalog-card]:is([data-mouse-hover], :focus-visible)) {
+		--card-eyebrow-depth: 40px;
+		--card-title-depth: 64px;
+		--card-model-depth: 96px;
+		--card-model-scale: 1.12;
+		--card-text-shadow: 0 4px 10px rgb(0 0 0 / 16%);
+	}
+	.catalog-poster {
+		display: block;
+		transform: translateZ(var(--card-model-depth, 0px)) scale(var(--card-model-scale, 1));
+		transition:
+			transform 260ms ease,
+			opacity 240ms ease;
+	}
+	:global([data-catalog-model-ready]) .catalog-poster,
+	:global([data-spatial-presentation-model-ready]) .catalog-poster {
+		opacity: 0;
 	}
 	.catalog-loading {
 		position: absolute;
@@ -207,10 +282,10 @@
 		top: 14px;
 		width: 18px;
 		height: 18px;
-		border: 2px solid color-mix(in srgb, var(--spatial-element-accent) 20%, transparent);
-		border-top-color: var(--spatial-element-accent);
+		border: 2px solid var(--ps-border);
+		border-top-color: var(--ps-accent);
 		border-radius: 50%;
-		animation: catalog-loading-spin 0.8s linear infinite;
+		animation: spin 0.8s linear infinite;
 	}
 	.catalog-status {
 		position: absolute;
@@ -219,157 +294,15 @@
 		overflow: hidden;
 		clip-path: inset(50%);
 	}
-	@keyframes catalog-loading-spin {
+	@keyframes spin {
 		to {
 			transform: rotate(360deg);
 		}
 	}
-
-	.spatial-element-card {
-		position: relative;
-		display: grid;
-		width: 100%;
-		height: 100%;
-		grid-template-columns: minmax(0, 1fr);
-		grid-template-rows: minmax(0, 1fr) min(100%, max(25%, calc(var(--card-text-rows) * var(--card-line-height) + 2 * var(--card-text-inset-block))));
-		aspect-ratio: 1;
-		box-sizing: border-box;
-		min-width: 0;
-		min-height: 0;
-		border-radius: var(--spatial-element-control-radius, var(--spatial-element-panel-radius));
-		color: var(--spatial-element-ink);
-		text-decoration: none;
-		transform-origin: center;
-		transform-style: preserve-3d;
-		transform: perspective(1000px) translate3d(0, var(--catalog-lift, 0px), 0)
-			rotateX(var(--catalog-rotate-x, 0deg)) rotateY(var(--catalog-rotate-y, 0deg));
-	}
-
-	.spatial-element-card:focus-visible {
-		outline: 3px solid var(--spatial-element-accent);
-		outline-offset: 5px;
-	}
-
-	.spatial-element-card-surface {
-		position: absolute;
-		inset: 0;
-		z-index: -1;
-		border: 1px solid color-mix(in srgb, var(--spatial-element-ink) 12%, transparent);
-		border-radius: inherit;
-		background: color-mix(
-			in srgb,
-			var(--card-panel-tint) var(--card-panel-tint-opacity),
-			transparent
-		);
-		box-shadow: 0 12px 32px rgb(0 0 0 / 0.06);
-		transition: border-color 180ms ease;
-		pointer-events: none;
-	}
-	.spatial-element-card:global([data-mouse-hover]) .spatial-element-card-surface,
-	.spatial-element-card:focus-visible .spatial-element-card-surface {
-		border-color: var(--spatial-element-accent);
-	}
-	.spatial-element-card-surface::after {
-		content: '';
-		position: absolute;
-		inset: -1px;
-		border-radius: inherit;
-		box-shadow: 0 0 0 1px color-mix(in srgb, var(--spatial-element-accent) 25%, transparent),
-			0 0 18px color-mix(in srgb, var(--spatial-element-accent) 18%, transparent);
-		opacity: 0;
-		transition: opacity 180ms ease;
-	}
-	.spatial-element-card:global([data-mouse-hover]) .spatial-element-card-surface::after,
-	.spatial-element-card:focus-visible .spatial-element-card-surface::after {
-		opacity: 1;
-	}
-	.spatial-element-card-surface:global([data-spatial-card-appearance-frozen])::after {
-		opacity: var(--spatial-card-frozen-after-opacity) !important;
-		transition-property: none !important;
-	}
-
-	.spatial-element-card-geometry {
-		position: relative;
-		grid-area: 1 / 1;
-		justify-self: center;
-		align-self: center;
-		transform-style: preserve-3d;
-		height: 100%;
-		width: auto;
-		max-width: 100%;
-		min-height: 0;
-		aspect-ratio: 4 / 3;
-		pointer-events: none;
-	}
-
-	.catalog-poster {
-		display: block;
-		width: 100%;
-		height: 100%;
-		object-fit: contain;
-		transform: translateZ(var(--card-model-depth, 0px)) scale(var(--card-model-scale, 1));
-		transition: transform 260ms cubic-bezier(0.22, 0.75, 0.25, 1), opacity 240ms ease;
-	}
-
-	.spatial-element-card:global([data-catalog-model-ready]) .catalog-poster {
-		opacity: 0;
-	}
-	:global([data-spatial-presentation-model-ready]) .catalog-poster {
-		opacity: 0;
-	}
-
-	.spatial-element-card-copy {
-		position: relative;
-		grid-area: 2 / 1;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		min-width: 0;
-		min-height: 0;
-		box-sizing: border-box;
-		padding: var(--card-text-inset-block) var(--card-text-inset-inline);
-		text-align: var(--card-text-align);
-		transform-style: preserve-3d;
-	}
-
-	.spatial-element-card-eyebrow,
-	h3 {
-		text-shadow: var(--card-text-shadow, 0 0 0 transparent);
-		transition: transform 260ms cubic-bezier(0.22, 0.75, 0.25, 1),
-			text-shadow 260ms cubic-bezier(0.22, 0.75, 0.25, 1);
-	}
-
-	.spatial-element-card:global([data-mouse-hover]),
-	.spatial-element-card:focus-visible {
-		--card-eyebrow-depth: 40px;
-		--card-title-depth: 64px;
-		--card-model-depth: 96px;
-		--card-model-scale: 1.12;
-		--card-text-shadow: 0 4px 10px rgb(0 0 0 / 0.16);
-	}
-
-	h3 {
-		display: -webkit-box;
-		-webkit-box-orient: vertical;
-		-webkit-line-clamp: var(--card-title-rows);
-		line-clamp: var(--card-title-rows);
-		max-height: calc(var(--card-title-rows) * var(--card-line-height));
-		flex-shrink: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		overflow-wrap: anywhere;
-		margin: 0;
-		font-size: var(--card-title-size);
-		font-weight: var(--card-title-weight);
-		line-height: var(--card-line-height);
-		transform: translateZ(var(--card-title-depth, 0px));
-	}
-
 	@media (prefers-reduced-motion: reduce) {
-		.spatial-element-card,
-		.spatial-element-card-eyebrow,
-		.catalog-poster,
-		h3 {
+		:global(.ps-card.spatial-element-card[data-catalog-card]),
+		:global(.ps-card.spatial-element-card[data-catalog-card] [data-shared-role]),
+		.catalog-poster {
 			transform: none;
 			transition: none;
 			text-shadow: none;

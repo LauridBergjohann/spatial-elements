@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><link rel="icon" type="image/svg+xml" href="%sveltekit.assets%/spatial-elements-logo.svg" /><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><meta name="color-scheme" content="light dark" />
+<script>
+(function () {
+ if (!location.pathname.startsWith('/proof/theming/')) {
+  document.documentElement.dataset.theme = 'light';
+  document.documentElement.style.colorScheme = 'light';
+  return;
+ }
+ var preference = 'system';
+ try { preference = sessionStorage.getItem('spatial-demo-appearance') || 'system'; } catch (_) {}
+ var dark = preference === 'dark' || (preference !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+ var root = document.documentElement;
+ root.dataset.theme = dark ? 'dark' : 'light';
+ root.dataset.themePending = '';
+ root.style.colorScheme = root.dataset.theme;
+})();
+</script>
+%sveltekit.head%</head><body data-sveltekit-preload-data="hover"><div style="display:contents">%sveltekit.body%</div></body></html>

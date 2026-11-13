@@ -3,41 +3,48 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, realpathSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { join, resolve, sep } from 'node:path';
+import { join, resolve } from 'node:path';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const directory = join(root, '.artifacts', 'packages');mkdirSync(directory, {recursive:true});
 const npmCli = process.env.npm_execpath;assert(npmCli, 'Use npm run verify:packages');
 const npm = (args, cwd=root) => execFileSync(process.execPath,[npmCli,...args],{cwd,encoding:'utf8',maxBuffer:20*1024*1024});
 const tarballs = {};
+const published = process.argv.includes('--published');
 for(const name of ['core','sveltekit']) {
  const pkgDir=join(root,'packages',name),pkg=JSON.parse(readFileSync(join(pkgDir,'package.json'),'utf8'));
+ if (published) {
+  for (let attempt=0; ; attempt++) {
+   const response=await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg.name)}/${pkg.version}`, { signal: AbortSignal.timeout(15000), cache: 'no-store' });
+   if(response.ok) { assert.equal((await response.json()).version,pkg.version); break; }
+   if(![404,429,500,502,503,504].includes(response.status)||attempt>=20) throw Error(`Registry verification failed: ${pkg.name}@${pkg.version} (${response.status})`);
+   await new Promise(resolve=>setTimeout(resolve,15000));
+  }
+  tarballs[pkg.name]=pkg.version;
+  continue;
+ }
  assert.notEqual(pkg.private,true);assert.equal(pkg.publishConfig.access,'public');assert.equal(pkg.license,'MPL-2.0');
  const [packed]=JSON.parse(npm(['pack','--ignore-scripts','--json','--pack-destination',directory],pkgDir));
  const files=packed.files.map(file=>file.path);
  for(const file of files) {
   assert(!/Product[A-Z]|product[A-Z]|product-detail/.test(file),'Outdated artifact name: '+file);
-  assert(/^(dist\/|package\.json$|README\.md$|LICENSE$)/.test(file),'Unexpected packed file: '+file);
+  assert(/^(dist\/|package\.json$|README\.md$|LICENSE$|logo\.svg$)/.test(file),'Unexpected packed file: '+file);
   assert(!/\.(spec|test|e2e)\.|generated\/|\.(glb|hdr|png)$/.test(file),'Fixture in runtime package: '+file);
  }
- for(const required of ['dist/index.js','dist/index.d.ts','LICENSE','README.md'])assert(files.includes(required),'Missing '+required);
+ for(const required of ['dist/index.js','dist/index.d.ts','LICENSE','README.md','logo.svg'])assert(files.includes(required),'Missing '+required);
+ assert.equal(readFileSync(join(pkgDir,'logo.svg'),'utf8'),readFileSync(join(root,'apps/website/static/spatial-elements-logo.svg'),'utf8'));
  assert.equal(readFileSync(join(pkgDir,'LICENSE'),'utf8'),readFileSync(join(root,'LICENSE'),'utf8'));
  for(const value of Object.values(pkg.exports['.']))assert(files.includes(value.slice(2)),'Missing exported file '+value);
  tarballs[pkg.name]='file:'+join(directory,packed.filename).replaceAll('\\','/');console.log(pkg.name+': '+files.length+' allowlisted files');
 }
 // Outside the repository: no parent node_modules or workspace aliases can mask a missing dependency.
 const consumer=mkdtempSync(join(tmpdir(),'spatial-elements-consumer-'));
-// The ownership proof deliberately accesses private workspace internals. Its
-// browser suite covers that seam; it is not part of the public tarball consumer.
-// Keep all public examples, including the real staged-navigation summary here.
-const internalProofs = ['routes/proof/presentation-transfer', 'lib/presentation-transfer-proof']
- .map(path=>join(root,'apps/sveltekit-demo/src',path));
-cpSync(join(root,'apps/sveltekit-demo/src'),join(consumer,'src'),{recursive:true,
- filter:source=>!internalProofs.some(path=>source===path||source.startsWith(path+sep))});
+cpSync(join(root,'apps/demo/src'),join(consumer,'src'),{recursive:true});
+cpSync(join(root,'apps/demo/static'),join(consumer,'static'),{recursive:true});
 cpSync(join(root,'fixtures/demo-assets'),join(consumer,'static/assets/demo'),{recursive:true});
-for(const file of ['svelte.config.js','vite.config.ts','tsconfig.json'])cpSync(join(root,'apps/sveltekit-demo',file),join(consumer,file));
+for(const file of ['svelte.config.js','vite.config.ts','tsconfig.json'])cpSync(join(root,'apps/demo',file),join(consumer,file));
 const workspace=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
 const dependencies={...tarballs};
-dependencies['lucide-svelte']=JSON.parse(readFileSync(join(root,'apps/sveltekit-demo/package.json'),'utf8')).devDependencies['lucide-svelte'];
+dependencies['lucide-svelte']=JSON.parse(readFileSync(join(root,'apps/tests/package.json'),'utf8')).devDependencies['lucide-svelte'];
 for(const name of ['@sveltejs/kit','@sveltejs/package','@sveltejs/vite-plugin-svelte','@sveltejs/adapter-auto','svelte','svelte-check','vite','typescript','@types/three','@types/node'])dependencies[name]=workspace.devDependencies[name];
 writeFileSync(join(consumer,'package.json'),JSON.stringify({name:'spatial-elements-consumer-check',private:true,type:'module',scripts:{check:'svelte-kit sync && svelte-check --tsconfig ./tsconfig.json',build:'vite build'},dependencies},null,2));
 console.log('Installing independent consumer: '+consumer);
@@ -51,5 +58,5 @@ for(const script of ['check','build']) {
  try {const output=npm(['run',script],consumer);writeFileSync(join(directory,'consumer-'+script+'.log'),output);console.log('Packed consumer '+script+' passed');}
  catch(error){console.error(error.stdout?.toString());throw error;}
 }
-writeFileSync(join(directory,'consumer.json'),JSON.stringify({path:consumer,verifiedAt:new Date().toISOString()},null,2));
+writeFileSync(join(directory,published?'published-consumer.json':'consumer.json'),JSON.stringify({path:consumer,published,versions:tarballs,verifiedAt:new Date().toISOString()},null,2));
 console.log('Verified tarball installation, declarations, Svelte SSR and production build');

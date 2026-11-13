@@ -11,7 +11,7 @@ to Kit, bounded by a 500 ms timeout. In installed Kit 2.70.3, the URL/history up
 precedes its awaited `onNavigate` callbacks. A rapid Back during this interval can
 supersede navigation while the outgoing Carousel still owns the DOM; the obsolete
 route commit can then provide detail data to its Carousel snippet. The observed
-failure is `list` becoming undefined in `CarouselSection.orderedItems`, not merely
+failure is `list` becoming undefined in `SpatialCarouselSection.orderedItems`, not merely
 lost focus.
 
 The existing source capture is already synchronous after the feedback wait:

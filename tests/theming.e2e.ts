@@ -4,13 +4,18 @@ import type {} from '@spatial-elements/core/stage/stageVisualTest';
 const theme = (page: Page) => page.locator('.brand-stage-shell');
 const appearancePopup = (page: Page) => page.locator('[data-appearance-popover]:popover-open');
 async function showAppearance(page: Page) {
-	await page.getByRole('button', { name: 'Appearance', exact: true }).filter({ visible: true }).click();
+	const appearance = page.getByRole('button', { name: 'Appearance', exact: true }).filter({ visible: true });
+	// Exiting fullscreen can change the viewport while the click is waiting.
+	// Resolve the currently available action again on every Playwright retry.
+	const settings = page.locator('.settings:not([open]) > summary').filter({ visible: true });
+	await appearance.or(settings).click();
+	if (!await appearancePopup(page).isVisible()) await appearance.click();
 	await expect(appearancePopup(page)).toBeVisible();
 }
 async function open(page: Page) {
 	await page.goto('/proof/theming/elements/cube?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
-	await expect(page.getByRole('button', { name: 'Appearance', exact: true }).filter({ visible: true })).toBeVisible();
+	await expect(page.locator('.ps-navigation')).toBeVisible();
 	await page.evaluate(() => window.__stageVisualTest!.settle(50));
 }
 

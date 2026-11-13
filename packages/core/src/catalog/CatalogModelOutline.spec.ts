@@ -21,7 +21,7 @@ function fixture() {
 	const model = new THREE.Group();
 	const camera = new THREE.PerspectiveCamera(); camera.position.z = 5; camera.updateMatrixWorld();
 	const outline = new CatalogModelOutline();
-	const draw = () => outline.render(renderer, camera, model, { left: 400, top: 200, width: 200, height: 200 },
+	const draw = (width = 200, height = 200) => outline.render(renderer, camera, model, { left: 400, top: 200, width, height },
 		{ left: 0, top: 0, width: 1440, height: 900 }, 0.5, DEFAULT_INTERACTION_THEME);
 	return { renderer, outline, model, draw, scissor, viewport, color, get target() { return target; },
 		get scissorTest() { return scissorTest; }, get alpha() { return alpha; } };
@@ -38,6 +38,23 @@ test('idle preparation renders its mask but preserves the zero-area Canvas outpu
 		expect(f.renderer.render).toHaveBeenCalledOnce(); expect(quad).toHaveBeenCalledOnce();
 		expect(f.viewport.toArray()).toEqual([0, 0, 1440, 900]);
 		expect(f.scissorTest).toBe(true); expect(f.color.getHex()).toBe(0xffffff); expect(f.alpha).toBe(1);
+	} finally { f.outline.dispose(); }
+});
+
+test('outline masks preserve small silhouettes, reuse allocation during hover and cap large targets', () => {
+	const f = fixture();
+	vi.spyOn(THREE.QuadMesh.prototype, 'render').mockImplementation(() => {});
+	try {
+		f.draw();
+		const capture = f.outline.getRenderTargets()[0];
+		expect([capture.width, capture.height]).toEqual([256, 256]);
+		const dispose = vi.spyOn(capture, 'dispose');
+		f.draw(205, 202);
+		expect(dispose).not.toHaveBeenCalled();
+		vi.stubGlobal('innerWidth', 4000); vi.stubGlobal('innerHeight', 3000);
+		f.draw(2000, 1500);
+		expect(capture.width).toBe(1024);
+		expect(capture.height).toBeLessThanOrEqual(1024);
 	} finally { f.outline.dispose(); }
 });
 

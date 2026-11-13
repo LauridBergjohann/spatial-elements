@@ -1,15 +1,13 @@
 <script lang="ts">
-	import { setContext } from 'svelte';
+	import { setContext, onMount } from 'svelte';
+	import { attachContentSidebars } from './contentSidebars.js';
+	import { ContentPage as PageContent } from '@page-sections/svelte';
 	import type { Snippet } from 'svelte';
 	import type { ContentPageData } from '@spatial-elements/core/spatial-element/types';
 	import { useSpatialTheme } from './brandContext.js';
-	import SpatialElementBreadcrumbs from './SpatialElementBreadcrumbs.svelte';
 	import { registerSpatialPage } from './spatialPageContext.js';
-	import SectionSurfaceGroup from './SectionSurfaceGroup.svelte';
 	import './layout.generated.css';
 	import {
-		SPATIAL_ELEMENT_SECTION_REGISTRY_KEY,
-		SpatialElementSectionRegistry,
 		SECTION_PAGE_KIND
 	} from '@spatial-elements/core/spatial-element/spatialElementSectionRegistry';
 	interface Props {
@@ -19,12 +17,20 @@
 		page: ContentPageData;
 		/** Flat page color override, using the same color format as SpatialTheme.background. */
 		background?: string;
-		/** ListSection, CarouselSection and ordinary Section children. */
+		/** SpatialCardGridSection, SpatialCarouselSection and ordinary Section children. */
 		children?: Snippet;
+		leftSidebar?: Snippet;
+		footer?: Snippet;
+		showContentMenu?: boolean;
+		contentMenuLabel?: string;
 	}
-	let { page, hdr, background, children }: Props = $props();
+	let { page, hdr, background, children, leftSidebar, footer, showContentMenu = false, contentMenuLabel }: Props = $props();
 	const backgroundId = $props.id();
 	const backgroundScope = backgroundId.replace(/[^a-zA-Z0-9_-]/g, '_');
+	onMount(() => {
+		const host = document.querySelector<HTMLElement>(`[data-spatial-content-page="${backgroundScope}"]`);
+		if (host) return attachContentSidebars(host);
+	});
 	const backgroundRules = $derived.by(() => {
 		if (!background) return '';
 		if (/[;{}<>]/.test(background)) throw new Error('ContentPage.background must be a color value.');
@@ -35,53 +41,24 @@
 	const readTheme = useSpatialTheme();
 	const brand = $derived(readTheme());
 	registerSpatialPage(() => ({ kind: 'content', hdr, background }));
-	setContext(SPATIAL_ELEMENT_SECTION_REGISTRY_KEY, new SpatialElementSectionRegistry());
 	setContext(SECTION_PAGE_KIND, 'content');
 </script>
 
-<svelte:head><title>{page.pageTitle ?? page.title}</title></svelte:head>
-<main class="content-page spatial-content-width spatial-content-container" data-catalog-list data-brand-id={brand.id}
-	data-spatial-page-background={background ? backgroundScope : undefined}>
-	{#if background}<svelte:element this={'style'}>{backgroundRules}</svelte:element>{/if}
-	{#if page.breadcrumbs?.length}<SpatialElementBreadcrumbs
-			items={page.breadcrumbs}
-			transition="exit"
-		/>{/if}
-	<header class="spatial-grid-scope" data-stage-dom-content data-catalog-transition-dom="exit">
-		{#if page.eyebrow}<p class="eyebrow">{page.eyebrow}</p>{/if}
-		<h1 id="catalog-title" tabindex="-1">{page.title}</h1>
-		{#if page.intro}<p class="intro">{page.intro}</p>{/if}
-	</header>
-	<SectionSurfaceGroup>{@render children?.()}</SectionSurfaceGroup>
-</main>
+{#if background}<svelte:element this={'style'}>{backgroundRules}</svelte:element>{/if}
+<PageContent {page} {leftSidebar} {footer} {showContentMenu} {contentMenuLabel} class="content-page" data-catalog-list data-brand-id={brand.id}
+ data-spatial-content-page={backgroundScope} data-spatial-page-background={background ? backgroundScope : undefined}>
+ {@render children?.()}
+</PageContent>
 
 <style>
-	.content-page {
-		padding-bottom: 120px;
-	}
-	header {
-		padding: var(--spatial-grid-gap);
-		pointer-events: auto;
-	}
-	.eyebrow {
-		margin: 0;
-		color: var(--spatial-element-accent);
-		font-size: 13px;
-		font-weight: 720;
-		text-transform: uppercase;
-	}
-	h1 {
-		margin: 0;
-		color: var(--spatial-element-ink);
-		font-size: var(--spatial-grid-headline-size);
-		font-weight: 600;
-		line-height: var(--spatial-grid-headline-line-height);
-	}
-	.intro {
-		max-width: 64ch;
-		margin: var(--spatial-grid-headline-gap) 0 0;
-		color: var(--spatial-element-body);
-		font-size: var(--spatial-grid-body-size);
-		line-height: var(--spatial-grid-body-line-height);
-	}
+ :global(.content-page [data-spatial-sticky-sidebar]) { position: relative !important; top: 0 !important; }
+ /* The shared stage leaves its DOM layer transparent to model interaction.
+  * Ordinary Page Sections and navigation still need native hit targets. */
+ :global(.content-page .ps-section),
+ :global(.content-page .ps-left-sidebar),
+ :global(.content-page .ps-content-menu-slot),
+ :global(.content-page .breadcrumbs),
+ :global(.content-page nav) {
+  pointer-events: auto;
+ }
 </style>

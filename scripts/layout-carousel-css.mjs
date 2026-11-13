@@ -21,7 +21,7 @@ export function carouselRules(tokens) {
 	--spatial-carousel-dots-height: ${tokens.carousel.dotsHeight}px;
 	--spatial-detail-summary-max-height: var(--spatial-carousel-fit-height);
 }
-.carousel-drag-section:has(> .section-kicker) { --spatial-carousel-headline-budget: ${grid.headlineLineHeight + grid.headlineGap}px; }`;
+.carousel-drag-section:has(> .ps-section-content > .section-heading .headline) { --spatial-carousel-headline-budget: ${grid.headlineLineHeight + grid.headlineGap}px; }`;
 		return tokens.layoutMinWidths[name] === 0 ? rules : `@media (min-width: ${tokens.layoutMinWidths[name]}px) {\n${rules}\n}`;
 	});
 }

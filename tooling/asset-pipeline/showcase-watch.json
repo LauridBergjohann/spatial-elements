@@ -1,0 +1,20 @@
+{
+	"schemaVersion": 1,
+	"brandId": "watches",
+	"spatialElementId": "chronograph",
+	"sourceLow": "tooling/asset-pipeline/sources/chronograph-low.glb",
+	"sourceHigh": "tooling/asset-pipeline/sources/chronograph-high.glb",
+	"sourceProvenance": "Reviewed LOD pair imported from the previous Spatial Elements brand examples; named glass mesh is retained for the authored runtime material override.",
+	"frame": {
+		"status": "provisional-shared-frame",
+		"revision": "watches-chronograph-source-frame-1",
+		"assetToFrame": [
+			1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -0.0043947696685791016, 0.2637765391336212,
+			0.012085676193237305, 1
+		],
+		"bounds": {
+			"min": [-0.2500457763671875, -0.3292034880651703, -0.4419519901275635],
+			"max": [0.2500457763671875, 0.3292034880651703, 0.4419519901275635]
+		}
+	}
+}

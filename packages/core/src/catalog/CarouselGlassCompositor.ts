@@ -4,7 +4,7 @@ import * as THREE from 'three/webgpu';
 import { texture } from 'three/tsl';
 import { gaussianBlur } from 'three/addons/tsl/display/GaussianBlurNode.js';
 import { LiquidGlassPanel } from '../stage/LiquidGlassPanel.js';
-import type { CatalogDepthBlur } from './CatalogDepthBlur.js';
+import type { BlurRect, CatalogDepthBlur } from './CatalogDepthBlur.js';
 
 /** Reuses the stage device/output and glass shader; never samples its own glass output. */
 export class CarouselGlassCompositor {
@@ -30,7 +30,7 @@ export class CarouselGlassCompositor {
 	>();
 	private panels = new Map<
 		HTMLElement,
-		{ glass: LiquidGlassPanel; blur: number; focusBlur: number; width: number; height: number; opacity: number; active: boolean; seen: boolean }
+		{ glass: LiquidGlassPanel; clip?: BlurRect; blur: number; focusBlur: number; width: number; height: number; opacity: number; active: boolean; seen: boolean }
 	>();
 	private size = new THREE.Vector2();
 	private passes = 0;
@@ -63,6 +63,7 @@ export class CarouselGlassCompositor {
 			entry.glass.setVisibilityAlpha(opacity);
 			if (card === selected) {
 				entry.focusBlur = 0;
+				entry.clip = undefined;
 				entry.glass.group.matrix.copy(matrix);
 				entry.glass.group.matrixWorldNeedsUpdate = true;
 			}
@@ -74,7 +75,7 @@ export class CarouselGlassCompositor {
 		return false;
 	}
 
-	panel(card: HTMLElement, matrix: THREE.Matrix4, width: number, height: number, opacity: number, focusBlur = 0) {
+	panel(card: HTMLElement, matrix: THREE.Matrix4, width: number, height: number, opacity: number, focusBlur = 0, clip?: BlurRect) {
 		if (card.dataset.carouselSurface !== 'glass') return;
 		if (!this.capture) {
 			this.capture = new THREE.RenderTarget(1, 1);
@@ -121,6 +122,7 @@ export class CarouselGlassCompositor {
 		entry.seen = true;
 		entry.opacity = opacity;
 		entry.focusBlur = focusBlur;
+		entry.clip = clip;
 		entry.width = width;
 		entry.height = height;
 		entry.active = opacity > 0.001;
@@ -198,7 +200,7 @@ export class CarouselGlassCompositor {
 			// Rear geometry, including defocus, is submitted once and reused by the glass and output.
 			if (!rearEmpty) this.composite!.render(renderer);
 			renderer.clearDepth();
-			if (active.some(([, entry]) => entry.focusBlur >= 0.05)) {
+			if (active.some(([, entry]) => entry.focusBlur >= 0.05 || entry.clip)) {
 				for (const [, entry] of active) entry.glass.group.visible = false;
 				for (const [, entry] of active) {
 					const group = entry.glass.group;
@@ -216,9 +218,21 @@ export class CarouselGlassCompositor {
 							if (view?.enabled) entry.glass.setBackdropUvTransform(
 								view.offsetX / view.fullWidth, view.offsetY / view.fullHeight,
 								view.width / view.fullWidth, view.height / view.fullHeight);
-							try { renderer.render(this.scene, projection); }
+							try {
+								if (entry.clip && !view?.enabled) {
+									const previous = renderer.getScissor(new THREE.Vector4());
+									const tested = renderer.getScissorTest();
+									const { left, top, width: w, height: h } = entry.clip;
+									const x = Math.max(0, left), y = Math.max(0, top);
+									try {
+										renderer.setScissor(x, y, Math.max(0, Math.min(width, left + w) - x), Math.max(0, Math.min(height, top + h) - y));
+										renderer.setScissorTest(true);
+										renderer.render(this.scene, projection);
+									} finally { renderer.setScissor(previous); renderer.setScissorTest(tested); }
+								} else renderer.render(this.scene, projection);
+							}
 							finally { entry.glass.setBackdropUvTransform(0, 0, 1, 1); }
-						});
+						}, entry.clip);
 					group.visible = false;
 				}
 				for (const [, entry] of active) entry.glass.group.visible = true;

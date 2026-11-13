@@ -1,5 +1,32 @@
 # @spatial-elements/core
 
+## 1.0.0-beta.10
+
+### Patch Changes
+
+- Keep navigation sticky for the first 32px of scrolling and overlap the 3XL detail submenu by half its height.
+
+- Smooth silhouette outlines with denser edge sampling and coverage that closes pale antialiasing seams. Match detail-mask resolution to the rendered scene and preserve the theme accent through the stage's tone mapping.
+- Use a crisp 3px hover outline by default, skip optional halo sampling when disabled, and retain bounded, reusable silhouette targets. Native media panels preserve rail clipping during zoom and docking.
+- Release overlapping transition and zoom interaction locks independently so detail media stays selectable after navigation. Keep bound submenu references when panels are portaled, and synchronize glass-panel decorations with the docking fade.
+- Add per-image contain/cover framing for detail media. Read minimap selection without rebuilding its live model, and let native media panels follow zoom visibility while retaining their scroll clipping.
+- Scrolling inside a long detail media rail no longer docks the page header prematurely or blocks the first thumbnail. The dock threshold follows the page position independently of the rail's own scroll offset.
+- Allow small image thumbnails independently of full-resolution media. Expand the website showcase with reviewed Wera, Logitech and item geometry, bounded WebP images and actual-model fallback renders; preserve sensitive overlapping grip surfaces while reducing material submissions and texture memory.
+- Avoid resolving and copying styles for hidden navigation subtrees during transitions. Preserve the displayed image URL in decorative snapshots so route changes do not trigger broken or duplicate responsive-image requests.
+- Match transitions using registered spatial element identities and authored links instead of URL conventions. Support grid-to-grid and carousel-to-carousel transitions alongside mixed layouts, and preserve history navigation across arbitrary route prefixes.
+
+### Minor Changes
+
+- Adopt Page Sections 0.4.1 with composable page headings and shared sidebar navigation. Support nested collection/detail route namespaces. Allow a complete navigation snippet inside BrandStageShell, preserve native input on ordinary Page Sections, and align carousel heading measurements with the shared heading markup. Add a public documentation and showcase website, separate minimal demo and test applications, and a single-PR release workflow. Documentation and package READMEs now point to spatial-elements.bergjohann.com.
+
+## 1.0.0-beta.9
+
+### Minor Changes
+
+- Adopt Page Sections 0.3.0 for common layout, section backgrounds and registries, page composition, cards and responsive navigation. Spatial adapters retain GPU endpoints, persistent card roots, carousel interaction, docking and virtual scrolling.
+
+  Cards use configurable media frames with independent equal-height text areas. SpatialCardGridSection (formerly ListSection) and SpatialListPage accept the shared card layout options, including cardSize, cardTone, cardVariant, mediaAspect, mediaFit, textAlign and editorial itemSpan. SpatialCarouselSection (formerly CarouselSection) renders rear models above opaque section backgrounds and clips spatial output to the configured surface. Old component names remain deprecated aliases. BrandStageShell accepts brand, items and tools; small layouts expose satellites through Settings. See docs/page-sections-migration.md for changed geometry and private selectors.
+
 ## 1.0.0-beta.8
 
 ### Minor Changes

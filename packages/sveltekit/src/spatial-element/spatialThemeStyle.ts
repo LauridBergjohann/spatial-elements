@@ -13,6 +13,17 @@ export function getSpatialThemeStyle(theme: SpatialTheme) {
 	const radii = resolveSpatialThemeRadii(theme);
 	const sectionBackgrounds = resolveSpatialSectionBackgrounds(theme);
 	return [
+        `--ps-background: transparent`,
+        `--ps-ink: ${theme.colors.ink}`,
+        `--ps-body: ${theme.colors.body}`,
+        `--ps-accent: ${theme.colors.accent}`,
+        `--ps-on-accent: ${theme.colors.onAccent}`,
+        `--ps-section-standard: ${sectionBackgrounds.standard}`,
+        `--ps-section-muted: ${sectionBackgrounds.muted}`,
+        `--ps-radius: ${radii.panel}px`,
+        `--ps-font-family: Inter, ui-sans-serif, system-ui, sans-serif`,
+        `--ps-border: color-mix(in srgb, ${theme.colors.ink} 18%, transparent)`,
+        `--ps-scroll-offset: var(--spatial-element-section-scroll-offset, 150px)`,
 		`--spatial-element-background: ${theme.background}`,
 		`--spatial-element-ink: ${theme.colors.ink}`,
 		`--spatial-element-body: ${theme.colors.body}`,
@@ -26,6 +37,10 @@ export function getSpatialThemeStyle(theme: SpatialTheme) {
 		`--spatial-element-tab-background: ${theme.colors.tabBackground}`,
 		`--spatial-element-control-radius: ${radii.control}px`,
 		`--spatial-element-panel-radius: ${radii.panel}px`,
+		`--spatial-element-panel-tint-rgb: ${getDockedPanelTintRgb(theme.panelTheme.tint ?? '#ffffff')}`,
+		`--spatial-element-panel-tint-opacity: ${clamp(theme.panelTheme.tintOpacity ?? 0.65, 0, 1)}`,
+		`--spatial-element-panel-backdrop-blur: ${clamp(theme.panelTheme.backdropBlur ?? 8, 0, 100)}px`,
+		`--spatial-element-panel-box-shadow: ${getCssPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2)}`,
 		`--spatial-element-docked-panel-tint-rgb: ${getDockedPanelTintRgb(theme.dockedPanelTheme.tint)}`,
 		`--spatial-element-docked-panel-tint-opacity: ${clamp(theme.dockedPanelTheme.tintOpacity, 0, 1)}`,
 		`--spatial-element-docked-panel-shadow-intensity: ${clamp(theme.dockedPanelTheme.shadowIntensity, 0, 1)}`,

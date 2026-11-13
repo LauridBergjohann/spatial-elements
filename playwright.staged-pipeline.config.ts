@@ -8,6 +8,6 @@ export default defineConfig({
 	use: { baseURL, viewport: { width: 1440, height: 1000 }, trace: 'retain-on-failure' },
 	projects: [{ name: 'chrome', use: { browserName: 'chromium', channel: process.env.CI ? undefined : 'chrome' } }],
 	webServer: { command: `node ${examples ? './' : '../../'}node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port ${port} --strictPort`,
-		cwd: fileURLToPath(new URL(examples ? '../spatial-elements-brand-examples/' : './apps/sveltekit-demo/', import.meta.url)),
+		cwd: fileURLToPath(new URL(examples ? '../spatial-elements-brand-examples/' : './apps/tests/', import.meta.url)),
 		url: `${baseURL}/${examples ? 'watches' : 'demo'}/categories/list`, reuseExistingServer: false, timeout: 120000 }
 });

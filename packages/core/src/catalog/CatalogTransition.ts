@@ -1,3 +1,4 @@
+import { setInertLease } from '../stage/inertLease.js';
 import {
 	geometryEndpoint,
 	type CatalogGeometryEndpoint,
@@ -26,6 +27,7 @@ import {
 	type CatalogEndpointRegistry
 } from './CatalogEndpointRegistry.js';
 import { resolveCatalogIntent, selectCatalogRecipe, type CatalogRecipe } from './catalogRecipes.js';
+import { snapshotCatalogDom } from './catalogDomSnapshot.js';
 export { catalogSharedKey } from './CatalogEndpointRegistry.js';
 export type { CatalogSharedRole } from './CatalogEndpointRegistry.js';
 import {
@@ -43,27 +45,14 @@ function isRichRole(role: CatalogSharedRole) {
 	return role === 'features' || role === 'primary-action';
 }
 
-/** One CSS parse per detached clone instead of hundreds of CSSOM mutations.
- * Retain all computed properties (including SVG and authored custom properties).
- */
-function freezeComputedStyle(target: HTMLElement | SVGElement, style: CSSStyleDeclaration) {
-	let css = '';
-	for (const property of style) css += property + ':' + style.getPropertyValue(property) + ';';
-	target.style.cssText = css;
-}
-
 /** Full summaries retain authored row/icon layout; temporary controls never become interactive. */
 function copyRichContent(target: HTMLElement, source: HTMLElement) {
-	const copy = source.cloneNode(true) as HTMLElement;
-	const originals = [source, ...source.querySelectorAll<HTMLElement | SVGElement>('*')];
-	const copies = [copy, ...copy.querySelectorAll<HTMLElement | SVGElement>('*')];
-	for (let index = 0; index < originals.length; index++) {
-		const style = getComputedStyle(originals[index]);
-		freezeComputedStyle(copies[index], style);
-		copies[index].style.visibility = 'visible';
-		copies[index].removeAttribute('id');
-		for (const attribute of [...copies[index].attributes])
-			if (attribute.name.startsWith('data-')) copies[index].removeAttribute(attribute.name);
+	const { copy, elements } = snapshotCatalogDom(source);
+	for (const { copy: element } of elements) {
+		element.style.visibility = 'visible';
+		element.removeAttribute('id');
+		for (const attribute of [...element.attributes])
+			if (attribute.name.startsWith('data-')) element.removeAttribute(attribute.name);
 	}
 	Object.assign(copy.style, {
 		position: 'relative',
@@ -78,21 +67,6 @@ function copyRichContent(target: HTMLElement, source: HTMLElement) {
 	copy.inert = true;
 	copy.setAttribute('aria-hidden', 'true');
 	target.append(copy);
-}
-
-/** Only the forward list-to-hero edge is part of the first vertical slice. */
-export function resolveCatalogTransition(
-	from: URL,
-	to: URL,
-	type: string
-): CatalogTransitionIdentity | undefined {
-	if (
-		type === 'popstate' ||
-		to.hash ||
-		!from.pathname.replace(/\/$/, '').endsWith('/categories/list')
-	)
-		return;
-	return selectCatalogRecipe(resolveCatalogIntent(from, to, type), 'list', 'hero')?.identity;
 }
 
 /** A stale animation completion cannot settle a newer navigation. */
@@ -214,7 +188,7 @@ interface TransitionCapture {
 	resolve?: () => void;
 	observer?: MutationObserver;
 	layoutObserver?: ResizeObserver;
-	inert: Map<HTMLElement, boolean>;
+	inert: Set<HTMLElement>;
 	content?: HTMLElement;
 	focus?: HTMLElement;
 }
@@ -340,22 +314,10 @@ export class CatalogTransition {
 	/** Pause at the last submitted DOM/GPU frame while a compatible navigation resolves. */
 	supersede(destination: URL) {
 		const capture = this.captureState;
-		const path = destination.pathname.replace(/\/$/, '');
-		const compatible =
-			capture &&
-			destination.origin === location.origin &&
-			(Boolean(
-				resolveCatalogIntent(
-					new URL(
-						`/${encodeURIComponent(capture.identity.brandId)}/elements/${encodeURIComponent(capture.identity.spatialElementId)}`,
-						location.href
-					),
-					destination,
-					'link'
-				)
-			) ||
-				path ===
-					`/${encodeURIComponent(capture.identity.brandId)}/elements/${encodeURIComponent(capture.identity.spatialElementId)}`);
+		const target = this.endpoints.navigation?.get(destination);
+		const compatible = capture && destination.origin === location.origin && target &&
+			target.kind !== 'ordinary' && target.brandId === capture.identity.brandId &&
+			(target.kind === 'detail' ? target.spatialElementId === capture.identity.spatialElementId : target.elements.includes(capture.identity.spatialElementId));
 		if (!capture || !compatible) {
 			this.cancel();
 			return;
@@ -372,7 +334,7 @@ export class CatalogTransition {
 		capture.paused = true;
 		capture.resolve?.();
 		capture.resolve = undefined;
-		const reverse = /\/categories\/(?:list|carousel|mixed)$/.test(path);
+		const reverse = target?.kind === 'content';
 		if (
 			capture.view ||
 			capture.retarget ||
@@ -506,12 +468,9 @@ export class CatalogTransition {
 	}
 
 	private matchesDestination(capture: TransitionCapture, destination: URL) {
-		return (
-			destination.origin === location.origin &&
-			!destination.hash &&
-			destination.pathname.replace(/\/$/, '') ===
-				`/${encodeURIComponent(capture.identity.brandId)}/elements/${encodeURIComponent(capture.identity.spatialElementId)}`
-		);
+		const target = this.endpoints.navigation?.get(destination);
+		return destination.origin === location.origin && !destination.hash && target?.kind === 'detail' &&
+			target.brandId === capture.identity.brandId && target.spatialElementId === capture.identity.spatialElementId;
 	}
 
 	private createActor(
@@ -628,7 +587,7 @@ export class CatalogTransition {
 		const retained = this.captureState;
 
 		if (retained?.paused && retained.retarget) {
-			const journey = resolveCatalogJourney(fromURL, toURL, type);
+			const journey = resolveCatalogJourney(fromURL, toURL, type, this.endpoints.navigation);
 			if (journey?.kind === 'content-view') {
 				const context = type === 'popstate' ? {} : readCatalogViewContext(toURL);
 				const previousPairs = retained.view?.pairs ?? [];
@@ -670,7 +629,7 @@ export class CatalogTransition {
 					return false;
 				}
 			}
-			const intent = resolveCatalogIntent(fromURL, toURL, type);
+			const intent = resolveCatalogIntent(fromURL, toURL, type, this.endpoints.navigation);
 			const reverse = intent?.direction === 'detail-to-list';
 			const content =
 				retained.recipe.source.startsWith('carousel.') ||
@@ -713,7 +672,7 @@ export class CatalogTransition {
 			return true;
 		}
 		this.cancel();
-		const journey = resolveCatalogJourney(fromURL, toURL, type);
+		const journey = resolveCatalogJourney(fromURL, toURL, type, this.endpoints.navigation);
 		const context = type === 'popstate' ? {} : readCatalogViewContext(toURL);
 		const inventory =
 			journey?.kind === 'content-view' ? this.contentEndpoints(journey.brandId) : [];
@@ -751,7 +710,7 @@ export class CatalogTransition {
 					history: type === 'popstate',
 					target: 'hero' as const
 				}
-			: resolveCatalogIntent(fromURL, toURL, type);
+			: resolveCatalogIntent(fromURL, toURL, type, this.endpoints.navigation);
 		const reverse = intent?.direction === 'detail-to-list';
 		const contentSlot = intent
 			? reverse
@@ -867,7 +826,7 @@ export class CatalogTransition {
 				exiting: [],
 				restore: [],
 				frame: 0,
-				inert: new Map(),
+				inert: new Set(),
 				timeout: setTimeout(() => {
 					if (this.captureState === capture) { this.hooks.diagnose?.('capture-timeout'); this.cancel(); }
 				}, 5000)
@@ -951,15 +910,9 @@ export class CatalogTransition {
 			const rect = source.getBoundingClientRect();
 			if (!hasSize(rect) || rect.bottom <= 0 || rect.top >= window.innerHeight) continue;
 			if (!visiblyPresented(source)) continue;
-			const copy = source.cloneNode(true) as HTMLElement;
-			const style = getComputedStyle(source);
-			const originals = [source, ...source.querySelectorAll<HTMLElement | SVGElement>('*')];
-			const copies = [copy, ...copy.querySelectorAll<HTMLElement | SVGElement>('*')];
-			for (let index = 0; index < originals.length; index++) {
-				const computed = getComputedStyle(originals[index]);
-				freezeComputedStyle(copies[index], computed);
-			}
-			for (const element of [copy, ...copy.querySelectorAll('*')]) {
+			const { copy, elements } = snapshotCatalogDom(source);
+			const style = elements[0].style;
+			for (const { copy: element } of elements) {
 				element.removeAttribute('id');
 				for (const attribute of [...element.attributes]) {
 					if (
@@ -976,10 +929,9 @@ export class CatalogTransition {
 						element.removeAttribute(attribute.name);
 				}
 			}
-			for (let index = 0; index < originals.length; index++) {
-				const original = originals[index];
+			for (const { source: original, copy: cloned } of elements) {
 				if (original.matches('[data-catalog-card], [data-carousel-spatial-element]'))
-					(copies[index] as HTMLElement).dataset.catalogExitOccurrence = (
+					(cloned as HTMLElement).dataset.catalogExitOccurrence = (
 						original as HTMLElement
 					).dataset.catalogOccurrence;
 			}
@@ -1047,8 +999,8 @@ export class CatalogTransition {
 			'[data-catalog-transition-dom], [data-catalog-transition-group]'
 		)) {
 			if (capture.inert.has(element)) continue;
-			capture.inert.set(element, element.inert);
-			element.inert = true;
+			capture.inert.add(element);
+			setInertLease(element, capture, true);
 		}
 	}
 
@@ -1115,9 +1067,7 @@ export class CatalogTransition {
 				capture.view.pairs = pairs;
 				const pair = pairs[0];
 				if (
-					!pair ||
-					pair.source.slot === pair.target.slot ||
-					(pair.source.slot.startsWith('carousel.') && pair.target.slot.startsWith('carousel.'))
+					!pair
 				) {
 					this.cancel();
 					return;
@@ -1149,6 +1099,10 @@ export class CatalogTransition {
 					pair.target.slot as 'catalog.card' | 'carousel.front' | 'carousel.neighbour'
 				);
 				capture.recipe.targetGeometry = capture.recipe.targetShared = pair.target.slot;
+				capture.recipe.id = pair.source.slot === 'catalog.card'
+					? pair.target.slot === 'catalog.card' ? 'list-to-list' : 'list-to-carousel'
+					: pair.target.slot === 'catalog.card' ? 'carousel-to-list' : 'carousel-to-carousel';
+				this.root.dataset.catalogRecipe = capture.recipe.id;
 				if (pair.target.slot === 'carousel.neighbour') {
 					for (const actor of capture.actors) capture.exiting.push(actor.element);
 					capture.actors = [];
@@ -1393,16 +1347,12 @@ export class CatalogTransition {
 							)
 								continue;
 							const rect = source.getBoundingClientRect();
-							const copy = source.cloneNode(true) as HTMLElement;
-							const originals = [source, ...source.querySelectorAll<HTMLElement | SVGElement>('*')];
-							const copies = [copy, ...copy.querySelectorAll<HTMLElement | SVGElement>('*')];
-							for (let index = 0; index < originals.length; index++) {
-								const style = getComputedStyle(originals[index]);
-								freezeComputedStyle(copies[index], style);
+							const { copy, elements } = snapshotCatalogDom(source);
+							for (const { copy: element } of elements) {
 								// The live destination is deliberately masked during binding.
-								copies[index].style.visibility = 'visible';
+								element.style.visibility = 'visible';
 							}
-							for (const element of [copy, ...copy.querySelectorAll('*')]) {
+							for (const { copy: element } of elements) {
 								element.removeAttribute('id');
 								for (const attribute of [...element.attributes])
 									if (attribute.name.startsWith('data-')) element.removeAttribute(attribute.name);
@@ -1645,11 +1595,12 @@ export class CatalogTransition {
 		capture.host.remove();
 		for (const copy of capture.exiting) copy.remove();
 		for (const restore of capture.restore.reverse()) restore();
-		for (const [element, inert] of capture.inert) {
+		for (const element of capture.inert) {
 			// Docking can change during route scroll restoration after this lock was acquired.
 			// Preserve the controller's current semantic state instead of reviving a stale lock snapshot.
 			const dock = element.matches('[data-spatial-element-sticky-header], [data-spatial-element-sticky-tabs]');
-			element.inert = dock ? element.getAttribute('aria-hidden') === 'true' : inert;
+			setInertLease(element, capture, false);
+			if (dock) element.inert = element.getAttribute('aria-hidden') === 'true';
 		}
 		if (
 			capture.focus?.isConnected &&

@@ -41,13 +41,13 @@ Satellites are available from XL: each group is 80×40, initially at `(28,28)` a
 
 The shell owns all of these boxes and their surfaces; the host owns their semantic content and actions. Host content must fit the supplied region or use its own menu/popover. It must not silently enlarge the shell. The breadcrumb is one line, horizontally scrollable, with its final item revealed. Native focus scrolling must remain available. In detail 3XL only the current page label is omitted; retain the final separator because the title is on the next line.
 
-The persistent menu and satellites share the following scroll rule, matching the [verified reference implementation](https://github.com/LauridBergjohann/bergjohann-com/blob/5463b791d1770f0f9580105be338f589275e984b/src/lib/components/header/Header.svelte):
+The persistent menu and satellites share the following scroll rule, with the sticky range shortened to 32px by the author:
 
 ```text
-menuY(scrollY) = initialY - max(0, scrollY - 112)
+menuY(scrollY) = initialY - max(0, scrollY - 32)
 ```
 
-This is a bounded sticky range, not a direction-sensitive reveal rule. Scrolling upward far below 112px does not immediately reveal it. **Detail 3XL is fixed** at its initial position. Native sticky and the enhanced scroll bridge must not apply this translation twice. Persistent shell ownership must prevent a header gap during route transitions.
+This is a bounded sticky range, not a direction-sensitive reveal rule. Scrolling upward far below 32px does not immediately reveal it. **Detail 3XL is fixed** at its initial position. Native sticky and the enhanced scroll bridge must not apply this translation twice. Persistent shell ownership must prevent a header gap during route transitions.
 
 ## Detail hero, XS through 2XL
 
@@ -148,11 +148,12 @@ The viewport is divided around its midpoint with a 16px gap between the fitted s
 paneLeft       = W / 2 + 8
 paneWidth      = min(max(0, W / 2 - 28), 1536)
 paneTop        = 96
-paneBottom     = H - 60
+paneBottom     = H - 38
 paneHeaderH    = 86
 bodyTop        = paneTop + paneHeaderH             // 182
 bodyBottom     = paneBottom
-bodyViewportH  = max(0, H - 242)
+bodyViewportH  = max(0, H - 220)
+focusBottom    = H - 60                           // clear the overlapping submenu
 submenuTop    = H - 60
 submenuH      = 44                                // ends at H - 16
 
@@ -174,15 +175,15 @@ At `W=2300`, `paneWidth=1122`, so the pane uses grid M. At `W=2456`, `paneWidth=
 | Main menu and satellites | Shell table, fixed initial coordinates | Host menu/popovers; no document translation | Persistent shell |
 | Media rail | Fixed rectangle above | Local vertical rail scrolling | MediaRail |
 | Main media | Fixed stage rectangle above; canvas still full viewport | Contain image/video; 3D interaction in free left area | Stage/native media |
-| Pane surface | `(paneLeft,96,paneWidth,max(0,H-156))` | Clips the body presentation; panel theme background | Detail pane shell |
+| Pane surface | `(paneLeft,96,paneWidth,max(0,H-134))` | Clips the body presentation; panel theme background | Detail pane shell |
 | Pane header | Pane width, fixed top 96, height 86 | Breadcrumb horizontal overflow; title one-line ellipsis | Detail pane header |
 | Summary | Width `paneWidth`, natural height, first body content | Document flow; no local summary height cap | Persistent summary host |
 | Sections | Pane's content grid; below summary | Document scrolling; no local vertical pane scroller | Section/document owner |
 | Submenu | Natural width capped to `paneWidth`, centered horizontally; top `H-60`, height 44 | Local horizontal overflow only | Detail submenu |
 
-The pane header contains breadcrumb then title followed by optional eyebrow. It shows the CTA icon once the summary's CTA region has scrolled out of view; it does not displace the fixed header box. The surface uses the panel background, so transparent sections first reveal this surface rather than directly revealing the scene. Sections inside it do not acquire freestanding section corner radii.
+The pane header contains breadcrumb then title followed by optional eyebrow, with a subtle divider and shadow. The 44px submenu overlaps the surface by 22px; anchor and keyboard-focus bounds retain the full 60px bottom clearance. It shows the CTA icon once the summary's CTA region has scrolled out of view; it does not displace the fixed header box. The surface uses the panel background, so transparent sections first reveal this surface rather than directly revealing the scene. Sections inside it do not acquire freestanding section corner radii.
 
-For a body content height `B`, the document must provide at least `max(0,B-bodyViewportH)` of useful scroll travel. A simple normalized mapping is `bodyViewportY = bodyTop + bodyDocumentOffset - scrollY`, with the body clipped to `[bodyTop,bodyBottom]`. Any native/sticky or document-proxy implementation must retain this mapping for anchors, scrollspy, browser find, history, keyboard scrolling and focused elements. Do not multiply or apply document scroll twice. The shell, stage and header remain fixed.
+For a body content height `B`, the document must provide at least `max(0,B+242-H)` of useful scroll travel. A simple normalized mapping is `bodyViewportY = bodyTop + bodyDocumentOffset - scrollY`, with the body clipped to `[bodyTop,bodyBottom]`. Any native/sticky or document-proxy implementation must retain this mapping for anchors, scrollspy, browser find, history, keyboard scrolling and focused elements. Do not multiply or apply document scroll twice. The shell, stage and header remain fixed.
 
 **Engineering short-height fallback:** require at least the large stage's 400px fit height inside the fixed composition (`H >= 512`, from `96+400+16`). Below that usable height, use normal document-flow composition with the 2XL hero constraints rather than trapping the page in an unusably small fixed body viewport. This is a height fallback, not a new viewport-width breakpoint. Control dimensions remain unchanged. The renderer must return finite non-negative boxes even for degenerate inputs.
 

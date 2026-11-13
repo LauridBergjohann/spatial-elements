@@ -84,9 +84,9 @@ interface SectionBackground {
 // background?: SectionBackground;
 ```
 
-For the new layout path, the engineering default for omitted background is `{ color: 'transparent', size: 'standard' }`. This is a new-layout default; it does not silently reinterpret a legacy tinted section during migration. An explicitly configured background has the same meaning for Section, ListSection and CarouselSection. A default transparent background lets the list/carousel keep their spatial presentation; authors can intentionally choose opaque surfaces.
+For the new layout path, the engineering default for omitted background is `{ color: 'transparent', size: 'standard' }`. This is a new-layout default; it does not silently reinterpret a legacy tinted section during migration. An explicitly configured background has the same meaning for Section, SpatialCardGridSection and SpatialCarouselSection. A default transparent background lets the list/carousel keep their spatial presentation; authors can intentionally choose opaque surfaces.
 
-`standard` background width is the full grid container including its padding. `full` extends only the background to the page's available viewport width; the content remains on the same capped grid. This is a decorative extension, not an increase in document scroll width or interactive hit area. Transparent means actual transparency, not a painted copy of the page color. In the detail ContentPane, it therefore reveals the Pane surface first.
+`standard` background width is the full grid container including its padding. `full` extends only the background to the page's available viewport width; the content remains on the same capped grid. This does not increase document scroll width. In SpatialCarouselSection, the rendering and gesture area follow the surface width; ordinary section content stays on the capped grid. Transparent means actual transparency, not a painted copy of the page color. In the detail ContentPane, it therefore reveals the Pane surface first.
 
 Gradients run from their first color at the top to their second color at the bottom across the entire section background. Standard and muted colors come from the theme. Transparent endpoints use the corresponding opaque color's hue at zero alpha to avoid an unintended dark fringe. No extra blurred layer is implied by a gradient.
 
@@ -110,15 +110,15 @@ Use the large panel radius for contiguous groups of opaque, standard-width secti
 
 Evaluate adjacency from registered section order after background normalization, not from the presence of unrelated navigation/helper DOM siblings. Detail `full` requests normalized to standard are eligible under the same rule as authored standard-width sections. Border-radius is painted consistently by DOM and GPU surfaces; descendants must not be clipped indiscriminately, because card hover geometry may extend beyond its own fit region.
 
-## Cards and ListSection
+## Cards and SpatialCardGridSection
 
 ```ts
-// Additive ListSection props:
+// Additive SpatialCardGridSection props:
 // cardSize?: 's' | 'm' | 'l'; // default 'm'
 // textAlign?: 'start' | 'center'; // default 'start'
 ```
 
-The whole ListSection uses one card size and alignment. Each item independently supplies an optional eyebrow. `start` follows the document writing direction rather than hard-coding physical left. Cards remain real links, keep stable occurrence/focus identity, and expose their full title as an accessible name even when the visible text is clamped.
+The whole SpatialCardGridSection uses one card size and alignment. Each item independently supplies an optional eyebrow. `start` follows the document writing direction rather than hard-coding physical left. Cards remain real links, keep stable occurrence/focus identity, and expose their full title as an accessible name even when the visible text is clamped.
 
 | Card | Column span | Title size / weight | Eyebrow size / weight | Shared line height | Max title rows without / with eyebrow | Total row budget |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -199,6 +199,6 @@ The public demo owns neutral, redistributable fixtures. Private brand examples p
 | Interaction/fallback | Real links, keyboard outline, touch scroll, mouse hover beyond fit area, sensor pause/recalibration, SSR/noJS and unavailable WebGPU. Hover must not steal a neighboring card's link. |
 | Theme migration | Legacy-only, new-only, mixed conflicting fields, runtime light/dark switch and page background override. DOM and GPU share dimensions/radii without recreating element identity. |
 
-Implement and review separately: (1) pure grid/token resolver, (2) ContentPage and explicit grid blocks, (3) Section/theme semantics, (4) ListSection/card geometry and renderer fit, then (5) integration/migration cleanup. Runtime tests are unnecessary for this specification-only commit. Each implementation commit needs its focused fixtures plus type/package checks appropriate to the affected layer.
+Implement and review separately: (1) pure grid/token resolver, (2) ContentPage and explicit grid blocks, (3) Section/theme semantics, (4) SpatialCardGridSection/card geometry and renderer fit, then (5) integration/migration cleanup. Runtime tests are unnecessary for this specification-only commit. Each implementation commit needs its focused fixtures plus type/package checks appropriate to the affected layer.
 
 Wiki chapters `Layout-and-Content-Grid`, `Sections-and-Backgrounds` and `Lists-and-Cards` should reuse these canonical tables, annotate engineering allowances, and include the 320px exception. Screenshots should come from the executable public fixtures. Do not make readers infer values from downscaled design images or depend on the original private source archive.

@@ -1,0 +1,727 @@
+{
+  "schemaVersion": 1,
+  "recipe": "webp-trim-transparent-1600-640-v2",
+  "sharp": "0.35.4",
+  "images": [
+    {
+      "productId": "joker",
+      "source": "wera Joker/joker.png",
+      "sourceSha256": "c1600dd7127b8dea27668d13b307929d9a4d7c135c1ebef2c46858d84e7468c5",
+      "sourceBytes": 28977,
+      "full": {
+        "src": "/assets/showcase/joker/joker-image-01.webp",
+        "width": 340,
+        "height": 53,
+        "bytes": 5168
+      },
+      "small": {
+        "src": "/assets/showcase/joker/joker-image-01.webp",
+        "width": 340,
+        "height": 53,
+        "bytes": 5168
+      }
+    },
+    {
+      "productId": "joker",
+      "source": "wera Joker/csm_Application-image-wrench-019_f75dbc598c.webp",
+      "sourceSha256": "994094a01f6ac4f64da68e8e7fceb9c68743acffefb52e0fa766a75efba483e3",
+      "sourceBytes": 42248,
+      "full": {
+        "src": "/assets/showcase/joker/joker-image-02.webp",
+        "width": 1013,
+        "height": 570,
+        "bytes": 37796
+      },
+      "small": {
+        "src": "/assets/showcase/joker/joker-image-02-small.webp",
+        "width": 640,
+        "height": 360,
+        "bytes": 16070
+      }
+    },
+    {
+      "productId": "joker",
+      "source": "wera Joker/csm_Application-image-wrench-052_9c0356c8e6.webp",
+      "sourceSha256": "04080db73c910f080fb64ba6c629f976065a14fa1162e17de36ca4cf213f9b1c",
+      "sourceBytes": 39796,
+      "full": {
+        "src": "/assets/showcase/joker/joker-image-03.webp",
+        "width": 1013,
+        "height": 571,
+        "bytes": 33940
+      },
+      "small": {
+        "src": "/assets/showcase/joker/joker-image-03-small.webp",
+        "width": 640,
+        "height": 361,
+        "bytes": 12078
+      }
+    },
+    {
+      "productId": "joker",
+      "source": "wera Joker/csm_Application-image-wrench-053_9965259097.webp",
+      "sourceSha256": "797076439022f658b341f51db3810919aabd76b69bdf9575e916513189f9f51e",
+      "sourceBytes": 46290,
+      "full": {
+        "src": "/assets/showcase/joker/joker-image-04.webp",
+        "width": 1013,
+        "height": 570,
+        "bytes": 38560
+      },
+      "small": {
+        "src": "/assets/showcase/joker/joker-image-04-small.webp",
+        "width": 640,
+        "height": 360,
+        "bytes": 12970
+      }
+    },
+    {
+      "productId": "ph-kreuzschlitz",
+      "source": "ph kreuzschlitz/350_ph.webp",
+      "sourceSha256": "942b9c902f430befa307b0a42d3008e3832156294aee5654dad2669e6f9848f8",
+      "sourceBytes": 11412,
+      "full": {
+        "src": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-image-01.webp",
+        "width": 828,
+        "height": 147,
+        "bytes": 7994
+      },
+      "small": {
+        "src": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-image-01-small.webp",
+        "width": 640,
+        "height": 114,
+        "bytes": 7664
+      }
+    },
+    {
+      "productId": "ph-kreuzschlitz",
+      "source": "ph kreuzschlitz/_10144.webp",
+      "sourceSha256": "a6d23eda8f242f4e8bb166567f61c764525714b428d4fe6b9047e0c3abba17c7",
+      "sourceBytes": 113126,
+      "full": {
+        "src": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-image-02.webp",
+        "width": 1013,
+        "height": 570,
+        "bytes": 68906
+      },
+      "small": {
+        "src": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-image-02-small.webp",
+        "width": 640,
+        "height": 360,
+        "bytes": 30182
+      }
+    },
+    {
+      "productId": "kraftform-kompakt",
+      "source": "wera kraftform kompakt/kraftform_kompakt_w1_wartung.webp",
+      "sourceSha256": "5f4a280e746d8490491ec889109f8a523cab99ec550a674767110af7879f9161",
+      "sourceBytes": 38056,
+      "full": {
+        "src": "/assets/showcase/kraftform-kompakt/kraftform-kompakt-image-01.webp",
+        "width": 600,
+        "height": 432,
+        "bytes": 26608
+      },
+      "small": {
+        "src": "/assets/showcase/kraftform-kompakt/kraftform-kompakt-image-01.webp",
+        "width": 600,
+        "height": 432,
+        "bytes": 26608
+      }
+    },
+    {
+      "productId": "kraftform-kompakt-20",
+      "source": "wera kraftform kompakt 20/kraftform_kompakt_20_tool_finder_1.webp",
+      "sourceSha256": "c62970552abbfb4da72119f06a033be96c445a32f5f42841640c4a047e2a4bed",
+      "sourceBytes": 91378,
+      "full": {
+        "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-01.webp",
+        "width": 826,
+        "height": 666,
+        "bytes": 62216
+      },
+      "small": {
+        "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-01-small.webp",
+        "width": 640,
+        "height": 516,
+        "bytes": 45198
+      }
+    },
+    {
+      "productId": "kraftform-kompakt-20",
+      "source": "wera kraftform kompakt 20/kk20__toolfinder_1_vorteil_griff_wechselklingensystem.webp",
+      "sourceSha256": "c51831a2d5ddca24d35cc57c08c5d2a47ffab074bcf57cf3d598ad1fa06549ed",
+      "sourceBytes": 7602,
+      "full": {
+        "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-02.webp",
+        "width": 416,
+        "height": 416,
+        "bytes": 5458
+      },
+      "small": {
+        "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-02.webp",
+        "width": 416,
+        "height": 416,
+        "bytes": 5458
+      }
+    },
+    {
+      "productId": "kraftform-kompakt-20",
+      "source": "wera kraftform kompakt 20/Vorteil_KK20_2.webp",
+      "sourceSha256": "01caecae8ad6d47567bd31c847cf0b4273f25bba18c18895a12828f2a03f7254",
+      "sourceBytes": 5836,
+      "full": {
+        "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-03.webp",
+        "width": 416,
+        "height": 416,
+        "bytes": 4142
+      },
+      "small": {
+        "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-03.webp",
+        "width": 416,
+        "height": 416,
+        "bytes": 4142
+      }
+    },
+    {
+      "productId": "kraftform-kompakt-20",
+      "source": "wera kraftform kompakt 20/ANW_KK20_Multicolour_3226_CB.webp",
+      "sourceSha256": "cf87d55883f2591d0ab0321b828e325d8d0e54f8344507b00e0549bb2b56c596",
+      "sourceBytes": 113464,
+      "full": {
+        "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-04.webp",
+        "width": 1013,
+        "height": 570,
+        "bytes": 60286
+      },
+      "small": {
+        "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-04-small.webp",
+        "width": 640,
+        "height": 360,
+        "bytes": 23060
+      }
+    },
+    {
+      "productId": "kraftform-xxl",
+      "source": "wera kraftform xxl/kraftform_xxl.webp",
+      "sourceSha256": "4faddaae5906e245e844f59a3e20174d67441d95e375df88d3c928b5c58339c2",
+      "sourceBytes": 55686,
+      "full": {
+        "src": "/assets/showcase/kraftform-xxl/kraftform-xxl-image-01.webp",
+        "width": 828,
+        "height": 567,
+        "bytes": 43544
+      },
+      "small": {
+        "src": "/assets/showcase/kraftform-xxl/kraftform-xxl-image-01-small.webp",
+        "width": 640,
+        "height": 438,
+        "bytes": 42106
+      }
+    },
+    {
+      "productId": "winkelschluessel",
+      "source": "wera winkelschlüssel/950_9_hex-plus_multicolour_2.webp",
+      "sourceSha256": "7a015734455013d48fea98a03eaa820296ed3573ae47a8a9531dcac46d5e7580",
+      "sourceBytes": 33574,
+      "full": {
+        "src": "/assets/showcase/winkelschluessel/winkelschluessel-image-01.webp",
+        "width": 824,
+        "height": 512,
+        "bytes": 25114
+      },
+      "small": {
+        "src": "/assets/showcase/winkelschluessel/winkelschluessel-image-01-small.webp",
+        "width": 640,
+        "height": 398,
+        "bytes": 23278
+      }
+    },
+    {
+      "productId": "zyklop-speed",
+      "source": "wera zyklop speed/8000_a.webp",
+      "sourceSha256": "e44756e0670eaef708015d836744a563d8df4ac08c0cda8084ee42bc7db18f6a",
+      "sourceBytes": 15570,
+      "full": {
+        "src": "/assets/showcase/zyklop-speed/zyklop-speed-image-01.webp",
+        "width": 829,
+        "height": 155,
+        "bytes": 11370
+      },
+      "small": {
+        "src": "/assets/showcase/zyklop-speed/zyklop-speed-image-01-small.webp",
+        "width": 640,
+        "height": 120,
+        "bytes": 11474
+      }
+    },
+    {
+      "productId": "zyklop-speed",
+      "source": "wera zyklop speed/_10334.webp",
+      "sourceSha256": "6dabe791029e8c67a2a24e4ed79421cc926a5ac811f71c13c310b2d41268107f",
+      "sourceBytes": 97310,
+      "full": {
+        "src": "/assets/showcase/zyklop-speed/zyklop-speed-image-02.webp",
+        "width": 1013,
+        "height": 570,
+        "bytes": 55490
+      },
+      "small": {
+        "src": "/assets/showcase/zyklop-speed/zyklop-speed-image-02-small.webp",
+        "width": 640,
+        "height": 360,
+        "bytes": 24450
+      }
+    },
+    {
+      "productId": "logitech-brio-500",
+      "source": "Logitech Brio 500/brio-500-gallery-graphite-1.webp",
+      "sourceSha256": "96dbdcfb3a11355f52f5353d929af7879a3191e637080602bc6b218040e387af",
+      "sourceBytes": 166332,
+      "full": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-01.webp",
+        "width": 1453,
+        "height": 1215,
+        "bytes": 105940
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-01-small.webp",
+        "width": 640,
+        "height": 535,
+        "bytes": 45896
+      }
+    },
+    {
+      "productId": "logitech-brio-500",
+      "source": "Logitech Brio 500/brio-500-gallery-graphite-2.webp",
+      "sourceSha256": "6a9e6e2287524e4e00c836c13b038a88cfd31fb430e83b64c836163de69b1d25",
+      "sourceBytes": 179956,
+      "full": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-02.webp",
+        "width": 1495,
+        "height": 1231,
+        "bytes": 115990
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-02-small.webp",
+        "width": 640,
+        "height": 527,
+        "bytes": 39200
+      }
+    },
+    {
+      "productId": "logitech-brio-500",
+      "source": "Logitech Brio 500/brio-500-gallery-graphite-3.webp",
+      "sourceSha256": "788c95ac69f8f7f9036d375a50ce6f9db656d04638ba3d71e1f03fa8d4c9a2cd",
+      "sourceBytes": 102188,
+      "full": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-03.webp",
+        "width": 1514,
+        "height": 1203,
+        "bytes": 59790
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-03-small.webp",
+        "width": 640,
+        "height": 509,
+        "bytes": 25454
+      }
+    },
+    {
+      "productId": "logitech-brio-500",
+      "source": "Logitech Brio 500/brio-500-gallery-graphite-4.webp",
+      "sourceSha256": "35e2538dbd833b173524c2903bfa655681f800bc0194e4b932e063f5b88546db",
+      "sourceBytes": 103822,
+      "full": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-04.webp",
+        "width": 1086,
+        "height": 1199,
+        "bytes": 74934
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-04-small.webp",
+        "width": 580,
+        "height": 640,
+        "bytes": 41808
+      }
+    },
+    {
+      "productId": "logitech-brio-500",
+      "source": "Logitech Brio 500/brio-500-gallery-graphite-6.webp",
+      "sourceSha256": "b097aeb98f77aca076a8945983cfa9b7cda415c931689b78cf3d702da931213d",
+      "sourceBytes": 64180,
+      "full": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-05.webp",
+        "width": 1477,
+        "height": 470,
+        "bytes": 35716
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-05-small.webp",
+        "width": 640,
+        "height": 204,
+        "bytes": 9608
+      }
+    },
+    {
+      "productId": "logitech-brio-500",
+      "source": "Logitech Brio 500/brio-500-gallery-graphite-8.webp",
+      "sourceSha256": "4b99e5cdd92e01db37f4b1b10be31d3675e97007bd0202d29c5f29cc194c49a8",
+      "sourceBytes": 59112,
+      "full": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-06.webp",
+        "width": 1230,
+        "height": 905,
+        "bytes": 48794
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-06-small.webp",
+        "width": 640,
+        "height": 471,
+        "bytes": 25528
+      }
+    },
+    {
+      "productId": "logitech-brio-500",
+      "source": "Logitech Brio 500/brio-500-video-thumbnail.webp",
+      "sourceSha256": "fd5c213e0cf2d4fd5c01d157ce50d6b0f32e20b65a986c36de7ee78f131adad5",
+      "sourceBytes": 101174,
+      "full": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-07.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 45424
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-07-small.webp",
+        "width": 640,
+        "height": 360,
+        "bytes": 13284
+      }
+    },
+    {
+      "productId": "logitech-ergo-k860",
+      "source": "Logitech Ergo K860/ergo-k860-gallery-1-deu-new.webp",
+      "sourceSha256": "e3eaf5c53dbe09739a47ae5bf922059726e3374a3390bbc64e72cdc0113bcdbb",
+      "sourceBytes": 279932,
+      "full": {
+        "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-01.webp",
+        "width": 1600,
+        "height": 848,
+        "bytes": 193320
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-01-small.webp",
+        "width": 640,
+        "height": 339,
+        "bytes": 35708
+      }
+    },
+    {
+      "productId": "logitech-ergo-k860",
+      "source": "Logitech Ergo K860/ergo-k860-gallery-deu-wide-2.webp",
+      "sourceSha256": "8b243fbec9295764f5f8aed9a10ba4ef8e2dce45b14143d0d2157feb968cc789",
+      "sourceBytes": 139328,
+      "full": {
+        "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-02.webp",
+        "width": 1600,
+        "height": 423,
+        "bytes": 77180
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-02-small.webp",
+        "width": 640,
+        "height": 169,
+        "bytes": 16194
+      }
+    },
+    {
+      "productId": "logitech-ergo-k860",
+      "source": "Logitech Ergo K860/ergo-k860-gallery-deu-wide-3.webp",
+      "sourceSha256": "52c743cd7881660cd114999ec937f4a5e10e0b295de278e5fb5edd9d319363f2",
+      "sourceBytes": 180316,
+      "full": {
+        "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-03.webp",
+        "width": 1576,
+        "height": 960,
+        "bytes": 137538
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-03-small.webp",
+        "width": 640,
+        "height": 390,
+        "bytes": 35490
+      }
+    },
+    {
+      "productId": "logitech-ergo-k860",
+      "source": "Logitech Ergo K860/ergo-k860-video-thumbnail.webp",
+      "sourceSha256": "134f5853fd43f35a59d85a3121fa29fa688903b052846cdf2b9d25524d8b75bc",
+      "sourceBytes": 231022,
+      "full": {
+        "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-04.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 94134
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-04-small.webp",
+        "width": 640,
+        "height": 360,
+        "bytes": 22298
+      }
+    },
+    {
+      "productId": "logitech-m750",
+      "source": "Logitech M750/m750-large-graphite-top-angle-gallery-1.webp",
+      "sourceSha256": "9eed7bac7687c73bf9ab2e10bb7f5e6e8934fd51e5b1df0859279015c8bad8b6",
+      "sourceBytes": 45160,
+      "full": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-01.webp",
+        "width": 571,
+        "height": 1024,
+        "bytes": 31300
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-01-small.webp",
+        "width": 357,
+        "height": 640,
+        "bytes": 18264
+      }
+    },
+    {
+      "productId": "logitech-m750",
+      "source": "Logitech M750/m750-large-graphite-3qtr-back-angle-gallery-2.webp",
+      "sourceSha256": "c49b06a5916de2fdd1e21973ab51c0d9fb9118689de687dc5e38f9c56610f78c",
+      "sourceBytes": 62520,
+      "full": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-02.webp",
+        "width": 1023,
+        "height": 733,
+        "bytes": 41264
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-02-small.webp",
+        "width": 640,
+        "height": 459,
+        "bytes": 21978
+      }
+    },
+    {
+      "productId": "logitech-m750",
+      "source": "Logitech M750/m750-large-graphite-bottom-angle-gallery-3.webp",
+      "sourceSha256": "05849692d7551b57bae1f90d102331a1487a38ceb8508cee4e69a52daa336268",
+      "sourceBytes": 80240,
+      "full": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-03.webp",
+        "width": 565,
+        "height": 1014,
+        "bytes": 51642
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-03-small.webp",
+        "width": 357,
+        "height": 640,
+        "bytes": 21050
+      }
+    },
+    {
+      "productId": "logitech-m750",
+      "source": "Logitech M750/m750-large-graphite-profile-angle-gallery-4.webp",
+      "sourceSha256": "7622c63e70c42b91ca1b5bd81e79a5d2c10f4183da8bd3c20f2872941c578672",
+      "sourceBytes": 60116,
+      "full": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-04.webp",
+        "width": 1209,
+        "height": 426,
+        "bytes": 37384
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-04-small.webp",
+        "width": 640,
+        "height": 226,
+        "bytes": 14288
+      }
+    },
+    {
+      "productId": "logitech-m750",
+      "source": "Logitech M750/m750-large-graphite-3qtr-front-angle-gallery-5.webp",
+      "sourceSha256": "8c7f35f81a54d7d0428244562fcc46b758e92fb08a901a3fd78d0d21c9138a0b",
+      "sourceBytes": 67660,
+      "full": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-05.webp",
+        "width": 1024,
+        "height": 709,
+        "bytes": 43944
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-05-small.webp",
+        "width": 640,
+        "height": 443,
+        "bytes": 23458
+      }
+    },
+    {
+      "productId": "logitech-m750",
+      "source": "Logitech M750/m750-mouse-graphite-lifestyle-gallery-1.webp",
+      "sourceSha256": "5f97f2d707fb2beb5ad5eefbfd8c3fb89a840340ae7f34145ad5d5141fdacb20",
+      "sourceBytes": 211924,
+      "full": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-06.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 69086
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-06-small.webp",
+        "width": 640,
+        "height": 360,
+        "bytes": 15508
+      }
+    },
+    {
+      "productId": "logitech-m750",
+      "source": "Logitech M750/m750-mouse-graphite-lifestyle-gallery-2.webp",
+      "sourceSha256": "279a440150524db0497e45263fb7e1418e533ab433e995b1dfa55a402443dd21",
+      "sourceBytes": 264680,
+      "full": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-07.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 83658
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-m750/logitech-m750-image-07-small.webp",
+        "width": 640,
+        "height": 360,
+        "bytes": 15908
+      }
+    },
+    {
+      "productId": "logitech-z407",
+      "source": "Logitech Z407/z407-gallery-01.webp",
+      "sourceSha256": "6266d883b052a44e996ea9e71a20b4b1c6f76ebeb448f035d4be288625f629c9",
+      "sourceBytes": 75790,
+      "full": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-01.webp",
+        "width": 1566,
+        "height": 976,
+        "bytes": 43050
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-01-small.webp",
+        "width": 640,
+        "height": 399,
+        "bytes": 17932
+      }
+    },
+    {
+      "productId": "logitech-z407",
+      "source": "Logitech Z407/z407-gallery-02.webp",
+      "sourceSha256": "2dcb9056d4f0baa1f639406e910e79ae99b7515c8a97f31336285a5c40fd11ee",
+      "sourceBytes": 88094,
+      "full": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-02.webp",
+        "width": 1466,
+        "height": 1071,
+        "bytes": 48572
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-02-small.webp",
+        "width": 640,
+        "height": 468,
+        "bytes": 18760
+      }
+    },
+    {
+      "productId": "logitech-z407",
+      "source": "Logitech Z407/z407-gallery-03.webp",
+      "sourceSha256": "a61accda562cc070aa6d316f983026a0aa60b07051042d814b27de3ae53d8034",
+      "sourceBytes": 90080,
+      "full": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-03.webp",
+        "width": 755,
+        "height": 1191,
+        "bytes": 57830
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-03-small.webp",
+        "width": 406,
+        "height": 640,
+        "bytes": 14458
+      }
+    },
+    {
+      "productId": "logitech-z407",
+      "source": "Logitech Z407/z407-gallery-04.webp",
+      "sourceSha256": "6bbca8c920b3da2beb66ebc95a01df4d6182ebcea86a6f7cef52b6acae3a6fd1",
+      "sourceBytes": 115088,
+      "full": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-04.webp",
+        "width": 1030,
+        "height": 1029,
+        "bytes": 49312
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-04-small.webp",
+        "width": 640,
+        "height": 639,
+        "bytes": 17444
+      }
+    },
+    {
+      "productId": "logitech-z407",
+      "source": "Logitech Z407/z407-gallery-05.webp",
+      "sourceSha256": "5562d1a2fbbb957619e0fbd8cf10c2ae157e88153624f0e2dcba5d605fe12850",
+      "sourceBytes": 145342,
+      "full": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-05.webp",
+        "width": 1121,
+        "height": 1124,
+        "bytes": 93416
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-05-small.webp",
+        "width": 638,
+        "height": 640,
+        "bytes": 24764
+      }
+    },
+    {
+      "productId": "logitech-z407",
+      "source": "Logitech Z407/z407-bluetooth-speaker-video-thumbnail.webp",
+      "sourceSha256": "09dbb9f0ad28eb784c1c222ddfca11068d1676e9caa552888e7b1c0309eca633",
+      "sourceBytes": 28706,
+      "full": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-06.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 13650
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-06-small.webp",
+        "width": 640,
+        "height": 360,
+        "bytes": 3928
+      }
+    },
+    {
+      "productId": "logitech-z407",
+      "source": "Logitech Z407/z407-video-thumbnail.webp",
+      "sourceSha256": "b685b04e9bab92338077a81aabcb58753706595975f15f2df110b658de3da83c",
+      "sourceBytes": 100814,
+      "full": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-07.webp",
+        "width": 1600,
+        "height": 900,
+        "bytes": 40152
+      },
+      "small": {
+        "src": "/assets/showcase/logitech-z407/logitech-z407-image-07-small.webp",
+        "width": 640,
+        "height": 360,
+        "bytes": 9916
+      }
+    }
+  ]
+}

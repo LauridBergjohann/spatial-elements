@@ -19,71 +19,39 @@ export function createOutlineUniforms() {
 
 /** Shared silhouette and outer halo for detail and catalog geometry. */
 export function createOutlineOpacity(mask: THREE.TextureNode, controls: ReturnType<typeof createOutlineUniforms>, unconditional = false) {
-	const calculate = () => {
+	const calculate = () => Fn(() => {
 		const texel = controls.texel;
 		const glowTexel = controls.glowTexel;
-		const sampleMaskRing = (sampleTexel: typeof texel, scale = 1) => {
+		const sampleMaskRing = (sampleTexel: typeof texel, scale = 1, samples = 8) => {
 			const centerUv = uv();
-			const sampleX = sampleTexel.x.mul(scale);
-			const sampleY = sampleTexel.y.mul(scale);
-			const left = mask.sample(centerUv.sub(vec2(sampleX, 0))).r;
-			const right = mask.sample(centerUv.add(vec2(sampleX, 0))).r;
-			const up = mask.sample(centerUv.add(vec2(0, sampleY))).r;
-			const down = mask.sample(centerUv.sub(vec2(0, sampleY))).r;
-			const upLeft = mask.sample(centerUv.add(vec2(0, sampleY)).sub(vec2(sampleX, 0))).r;
-			const upRight = mask.sample(centerUv.add(vec2(sampleX, sampleY))).r;
-			const downLeft = mask.sample(centerUv.sub(vec2(sampleX, sampleY))).r;
-			const downRight = mask.sample(centerUv.add(vec2(sampleX, 0)).sub(vec2(0, sampleY))).r;
-
-			return {
-				average: left
-					.add(right)
-					.add(up)
-					.add(down)
-					.add(upLeft)
-					.add(upRight)
-					.add(downLeft)
-					.add(downRight)
-					.div(8),
-				max: tslMax(
-					tslMax(tslMax(left, right), tslMax(up, down)),
-					tslMax(tslMax(upLeft, upRight), tslMax(downLeft, downRight))
-				),
-				min: tslMin(
-					tslMin(tslMin(left, right), tslMin(up, down)),
-					tslMin(tslMin(upLeft, upRight), tslMin(downLeft, downRight))
-				)
-			};
+			const taps = Array.from({ length: samples }, (_, i) => {
+				const angle = i * Math.PI * 2 / samples;
+				return mask.sample(centerUv.add(sampleTexel.mul(vec2(Math.cos(angle) * scale, Math.sin(angle) * scale)))).r;
+			});
+			return { average: taps.reduce((sum, tap) => sum.add(tap)).div(samples),
+				max: taps.reduce((value, tap) => tslMax(value, tap)) };
 		};
-		const edgeNeighbor = sampleMaskRing(texel);
-		const glowNearNeighbor = sampleMaskRing(glowTexel, 0.45);
-		const glowMidNeighbor = sampleMaskRing(glowTexel, 0.7);
-		const glowFarNeighbor = sampleMaskRing(glowTexel);
+		// More directions smooth curved silhouettes without a blurred halo.
+		const edgeNeighbor = sampleMaskRing(texel, 1, 16);
 		const center = mask.sample(uv()).r;
-		const outside = center.oneMinus();
-		const edgeGradient = edgeNeighbor.max.sub(center).max(0);
-		const core = edgeGradient.mul(controls.strength);
-		// Average neighbouring coverage, rather than dilating a solid band. Keep the
-		// halo outside the spatialElement so it cannot be mistaken for painted geometry.
-		const glowNear = glowNearNeighbor.average
-			.mul(outside)
-			.mul(controls.glow.mul(0.6));
-		const glowMid = glowMidNeighbor.average
-			.mul(outside)
-			.mul(controls.glow.mul(0.3));
-		const glowFar = glowFarNeighbor.average
-			.mul(outside)
-			.mul(controls.glow.mul(0.1));
-		const opacity = tslMin(core.add(glowNear).add(glowMid).add(glowFar), 1).mul(
-			controls.opacityScale
-		);
-
-		return opacity;
-	};
+		// Cover the partially covered inner edge instead of subtracting its MSAA
+		// coverage twice (once in the model and once here), which leaves a pale seam.
+		const edgeGradient = edgeNeighbor.max.mul(center.smoothstep(0.8, 1).oneMinus());
+		const opacity = edgeGradient.mul(controls.strength).toVar();
+		// The default crisp outline needs only sixteen neighbour samples. Explicit
+		// glow themes retain their halo without paying its 24 extra taps otherwise.
+		If(controls.glow.greaterThan(0), () => {
+			const near = sampleMaskRing(glowTexel, 0.45).average.mul(0.6);
+			const mid = sampleMaskRing(glowTexel, 0.7).average.mul(0.3);
+			const far = sampleMaskRing(glowTexel).average.mul(0.1);
+			opacity.addAssign(near.add(mid).add(far).mul(center.oneMinus()).mul(controls.glow));
+		});
+		return tslMin(opacity, 1).mul(controls.opacityScale);
+	})();
 	if (unconditional) return calculate();
 	return Fn(() => {
 		const opacity = float(0).toVar();
-		// A fully covered pixel has zero outer halo. Skip all 32 neighbour taps there.
+		// Fully covered pixels do not need any outer-edge samples.
 		If(mask.sample(uv()).r.lessThan(1), () => {
 			opacity.assign(calculate());
 		});

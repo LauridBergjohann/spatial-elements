@@ -18,7 +18,7 @@ Consequence: transition eligibility depends on measured, prepared presentations 
 
 Accepted 2026-09-14.
 
-ContentPage composes text, lists and carousels; a CarouselSection does not own a separate page or renderer. A route identifies a resource, while endpoint registrations, navigation intent and restored section selection identify a concrete presentation. Occurrence identity separates repeated element presentations from shared asset identity. This supersedes the earlier assumption that a route uniquely determines list versus carousel presentation.
+ContentPage composes text, lists and carousels; a SpatialCarouselSection does not own a separate page or renderer. A route identifies a resource, while endpoint registrations, navigation intent and restored section selection identify a concrete presentation. Occurrence identity separates repeated element presentations from shared asset identity. This supersedes the earlier assumption that a route uniquely determines list versus carousel presentation.
 
 Consequence: mixed pages require occurrence-aware matching and per-history-entry section state.
 

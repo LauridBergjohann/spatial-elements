@@ -1,3 +1,5 @@
+<img src="../../apps/website/static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="64" />
+
 # Spatial Elements architecture
 
 Current implementation baseline: 2026-10-31, including the SpatialElement API migration and shared responsive layout. This is implementation documentation, not a proposal for an additional rewrite. The [layout architecture](layout.md) describes token, viewport, DOM-ownership and scroll contracts in detail.
@@ -5,7 +7,7 @@ The twelve sections follow [arc42](https://arc42.org/overview/); the diagrams us
 
 ## 1. Introduction and goals
 
-Spatial Elements combines accessible HTML content with interactive element geometry, panels and continuity between catalog presentations. Content authors compose Section, ListSection and CarouselSection inside ContentPage; SpatialElementPage supplies detail interaction. Goals are immediate usable content, smooth prepared transitions, stable navigation/history, bounded resource use and reusable framework-independent rendering.
+Spatial Elements combines accessible HTML content with interactive element geometry, panels and continuity between catalog presentations. Content authors compose Section, SpatialCardGridSection and SpatialCarouselSection inside ContentPage; SpatialElementPage supplies detail interaction. Goals are immediate usable content, smooth prepared transitions, stable navigation/history, bounded resource use and reusable framework-independent rendering.
 
 ## 2. Constraints
 

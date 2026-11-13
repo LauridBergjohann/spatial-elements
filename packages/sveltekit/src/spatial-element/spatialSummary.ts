@@ -1,3 +1,4 @@
+import type { CardMediaAspect, CardMediaFit, CardVariant, SurfaceTone } from '@page-sections/core';
 import type { Snippet } from 'svelte';
 import type { CatalogEndpointAddress, CatalogEndpointRole } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
 import type { ResolvedSpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
@@ -24,6 +25,10 @@ export interface SpatialCardContext {
 	order: number;
 	cardSize: SpatialCardSize;
 	textAlign: 'start' | 'center';
+	mediaAspect?: CardMediaAspect;
+	mediaFit?: CardMediaFit;
+	reserveEyebrow?: boolean;
+	cardTone?: SurfaceTone; cardVariant?: CardVariant;
 }
 
 export type SpatialPresentationModel =

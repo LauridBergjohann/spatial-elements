@@ -57,6 +57,12 @@ test('enhanced scene keeps its selected fit anchor and supports a bounded intera
 	await selected.getByRole('button', { name: 'Add one Column 1' }).click();
 	await expect(selected.locator('[data-carousel-custom-state]')).toHaveText('Retained selection: 2');
 	expect(await selected.locator('[data-spatial-summary-root]').evaluate(node => node.scrollHeight > node.clientHeight)).toBe(true);
+	// The page heading and collection fit can place the dots below the viewport.
+	// Scroll the document as a user would; Chromium's scrollIntoView cannot move
+	// the stage's viewport-fixed presentation directly.
+	await page.mouse.move(400, 400);
+	await page.mouse.wheel(0, 240);
+	await expect(page.locator('.controls button').nth(1)).toBeInViewport();
 	await page.locator('.controls button').nth(1).click();
 	await expect(page.locator('[data-carousel-item="seat-1"]')).toHaveClass(/selected/);
 	await page.locator('.controls button').first().click();

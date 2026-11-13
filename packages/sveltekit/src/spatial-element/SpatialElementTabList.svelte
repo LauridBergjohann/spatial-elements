@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import OverflowControls from './OverflowControls.svelte';
 	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import {
 		STAGE_ANCHOR_SCROLL_DURATION_MS,
@@ -8,13 +9,14 @@
 	import type { SpatialElementSectionNavigationItem } from '@spatial-elements/core/spatial-element/types';
 
 	interface Props {
+		element?: HTMLElement;
 		activeSectionId?: string;
 		sections: SpatialElementSectionNavigationItem[];
 		variant: 'panel' | 'docked';
 	}
 
-	let { activeSectionId, sections, variant }: Props = $props();
-	let linksElement: HTMLDivElement;
+	let { activeSectionId, sections, variant, element = $bindable() }: Props = $props();
+	let linksElement = $state<HTMLDivElement>(null!);
 	let presentationFrame = 0;
 	let readyFrame = 0;
 	const currentSectionId = $derived(activeSectionId ?? sections[0]?.id);
@@ -82,6 +84,7 @@
 </script>
 
 <nav
+	bind:this={element}
 	use:mouseHover
 	class="spatial-element-tab-list"
 	data-spatial-element-tab-list={variant}
@@ -102,7 +105,7 @@
 				{#if section.id === 'overview'}
 					<!-- Author-supplied detail-overview.svg; see layout source manifest. -->
 					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-						stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 						<path d="M12 10.5 L9 13.5 M12 16.5 L12 10.5 M15 13.5 L12 10.5 M2 6.5 L22 6.5" />
 						<rect x="2" y="3" width="20" height="18" rx="2" />
 					</svg>
@@ -110,6 +113,7 @@
 			</a>
 		{/each}
 	</div>
+	<OverflowControls target={linksElement} label="sections" />
 </nav>
 
 <style>
@@ -124,6 +128,7 @@
 			var(--spatial-element-control-radius, 12px)
 		);
 
+		position: relative;
 		display: flex;
 		align-items: center;
 		box-sizing: border-box;
@@ -131,7 +136,7 @@
 		max-width: 100%;
 		height: 100%;
 		min-width: 0;
-		color: var(--spatial-element-body);
+		color: var(--spatial-element-navigation-ink, var(--spatial-element-ink));
 		pointer-events: auto;
 	}
 
@@ -182,7 +187,7 @@
 		position: absolute;
 		bottom: 3px;
 		left: 50%;
-		width: 40px;
+		width: 24px;
 		height: 3px;
 		border-radius: 3px 3px 0 0;
 		background: var(--spatial-element-accent);
@@ -195,7 +200,7 @@
 		visibility: visible;
 	}
 
-	a {
+	.spatial-element-tab-list a {
 		display: grid;
 		position: relative;
 		z-index: 1;
@@ -206,12 +211,10 @@
 		padding: 0 16px;
 		border-radius: var(--spatial-element-tab-highlight-top-radius) var(--spatial-element-tab-highlight-top-radius)
 			var(--spatial-element-tab-highlight-bottom-radius) var(--spatial-element-tab-highlight-bottom-radius);
-		color: var(--spatial-element-body);
+		color: var(--spatial-element-navigation-ink, var(--spatial-element-ink));
 		background: transparent;
-		/* Sturdier glyphs retain more edge contrast in the spatial panel and keep
-		 * the source-to-dock handoff typographically identical. */
 		font-size: var(--spatial-element-tab-font-size);
-		font-weight: 600;
+		font-weight: 400;
 		line-height: 1;
 		text-decoration: none;
 		white-space: nowrap;
@@ -224,7 +227,7 @@
 	}
 
 	a::before {
-		font-weight: 600;
+		font-weight: 650;
 		content: attr(data-spatial-element-tab-label);
 		visibility: hidden;
 	}
@@ -235,9 +238,11 @@
 		background: color-mix(in srgb, var(--spatial-element-body) 8%, transparent);
 	}
 
-	a[aria-current='location'] {
-		font-weight: 600;
+	.spatial-element-tab-list a[aria-current='location'] {
+		font-weight: 650;
 	}
+	a.overview svg { opacity: 0.55; transition: opacity 180ms ease; }
+	a.overview[aria-current='location'] svg { opacity: 1; }
 
 	.spatial-element-tab-links:not([data-spatial-element-tab-indicator-ready]) a[aria-current='location'] {
 		background: color-mix(in srgb, var(--spatial-element-body) 8%, transparent);
@@ -247,7 +252,7 @@
 		position: absolute;
 		bottom: 3px;
 		left: 50%;
-		width: 40px;
+		width: 24px;
 		height: 3px;
 		border-radius: 3px 3px 0 0;
 		background: var(--spatial-element-accent);

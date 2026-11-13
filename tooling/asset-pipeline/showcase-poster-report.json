@@ -1,0 +1,2044 @@
+[
+  {
+    "id": "chronograph",
+    "browser": "157.0.8103.78",
+    "source": "3cd2e04596c8f635ed1132fdf2b249224af5835258f98816c62634c53e0f651b",
+    "low": "30bab4a381a73d6d4ed8361542230a7ef5833529c44200b8bbb8df0121ad4d5a",
+    "high": "e9531fbaa94a4a59f3073c4b6ae8ff102668b7c5839bee2ad327bca28f00c894",
+    "pose": {
+      "model": {
+        "rotation": {
+          "x": 0.7853981633974483
+        },
+        "excludeMeshes": [
+          "floor"
+        ],
+        "materialOverrides": {
+          "glass": {
+            "type": "physical",
+            "color": "#020205",
+            "transparent": true,
+            "opacity": 0.8,
+            "metalness": 0,
+            "roughness": 0,
+            "iridescence": 0.3,
+            "clearcoat": 1,
+            "blending": "additive"
+          }
+        }
+      },
+      "camera": {
+        "fitScale": 1.25,
+        "azimuth": 30,
+        "elevation": 20
+      },
+      "minimap": {
+        "modelScale": 1.4,
+        "hoverModelScale": 1.6,
+        "expandedHoverModelScale": 1.05,
+        "dockedView": {
+          "scale": 1.2,
+          "azimuth": -20,
+          "elevation": 20
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 38928,
+    "sha256": "dd2993ef7f43855d28f4a5ffb55490175c9e8373f474d2cb0f90ee1ca3a636b3",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999936578002715,
+        "meanRgbError": 0.00003636194511037542
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9995560432033386,
+        "meanRgbError": 0.012048639259982468
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.999992944480114,
+        "meanRgbError": 0.00001370523209224894
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9996683905653588,
+        "meanRgbError": 0.009358911944759983
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 1,
+        "meanRgbError": 0.00003188111892063233
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9986187509127197,
+        "meanRgbError": 0.016175404754382564
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 1,
+        "meanRgbError": 0.000044778945157672936
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 1,
+        "meanRgbError": 0.011789693790811347
+      }
+    ],
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.0043947696685791016,
+        0.2637765391336212,
+        0.012085676193237305,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.2500457763671875,
+          -0.3292034880651703,
+          -0.4419519901275635
+        ],
+        "max": [
+          0.2500457763671875,
+          0.3292034880651703,
+          0.4419519901275635
+        ]
+      }
+    }
+  },
+  {
+    "id": "item-connector",
+    "browser": "157.0.8103.78",
+    "source": "69d963a7a9a01c824de11a585b7c9311cfa207e30dcc5c4fed12cd8e8bfc403b",
+    "low": "87b759076d7ea7938b574744c9a818d1a846ed51938c7d5bb381d805b3ab858b",
+    "high": "0749d7566eeea424ca7769cf87bb53b0aeb4e91c39aa6192c937061b5b4f903a",
+    "frame": {
+      "assetToFrame": [
+        28.571424910566936,
+        0,
+        0,
+        0,
+        0,
+        28.571424910566936,
+        0,
+        0,
+        0,
+        0,
+        28.571424910566936,
+        0,
+        0,
+        -7.255431188558371e-10,
+        -1.4203647993928054e-8,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.2428571131234979,
+          -0.34857144417288144,
+          -0.5
+        ],
+        "max": [
+          0.2428571131234979,
+          0.34857144417288144,
+          0.5
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": 30,
+        "elevation": 20,
+        "fitScale": 1.15
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 26452,
+    "sha256": "9208e9ed01effc476fb06dc46fa62f0d400fe37fe3bd431f9f88c15f66792c77",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999891478925207,
+        "meanRgbError": 0.009420501716335274
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9985512436515172,
+        "meanRgbError": 0.006880548228609787
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999945739168181,
+        "meanRgbError": 0.0069061058862895115
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9987085922027185,
+        "meanRgbError": 0.00633104036988155
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.999986417534058,
+        "meanRgbError": 0.021142152816117175
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9983210162603465,
+        "meanRgbError": 0.011737144318506615
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 1,
+        "meanRgbError": 0.003647219885273286
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9971128322966601,
+        "meanRgbError": 0.006788415880066486
+      }
+    ]
+  },
+  {
+    "id": "item-end-cap",
+    "browser": "157.0.8103.78",
+    "source": "8d6abc76fe641e2b262f987f40930d57a45b91dd2b70ae4f89cfce9162f70e99",
+    "low": "f574621b1dd2954bd9c7034b8fd9eac495d8a76df271c7c072c40c5d59f61be8",
+    "high": "1e08a964c426866bb015f6129706c3c61dc1a6afdc297821ee195064c91d45dd",
+    "frame": {
+      "assetToFrame": [
+        24.99999421959097,
+        0,
+        0,
+        0,
+        0,
+        24.99999421959097,
+        0,
+        0,
+        0,
+        0,
+        24.99999421959097,
+        0,
+        0,
+        4.198717203544848e-9,
+        6.717941228626994e-9,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.4999998732159511,
+          -0.05000005776529622,
+          -0.5
+        ],
+        "max": [
+          0.4999998732159511,
+          0.05000005776529622,
+          0.5
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": 30,
+        "elevation": 20,
+        "fitScale": 1.15
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 14186,
+    "sha256": "610ed046d1db3c4030ef7e79fde039b0f865105a3f2c23174a3d8fb43e4d2a05",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999526053871877,
+        "meanRgbError": 0.003010435591598866
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9996366298205794,
+        "meanRgbError": 0.003162576884872232
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999842017957292,
+        "meanRgbError": 0.0045789391350947815
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9993101450801759,
+        "meanRgbError": 0.005245341121607108
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999584128254846,
+        "meanRgbError": 0.00490138148584519
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9993449849762427,
+        "meanRgbError": 0.005936268173031335
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999467539256879,
+        "meanRgbError": 0.0008158640018699084
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 1,
+        "meanRgbError": 0.0009346053716348343
+      }
+    ]
+  },
+  {
+    "id": "item-impact-protector",
+    "browser": "157.0.8103.78",
+    "source": "394189694140c823f2cb50d8b586d01cf39a84fff5c56622ab8795901ec4dbd1",
+    "low": "8920fdf0ef8c2e98da0975aea19c800ef7e621f75f3bb0f746716d198baeb5af",
+    "high": "1c6689f6aa458c224b41799204c03781c29350c46968a2cd25175cf975918d41",
+    "frame": {
+      "assetToFrame": [
+        2.4691351377045576,
+        0,
+        0,
+        0,
+        0,
+        2.4691351377045576,
+        0,
+        0,
+        0,
+        0,
+        2.4691351377045576,
+        0,
+        0,
+        1.6587508447442412e-9,
+        6.635003641112886e-8,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.24691350825150865,
+          -0.5,
+          -0.24691354225590387
+        ],
+        "max": [
+          0.24691350825150865,
+          0.5,
+          0.24691354225590387
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": 30,
+        "elevation": 20,
+        "fitScale": 1.15
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 22826,
+    "sha256": "da90d7ba0e733c135385c32fbd244678e297e6230aebfa5589fda1d1a757113c",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999866326690884,
+        "meanRgbError": 0.0002940725432380188
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9995522393047012,
+        "meanRgbError": 0.0009369603303723514
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999894745705625,
+        "meanRgbError": 0.000452987882777077
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9999333389468957,
+        "meanRgbError": 0.0005558435716639113
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999937013428737,
+        "meanRgbError": 0.00036950063422948814
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.999719747709961,
+        "meanRgbError": 0.0013773915371464562
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 1,
+        "meanRgbError": 0.00021624087313053681
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9999373843567338,
+        "meanRgbError": 0.0011856824543416858
+      }
+    ]
+  },
+  {
+    "id": "item-profile",
+    "browser": "157.0.8103.78",
+    "source": "aba862da800c2de9ab108f87ccb9bbff82d9ba43ee9104d6ae30b492b2efe650",
+    "low": "2002d4e24192d4716cad3f7bf9414e30dd9279b0ae9965a0bdf389fcdcf05ebc",
+    "high": "0bbc23faca06c27c09b3432ea0296e75946e42c0d10b21ee6fab737f3906634f",
+    "frame": {
+      "assetToFrame": [
+        9.900988089229823,
+        0,
+        0,
+        0,
+        0,
+        9.900988089229823,
+        0,
+        0,
+        0,
+        0,
+        9.900988089229823,
+        0,
+        0,
+        -0.2000000044432957,
+        -2.6871768259686497e-8,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.19801978096430448,
+          -0.19801987382733002,
+          -0.5
+        ],
+        "max": [
+          0.19801978096430448,
+          0.19801987382733,
+          0.5
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": 30,
+        "elevation": 20,
+        "fitScale": 1.15
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 32200,
+    "sha256": "b220dd989c7244666d433f7b686baa8353a0b08b127ebb9e1ae6c39f760052a9",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999815179891572,
+        "meanRgbError": 0.00034920128721769634
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.999759789353741,
+        "meanRgbError": 0.0018410392864371058
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999815179891572,
+        "meanRgbError": 0.0003469383481994736
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.999759789353741,
+        "meanRgbError": 0.001676382074215106
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 1,
+        "meanRgbError": 0.000025615154371353304
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9999969963926676,
+        "meanRgbError": 0.00013276729666054422
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 1,
+        "meanRgbError": 0.00007483422852834049
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9999251826550374,
+        "meanRgbError": 0.0011026248531371065
+      }
+    ]
+  },
+  {
+    "id": "item-robot",
+    "browser": "157.0.8103.78",
+    "source": "6adc0a3e4be5cc9477efc8612fc45b2acf03ca5b1ff00034cfbb3a511e411f2f",
+    "low": "73bf46c41cd5fa91c699dd717a78fc372b625a83f73b66643665894bdad6e968",
+    "high": "53e850096b61a4a155946990d2d86ea7aae5bfa2e77583a18d2125fd1aaac85d",
+    "frame": {
+      "assetToFrame": [
+        4.830916129505293,
+        0,
+        0,
+        0,
+        0,
+        4.830916129505293,
+        0,
+        0,
+        0,
+        0,
+        4.830916129505293,
+        0,
+        0,
+        -0.49999999402507894,
+        -1.0093544709506594e-7,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.4356909200355184,
+          -0.49999999999999994,
+          -0.2246376554244439
+        ],
+        "max": [
+          0.4356909200355184,
+          0.49999999999999994,
+          0.2246376554244439
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": 30,
+        "elevation": 20,
+        "fitScale": 1.15
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 19634,
+    "sha256": "007ab461f51fccc57e4a738c6b9affd03f86e6be13b51e91982429dfeaf765b7",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9978262166793116,
+        "meanRgbError": 0.004415089594249957
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9810781604384058,
+        "meanRgbError": 0.032205546581647225
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.998034319715242,
+        "meanRgbError": 0.004751716975373266
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9759507730742343,
+        "meanRgbError": 0.04032015258933092
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.998389097829829,
+        "meanRgbError": 0.003924379130393878
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9887934959349594,
+        "meanRgbError": 0.028539803390190764
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.99829314559202,
+        "meanRgbError": 0.004193265998837549
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9831688295863036,
+        "meanRgbError": 0.023269171496052267
+      }
+    ]
+  },
+  {
+    "id": "joker",
+    "browser": "157.0.8103.78",
+    "source": "56e582400ff51c61ffa39858b6b9a93135b45f079f2426aca8549f3197b2334d",
+    "low": "74bbc6d74d20349ea22e542be896f0003db4058c4994a2af1c616f15800ce7ab",
+    "high": "bb3fc50537374a605f2e4dc1437e3e0f3e97774990179286a14325841a679d5b",
+    "pose": {
+      "camera": {
+        "azimuth": 30,
+        "elevation": 60,
+        "fitScale": 1.2
+      },
+      "minimap": {
+        "hoverModelScale": 1.2,
+        "expandedHoverModelScale": 1.15
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 15716,
+    "sha256": "5c2d772edac04d054b1f50338e22036abc4b4f91d8371b890830fdfb04ff6e80",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.99967919340055,
+        "meanRgbError": 0.005819309901371691
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.988686580310094,
+        "meanRgbError": 0.03718601004863128
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9996584911518162,
+        "meanRgbError": 0.0037314559477935848
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9901040540957792,
+        "meanRgbError": 0.029369950139358343
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9997194655819336,
+        "meanRgbError": 0.004357611707819737
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.986258020525552,
+        "meanRgbError": 0.039511213452051566
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 1,
+        "meanRgbError": 0.006330285995078787
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9950162817026342,
+        "meanRgbError": 0.027674584425054546
+      }
+    ],
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.0032052919268608093,
+        -0.0002932964125648141,
+        -0.00013972539454698563,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.09218765795230865,
+          -0.003509341855533421,
+          -0.014762251637876034
+        ],
+        "max": [
+          0.09218765795230865,
+          0.003509341855533421,
+          0.014762251637876034
+        ]
+      }
+    }
+  },
+  {
+    "id": "kraftform-kompakt",
+    "browser": "157.0.8103.78",
+    "source": "7ef0c6229ab725ad61ef1628c6ea9162470a1772ced104a18071dda206da2e3e",
+    "low": "a322e40627a1ce2527f2bb0c5f2ffc4b8729b5a7194e720cbcb1d2feb116a9a9",
+    "high": "96a7ebac643fd7258505809c5d1d0a26f0e575e93cdce44d34be3b11701af3e0",
+    "pose": {
+      "camera": {
+        "azimuth": 5,
+        "elevation": 60,
+        "fitScale": 1.1
+      },
+      "minimap": {
+        "hoverModelScale": 1.2,
+        "expandedHoverModelScale": 1.15,
+        "dockedView": {
+          "scale": 1.6
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 57494,
+    "sha256": "2a7f7adb1c95e33c5301e7b040050509cc80842882bea0a05030c76736d27afb",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.99833462832776,
+        "meanRgbError": 0.05355226166101187
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9888248878507153,
+        "meanRgbError": 0.034533697179842573
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9983348741298053,
+        "meanRgbError": 0.05298055963587576
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9903164811836775,
+        "meanRgbError": 0.03878567370573491
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9978268058770728,
+        "meanRgbError": 0.03597242511645898
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.981755333399875,
+        "meanRgbError": 0.05096781860268671
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9971257154332764,
+        "meanRgbError": 0.047706206557998905
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9890046907286466,
+        "meanRgbError": 0.02861364519027388
+      }
+    ],
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.0006481558084487915,
+        -0.025670237868325785,
+        -0.00019793212413787842,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.19487187266349792,
+          -0.024831660062773153,
+          -0.15081246197223663
+        ],
+        "max": [
+          0.19487187266349792,
+          0.024831660062773153,
+          0.15081246197223663
+        ]
+      }
+    }
+  },
+  {
+    "id": "kraftform-kompakt-20",
+    "browser": "157.0.8103.78",
+    "source": "00afb14ad659db40e308bebf2f0dff30a79d658ba9a495d9ebba5f72d0d98640",
+    "low": "117bb6f3e1292fd4593b118a171a6c09f1616d47ffabc8f5a1899c23688c5f09",
+    "high": "6717ca087d9e99c88db76af6112f0d6ab8d7fdc4715cade84ff1cb1946e3976d",
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.00042073462158073727,
+        -0.015750012294150316,
+        -0.000018013641238212585,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.1075824451533115,
+          -0.019036666028382,
+          -0.019097791984677315
+        ],
+        "max": [
+          0.1075824451533115,
+          0.019036666028382,
+          0.019097791984677315
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": -55,
+        "elevation": 30,
+        "fitScale": 1.5
+      },
+      "minimap": {
+        "modelScale": 1.9,
+        "hoverModelScale": 1.6,
+        "expandedHoverModelScale": 0.5,
+        "dockedView": {
+          "scale": 1.2,
+          "azimuth": -55,
+          "elevation": 30
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 19308,
+    "sha256": "d1825d0cfb5db74df7d57c38736833d7ced94cd2a145aea565829a5d3c2cfb00",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9997250103121132,
+        "meanRgbError": 0.00385602642297428
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9977696303085853,
+        "meanRgbError": 0.01181027579582602
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9998324995533321,
+        "meanRgbError": 0.0015424930022035614
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9993299907315385,
+        "meanRgbError": 0.004044082522662261
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999905844247554,
+        "meanRgbError": 0.002578686054628429
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9999058442475544,
+        "meanRgbError": 0.005964883842879035
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9995548245885219,
+        "meanRgbError": 0.019208963382220997
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.997452040223132,
+        "meanRgbError": 0.023578983721529775
+      }
+    ]
+  },
+  {
+    "id": "kraftform-xxl",
+    "browser": "157.0.8103.78",
+    "source": "583125d5d7993c239c476892145640e36e6b862f09826b91d20ef6471bc01000",
+    "low": "b8c9f73e2cb5b16107e2f1289c07b393beb4b2429a4e3dfaa2b9fa4c93516c5c",
+    "high": "a39386b07dd016c5a897c91f496b06f3369b37ab48a5ba342b293534f0097c65",
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.004593908786773682,
+        -0.005436129868030548,
+        0.0011008009314537048,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.13318052887916565,
+          -0.12612011283636093,
+          -0.10233718156814575
+        ],
+        "max": [
+          0.13318052887916565,
+          0.12612011283636093,
+          0.10233718156814575
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": 40,
+        "elevation": 20,
+        "fitScale": 1.1
+      },
+      "minimap": {
+        "hoverModelScale": 1.2,
+        "expandedHoverModelScale": 1.15
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 48526,
+    "sha256": "d5859fdbe674e9ed064b94a5c69e61c4644548af042104ac3bc0c31a377e06d5",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9994722851041374,
+        "meanRgbError": 0.005688296594918909
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9945120778663669,
+        "meanRgbError": 0.013325400308226515
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9996837550730957,
+        "meanRgbError": 0.003004639981394852
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9950381715949692,
+        "meanRgbError": 0.012377856749821461
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9995672499302475,
+        "meanRgbError": 0.005884738500126516
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9959172982422175,
+        "meanRgbError": 0.015895521302111706
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9993772549397745,
+        "meanRgbError": 0.009120102063490638
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9974565340555223,
+        "meanRgbError": 0.01573587326438828
+      }
+    ]
+  },
+  {
+    "id": "logitech-brio-500",
+    "browser": "157.0.8103.78",
+    "source": "d673ccbd4aa9132583c3a40cbdb98785507e8a453d149a51960b380f7fc27a8b",
+    "low": "8ee792080f4349b6860194f6ed1fa97eb0f9b18eb904d308576cb10b9bc16203",
+    "high": "beca142c65f56aaded3f401698331db0f7057760e86f1a53152c46669feab67d",
+    "frame": {
+      "assetToFrame": [
+        9.09093257939719,
+        0,
+        0,
+        0,
+        0,
+        9.09093257939719,
+        0,
+        0,
+        0,
+        0,
+        9.09093257939719,
+        0,
+        0,
+        -0.3385911210275786,
+        -0.004323382733884432,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.5,
+          -0.42865179725424946,
+          -0.3998361060397304
+        ],
+        "max": [
+          0.5,
+          0.42865179725424946,
+          0.3998361060397304
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": 30,
+        "elevation": 20,
+        "fitScale": 1.15
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 20076,
+    "sha256": "e7eb4a41e3f8f344558c2471fbadcdc18abe0a64eb662751f535070f092e8053",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999610902511624,
+        "meanRgbError": 0.0047223274438469385
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.996794747081712,
+        "meanRgbError": 0.01384637979705501
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999671935384393,
+        "meanRgbError": 0.0029020038401142575
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9945216969633426,
+        "meanRgbError": 0.011129922058774274
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999678350581783,
+        "meanRgbError": 0.005011497652773882
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9886269048533743,
+        "meanRgbError": 0.018997415417270336
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9999245132212873,
+        "meanRgbError": 0.012114957570248632
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9982325878821252,
+        "meanRgbError": 0.015544339364488595
+      }
+    ]
+  },
+  {
+    "id": "logitech-ergo-k860",
+    "browser": "157.0.8103.78",
+    "source": "5b880a7c8487b7d9d20e2620d84e5caab971fa6ab747faf1391cbfa9f4b6c601",
+    "low": "1cdf2fad08fa1bc23dd2a1f872fe0d80822602fc38b7def950f8be19cf929285",
+    "high": "8e960c21da4ae164bb83925e58673de047063d04fa76d0448274474df22cdb9c",
+    "frame": {
+      "assetToFrame": [
+        2.185481869458512,
+        0,
+        0,
+        0,
+        0,
+        2.185481869458512,
+        0,
+        0,
+        0,
+        0,
+        2.185481869458512,
+        0,
+        0.00013659899981981113,
+        -0.05116972939300712,
+        -0.006339004724323721,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.5,
+          -0.05158720961625306,
+          -0.258539226256807
+        ],
+        "max": [
+          0.5,
+          0.05158720961625305,
+          0.258539226256807
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": -20,
+        "elevation": 42,
+        "fitScale": 1.15
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 54892,
+    "sha256": "e2c85452b7a1936670319551a16ef9ebd316317e939499131bee60929fcf3277",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9996351679396811,
+        "meanRgbError": 0.014769217430950702
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9981898547674174,
+        "meanRgbError": 0.024433417449707107
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9995962151903846,
+        "meanRgbError": 0.014119565989683459
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9975699861910654,
+        "meanRgbError": 0.03446509513700688
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9995721614156057,
+        "meanRgbError": 0.019145720996519927
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9964992857380154,
+        "meanRgbError": 0.0422172151143438
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.999918141202118,
+        "meanRgbError": 0.016828293441741752
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9969551716861114,
+        "meanRgbError": 0.028042471598589896
+      }
+    ]
+  },
+  {
+    "id": "logitech-m750",
+    "browser": "157.0.8103.78",
+    "source": "5daa232ca3166e14c69b1f9b1872cc4d0e3fe571d0821d592ae981fb73644cec",
+    "low": "0cdd4cba0ac60ab58de5b67bb1fd701e944fd96d11ac912d7489a04ad6a786ae",
+    "high": "8ee8fa66805fdb40f475ee421af87c79a9848cc5d2cf06941b81d092e48af533",
+    "frame": {
+      "assetToFrame": [
+        8.463959990810691,
+        0,
+        0,
+        0,
+        0,
+        8.463959990810691,
+        0,
+        0,
+        0,
+        0,
+        8.463959990810691,
+        0,
+        0.00003854096361398859,
+        -0.17528861791258266,
+        -0.0012526519690265027,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.2773512811588822,
+          -0.17532245036230992,
+          -0.5
+        ],
+        "max": [
+          0.2773512811588822,
+          0.17532245036230992,
+          0.5
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": 30,
+        "elevation": 20,
+        "fitScale": 1.15
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 20438,
+    "sha256": "71187ef72f8db083456afcc7d159f9d5083c70306c98ecb5372bb2d3ff2053b8",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9983069768426176,
+        "meanRgbError": 0.009705096182976243
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9954330641914086,
+        "meanRgbError": 0.01203625790918652
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9984274969781081,
+        "meanRgbError": 0.01038007075806401
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9939274770459753,
+        "meanRgbError": 0.011032123497041232
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9982864940848134,
+        "meanRgbError": 0.014457755617749026
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9955534560839606,
+        "meanRgbError": 0.016070649635441657
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9976740412181533,
+        "meanRgbError": 0.00881609376163578
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9954506023146231,
+        "meanRgbError": 0.011905570045950466
+      }
+    ]
+  },
+  {
+    "id": "logitech-z407",
+    "browser": "157.0.8103.78",
+    "source": "06260c55be0ddb6c0f93ca12dd17c1303d80c92497c767047e1e82d69a615a73",
+    "low": "eac5fc0b0a7145763b3cfa6b19cd949d4b24681cb1f2510460187376edb3a736",
+    "high": "8c1b844776daa834a07626dd0d1492bf6b1ea5fd046f5b0cd5bb95625a931eee",
+    "frame": {
+      "assetToFrame": [
+        2.2226719824456613,
+        0,
+        0,
+        0,
+        0,
+        2.2226719824456613,
+        0,
+        0,
+        0,
+        0,
+        2.2226719824456613,
+        0,
+        -0.00909177985616343,
+        -0.2398420786953303,
+        -0.143001163359401,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.49999999999999994,
+          -0.23987722507595208,
+          -0.3841321448758059
+        ],
+        "max": [
+          0.49999999999999994,
+          0.2398772250759521,
+          0.3841321448758059
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": 30,
+        "elevation": 20,
+        "fitScale": 1.15
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 17340,
+    "sha256": "222cacebca40a96af48657696237e6015e8a35087cca1ec7b985c87f6a5ed205",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9997640277945133,
+        "meanRgbError": 0.004729708621743807
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9867186951418913,
+        "meanRgbError": 0.02056422270647334
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9998632331679106,
+        "meanRgbError": 0.0023343454845108687
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9905371392894075,
+        "meanRgbError": 0.01277273869764869
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9998551100066299,
+        "meanRgbError": 0.0036648071446463864
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9915230835988762,
+        "meanRgbError": 0.016474413278307946
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9992227443862376,
+        "meanRgbError": 0.011973506886063648
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9919638282380648,
+        "meanRgbError": 0.06846547848451931
+      }
+    ]
+  },
+  {
+    "id": "ph-kreuzschlitz",
+    "browser": "157.0.8103.78",
+    "source": "66906abb08d9ed66e660e3c4716b07d461fd7c5607bd5589fdc22914ceb7a146",
+    "low": "b55b1df65cd67a88f43d51d627db955ec66f7cc978e9d4233d46743d15d62cf6",
+    "high": "ebe232cf399aeeee8beb4bed6d8149fff1eb5157004666667cd754a21843094c",
+    "pose": {
+      "camera": {
+        "azimuth": -135,
+        "elevation": 35,
+        "fitScale": 1.5
+      },
+      "minimap": {
+        "modelScale": 1.9,
+        "hoverModelScale": 1.6,
+        "expandedHoverModelScale": 0.95,
+        "dockedView": {
+          "scale": 1.2,
+          "azimuth": -135,
+          "elevation": 35
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 13754,
+    "sha256": "cd178290c0cf574c84e2590258cbd9c6f10092ae84cc1f3643c1ef8d2e96254b",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9986541582551558,
+        "meanRgbError": 0.004584296081044406
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.995645202794988,
+        "meanRgbError": 0.012554365425445963
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9989047547335131,
+        "meanRgbError": 0.0034140870911475818
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.997754132259699,
+        "meanRgbError": 0.00973506511826026
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9997415352804342,
+        "meanRgbError": 0.003127528688739216
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9884285783451414,
+        "meanRgbError": 0.014696077851224518
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9998181652877535,
+        "meanRgbError": 0.01640642316265234
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9980449213421843,
+        "meanRgbError": 0.019328880148141016
+      }
+    ],
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -2.2351741790771484e-8,
+        -4.6566128730773926e-9,
+        -0.010751001536846161,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.017196688801050186,
+          -0.017196697182953358,
+          -0.10016529262065887
+        ],
+        "max": [
+          0.017196688801050186,
+          0.017196697182953358,
+          0.10016529262065887
+        ]
+      }
+    }
+  },
+  {
+    "id": "tool-check-plus",
+    "browser": "157.0.8103.78",
+    "source": "7ee6e6be132e0b68228f3f3ed9968dd1a3d32359db6b93828b8845d0ea4eeb12",
+    "low": "a85255f381e706fa42caaa6a94eef2e6e7c6972e4a85e57001c43ddcd7106a82",
+    "high": "cdd8508fb4091e617db01ce61bb717dd7a916381fbd4528c9ab8b26c41385b36",
+    "pose": {
+      "camera": {
+        "azimuth": 15,
+        "elevation": 60,
+        "fitScale": 1.1
+      },
+      "minimap": {
+        "hoverModelScale": 1.2,
+        "expandedHoverModelScale": 1.05
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 54474,
+    "sha256": "cf5473921fe7dd93e24a0ffc22552c9133de1a02792165d166d308b1dea9e680",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9997780438017821,
+        "meanRgbError": 0.060904290884430404
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9974427715554715,
+        "meanRgbError": 0.027178617339182868
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9998435863112559,
+        "meanRgbError": 0.056051814180062276
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9968819615296559,
+        "meanRgbError": 0.028625894265114596
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9995359947063048,
+        "meanRgbError": 0.04974691075850401
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9933409966321818,
+        "meanRgbError": 0.047148157506493836
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9996324805520959,
+        "meanRgbError": 0.060280453548001704
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9976973650645724,
+        "meanRgbError": 0.029306657705195013
+      }
+    ],
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.0000012218952178955078,
+        0.000011460855603218079,
+        0.0000017136335372924805,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.311073899269104,
+          -0.0379341971129179,
+          -0.16030116379261017
+        ],
+        "max": [
+          0.311073899269104,
+          0.0379341971129179,
+          0.16030116379261017
+        ]
+      }
+    }
+  },
+  {
+    "id": "winkelschluessel",
+    "browser": "157.0.8103.78",
+    "source": "15ed75f7d878610e80e69a08242738b0dbe0d9664260a4ecf7df0af1f8a2572b",
+    "low": "6df0676af1261910451e34b6bcca53789511a6cfb7431fca9e64a09124ece730",
+    "high": "126c6e284293bc5d7bbe6c030e87cf1b1239e81208561393e4071785e5cbee9c",
+    "pose": {
+      "model": {
+        "rotation": {
+          "z": 1.5707963267948966
+        }
+      },
+      "camera": {
+        "azimuth": 20,
+        "elevation": 20,
+        "fitScale": 1.5
+      },
+      "minimap": {
+        "modelScale": 1.2,
+        "hoverModelScale": 1.4,
+        "expandedHoverModelScale": 1,
+        "dockedView": {
+          "azimuth": 0,
+          "elevation": 0,
+          "scale": 1.2
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 37702,
+    "sha256": "3b51b22276d44f0d5751ae428fb26563e255268c02d90f1091a6d7880e3f226e",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9992594819964365,
+        "meanRgbError": 0.00649424755817525
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9925643904992417,
+        "meanRgbError": 0.025896539566886843
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9993748600827044,
+        "meanRgbError": 0.003304633602551534
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9902341694624163,
+        "meanRgbError": 0.017954221926518067
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9991826344858187,
+        "meanRgbError": 0.0045651275849565975
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9933067003083824,
+        "meanRgbError": 0.028257071448334496
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9996002110885452,
+        "meanRgbError": 0.008692121670868892
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9935867229991454,
+        "meanRgbError": 0.02169909166775113
+      }
+    ],
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.0009121433831751347,
+        -0.06684592989489466,
+        -0.00001670124816952577,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.04365226021036506,
+          -0.06684583595941439,
+          -0.01473587458459221
+        ],
+        "max": [
+          0.04365226021036506,
+          0.0668458359594144,
+          0.01473587458459221
+        ]
+      }
+    }
+  },
+  {
+    "id": "zyklop-speed",
+    "browser": "157.0.8103.78",
+    "source": "1f3a4f57d66b2d141afa63a48e64ade520f8b03f2bd0a755e0f6db86a5516b78",
+    "low": "2ac14ea73fde4f2df5203bb02b943e0d6f25ac246ed8143295e5c9df0c91bdc7",
+    "high": "f1b5b9a190ec1d10e8ba5b558e85dca2e01ea2a36f27a5457f42b1a5fa81acc1",
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.000021504703909158707,
+        -0.014668231111946626,
+        0.000057076689724337194,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.07365970686078072,
+          -0.014668517243949108,
+          -0.014219763208987237
+        ],
+        "max": [
+          0.07365970686078072,
+          0.014668517243949106,
+          0.014219763208987237
+        ]
+      }
+    },
+    "pose": {
+      "model": {
+        "rotation": {
+          "x": 1.5707963267948966
+        }
+      },
+      "camera": {
+        "azimuth": 35,
+        "elevation": 30,
+        "fitScale": 1.6
+      },
+      "minimap": {
+        "modelScale": 1,
+        "hoverModelScale": 1.4,
+        "expandedHoverModelScale": 1.2,
+        "dockedView": {
+          "scale": 1.4
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 16564,
+    "sha256": "6188d5fdb1757826305722df9a604800d7035dd96d9f3cf8609b02ec34127554",
+    "comparisons": [
+      {
+        "view": "detail-pose",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9997343773458522,
+        "meanRgbError": 0.0024680186625767268
+      },
+      {
+        "view": "detail-pose",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9985222812283537,
+        "meanRgbError": 0.006778868863022774
+      },
+      {
+        "view": "back",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9996116596255458,
+        "meanRgbError": 0.0031778687366462327
+      },
+      {
+        "view": "back",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9966505658780807,
+        "meanRgbError": 0.01380564463951893
+      },
+      {
+        "view": "side",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9998491761245806,
+        "meanRgbError": 0.002384224808408086
+      },
+      {
+        "view": "side",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9986612866732031,
+        "meanRgbError": 0.004610211734340517
+      },
+      {
+        "view": "minimap",
+        "from": "source",
+        "to": "high",
+        "silhouetteIoU": 0.9998238678617558,
+        "meanRgbError": 0.005067194986335369
+      },
+      {
+        "view": "minimap",
+        "from": "high",
+        "to": "low",
+        "silhouetteIoU": 0.9998238678617558,
+        "meanRgbError": 0.007018513956393417
+      }
+    ]
+  }
+]

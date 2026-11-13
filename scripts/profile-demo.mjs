@@ -15,7 +15,7 @@ const port = Number(process.env.PROFILE_PORT ?? 4175);
 const outputDirectory = new URL('../.artifacts/performance/', import.meta.url);
 await mkdir(outputDirectory, { recursive: true });
 const server = spawn(process.execPath, [fileURLToPath(new URL('../node_modules/vite/bin/vite.js', import.meta.url)), 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
- cwd: fileURLToPath(new URL('../apps/sveltekit-demo/', import.meta.url)), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe']
+ cwd: fileURLToPath(new URL('../apps/tests/', import.meta.url)), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe']
 });
 let serverLog = '';
 server.stdout.on('data', chunk => { serverLog += chunk; });

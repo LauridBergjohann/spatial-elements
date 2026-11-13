@@ -1,6 +1,6 @@
 {
   "name": "@spatial-elements/core",
-  "version": "1.0.0-beta.8",
+  "version": "1.0.0-beta.10",
   "description": "Framework-independent rendering and catalog runtime for Spatial Elements.",
   "license": "MPL-2.0",
   "type": "module",
@@ -9,14 +9,15 @@
     "url": "https://github.com/LauridBergjohann/spatial-elements.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/LauridBergjohann/spatial-elements#readme",
+  "homepage": "https://spatial-elements.bergjohann.com/",
   "bugs": {
     "url": "https://github.com/LauridBergjohann/spatial-elements/issues"
   },
   "files": [
     "dist",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "logo.svg"
   ],
   "exports": {
     ".": {
@@ -48,14 +49,15 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@3dconnexion/3dconnexionjs": "0.8.1"
+    "@3dconnexion/3dconnexionjs": "0.8.1",
+    "@page-sections/core": "0.4.1"
   },
   "peerDependencies": {
     "three": "^0.186.1"
   },
   "publishConfig": {
     "access": "public",
-    "tag": "latest",
+    "tag": "beta",
     "registry": "https://registry.npmjs.org/"
   }
 }

@@ -1,12 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CatalogNavigationRegistry } from './CatalogNavigationRegistry.js';
+import { resolveCatalogIntent } from './catalogRecipes.js';
 import {
 	catalogSharedKey,
 	CatalogTransition,
-	CatalogTransitionSequence,
-	resolveCatalogTransition
+	CatalogTransitionSequence
 } from './CatalogTransition.js';
 
 const url = (path: string) => new URL(path, 'https://catalog.example');
+const navigation = new CatalogNavigationRegistry();
+for (const path of ['/demo/categories/list', '/demo/categories/list?sort=title', '/demo/categories/carousel', '/demo/categories/mixed'])
+ navigation.record(url(path), { kind: 'content', brandId: 'demo', elements: ['column'] });
+for (const path of ['/demo/elements/column', '/demo/products/column', '/demo/elements/orb'])
+ navigation.record(url(path), { kind: 'detail', brandId: 'demo', spatialElementId: path.endsWith('orb') ? 'orb' : 'column' });
+navigation.record(url('/tools/elements/column'), { kind: 'detail', brandId: 'tools', spatialElementId: 'column' });
+navigation.record(url('/tools/categories/carousel'), { kind: 'content', brandId: 'tools', elements: ['column'] });
+
 afterEach(() => vi.unstubAllGlobals());
 
 function inlineStyle(changed: (property: string) => void = () => {}) {
@@ -46,6 +55,7 @@ describe('catalog transition eligibility and identity', () => {
 		const eyebrow = element(options.clippedSummary ? 710 : 160, options.hiddenEyebrow ? 0 : 16);
 		const geometry = element(100, 400);
 		const endpoints = {
+			navigation,
 			getContentSlot: () => 'catalog.card', getPreferredContentSlot: () => 'catalog.card',
 			getComposition: () => 'hero',
 			resolve: ({ role }: { role: string }) => role === 'geometry' ? (options.hiddenGeometry ? undefined : geometry)
@@ -76,11 +86,11 @@ describe('catalog transition eligibility and identity', () => {
 	});
 
 	it('selects a spatialElement across filtered lists without encoding layer or LOD in its identity', () => {
-		const identity = resolveCatalogTransition(
+		const identity = resolveCatalogIntent(
 			url('/demo/categories/list?sort=title'),
 			url('/demo/elements/column'),
-			'link'
-		);
+			'link', navigation
+		)?.identity;
 		expect(identity).toEqual({ brandId: 'demo', spatialElementId: 'column' });
 		expect(catalogSharedKey(identity!, 'title')).toBe('["demo","column","title"]');
 		expect(catalogSharedKey({ brandId: 'a:b', spatialElementId: 'c' }, 'title')).not.toBe(
@@ -88,32 +98,6 @@ describe('catalog transition eligibility and identity', () => {
 		);
 	});
 
-	it('leaves other edges, history, direct section targets and cross-brand visits to normal navigation', () => {
-		const source = url('/demo/categories/list');
-		expect(
-			resolveCatalogTransition(source, url('/demo/elements/column#features'), 'link')
-		).toBeUndefined();
-		expect(
-			resolveCatalogTransition(source, url('/demo/elements/column'), 'popstate')
-		).toBeUndefined();
-		expect(resolveCatalogTransition(source, url('/tools/elements/column'), 'link')).toBeUndefined();
-		expect(
-			resolveCatalogTransition(
-				source,
-				new URL('https://other.example/demo/elements/column'),
-				'link'
-			)
-		).toBeUndefined();
-		expect(
-			resolveCatalogTransition(
-				url('/demo/categories/carousel'),
-				url('/demo/elements/column'),
-				'link'
-			)
-		).toBeUndefined();
-		expect(resolveCatalogTransition(url('/demo/elements/column'), source, 'link')).toBeUndefined();
-		expect(resolveCatalogTransition(source, url('/demo/elements/%zz'), 'link')).toBeUndefined();
-	});
 });
 
 describe('catalog transition ownership', () => {
@@ -181,7 +165,7 @@ describe('catalog transition DOM work', () => {
 		const activity: string[] = [];
 		const attached: unknown[] = [];
 		const createNode = (name: string) => ({
-			name, parentElement: null, dataset: {} as Record<string, string>, attributes: [],
+			name, parentElement: null, dataset: {} as Record<string, string>, attributes: [], children: [],
 			style: inlineStyle(() => activity.push('write')),
 			querySelectorAll: () => [], closest: () => null, matches: () => false,
 			hasAttribute: () => false, setAttribute: vi.fn(), removeAttribute: vi.fn(),

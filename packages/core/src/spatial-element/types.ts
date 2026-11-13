@@ -1,3 +1,5 @@
+import type { SectionDefinition, SectionBackground, SectionBackgroundColor, ContentPageData as PageContentData } from '@page-sections/core';
+export type { SectionBackground, SectionBackgroundColor } from '@page-sections/core';
 import type { VerifiedSpatialElementAssetManifest } from '../catalog/spatialElementAssets.js';
 import type { SpatialElementGeometry } from './spatialElementGeometry.js';
 import type {
@@ -14,7 +16,7 @@ import type {
 
 /**
  * Category-card projection created by {@link getSpatialListItems}.
- * Includes the element's assets automatically; pass these items to ListSection or CarouselSection.
+ * Includes the element's assets automatically; pass these items to SpatialCardGridSection or SpatialCarouselSection.
  * Detail-only media and breadcrumbs are omitted. No catalog data belongs in the layout.
  */
 export interface SpatialListItem extends Partial<
@@ -156,7 +158,13 @@ export type SpatialElementMediaItem =
 	| { id: string; kind: 'minimap'; label: string }
 	/** @deprecated A drawing needs a real source. Use kind: 'image' instead. */
 	| { id: string; kind: 'drawing'; label: string }
-	| { id: string; kind: 'image'; label: string; src: string; alt: string }
+	| {
+		id: string; kind: 'image'; label: string; src: string; alt: string;
+		/** Smaller image for the media selector. The full view always uses src. */
+		thumbnail?: string;
+		/** Image framing in the selector and stage. Defaults to contain. */
+		fit?: 'contain' | 'cover';
+	}
 	| {
 		id: string; kind: 'video'; label: string; src: string; poster?: string;
 		/** Optional WebVTT caption tracks. Native controls remain available. */
@@ -177,19 +185,8 @@ export interface SpatialElementSectionStyle {
 	width?: string;
 }
 
-export type SectionBackgroundColor =
-	| 'transparent' | 'standard' | 'muted'
-	| 'transparentToStandard' | 'transparentToMuted'
-	| 'standardToTransparent' | 'standardToMuted'
-	| 'mutedToTransparent' | 'mutedToStandard';
-
-export interface SectionBackground {
-	color: SectionBackgroundColor;
-	size?: 'standard' | 'full';
-}
-
 /** Metadata supplied to a composable spatial-element `Section`. */
-export interface SpatialElementSectionDefinition {
+export interface SpatialElementSectionDefinition extends Omit<SectionDefinition, 'style'> {
 	id: string;
 	title: string;
 	/** Optional visible heading, separate from the navigation/accessibility title. */
@@ -262,7 +259,7 @@ export type SpatialMinimapTheme = Pick<
 >;
 
 /** Category/content page metadata; only title is required. */
-export interface ContentPageData {
+export interface ContentPageData extends PageContentData {
 	/** Browser document title; defaults to title. */
 	pageTitle?: string;
 	title: string;

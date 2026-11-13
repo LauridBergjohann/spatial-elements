@@ -157,7 +157,7 @@ npx.cmd --no-install playwright test --config playwright.background-layer-output
 
 The config owns port 4205 and writes `.artifacts/background-layer-output`. The test saves the complete row JSON before asserting pixel/count results, the incremental `lifecycle-dom-checkpoints.json` and raw phase PNGs, plus both Frosted PNGs and their channel comparison. Immediate buffer values and compositor observations are named separately in protocol v4.
 
-Preparation checks on 2026-11-01: `npm run check --workspace @spatial-elements/demo-sveltekit` completed with zero errors and zero warnings; `playwright test --config playwright.background-layer-output.config.ts --list` loaded exactly one test.
+Preparation checks on 2026-11-01: `npm run check --workspace @spatial-elements/tests` completed with zero errors and zero warnings; `playwright test --config playwright.background-layer-output.config.ts --list` loaded exactly one test.
 
 The first run's complete raw JSON and trace remain under `.artifacts/background-layer-output-10026-7d373ab`. All 18 rows reported exact agreement for both complete readback arrays and Canvas output, with no GPU validation/browser errors and restored state. Eligible visible-panel cases submitted 10→6 passes, hidden-panel cases 2→2, conservative fallbacks 4→4 or 12→12. The runner nevertheless exited 1 because the extra `linearAlpha === 1` assertion was invalid for real additive glass. The Frosted DOM comparison was not reached. DPR 1.5 statistics also included readback padding in that first run; those extrema are not valid pixel-only extrema and are preserved as failed-protocol evidence, not reclassified as a passing test.
 

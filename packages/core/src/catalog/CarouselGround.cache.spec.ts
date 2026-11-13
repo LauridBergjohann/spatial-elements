@@ -66,7 +66,7 @@ test('separate normalized shadows retain order and opacity; moving never prepare
 	f.dispose();
 });
 
-test.each(['pose', 'camera', 'projection', 'viewport', 'target', 'geometry', 'visibility', 'drawRange'] as const)(
+test.each(['pose', 'camera', 'projection', 'viewport', 'target', 'geometry', 'visibility', 'drawRange', 'clip'] as const)(
 	'%s mutation immediately falls back to live drawing without cache work', change => {
 		const f = fixture(1); f.ground.prepareCaches(f.renderer, f.camera, 'full');
 		let key = 'full';
@@ -78,6 +78,10 @@ test.each(['pose', 'camera', 'projection', 'viewport', 'target', 'geometry', 'vi
 		if (change === 'geometry') f.models[0].geometry.attributes.position.needsUpdate = true;
 		if (change === 'visibility') { f.models[0].model.children[0].visible = false; f.update(); }
 		if (change === 'drawRange') f.models[0].geometry.setDrawRange(0, 6);
+		if (change === 'clip') {
+			const { key, model, opacity } = f.models[0];
+			f.ground.shadow(key, model, new THREE.Matrix4(), opacity, { left: 500, top: 0, width: 400, height: 900 });
+		}
 		f.ground.draw(f.renderer, f.camera, 0.5, true, key);
 		expect(calls.resolved).not.toHaveBeenCalled();
 		if (change !== 'visibility') expect(calls.live).toHaveBeenCalledOnce();

@@ -1,0 +1,191 @@
+[
+	{
+		"id": "tool-check-plus",
+		"manufacturer": "wera",
+		"title": "Tool-Check Plus",
+		"description": "A compact collection of driver bits, sockets and a small ratchet. Explore how the individual tools fit together in their holder, then turn the model to see the assembly from another angle.",
+		"features": [
+			"Compact tool collection",
+			"Bits, sockets and mini ratchet",
+			"Colour-coded components"
+		],
+		"sourceUrl": "https://www.wera.de/"
+	},
+	{
+		"id": "joker",
+		"manufacturer": "wera",
+		"title": "Joker Wrench",
+		"description": "The Joker combines a distinctive open-end head with a slim metal body. The supplied photographs show the wrench in use; the interactive model makes its shape and head geometry easy to inspect.",
+		"features": [
+			"Open-end wrench",
+			"Distinctive head geometry",
+			"Metal body with engraved markings"
+		],
+		"sourceUrl": "https://www.wera.de/"
+	},
+	{
+		"id": "kraftform-xxl",
+		"manufacturer": "wera",
+		"title": "Kraftform XXL",
+		"description": "A collection of Kraftform screwdrivers with recognisable green and black handles. Compare the handles, shafts and tips in the product view and photograph.",
+		"features": [
+			"Kraftform screwdriver set",
+			"Shaped green and black handles",
+			"Several tool profiles in one collection"
+		],
+		"sourceUrl": "https://www.wera.de/"
+	},
+	{
+		"id": "ph-kreuzschlitz",
+		"manufacturer": "wera",
+		"title": "Kraftform Phillips Screwdriver",
+		"description": "A Phillips screwdriver with Wera's sculpted Kraftform handle. Its simple outline makes the contrast between the soft grip, hard handle zones and metal shaft especially clear in the spatial view.",
+		"features": ["Phillips screwdriver", "Sculpted Kraftform handle", "Hexagonal anti-roll shape"],
+		"sourceUrl": "https://www.wera.de/"
+	},
+	{
+		"id": "kraftform-kompakt",
+		"manufacturer": "wera",
+		"title": "Kraftform Kompakt",
+		"description": "A compact tool collection organised around a Kraftform handle and interchangeable tooling. Rotate the complete assembly to explore its layout and compare it with the supplied product photograph.",
+		"features": ["Compact tool collection", "Kraftform handle", "Interchangeable tooling"],
+		"sourceUrl": "https://www.wera.de/"
+	},
+	{
+		"id": "kraftform-kompakt-20",
+		"manufacturer": "wera",
+		"title": "Kraftform Kompakt 20",
+		"description": "Kraftform Kompakt 20 brings a bit holder and stored bits together in a compact handle. The supplied images show both the assembled tool and its opening and interchangeable components.",
+		"features": ["Bits stored in the handle", "Extendable blade", "Rapidaptor bit holder"],
+		"sourceUrl": "https://www.wera.de/"
+	},
+	{
+		"id": "winkelschluessel",
+		"manufacturer": "wera",
+		"title": "Hex-Plus L-Keys",
+		"description": "A set of brightly coloured L-keys arranged in a compact clip. The different lengths and colour coding remain readable in both the category view and the detailed model.",
+		"features": ["Colour-coded L-key set", "Compact storage clip", "Different lengths and sizes"],
+		"sourceUrl": "https://www.wera.de/",
+		"video": { "id": "ODDS07HlGqc", "label": "Wera L-keys product demonstration" }
+	},
+	{
+		"id": "zyklop-speed",
+		"manufacturer": "wera",
+		"title": "Zyklop Speed",
+		"description": "A ratchet with the characteristic Kraftform handle and swivelling head. Use the product views and supplied video to explore the relationship between its grip, shaft and ratchet mechanism.",
+		"features": ["Swivelling ratchet head", "Kraftform handle", "Reversible ratchet mechanism"],
+		"sourceUrl": "https://www.wera.de/",
+		"video": { "id": "zVjRUIlklmA", "label": "Wera Zyklop Speed product demonstration" }
+	},
+	{
+		"id": "chronograph",
+		"manufacturer": "watches",
+		"title": "Chronograph",
+		"description": "A Rolex watch model with a detailed dial, metal bracelet and reflective surfaces. It brings the interplay of glass, polished metal and small-scale detail into a complete product-page composition.",
+		"features": [
+			"Detailed dial and bezel",
+			"Two-tone metal bracelet",
+			"Reflective surfaces and glass"
+		],
+		"sourceUrl": "https://www.rolex.com/"
+	},
+	{
+		"id": "logitech-brio-500",
+		"manufacturer": "logitech",
+		"title": "Brio 500",
+		"description": "Brio 500 is a Full HD webcam with automatic light correction and a Show Mode for presenting objects on a desk. Its cylindrical housing and monitor mount make a useful study in product proportions and material contrast.",
+		"features": [
+			"Full HD 1080p webcam",
+			"Automatic light correction",
+			"Show Mode for desk demonstrations"
+		],
+		"sourceUrl": "https://www.logitech.com/en-us/shop/p/brio-500-webcam",
+		"video": { "id": "bku8De9oTJQ", "label": "Logitech Brio 500 product demonstration" }
+	},
+	{
+		"id": "logitech-ergo-k860",
+		"manufacturer": "logitech",
+		"title": "ERGO K860",
+		"description": "ERGO K860 combines a curved, split keyboard with an integrated wrist rest. The supplied model and photographs show the graphite keyboard and its German key layout from several angles.",
+		"features": [
+			"Curved, split key layout",
+			"Integrated wrist rest",
+			"Full-size keyboard with number pad"
+		],
+		"sourceUrl": "https://www.logitech.com/en-us/shop/p/k860-split-ergonomic",
+		"video": { "id": "q-ZUIAgEda4", "label": "Logitech ERGO K860 product demonstration" }
+	},
+	{
+		"id": "logitech-m750",
+		"manufacturer": "logitech",
+		"title": "Signature Plus M750 L",
+		"description": "The larger Signature Plus M750 pairs a contoured mouse body with SmartWheel scrolling and wireless connectivity. Close views reveal the wheel, side buttons, textured grips and underside of the graphite model.",
+		"features": [
+			"Contoured large mouse body",
+			"Adaptive SmartWheel scrolling",
+			"Bluetooth or Logi Bolt connection"
+		],
+		"sourceUrl": "https://www.logitech.com/en-us/shop/p/m750-signature-plus-wireless-mouse"
+	},
+	{
+		"id": "logitech-z407",
+		"manufacturer": "logitech",
+		"title": "Z407 Speakers",
+		"description": "The Z407 speaker system brings together two satellite speakers, a subwoofer and a wireless control dial. The spatial model makes the separate components and their arrangement easy to understand.",
+		"features": [
+			"Two satellite speakers and subwoofer",
+			"Wireless control dial",
+			"Bluetooth, USB and analogue inputs"
+		],
+		"sourceUrl": "https://www.logi.com/en-us/shop/p/z407-bluetooth-computer-speakers.980-001347",
+		"video": { "id": "YkiZbeBUJCQ", "label": "Logitech Z407 product demonstration" }
+	},
+	{
+		"id": "item-profile",
+		"manufacturer": "item",
+		"title": "Profile 8 40 × 40 Light",
+		"description": "A short sample of item Profile 8 40 × 40 light, identified in the source model as article 0.0.026.33. Its anodised aluminium cross-section has four open Line 8 grooves. Rotate it to compare the exterior surfaces with the internal profile geometry.",
+		"features": [
+			"40 × 40 mm cross-section",
+			"Four open Line 8 grooves",
+			"Light anodised aluminium profile"
+		],
+		"sourceUrl": "https://www.item24.com/en-us/profile-8-40x40-light-natural-2633"
+	},
+	{
+		"id": "item-connector",
+		"manufacturer": "item",
+		"title": "Standard-Fastening Set 8",
+		"description": "The source model identifies this connector as item Standard-Fastening Set 8, article 0.0.026.07. The set combines a zinc-plated connecting plate and an M8 screw for joining Line 8 profiles. The spatial view reveals the plate, screw head and thread together.",
+		"features": ["Connector for Line 8 profiles", "Zinc-plated steel plate", "M8 fastening screw"],
+		"sourceUrl": "https://www.item24.com/en-us/standard-fastening-set-8-bright-zinc-plated-2607"
+	},
+	{
+		"id": "item-end-cap",
+		"manufacturer": "item",
+		"title": "Profile End Cap",
+		"description": "An end-cap example from the supplied item collection. Its compact form complements the profile and connector examples, showing how small components can be presented alongside larger assemblies.",
+		"features": ["End-cap example", "Compact component form", "Detail and underside views"],
+		"sourceUrl": "https://www.item24.com/en-us/shop/profile-technology"
+	},
+	{
+		"id": "item-impact-protector",
+		"manufacturer": "item",
+		"title": "Collision Guard L",
+		"description": "The supplied model depicts item Collision Guard L with hazard markings, article 0.0.665.48. Its yellow and black surface and L-shaped steel body make the product recognisable at a glance. Turn it around to inspect its shape and floor mounting points.",
+		"features": ["L-shaped steel guard", "405 mm height", "Black and yellow hazard markings"],
+		"sourceUrl": "https://www.item24.com/en-us/collision-guard-l-with-hazard-markings-66548"
+	},
+	{
+		"id": "item-robot",
+		"manufacturer": "item",
+		"title": "Robot Assembly",
+		"description": "The supplied Robby model turns geometric components into a playful robot figure. Explore its head, arms, torso and legs from different angles. It is a visual assembly study rather than an orderable industrial robot configuration.",
+		"features": [
+			"Multi-part robot figure",
+			"Geometric component forms",
+			"Explore form and construction"
+		],
+		"sourceUrl": "https://www.item24.com/en-us"
+	}
+]

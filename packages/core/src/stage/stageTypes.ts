@@ -127,6 +127,7 @@ export interface StagePanelTarget {
 	updateNativeLayout?: () => void;
 	/** Whether an optional panel is currently open. */
 	getVisible?: () => boolean;
+	getMinimapSelected?: () => boolean;
 	/** Shared geometry, tint, blur, and shadow configuration. */
 	options: LiquidGlassPanelOptions;
 	/** Visual surface backend. All variants share the same CSS3D transform pipeline. */

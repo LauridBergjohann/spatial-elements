@@ -1,4 +1,8 @@
 node_modules/
+.npm-cache/
+apps/*/build/
+apps/*/.vercel/
+.vercel/
 **/dist/
 .svelte-kit/
 .artifacts/

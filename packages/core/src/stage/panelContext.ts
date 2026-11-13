@@ -64,6 +64,8 @@ export interface StagePanelRegistration {
 	/** Runs synchronously before the native panel surface is measured and drawn. */
 	updateNativeLayout?(): void;
 	getVisible?(): boolean;
+	/** Selection is read without rebuilding the minimap model. */
+	getMinimapSelected?(): boolean;
 	getMinimapOptions(): StagePanelMinimapOptions | undefined;
 	getOptions(): LiquidGlassPanelOptions;
 	getSurface(): StagePanelSurface;

@@ -14,6 +14,36 @@ test('without JavaScript the detail starts with the model poster and one media r
 	} finally { await context.close(); }
 });
 
+test('client navigation retains detail and minimap posters until the new geometry is ready', async ({ page }) => {
+	let release!: () => void;
+	const held = new Promise<void>(resolve => { release = resolve; });
+	let requested = false;
+	await page.route('**/assets/demo/column-low.glb', async route => {
+		requested = true;
+		await held;
+		await route.continue();
+	});
+	try {
+		await page.goto('/reading?stage-test=1');
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
+		await page.evaluate(() => {
+			const link = document.querySelector<HTMLAnchorElement>('a[href="/curated"]')!;
+			link.href = '/story/column';
+			link.textContent = 'Load the uncached model';
+		});
+		await page.getByRole('link', { name: 'Load the uncached model' }).click();
+		await expect(page).toHaveURL(/\/story\/column$/);
+		await expect.poll(() => requested).toBe(true);
+		await expect(page.locator('.stage')).not.toHaveAttribute('data-stage-page-ready');
+		await expect(page.locator('.stage-viewport-fallback-image')).toHaveCSS('opacity', '1');
+		await expect(page.locator('.minimap-poster')).toHaveCSS('opacity', '1');
+		release();
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '');
+		await expect(page.locator('.stage-viewport-fallback-image')).toHaveCSS('opacity', '0');
+		await expect(page.locator('.minimap-poster')).toHaveCSS('opacity', '0');
+	} finally { release(); }
+});
+
 test('native media preserves aspect ratio, owns playback, reveals rail items and resets on history navigation', async ({ page }) => {
 	const errors: string[] = [];
 	page.on('pageerror', error => errors.push(error.message));

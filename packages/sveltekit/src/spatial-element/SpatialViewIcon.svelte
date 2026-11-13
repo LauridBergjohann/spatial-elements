@@ -23,7 +23,7 @@
 </script>
 
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-	stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-spatial-view-icon={kind}>
+	stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-spatial-view-icon={kind}>
 	{#each kind === 'detail' ? detail : fullscreen as path}<path d={path} />{/each}
 	<rect x="1" y="2" width="22" height="20" rx="2" />
 </svg>

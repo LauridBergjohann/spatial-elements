@@ -150,6 +150,9 @@
 	let status = $state('Loading stage');
 	let showStatus = $state(false);
 	let isEnhanced = $state(false);
+	// The device survives navigation; the destination still needs its own first
+	// submitted frame before its detail and minimap posters can fade away.
+	let isPageReady = $state(false);
 	let fullscreen = $state(false);
 	let fullscreenController: StageFullscreenController | undefined;
 	let isFallback = $state(true);
@@ -365,6 +368,7 @@
 
 			// Paint the prepared scene before posters and fallback surfaces start fading.
 			instance.flushCatalogFrame();
+			isPageReady = true;
 			isEnhanced = true;
 			isFallback = false;
 			showStatus = false;
@@ -499,6 +503,7 @@
 
 	let navigationTimings = { dataReady: 0, captured: 0, restoring: 0, bound: 0 };
 	function startEarlyNavigation(navigation: BeforeNavigate) {
+		if (navigation.from) recordNavigationPage(navigation.from.url);
 		// The opt-in is temporary while production frame/ownership gates are verified.
 		if (visualTestController) stage.dataset.catalogStagedDecision = `gate:${isEnhanced}:${Boolean(experience)}:${Boolean(presentationHost)}`;
 		if (!new URL(location.href).searchParams.has('stagedNavigation') || !isEnhanced || !experience || !presentationHost) return;
@@ -518,6 +523,7 @@
 	}
 	function captureNavigation(navigation: OnNavigate): undefined {
 		try {
+			if (navigation.from && !destroyed) recordNavigationPage(navigation.from.url);
 			navigationTimings = { dataReady: performance.now(), captured: 0, restoring: 0, bound: 0 };
 			const generation = ++navigationGeneration;
 			if (earlyTransition?.phase === 'held' && navigation.to?.url.href === earlyTransition.destination) {
@@ -551,6 +557,7 @@
 			experience?.releasePage();
 			setZoomFocusState(restingZoomFocus);
 		} finally {
+			if (!reuseCatalogPage) isPageReady = false;
 			// Leaving fullscreen refits the live camera and restores source DOM/scroll.
 			// Retain its visible pose and release page bindings before that mutation.
 			fullscreenController?.setFullscreen(false);
@@ -568,11 +575,21 @@
 		experience?.flushCatalogFrame();
 	}
 
+	function recordNavigationPage(url: URL) {
+		const current = catalog;
+		const items = catalogSpatialElements;
+		catalogEndpoints.navigation.record(url,
+			current?.spatialElementId ? { kind: 'detail', brandId: current.brandId, spatialElementId: current.spatialElementId } :
+			current && items.length ? { kind: 'content', brandId: current.brandId, elements: items.map(item => item.id) } : { kind: 'ordinary' },
+			current ? items.map(item => ({ brandId: current.brandId, spatialElementId: item.id, href: item.href })) : []);
+	}
+
 	async function restoreNavigation() {
 		navigationTimings.restoring = performance.now();
 		const generation = navigationGeneration;
 		await tick();
 		if (destroyed || generation !== navigationGeneration) return;
+		recordNavigationPage(new URL(location.href));
 		// Preserve the real Svelte instance before page binding measures the new
 		// summary. This also applies when GPU motion is disabled or declined.
 		const transferredSlot = summaryTransfer?.adopt(); summaryTransfer = undefined;
@@ -592,6 +609,7 @@
 					await transition?.play();
 					return;
 				}
+				isPageReady = false;
 				transition?.cancel();
 			}
 			if (nextPageBinding) {
@@ -644,6 +662,7 @@
 				]);
 				if (destroyed || generation !== navigationGeneration) return;
 			}
+			isPageReady = true;
 			isEnhanced = true;
 			isFallback = false;
 			stageState = 'enhanced';
@@ -820,6 +839,7 @@
 				getMinimapModelLeft: panel.getMinimapModelLeft,
 				getSurfaceOpacity: panel.getSurfaceOpacity,
 				getVisible: panel.getVisible,
+				getMinimapSelected: panel.getMinimapSelected,
 				getFocusAnchor: panel.getFocusAnchor,
 				updateNativeLayout: panel.updateNativeLayout,
 				nativeContent: panel.getNativeContent?.() ?? false,
@@ -857,6 +877,7 @@
 	class:stage-fallback={isFallback}
 	style:--stage-dom-opacity={domLayerOpacity}
 	data-stage-state={stageState}
+	data-stage-page-ready={isEnhanced && isPageReady ? '' : undefined}
 	data-stage-focus={zoomFocusState.focus.toFixed(3)}
 	data-stage-ui-focus={zoomFocusState.uiFocus.toFixed(3)}
 	data-stage-minimap-focus={zoomFocusState.minimapFocus.toFixed(3)}
@@ -929,7 +950,7 @@
 
 	.stage-virtual-viewport {
 		position: relative;
-		z-index: 1;
+		z-index: 3;
 	}
 
 	.stage:global(.stage-virtual-scroll-active) .stage-virtual-scroll-spacer {
@@ -960,7 +981,7 @@
 	}
 
 	.stage :global(.stage-webgpu-carousel-rear) {
-		z-index: 0;
+		z-index: 2;
 		pointer-events: none;
 	}
 
@@ -985,12 +1006,25 @@
 
 	.stage :global(.stage-css3d),
 	.stage :global(.stage-css3d-flat) {
-		z-index: 3;
+		z-index: 5;
 	}
 
 	.stage :global(.stage-panel-native) {
-		z-index: 2;
+		z-index: 4;
 	}
+
+	/* Carousel surfaces must be below the rear canvas while live summaries stay above it. */
+	.stage :global(.stage-carousel-surface) {
+		position: fixed;
+		left: 0;
+		top: 0;
+		z-index: 1;
+		pointer-events: none;
+		visibility: hidden;
+	}
+	.stage.stage-enhanced :global(.stage-carousel-surface) { visibility: visible; }
+	.stage.stage-enhanced :global([data-carousel-surface-projected]) { visibility: hidden; }
+	.stage:global([data-stage-fullscreen]) :global(.stage-carousel-surface) { visibility: hidden; }
 
 	.stage-dom-layer {
 		position: relative;

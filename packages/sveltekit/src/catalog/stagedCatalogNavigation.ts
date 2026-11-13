@@ -55,7 +55,7 @@ export function startStagedCatalogNavigation(options: {
 	let decision: string | undefined;
 	const decline = (reason: string) => { decision = reason; if (diagnostics) root.dataset.catalogStagedDecision = reason; };
 	if (!navigation.from || !navigation.to) return;
-	const intent = resolveCatalogIntent(navigation.from.url, navigation.to.url, navigation.type);
+	const intent = resolveCatalogIntent(navigation.from.url, navigation.to.url, navigation.type, endpoints?.navigation);
 	const declaredDock = Boolean(navigation.to.url.hash && navigation.to.url.hash !== '#overview' &&
 		readCatalogViewContext(navigation.to.url).targetPresentation === 'dock');
 	if (intent?.direction !== 'list-to-detail' || intent.history ||

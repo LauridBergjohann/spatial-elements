@@ -9,8 +9,8 @@ for (const javaScriptEnabled of [false, true]) {
 			const page = await context.newPage();
 			if (javaScriptEnabled) await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
 			await page.goto('/proof/theming/layout-cards');
-			const menu = page.locator('.spatial-shell-menu');
-			const satellite = page.locator('.spatial-shell-right');
+			const menu = page.locator('.ps-navigation .header');
+			const satellite = page.locator('.ps-navigation .satellite.right');
 			for (const width of [320, 600, 840, 1200, 1599, 1600, 1809, 2300]) {
 				await page.setViewportSize({ width, height: 800 });
 				await page.evaluate(() => window.scrollTo(0, 0));
@@ -53,8 +53,8 @@ test('native menu links remain reachable on small screens', async ({ browser, ba
 	try {
 		const page = await context.newPage();
 		await page.goto('/demo/layout-cards');
-		await page.locator('.compact-links summary').click();
-		await page.locator('.compact-links').getByRole('link', { name: 'List', exact: true }).click();
+		await page.locator('.mobile-menu > summary').click();
+		await page.locator('.mobile-menu').getByRole('link', { name: 'List', exact: true }).click();
 		await expect(page).toHaveURL(/\/demo\/categories\/list$/);
 	} finally { await context.close(); }
 });
@@ -63,13 +63,14 @@ test('appearance actions fit satellites and remain reachable inside the compact 
 	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
 	await page.setViewportSize({ width: 1700, height: 800 });
 	await page.goto('/proof/theming/layout-cards');
-	await page.locator('[data-spatial-shell-right]').getByRole('button', { name: 'Appearance', exact: true }).click();
+	await page.locator('.ps-navigation .satellite.right').getByRole('button', { name: 'Appearance', exact: true }).click();
 	const popup = page.locator('[data-appearance-popover]:popover-open');
 	await expect(popup.getByRole('button', { name: 'System appearance' })).toBeVisible();
 	await popup.getByRole('button', { name: 'Dark mode' }).click();
 	await expect(page.locator('.brand-stage-shell')).toHaveAttribute('data-color-scheme', 'dark');
 	await page.setViewportSize({ width: 320, height: 700 });
-	await page.locator('[data-spatial-shell-menu]').getByRole('button', { name: 'Appearance', exact: true }).click();
+	await page.locator('.settings summary').click();
+	await page.locator('.settings-panel').getByRole('button', { name: 'Appearance', exact: true }).click();
 	await expect(popup.getByRole('button', { name: 'System appearance' })).toBeVisible();
 	await popup.getByRole('button', { name: 'Light mode' }).click();
 	await expect(page.locator('.brand-stage-shell')).toHaveAttribute('data-color-scheme', 'light');
@@ -80,15 +81,15 @@ test('the virtual document uses one shell compensation and keeps menu content al
 	await page.goto('/demo/layout-cards');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', /enhanced|fallback|unsupported/, { timeout: 45_000 });
 	test.skip(!(await page.locator('.stage').evaluate(node => node.classList.contains('stage-virtual-scroll-active'))), 'WebGPU enhancement unavailable');
-	await page.locator('[data-spatial-shell-menu]').evaluate(node => (node as HTMLElement).dataset.lifetimeProbe = 'persistent');
+	await page.locator('.ps-navigation .header').evaluate(node => (node as HTMLElement).dataset.lifetimeProbe = 'persistent');
 	for (const target of [0, 48, 112, 140, 300, 0]) {
 		await page.evaluate(y => window.scrollTo({ top: y, behavior: 'instant' }), target);
-		await expect.poll(async () => (await page.locator('.spatial-shell-menu').boundingBox())!.y).toBeCloseTo(16 + resolveMenuOffset(target), 0);
+		await expect.poll(async () => (await page.locator('.ps-navigation .header').boundingBox())!.y).toBeCloseTo(16 + resolveMenuOffset(target), 0);
 	}
-	await page.locator('[data-spatial-shell-menu]').getByRole('link', { name: 'List', exact: true }).click();
+	await page.locator('.ps-navigation .header').getByRole('link', { name: 'List', exact: true }).click();
 	await expect(page).toHaveURL(/\/demo\/categories\/list$/);
-	await expect(page.locator('[data-spatial-shell-menu]')).toHaveAttribute('data-lifetime-probe', 'persistent');
-	await expect(page.locator('[data-spatial-shell-menu]')).toBeVisible();
+	await expect(page.locator('.ps-navigation .header')).toHaveAttribute('data-lifetime-probe', 'persistent');
+	await expect(page.locator('.ps-navigation .header')).toBeVisible();
 });
 
 for (const source of ['list', 'carousel']) {
@@ -99,14 +100,14 @@ for (const source of ['list', 'carousel']) {
 		test.skip(!(await page.locator('.stage').evaluate(node => node.classList.contains('stage-virtual-scroll-active'))), 'WebGPU enhancement unavailable');
 		await expect(page.locator(source === 'list' ? '.spatial-element-card' : '.carousel-spatial-element.selected').first())
 			.toHaveAttribute('data-catalog-model-ready', '');
-		await page.locator('[data-spatial-shell-menu]').evaluate(node => (node as HTMLElement).dataset.lifetimeProbe = 'persistent');
+		await page.locator('.ps-navigation .header').evaluate(node => (node as HTMLElement).dataset.lifetimeProbe = 'persistent');
 		await page.evaluate(() => {
 			const samples: { transitioning: boolean; opacity: number }[] = [];
 			let frame = 0;
 			const sample = () => {
 				let opacity = 0;
 				// Decorative capture copies intentionally strip author data attributes.
-				for (const menu of document.querySelectorAll<HTMLElement>('.spatial-shell-menu-content')) {
+				for (const menu of document.querySelectorAll<HTMLElement>('.header.ps-content-width')) {
 					const rect = menu.getBoundingClientRect();
 					if (rect.width < 100 || rect.height < 20 || rect.top < -1 || rect.bottom > 100) continue;
 					let alpha = 1;
@@ -138,6 +139,27 @@ for (const source of ['list', 'carousel']) {
 		}).stopShellProbe());
 		expect(samples.some(sample => sample.transitioning)).toBe(true);
 		expect(samples.every(sample => sample.opacity >= 0.95)).toBe(true);
-		await expect(page.locator('[data-spatial-shell-menu]')).toHaveAttribute('data-lifetime-probe', 'persistent');
+		await expect(page.locator('.ps-navigation .header')).toHaveAttribute('data-lifetime-probe', 'persistent');
 	});
 }
+
+
+test('compact navigation stays above projected detail content and restores dropdowns on close', async ({ page }) => {
+	await page.setViewportSize({ width: 600, height: 800 });
+	await page.goto('/proof/theming/elements/cube?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
+	await page.locator('.settings summary').click();
+	await expect(page.locator('.settings-panel')).toHaveAttribute('popover', 'manual');
+	await page.locator('.settings-panel').getByRole('button', { name: 'Appearance', exact: true }).click();
+	await page.locator('[data-appearance-popover]:popover-open').getByRole('button', { name: 'Dark mode', exact: true }).click();
+	await expect(page.locator('.brand-stage-shell')).toHaveAttribute('data-color-scheme', 'dark');
+	await page.keyboard.press('Escape');
+	await expect(page.locator('.settings-panel')).toBeHidden();
+	await expect(page.locator('.settings-panel')).not.toHaveAttribute('popover');
+	await page.locator('.mobile-menu > summary').click();
+	await expect(page.locator('.mobile-panel')).toHaveAttribute('popover', 'manual');
+	await page.locator('.mobile-menu').getByRole('link', { name: 'List', exact: true }).click();
+	await expect(page).toHaveURL(/categories\/list$/);
+	await expect(page.locator('.mobile-panel')).toBeHidden();
+	await expect(page.locator('.mobile-panel')).not.toHaveAttribute('popover');
+});

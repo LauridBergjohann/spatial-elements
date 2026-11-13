@@ -69,8 +69,15 @@
 		transition: opacity 240ms ease;
 	}
 
-	:global(.stage-enhanced) .stage-viewport-fallback-image {
+	:global(.stage-enhanced[data-stage-page-ready]) .stage-viewport-fallback-image {
 		opacity: 0;
+	}
+
+	/* A captured GPU model already owns the image while the destination binds.
+	 * Showing its newly mounted fallback here duplicates the moving product. */
+	:global(.stage-enhanced[data-catalog-transition]) .stage-viewport-fallback-image {
+		opacity: 0;
+		transition: none;
 	}
 
 	@media (prefers-reduced-motion: reduce) {

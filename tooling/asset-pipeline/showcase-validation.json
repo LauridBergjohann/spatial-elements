@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "99c91f3",
+  "method": "Asset totals include all products, not simultaneous on-screen GPU passes. Draw submissions include scene instances. Texture memory is an RGBA8 plus mipmaps estimate. MiB = 1048576 bytes; transfer MB = 1000000 bytes.",
+  "wera": {
+    "productCount": 8,
+    "before": {
+      "low": {
+        "transferBytes": 17324132,
+        "triangleCount": 610181,
+        "drawCalls": 367,
+        "decodedGeometryBytes": 21452678,
+        "estimatedTextureBytes": 173954486
+      },
+      "high": {
+        "transferBytes": 26431908,
+        "triangleCount": 1613599,
+        "drawCalls": 367,
+        "decodedGeometryBytes": 46648010,
+        "estimatedTextureBytes": 356406710
+      }
+    },
+    "after": {
+      "low": {
+        "transferBytes": 2158572,
+        "triangleCount": 359162,
+        "drawCalls": 13,
+        "decodedGeometryBytes": 15468206,
+        "estimatedTextureBytes": 20579680
+      },
+      "high": {
+        "transferBytes": 6366988,
+        "triangleCount": 621078,
+        "drawCalls": 13,
+        "decodedGeometryBytes": 29242496,
+        "estimatedTextureBytes": 219811850
+      }
+    }
+  },
+  "collection": {
+    "beforeProductCount": 9,
+    "afterProductCount": 18,
+    "before": {
+      "low": {
+        "transferBytes": 17888168,
+        "triangleCount": 663257,
+        "drawCalls": 400,
+        "decodedGeometryBytes": 23935006,
+        "estimatedTextureBytes": 178148792
+      },
+      "high": {
+        "transferBytes": 27687504,
+        "triangleCount": 1711933,
+        "drawCalls": 400,
+        "decodedGeometryBytes": 50687886,
+        "estimatedTextureBytes": 389961144
+      }
+    },
+    "after": {
+      "low": {
+        "transferBytes": 3587216,
+        "triangleCount": 454579,
+        "drawCalls": 41,
+        "decodedGeometryBytes": 19156724,
+        "estimatedTextureBytes": 58691294
+      },
+      "high": {
+        "transferBytes": 10780440,
+        "triangleCount": 848251,
+        "drawCalls": 41,
+        "decodedGeometryBytes": 37124238,
+        "estimatedTextureBytes": 410316506
+      }
+    }
+  },
+  "posters": {
+    "count": 18,
+    "format": "WebP",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "transferBytes": 530510,
+    "viewsReviewed": [
+      "detail-pose",
+      "back",
+      "side",
+      "minimap"
+    ],
+    "source": "Actual geometry rendered with the website shared frame, camera pose and material overrides. Comparisons and hashes in showcase-poster-report.json."
+  },
+  "qualityDecisions": [
+    "Preserve both overlapping colored/dark Wera grip layers where independent decimation produced visible intersections. Reviewed low budgets for Kraftform XXL, Kraftform Kompakt 20 and Zyklop Speed are explicit in the recipe.",
+    "Tighter M750 low-LOD error and normal weights preserve the shell and grooves.",
+    "Remove only reviewed microscopic Wera framing markers and the ERGO shadow plane; normalize new product frames without changing source coordinates.",
+    "Watch triangles, textures and named glass override are unchanged; compatible meshes are joined.",
+    "Existing surface maps are reused; newly removed polygon detail is not automatically baked into textures.",
+    "Remove imported scene lights and cameras while retaining parent transforms and geometry. Shared Stage lighting stays constant as products enter the viewport, avoiding global shader recompilation."
+  ],
+  "websiteAssets": {
+    "scope": "apps/website/static/assets, excluding generated procedural demo assets; includes models, photos, posters, environment and decoders",
+    "beforeBytes": 49204736,
+    "afterBytes": 19302654
+  },
+  "photographs": {
+    "sourceCount": 40,
+    "fullWebPCount": 40,
+    "additionalSmallWebPCount": 36,
+    "maximumFullEdge": 1600,
+    "maximumSmallEdge": 640,
+    "details": "Four smaller photographs reuse the full image as their thumbnail; exact bytes and provenance are recorded in showcase-media-report.json."
+  }
+}

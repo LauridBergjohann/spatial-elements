@@ -16,8 +16,8 @@ Heights include short, typical and tall viewports, zero/invalid inputs, asymmetr
 | --- | --- | --- |
 | Grid reference | Explicit spans in all four grid sizes, nested narrow container | Container rather than viewport queries; DOM order; no duplicate padding |
 | Sections | With/without headline; all solid/gradient backgrounds; alternating and grouped surfaces | Accessible section names, effective full-width normalization, group corners |
-| Cards | Every card size; short/long titles; mixed eyebrows; centered/start text | Square cards, contained 4:3 media, line budgets, complete accessible names |
-| Small cards | 320px viewport and large text settings | Text remains readable; fit region shrinks proportionally; no overlapping links |
+| Cards | Every card size; short/long titles; mixed eyebrows; centered/start text | Equal heights, configurable media frames, independent title/eyebrow budgets, complete accessible names |
+| Small cards | 320px viewport and large text settings | Text remains readable; text adds height below the media; no overlapping links |
 | Summary | No features/CTA; many features; custom input, variant selector, counter | Natural height/overflow; state and node identity across binding; exact cleanup |
 | Detail content | 0, 1 and many sections; delayed images/fonts; very long labels | Anchors, subnavigation overflow, reachable final content, no layout jumps at handoff |
 | Media | 3D, portrait/landscape image, missing image, native video, embedded video | Containment, selection, transient media state, playback teardown, correct input owner |

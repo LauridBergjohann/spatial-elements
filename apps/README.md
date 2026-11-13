@@ -1,38 +1,15 @@
-# Demo applications
+<img src="website/static/spatial-elements-logo.svg" alt="Spatial Elements logo" width="64" />
 
-Both applications live in this repository and consume the workspace packages by
-name. Neither application needs `spatial-elements-brand-examples`.
+# Applications
 
-| Application | Purpose | Directory |
-| --- | --- | --- |
-| **Spatial Elements Basics** | Simple procedural forms, lists, carousel and detail pages; permanently light. | `sveltekit-demo/` |
-| **Spatial Elements Showcase** | Richer authored experiences; prepared navigation and light/dark theme. | `showcase/` |
+| App | Purpose | Develop | Preview |
+| --- | --- | --- | --- |
+| website | Public docs, interactive layouts, Wera and watch showcase | npm run dev:website (5174) | npm run preview:website (4175) |
+| demo | Minimal shell, collection and detail example | npm run dev:demo (5173) | npm run preview -w @spatial-elements/demo (4173) |
+| tests | Regression fixtures, proof and staged routes | npm run dev:tests (5175) | npm run preview -w @spatial-elements/tests -- --port 4174 |
 
-Basics keeps its existing directory, package name and `/demo` URLs so examples,
-profiling tools and regression fixtures retain stable references. Its start page
-opens the list. `/starter` and `/proof` remain available for development; advanced
-proofs are not in the public menu. `/proof/theming` isolates the original theme
-regressions from the permanently light Basics application.
+Run npm ci first. npm run build:apps builds all three apps and the packages; npm run test:apps checks production previews. Development ports are separate, so all three applications can run at once.
 
-Run these commands from the repository root after `npm ci`:
+The tests app retains /demo, /starter, /proof and /staged routes for regression tooling. They are not deployed with the public website. Public layout examples live under /docs/examples/; the collection playground lives under /docs/sections/playground/.
 
-| Task | Basics | Showcase |
-| --- | --- | --- |
-| Development | `npm run dev:basics` — port 5173 | `npm run dev:showcase` — port 5174 |
-| Production build | `npm run build:basics` | `npm run build:showcase` |
-| Serve production build | `npm run preview:basics` — port 4174 | `npm run preview:showcase` — port 4175 |
-
-`npm run build:apps` builds both applications and their library dependencies.
-`npm run test:apps` checks both production previews; set `SPATIAL_E2E_DEV=1` to run
-the same checks against development servers. `npm run dev` watches the library
-packages in another terminal. Launch the app commands sequentially when starting
-both, because each first builds the same libraries. The servers then run together
-on their distinct ports.
-
-The existing `npm run demo` and `npm run build:demo` commands continue to work.
-`build:demo` remains a build-only shortcut for tooling that already built packages.
-Basics synchronizes the original assets from `fixtures/demo-assets`; run
-`npm run assets:demo` only when regenerating those procedural assets.
-
-See [Showcase authoring](showcase/README.md) for adding your content. The previous
-private examples repository is not deleted or imported into the public showcase.
+Demo assets are synchronized from fixtures/demo-assets. Showcase assets are owned by apps/website/static/assets and are independent of the previous brand-examples checkout. They are excluded from the runtime packages.

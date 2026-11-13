@@ -1,3 +1,4 @@
+import { CatalogNavigationRegistry } from './CatalogNavigationRegistry.js';
 export interface CatalogIdentity {
 	brandId: string;
 	spatialElementId: string;
@@ -50,6 +51,7 @@ interface Registration {
 
 /** Owned by one persistent stage, never a process-global/SSR singleton. */
 export class CatalogEndpointRegistry {
+	readonly navigation = new CatalogNavigationRegistry();
 	private presentations = new Map<
 		string,
 		Set<() => 'hero' | 'dock' | 'intermediate' | 'unavailable'>

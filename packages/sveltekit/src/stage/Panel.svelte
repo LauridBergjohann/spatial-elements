@@ -37,6 +37,8 @@
 		nativeLayout?: () => void;
 		/** Visibility of an optional native-content panel. */
 		visible?: boolean;
+		/** Controls the minimap selection outline, preserving its live model. */
+		minimapSelected?: boolean;
 		pose?: StagePanelPose;
 		shape: StagePanelShape;
 		surface?: StagePanelSurface;
@@ -56,6 +58,7 @@
 		nativeContent = false,
 		nativeLayout,
 		visible = true,
+		minimapSelected = true,
 		pose,
 		shape,
 		style: contentStyle = '',
@@ -90,6 +93,7 @@
 		// native measurement on every render; ordinary panels use the layout cache.
 		get updateNativeLayout() { return nativeLayout; },
 		getVisible: () => visible,
+		getMinimapSelected: () => minimapSelected,
 		getMinimapOptions: () => getMinimapOptions(),
 		getMinimapDockProgress,
 		getMinimapModelScale,
@@ -110,10 +114,9 @@
 		stage.updatePanelAppearance?.();
 	});
 	$effect(() => {
-		if (nativeContent) {
-			void visible;
-			window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
-		}
+		void visible;
+		void minimapSelected;
+		window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
 	});
 
 	onMount(() => {

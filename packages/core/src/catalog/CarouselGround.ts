@@ -14,6 +14,7 @@ interface Shadow {
 	meshes: { source: THREE.Mesh; shadow: THREE.Mesh }[];
 	material: THREE.MeshBasicMaterial;
 	opacity: number;
+	clip?: BlurRect;
 	/** Separate persistent render-object owners pin both numerically possible winding signs. */
 	warmGroup?: THREE.Group;
 	cache?: { target: THREE.RenderTarget; state?: GroundState; failed?: GroundState };
@@ -25,7 +26,7 @@ const GROUND_BLUR_RADIUS = 2.5;
 type Attribute = THREE.BufferAttribute | THREE.InterleavedBufferAttribute;
 type AttributeState = { value: Attribute; version: number };
 interface GroundState {
-	key: string; width: number; height: number; rect: BlurRect;
+	key: string; clip?: BlurRect; width: number; height: number; rect: BlurRect;
 	view: THREE.Matrix4; projection: THREE.Matrix4; coordinateSystem: THREE.CoordinateSystem;
 	meshes: { geometry: THREE.BufferGeometry; matrix: THREE.Matrix4; visible: boolean;
 		attributes: Record<string, AttributeState>; attributeCount: number; index: AttributeState | undefined;
@@ -51,7 +52,7 @@ export class CarouselGround {
 	getRenderTargets() { return [...this.blur.getRenderTargets(),
 		...[...this.shadows.values()].flatMap(entry => entry.cache ? [entry.cache.target] : [])]; }
 	beginFrame() { this.seen.clear(); }
-	shadow(key: object, model: THREE.Object3D, floor: THREE.Matrix4, opacity: number) {
+	shadow(key: object, model: THREE.Object3D, floor: THREE.Matrix4, opacity: number, clip?: BlurRect) {
 		this.seen.add(key);
 		let entry = this.shadows.get(key);
 		if (entry && entry.model !== model) { this.release(entry); this.shadows.delete(key); entry = undefined; }
@@ -75,6 +76,7 @@ export class CarouselGround {
 			this.scene.add(group);
 		}
 		entry.opacity = opacity;
+		entry.clip = clip;
 		const projection = floor.clone().multiply(carouselShadowProjection()).multiply(floor.clone().invert());
 		for (const { source, shadow } of entry.meshes) {
 			shadow.matrix.copy(projection).multiply(source.matrixWorld);
@@ -127,7 +129,7 @@ export class CarouselGround {
 			if (entry.opacity <= 0.001 || entry.meshes.some(({ shadow }) =>
 				hasUntrackedDeformation(shadow) || Object.values(shadow.geometry.morphAttributes).some(values => values.length))) continue;
 			const bounds = this.bounds(entry, camera);
-			const rect = bounds && resolveDepthBlurRect(bounds, GROUND_BLUR_RADIUS);
+			const rect = bounds && resolveDepthBlurRect(bounds, GROUND_BLUR_RADIUS, entry.clip);
 			if (rect) result.push({ entry, rect });
 		}
 		return result;
@@ -163,7 +165,7 @@ export class CarouselGround {
 		}
 	}
 	private captureState(entry: Shadow, camera: THREE.PerspectiveCamera, rect: BlurRect, key: string): GroundState {
-		return { key, width: innerWidth, height: innerHeight, rect,
+		return { key, clip: entry.clip ? { ...entry.clip } : undefined, width: innerWidth, height: innerHeight, rect,
 			view: camera.matrixWorld.clone(), projection: camera.projectionMatrix.clone(), coordinateSystem: camera.coordinateSystem,
 			meshes: entry.meshes.map(({ shadow }) => {
 				const geometry = shadow.geometry;
@@ -174,7 +176,8 @@ export class CarouselGround {
 			}) };
 	}
 	private matches(entry: Shadow, camera: THREE.PerspectiveCamera, key: string, state?: GroundState) {
-		if (!state || state.key !== key || state.width !== innerWidth || state.height !== innerHeight ||
+		if (!state || state.clip?.left !== entry.clip?.left || state.clip?.top !== entry.clip?.top ||
+			state.clip?.width !== entry.clip?.width || state.clip?.height !== entry.clip?.height || state.key !== key || state.width !== innerWidth || state.height !== innerHeight ||
 			state.coordinateSystem !== camera.coordinateSystem || !state.view.equals(camera.matrixWorld) ||
 			!state.projection.equals(camera.projectionMatrix) || state.meshes.length !== entry.meshes.length) return false;
 		for (let index = 0; index < state.meshes.length; index++) {
@@ -229,7 +232,7 @@ export class CarouselGround {
 			entry.group.visible = true;
 			try {
 				this.blur.render(renderer, camera, bounds, GROUND_BLUR_RADIUS,
-					projection => renderer.render(this.scene, projection), undefined, preparing);
+					projection => renderer.render(this.scene, projection), entry.clip, preparing);
 				this.liveDraws++;
 			} finally { entry.group.visible = false; }
 		}

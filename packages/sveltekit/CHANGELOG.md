@@ -1,5 +1,40 @@
 # @spatial-elements/sveltekit
 
+## 1.0.0-beta.10
+
+### Minor Changes
+
+- Adopt Page Sections 0.4.1 with composable page headings and shared sidebar navigation. Support nested collection/detail route namespaces. Allow a complete navigation snippet inside BrandStageShell, preserve native input on ordinary Page Sections, and align carousel heading measurements with the shared heading markup. Add a public documentation and showcase website, separate minimal demo and test applications, and a single-PR release workflow. Documentation and package READMEs now point to spatial-elements.bergjohann.com.
+
+### Patch Changes
+
+- Use the authored Spatial Elements logo in the demo, website and package documentation. Lead the website with its introduction before the featured carousel.
+
+- Synchronize content sidebars with virtual scrolling, retaining viewport bounds and native scrolling. Add a subtle divider to the 3XL detail header. Organize the website showcase into Consumer, Workbench, Industrial and Exclusive collections with matching detail URLs, search and breadcrumbs.
+
+- Keep media photos flat, with an 8px cutout inset consumed by hover zoom. Restore the docked minimap after scrolling its rail out of view. Align submenu weights and active indicators with navigation, and use 1.6px strokes for the authored detail icons.
+- Blend view-button backgrounds and icon colors continuously with zoom. Keep submenu text neutral in both themes, and respect reduced-motion preferences in media hover feedback.
+- Restore minimap hover and media selection after grid/carousel navigation. Suppress destination fallback images while the captured 3D model owns the transition, measure portaled submenus reliably, and fade the subtle corner indicator with its panel. Use flat, full-span directional controls for overflowing media rails and section menus.
+- Fit photographs within the stage and thumbnail panels, synchronize exclusive media selection, and identify 3D/video entries. Add directional overflow controls to rails and section menus, clear rail controls during zoom/fullscreen, and align view buttons with appearance controls. The website adds a featured product carousel and removes transparent padding from product images.
+- Keep detail and minimap posters visible while a new route's model is loading, even when the shared WebGPU stage is already enhanced. Media rails can load small image thumbnails independently of the full-size selected image.
+- Register spatial page identities and item links automatically for URL-independent transitions, including the showcase root and browser history. Document collection identity independently of URL structure.
+- Apply spatial panel tint, blur and shadow to native navigation and satellites, including the server-rendered fallback. The documentation website uses one light/dark theme and a shared showcase collection.
+- Updated dependencies
+  - @spatial-elements/core@1.0.0-beta.10
+
+## 1.0.0-beta.9
+
+### Minor Changes
+
+- Adopt Page Sections 0.3.0 for common layout, section backgrounds and registries, page composition, cards and responsive navigation. Spatial adapters retain GPU endpoints, persistent card roots, carousel interaction, docking and virtual scrolling.
+
+  Cards use configurable media frames with independent equal-height text areas. SpatialCardGridSection (formerly ListSection) and SpatialListPage accept the shared card layout options, including cardSize, cardTone, cardVariant, mediaAspect, mediaFit, textAlign and editorial itemSpan. SpatialCarouselSection (formerly CarouselSection) renders rear models above opaque section backgrounds and clips spatial output to the configured surface. Old component names remain deprecated aliases. BrandStageShell accepts brand, items and tools; small layouts expose satellites through Settings. See docs/page-sections-migration.md for changed geometry and private selectors.
+
+### Patch Changes
+
+- Updated dependencies
+  - @spatial-elements/core@1.0.0-beta.9
+
 ## 1.0.0-beta.8
 
 ### Minor Changes

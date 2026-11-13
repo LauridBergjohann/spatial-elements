@@ -18,6 +18,6 @@ if (process.argv.includes('--publish')) {
   // Retry safely after partial publication: only upload missing versions, always core first.
   for (const pkg of missing) {
     const tarball = '.artifacts/packages/' + pkg.name.slice(1).replace('/', '-') + '-' + pkg.version + '.tgz';
-    execFileSync(process.execPath, [process.env.npm_execpath, 'publish', tarball, '--access', 'public', '--tag', releaseTag(pkg.version), '--ignore-scripts', '--registry=https://registry.npmjs.org/'], { stdio: 'inherit' });
+    execFileSync(process.execPath, [process.env.npm_execpath, 'publish', tarball, '--access', 'public', '--provenance', '--tag', releaseTag(pkg.version), '--ignore-scripts', '--registry=https://registry.npmjs.org/'], { stdio: 'inherit' });
   }
 }

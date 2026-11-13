@@ -1,23 +1,23 @@
-import tokens from './layoutTokens.json' with { type: 'json' };
+import spatialTokens from './layoutTokens.json' with { type: 'json' };
+import { layoutTokens, resolveContentGrid, contentSpanWidth, resolvePageLayout,
+  resolveCardLayout as resolveSharedCardLayout, type CardLayoutOptions, type ResponsiveLayoutInput,
+  type LayoutRect, type LayoutInsets } from '@page-sections/core';
+export { contentGridSizes, viewportLayoutSizes, resolveContentGrid, resolveContentSpan,
+  contentSpanWidth, resolveViewportLayout } from '@page-sections/core';
+export type { ContentGridSize, ViewportLayoutSize, ContentSpan, LayoutRect, LayoutInsets,
+  ResponsiveLayoutInput, CardLayoutOptions, CardMediaAspect, CardMediaFit, SurfaceTone } from '@page-sections/core';
+export type { LayoutCardSize as SpatialCardSize } from '@page-sections/core';
+import type { LayoutCardSize as SpatialCardSize } from '@page-sections/core';
 
-/** Canonical values also consumed by the generated, SSR-safe stylesheet. */
-export const spatialLayoutTokens = tokens;
-export const contentGridSizes = ['xs', 's', 'm', 'l'] as const;
-export const viewportLayoutSizes = ['xs', 's', 'm', 'l', 'xl', '2xl', '3xl'] as const;
-export type ContentGridSize = typeof contentGridSizes[number];
-export type ViewportLayoutSize = typeof viewportLayoutSizes[number];
-export type SpatialCardSize = keyof typeof tokens.cards;
-export type ContentSpan = number | Partial<Record<ContentGridSize, number>>;
-export interface LayoutRect { x: number; y: number; width: number; height: number }
-export interface LayoutInsets { top: number; right: number; bottom: number; left: number }
-export interface ResponsiveLayoutInput {
-	width: number;
-	/** Reserved classic scrollbar/gutter width. Media-query width remains `width`. */
-	scrollbarWidth?: number;
-	/** Stable CSS layout height, supplied by the viewport owner; never physical screen height. */
-	height: number;
-	safeArea?: Partial<LayoutInsets>;
+/** Shared layout tokens plus spatial-only detail, docking and carousel settings. */
+const tokens = { ...layoutTokens, ...spatialTokens, menu: { ...layoutTokens.menu, scrollThreshold: 32 } };
+/** Keep native navigation and projected surfaces on the same short sticky track. */
+export function resolveMenuOffset(scrollY: number, fixed = false) {
+ const delta = (Number.isFinite(scrollY) ? scrollY : 0) - tokens.menu.scrollThreshold;
+ return fixed || delta <= 0 ? 0 : -delta;
 }
+export const spatialLayoutTokens = tokens;
+
 /** A natural-height panel has a known width and anchor, never an invented rectangle. */
 export interface SummaryLayoutConstraint {
 	x: number;
@@ -44,59 +44,9 @@ export interface CarouselLayoutInput extends ResponsiveLayoutInput {
 const size = (value: number | undefined) => Number.isFinite(value) ? Math.max(0, value!) : 0;
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
-export function resolveViewportLayout(width: number): ViewportLayoutSize {
-	const w = size(width);
-	return [...viewportLayoutSizes].reverse().find((name) => w >= tokens.layoutMinWidths[name]) ?? 'xs';
-}
-
-/** Width includes the grid's two outer margins, implemented once as section padding. */
-export function resolveContentGrid(width: number) {
-	const w = Math.min(size(width), tokens.contentMax);
-	const name = [...contentGridSizes].reverse().find((key) => w >= tokens.grid[key].minWidth) ?? 'xs';
-	const grid = tokens.grid[name];
-	return {
-		size: name,
-		width: w,
-		...grid,
-		columnWidth: Math.max(0, (w - (grid.columns + 1) * grid.gap) / grid.columns)
-	};
-}
-
-/** Mobile-first spans inherit; omitted/invalid spans fill the row, excessive spans clamp. */
-export function resolveContentSpan(span: ContentSpan | undefined, grid: ContentGridSize): number {
-	let requested: number | undefined = typeof span === 'number' ? span : undefined;
-	if (span && typeof span === 'object') {
-		for (const key of contentGridSizes) {
-			if (span[key] !== undefined) requested = span[key];
-			if (key === grid) break;
-		}
-	}
-	const columns = tokens.grid[grid].columns;
-	return requested !== undefined && Number.isInteger(requested) && requested > 0
-		? Math.min(requested, columns) : columns;
-}
-
-export function contentSpanWidth(width: number, span: number) {
-	const grid = resolveContentGrid(width);
-	const columns = resolveContentSpan(span, grid.size);
-	return Math.min(grid.width, columns * grid.columnWidth + (columns - 1) * grid.gap);
-}
-
-/** Uses the same slot for poster containment and measured 3D fitting. */
-export function resolveCardLayout(containerWidth: number, cardSize: SpatialCardSize = 'm') {
-	const grid = resolveContentGrid(containerWidth);
-	const card = tokens.cards[cardSize];
-	const span = cardSize === 'l' && grid.size === 's' ? tokens.cards.l.gridSSpan : card.span;
-	const width = contentSpanWidth(grid.width, span);
-	const textHeight = Math.min(width, Math.max(width / 4, card.rows * card.lineHeight + 2 * tokens.cardTextInset.block));
-	const availableHeight = width - textHeight;
-	const fitWidth = Math.min(width, availableHeight * 4 / 3);
-	const fitHeight = fitWidth * 3 / 4;
-	return {
-		...card,
-		span, width, height: width, textHeight,
-		media: { x: (width - fitWidth) / 2, y: (availableHeight - fitHeight) / 2, width: fitWidth, height: fitHeight }
-	};
+/** Spatial objects default to square media; text has independent height. */
+export function resolveCardLayout(containerWidth: number, cardSize: SpatialCardSize = 'm', options: CardLayoutOptions = {}) {
+  return resolveSharedCardLayout(containerWidth, cardSize, { mediaAspect: '1/1', mediaFit: 'contain', ...options });
 }
 
 export function resolveResponsiveLayout(input: ResponsiveLayoutInput) {
@@ -114,18 +64,9 @@ export function resolveResponsiveLayout(input: ResponsiveLayoutInput) {
 		width: Math.max(0, layoutWidth - safeArea.left - safeArea.right),
 		height: Math.max(0, height - safeArea.top - safeArea.bottom)
 	};
-	const layout = resolveViewportLayout(width);
-	const contentWidth = Math.min(tokens.contentMax, Math.max(0,
-		available.width - (layout === 'xl' ? tokens.xlContentInset * 2 : 0)));
-	const content = { x: available.x + (available.width - contentWidth) / 2, width: contentWidth };
+	const { layout, content, menu } = resolvePageLayout(input);
 	const grid = resolveContentGrid(content.width);
 	const wide = tokens.layoutMinWidths[layout] >= tokens.layoutMinWidths.xl;
-	const menu = {
-		x: wide ? content.x : available.x,
-		y: available.y + (wide ? tokens.menu.wideTop : 0),
-		width: wide ? content.width : available.width,
-		height: wide ? tokens.menu.wideHeight : tokens.menu.height
-	};
 	const breadcrumb = {
 		x: content.x, y: menu.y + menu.height, width: content.width,
 		height: tokens.breadcrumb[layout].height,
@@ -135,11 +76,11 @@ export function resolveResponsiveLayout(input: ResponsiveLayoutInput) {
 	const pane = {
 		x: paneLeft, y: available.y + tokens.pane.top,
 		width: Math.min(tokens.contentMax, Math.max(0, layoutWidth - safeArea.right - tokens.pane.rightInset - paneLeft)),
-		height: Math.max(0, available.height - tokens.pane.top - tokens.pane.bottom - tokens.pane.submenuHeight)
+		height: Math.max(0, available.height - tokens.pane.top - tokens.pane.bottom - tokens.pane.submenuHeight / 2)
 	};
 	const paneGrid = resolveContentGrid(pane.width);
 	const paneSubmenu: LayoutRect = {
-		x: pane.x, y: pane.y + pane.height,
+		x: pane.x, y: pane.y + Math.max(0, pane.height - tokens.pane.submenuHeight / 2),
 		width: pane.width, height: Math.min(tokens.pane.submenuHeight,
 			Math.max(0, available.height - tokens.pane.top - tokens.pane.bottom))
 	};
@@ -301,12 +242,6 @@ export function resolveZoomLayout(input: ResponsiveLayoutInput) {
 		minimap, minimapAnchor: bottom ? 'bottom-left' as const : 'top-left' as const,
 		controls: stageControls(available.x + available.width - inset, available.y + inset)
 	};
-}
-
-/** Bounded sticky behavior, driven by the same visual scroll clock as the scene. */
-export function resolveMenuOffset(scrollY: number, fixed = false) {
-	const offset = Math.max(0, size(scrollY) - tokens.menu.scrollThreshold);
-	return fixed || offset === 0 ? 0 : -offset;
 }
 
 /** Requested source height is used during handoff; intrinsic destination height remains unknown. */

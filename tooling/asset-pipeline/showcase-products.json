@@ -1,0 +1,161 @@
+{
+	"schemaVersion": 1,
+	"description": "Reviewed source paths relative to --source; original files are never modified.",
+	"products": [
+		{
+			"brand": "wera",
+			"id": "tool-check-plus",
+			"source": "wera toolcheck plus/tool-check-plus.glb",
+			"lowTriangles": 14000,
+			"highTriangles": 85000,
+			"atlas": true
+		},
+		{
+			"brand": "wera",
+			"id": "joker",
+			"source": "wera Joker/joker.glb",
+			"lowTriangles": 4000,
+			"highTriangles": 22000,
+			"atlas": true
+		},
+		{
+			"brand": "wera",
+			"id": "kraftform-xxl",
+			"source": "wera kraftform xxl/kraftform-xxl.glb",
+			"lowTriangles": 14000,
+			"highTriangles": 85000,
+			"atlas": true,
+			"preserveMaterials": ["Green_rubber", "yellow_rubber", "black_plastic", "red_griff"],
+			"preservationReason": "The authored grip uses overlapping colored and dark surface layers. Decimating either layer independently causes visible intersections; preserve these local grip surfaces and simplify the remaining components.",
+			"reviewedLowTriangleLimit": 180000
+		},
+		{
+			"brand": "wera",
+			"id": "ph-kreuzschlitz",
+			"source": "ph kreuzschlitz/ph-kreuzschlitz.glb",
+			"lowTriangles": 3500,
+			"highTriangles": 14000,
+			"atlas": true,
+			"excludeNodes": ["Triangel"]
+		},
+		{
+			"brand": "wera",
+			"id": "kraftform-kompakt",
+			"source": "wera kraftform kompakt/kraftform-kompakt.glb",
+			"lowTriangles": 14000,
+			"highTriangles": 85000,
+			"atlas": true
+		},
+		{
+			"brand": "wera",
+			"id": "kraftform-kompakt-20",
+			"source": "wera kraftform kompakt 20/kraftform-kompakt-20.glb",
+			"lowTriangles": 6500,
+			"highTriangles": 38000,
+			"atlas": true,
+			"excludeNodes": ["Triangel", "Triangel.001"],
+			"preserveMaterials": [
+				"SF_10204_000_0001031_greenPlastic",
+				"SF_10204_000_0001031_Blackplastic"
+			],
+			"preservationReason": "The authored grip uses overlapping colored and dark surface layers. Decimating either layer independently causes visible intersections; preserve these local grip surfaces and simplify the remaining components.",
+			"reviewedLowTriangleLimit": 90000
+		},
+		{
+			"brand": "wera",
+			"id": "winkelschluessel",
+			"source": "wera winkelschlüssel/winkelschluessel.glb",
+			"lowTriangles": 5500,
+			"highTriangles": 30000,
+			"atlas": true
+		},
+		{
+			"brand": "wera",
+			"id": "zyklop-speed",
+			"source": "wera zyklop speed/zyklop-speed.glb",
+			"lowTriangles": 4500,
+			"highTriangles": 24000,
+			"atlas": true,
+			"preserveMaterials": ["M_WERA_green.003", "M_Handle.003", "M_BlackPlastic.003"],
+			"preservationReason": "The authored grip uses overlapping colored and dark surface layers. Decimating either layer independently causes visible intersections; preserve these local grip surfaces and simplify the remaining components.",
+			"reviewedLowTriangleLimit": 42000
+		},
+		{
+			"brand": "logitech",
+			"id": "logitech-brio-500",
+			"source": "Logitech Brio 500/brio-500-graphite-webcams-ar-360.glb",
+			"lowTriangles": 3000,
+			"highTriangles": 12000,
+			"normalizeFrame": true
+		},
+		{
+			"brand": "logitech",
+			"id": "logitech-ergo-k860",
+			"source": "Logitech Ergo K860/ergok860-graphite-ar-360.glb",
+			"lowTriangles": 9000,
+			"highTriangles": 38000,
+			"normalizeFrame": true,
+			"excludeNodes": ["shadow_plane"]
+		},
+		{
+			"brand": "logitech",
+			"id": "logitech-m750",
+			"source": "Logitech M750/m750-l-graphite-ar-360.glb",
+			"lowTriangles": 9000,
+			"highTriangles": 22000,
+			"highTextureEdge": 1024,
+			"lowError": 0.004,
+			"lowNormalWeight": 0.5,
+			"normalizeFrame": true
+		},
+		{
+			"brand": "logitech",
+			"id": "logitech-z407",
+			"source": "Logitech Z407/z407-high-res.glb",
+			"lowSource": "Logitech Z407/z407-low-res.glb",
+			"lowTriangles": 4500,
+			"highTriangles": 25000,
+			"normalizeFrame": true
+		},
+		{
+			"brand": "item",
+			"id": "item-profile",
+			"source": "item/Profil_V01.glb",
+			"lowTriangles": 1000,
+			"highTriangles": 1192,
+			"normalizeFrame": true
+		},
+		{
+			"brand": "item",
+			"id": "item-connector",
+			"source": "item/Verbinder_V01.glb",
+			"lowTriangles": 800,
+			"highTriangles": 1152,
+			"normalizeFrame": true
+		},
+		{
+			"brand": "item",
+			"id": "item-end-cap",
+			"source": "item/Abdeckkappe_V01.glb",
+			"lowTriangles": 1000,
+			"highTriangles": 2500,
+			"normalizeFrame": true
+		},
+		{
+			"brand": "item",
+			"id": "item-impact-protector",
+			"source": "item/Anfahrschutz_V01.glb",
+			"lowTriangles": 500,
+			"highTriangles": 654,
+			"normalizeFrame": true
+		},
+		{
+			"brand": "item",
+			"id": "item-robot",
+			"source": "item/Robby_V01.glb",
+			"lowTriangles": 5500,
+			"highTriangles": 25000,
+			"normalizeFrame": true
+		}
+	]
+}

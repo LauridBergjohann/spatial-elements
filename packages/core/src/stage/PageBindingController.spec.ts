@@ -124,3 +124,28 @@ test('keeps document measurements separate from the current virtual scroll frame
 	expect(owner.panels).toEqual([]);
 	expect(owner.viewport).toBeUndefined();
 });
+
+
+test('native shell measurements exclude focus transforms and restore paint on failure', () => {
+	vi.stubGlobal('window', { getComputedStyle: () => ({ position: 'relative', top: 'auto' }) });
+	const owner = new PageBindingController();
+	const shell = { dataset: { stageScrollCompensation: '0' }, hasAttribute: () => false };
+	let transform = 'translate(0px, -800px) scale(1.4)', priority = 'important';
+	const style = {
+		getPropertyValue: () => transform, getPropertyPriority: () => priority,
+		setProperty: (_: string, value: string, nextPriority = '') => { transform = value; priority = nextPriority; },
+		removeProperty: () => { transform = ''; priority = ''; }
+	};
+	const frame = { style,
+		closest: (selector: string) => selector === '[data-stage-scroll-shell]' ? shell : null,
+		getBoundingClientRect: vi.fn(() => ({ left: 32, top: transform === 'none' ? 16 : -800, width: transform === 'none' ? 1536 : 2150, height: 64 }))
+	} as unknown as HTMLElement;
+	const target = { frame, surfaceElement: frame, nativeContent: true } as StagePanelTarget;
+	expect(owner.measurePanel(target, 0, 0)).toMatchObject({ top: 16, width: 1536 });
+	expect(transform).toBe('translate(0px, -800px) scale(1.4)');
+	expect(priority).toBe('important');
+	vi.mocked(frame.getBoundingClientRect).mockImplementationOnce(() => { throw Error('Detached frame'); });
+	expect(() => owner.measurePanel(target, 0, 0)).toThrow('Detached frame');
+	expect(transform).toBe('translate(0px, -800px) scale(1.4)');
+	expect(priority).toBe('important');
+});
