@@ -25,6 +25,29 @@
 		</div>
 	</Section>
 
+	<Section
+		section={{
+			id: 'explore',
+			title: 'Explore the details',
+			headline: 'Take a closer look',
+			background: { color: 'standard', size: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				This sample product story connects the interactive view with ordinary page content. Try
+				rotating the model, selecting a photograph and returning to the 3D view.
+			</p>
+			<ul>
+				{#each data.product.features as feature}<li>{feature}</li>{/each}
+			</ul>
+			<p>
+				Use the section menu to move between this introduction, the available media and the
+				demonstration notes. The model and its controls remain part of the same page.
+			</p>
+		</div>
+	</Section>
+
 	{#if data.product.photos.length}
 		<Section
 			section={{

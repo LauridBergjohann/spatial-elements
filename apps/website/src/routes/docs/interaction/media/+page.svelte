@@ -2,7 +2,7 @@
 	export const examples: Array<{ language: string; code: string }> = [
 		{
 			language: 'ts',
-			code: "media: [\n  { id: 'model', kind: 'minimap', label: '3D view' },\n  { id: 'front', kind: 'image', label: 'Front view', src: '/front.webp',\n    thumbnail: '/front-small.webp', alt: 'Front of the enclosure' },\n  { id: 'assembly', kind: 'video', label: 'Assembly', src: '/assembly.webm', poster: '/assembly.webp',\n    captions: [{ src: '/assembly-en.vtt', language: 'en', label: 'English', default: true }] },\n  { id: 'demo', kind: 'youtube', label: 'Demonstration', videoId: 'M7lc1UVf-VE' }\n]\n"
+			code: "media: [\n  { id: 'model', kind: 'minimap', label: '3D view' },\n  { id: 'front', kind: 'image', label: 'Front view', src: '/front.webp',\n    thumbnail: '/front-small.webp', fit: 'contain', alt: 'Front of the enclosure' },\n  { id: 'assembly', kind: 'video', label: 'Assembly', src: '/assembly.webm', poster: '/assembly.webp',\n    captions: [{ src: '/assembly-en.vtt', language: 'en', label: 'English', default: true }] },\n  { id: 'demo', kind: 'youtube', label: 'Demonstration', videoId: 'M7lc1UVf-VE' }\n]\n"
 		}
 	];
 </script>
@@ -53,6 +53,13 @@
 				The rail loads these previews lazily; selecting an image uses its full <code>src</code>. A
 				small <code>poster</code> serves the same purpose for videos. Without a thumbnail, the rail uses
 				the image source directly.
+			</p>
+			<p>
+				Set <code>fit: 'contain'</code> (the default) for cut-out product images, or
+				<code>fit: 'cover'</code> for photographs that should fill their frame. The same setting applies
+				to the thumbnail and the stage. Cover preserves proportions but crops the edges. Only the selected
+				media item is outlined. A cube identifies the 3D view; a play symbol identifies videos. Overflow
+				arrows scroll the rail without moving the page.
 			</p>
 		</div></Section
 	>

@@ -13,6 +13,7 @@ export function websiteTheme(mode: 'light' | 'dark', namespace: string) {
 		background,
 		sceneBackground: { tint: background, tintIntensity: 1, blurriness: 0.5 },
 		radii: { panel: 12, control: 12 },
+		interactionTheme: { outlineOpacity: 0.96, outlineThickness: 3 },
 		panelShape: { radius: 12, contentInset: 26 },
 		sectionBackgrounds: { standard, muted },
 		colors: {

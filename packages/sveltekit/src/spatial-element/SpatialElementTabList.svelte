@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import OverflowControls from './OverflowControls.svelte';
 	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import {
 		STAGE_ANCHOR_SCROLL_DURATION_MS,
@@ -14,7 +15,7 @@
 	}
 
 	let { activeSectionId, sections, variant }: Props = $props();
-	let linksElement: HTMLDivElement;
+	let linksElement = $state<HTMLDivElement>(null!);
 	let presentationFrame = 0;
 	let readyFrame = 0;
 	const currentSectionId = $derived(activeSectionId ?? sections[0]?.id);
@@ -110,6 +111,7 @@
 			</a>
 		{/each}
 	</div>
+	<OverflowControls target={linksElement} label="sections" />
 </nav>
 
 <style>
@@ -124,6 +126,7 @@
 			var(--spatial-element-control-radius, 12px)
 		);
 
+		position: relative;
 		display: flex;
 		align-items: center;
 		box-sizing: border-box;
@@ -131,7 +134,7 @@
 		max-width: 100%;
 		height: 100%;
 		min-width: 0;
-		color: var(--spatial-element-body);
+		color: var(--spatial-element-navigation-ink, var(--spatial-element-ink));
 		pointer-events: auto;
 	}
 
@@ -206,7 +209,7 @@
 		padding: 0 16px;
 		border-radius: var(--spatial-element-tab-highlight-top-radius) var(--spatial-element-tab-highlight-top-radius)
 			var(--spatial-element-tab-highlight-bottom-radius) var(--spatial-element-tab-highlight-bottom-radius);
-		color: var(--spatial-element-body);
+		color: var(--spatial-element-navigation-ink, var(--spatial-element-ink));
 		background: transparent;
 		/* Sturdier glyphs retain more edge contrast in the spatial panel and keep
 		 * the source-to-dock handoff typographically identical. */

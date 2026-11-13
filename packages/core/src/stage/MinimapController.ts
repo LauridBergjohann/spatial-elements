@@ -1050,7 +1050,7 @@ export class MinimapController {
 		minimap.overlayComposite.visible =
 			this.measurementMode !== 'no-overlay' && visibleOverlay > 0.001;
 		minimap.overlayVisibility.value = visibleOverlay;
-		minimap.overlayRing.visible = ringOpacity > 0.001 &&
+		minimap.overlayRing.visible = this.ports.target(minimap.panelIndex)?.getMinimapSelected?.() !== false && ringOpacity > 0.001 &&
 			minimap.overlayViewportHalfSize.value.x > 0 && minimap.overlayViewportHalfSize.value.y > 0;
 		minimap.overlayRing.material.opacity = ringOpacity;
 

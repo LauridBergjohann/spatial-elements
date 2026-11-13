@@ -7,6 +7,8 @@ test('home explains the library and docs use the shared navigation', async ({ pa
 	await page.goto('/');
 	await expect(page.getByRole('heading', { level: 1 })).toContainText('dimension');
 	await expect(page.locator('#features .ps-card')).toHaveCount(6);
+	await expect(page.locator('#featured-products [data-carousel-spatial-element]')).toHaveCount(4);
+	await expect(page.locator('main section[id]').first()).toHaveAttribute('id', 'featured-products');
 	await expect(page.locator('.stage')).toHaveCount(1);
 	await page.goto('/docs/foundations/assets/');
 	await expect(page.getByRole('navigation', { name: 'Documentation chapters' })).toBeVisible();
@@ -383,5 +385,101 @@ test('minimal demo remains a small usable collection without GPU', async ({ brow
 		await expect(page.getByRole('heading', { level: 1 })).toHaveText('Cube');
 	} finally {
 		await context.close();
+	}
+});
+
+for (const width of [390, 1920]) {
+	test(`media framing and overflow controls stay inside their viewport at ${width}px`, async ({ page }, info) => {
+		await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
+		await page.setViewportSize({ width, height: 900 });
+		await page.goto('/showcase/elements/logitech-m750/');
+		const rail = page.locator('[data-spatial-element-media-rail]');
+		await expect(rail).toHaveCSS('scrollbar-width', 'none');
+		const next = page.getByRole('button', { name: 'Next media', exact: true });
+		const previous = page.getByRole('button', { name: 'Previous media', exact: true });
+		await expect(next).toBeVisible();
+		await expect(previous).toHaveCount(0);
+		await next.click();
+		await expect(previous).toBeVisible();
+		const product = showcaseProducts.find(product => product.id === 'logitech-m750')!;
+		for (const photo of [product.photos.at(-1)!, product.photos[0]]) {
+			const button = page.getByRole('button', { name: photo.label, exact: true });
+			await button.click();
+			await expect(page.locator('.thumb[aria-pressed="true"]')).toHaveCount(1);
+			await expect(button.locator('img')).toHaveCSS('object-fit', photo.fit);
+			const image = page.locator('[data-spatial-native-media="image"] img');
+			await expect(image).toHaveCSS('object-fit', photo.fit);
+			const stage = await page.locator('.spatial-element-visual').boundingBox();
+			const media = await image.boundingBox();
+			expect(media!.x).toBeGreaterThanOrEqual(stage!.x - 1);
+			expect(media!.y).toBeGreaterThanOrEqual(stage!.y - 1);
+			expect(media!.y + media!.height).toBeLessThanOrEqual(stage!.y + stage!.height + 1);
+			await expect(button).toHaveCSS('padding', '0px');
+		}
+		await page.screenshot({ path: info.outputPath('media-contain.png') });
+		if (width >= 840) {
+			const tabs = page.locator('[data-spatial-element-tab-list="panel"]');
+			await expect(tabs).toContainText('Explore the details');
+			// Exercise the real overflow behavior even on a page with short section labels.
+			await tabs.evaluate(element => element.style.maxWidth = '220px');
+			await tabs.getByRole('button', { name: 'Next sections', exact: true }).click();
+			await expect(tabs.getByRole('button', { name: 'Previous sections', exact: true })).toBeVisible();
+		}
+	});
+}
+
+if (process.env.SPATIAL_GPU) test('enhanced media clips thumbnails and clears controls while zooming', async ({ page }, info) => {
+	const errors: string[] = [];
+	page.on('pageerror', error => errors.push(error.message));
+	await page.setViewportSize({ width: 1920, height: 900 });
+	await page.goto('/showcase/elements/logitech-m750/?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+	const product = showcaseProducts.find(product => product.id === 'logitech-m750')!;
+	for (const mode of ['Light', 'Dark']) {
+		await page.getByRole('button', { name: mode, exact: true }).filter({ visible: true }).click();
+		const neutral = mode === 'Light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+		await expect(page.locator('.ps-navigation .header').getByRole('link', { name: 'Showcase', exact: true })).toHaveCSS('color', neutral);
+		await expect(page.locator('[data-spatial-element-tab-id="product"]').filter({ visible: true })).toHaveCSS('color', neutral);
+		await page.getByRole('button', { name: product.photos[0].label, exact: true }).click();
+		await expect(page.locator('.thumb[aria-pressed="true"]')).toHaveCount(1);
+		await page.screenshot({ path: info.outputPath(`selected-photo-${mode}.png`) });
+		await page.getByRole('button', { name: 'Interactive 3D view', exact: true }).click();
+		await page.mouse.move(800, 440);
+		await page.screenshot({ path: info.outputPath(`selected-model-${mode}.png`) });
+	}
+	await page.getByRole('button', { name: 'Next media', exact: true }).click();
+	await expect(page.getByRole('button', { name: 'Previous media', exact: true })).toBeVisible();
+	const rail = page.locator('[data-spatial-element-media-rail]');
+	expect(await rail.locator('.thumb-image').count()).toBe(product.photos.length);
+	// Native thumbnails retain the clipping ancestor even after enhancement.
+	expect(await rail.locator('[data-stage-panel-css-surface]').count()).toBe(product.photos.length);
+	await page.screenshot({ path: info.outputPath('scrolled-media-rail.png') });
+	await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.8 }));
+	await expect(page.getByRole('button', { name: 'Previous media', exact: true })).toBeHidden();
+	await expect(page.locator('.thumb-image').filter({ visible: true })).toHaveCount(0);
+	await expect(page.locator('.thumb-minimap')).toBeInViewport();
+	await page.screenshot({ path: info.outputPath('zoomed-media.png') });
+	await page.evaluate(() => window.__stageVisualTest!.reset());
+	await page.getByRole('button', { name: 'Fullscreen', exact: true }).click();
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-fullscreen', '');
+	await expect(page.locator('[data-overflow-controls="media"]')).toBeHidden();
+	await page.getByRole('button', { name: 'Detail view', exact: true }).click();
+	await expect(page.locator('.stage')).not.toHaveAttribute('data-stage-fullscreen', '');
+	expect(errors).toEqual([]);
+});
+
+if (process.env.SPATIAL_GPU) test('featured carousel renders the selected products in both themes', async ({ page }, info) => {
+	await page.goto('/?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
+	const carousel = page.locator('#featured-products');
+	await expect(carousel.locator('[data-carousel-spatial-element]')).toHaveCount(4);
+	await expect(carousel.locator('[data-catalog-model-ready]').first()).toBeAttached({ timeout: 60000 });
+	for (const mode of ['Light', 'Dark']) {
+		await page.getByRole('button', { name: mode, exact: true }).filter({ visible: true }).click();
+		const selected = carousel.locator('.carousel-spatial-element.selected .spatial-element-target');
+		await expect(selected).toHaveAttribute('href', '/showcase/elements/kraftform-kompakt');
+		await selected.hover();
+		await page.screenshot({ path: info.outputPath(`featured-carousel-${mode}.png`) });
 	}
 });

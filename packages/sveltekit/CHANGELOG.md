@@ -8,6 +8,7 @@
 
 ### Patch Changes
 
+- Fit photographs within the stage and thumbnail panels, synchronize exclusive media selection, and identify 3D/video entries. Add directional overflow controls to rails and section menus, clear rail controls during zoom/fullscreen, and align view buttons with appearance controls. The website adds a featured product carousel and removes transparent padding from product images.
 - Keep detail and minimap posters visible while a new route's model is loading, even when the shared WebGPU stage is already enhanced. Media rails can load small image thumbnails independently of the full-size selected image.
 - Register spatial page identities and item links automatically for URL-independent transitions, including the showcase root and browser history. Document collection identity independently of URL structure.
 - Apply spatial panel tint, blur and shadow to native navigation and satellites, including the server-rendered fallback. The documentation website uses one light/dark theme and a shared showcase collection.

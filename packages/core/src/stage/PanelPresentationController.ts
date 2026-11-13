@@ -510,7 +510,7 @@ export class PanelPresentationController {
 	private updateNativeShellPresentation(index: number, focusOffset: { x: number; y: number; z: number },
 		opacity: number, blur: number, viewportVisible: boolean, transitionBlocked: boolean) {
 		const target = this.panelTargets[index];
-		if (!target?.nativeContent || !target.frame.closest('[data-stage-scroll-shell]')) return;
+		if (!target?.nativeContent || this.minimaps.has(index)) return;
 		const surface = target.surfaceElement;
 		if (!this.nativeShellInteractivity.has(surface)) this.nativeShellInteractivity.set(surface, surface.inert);
 		// Native shell content has no CSS3DObject. Project its existing surface from

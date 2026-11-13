@@ -82,7 +82,7 @@
 					aria-label={item.label}
 					title={item.tooltip ?? item.label}
 					aria-pressed={item.value === value}
-					style:--selection={`${Math.min(1, Math.max(0, item.selection ?? (item.value === value ? 1 : 0))) * 8}%`}
+					style:--selection={`${Math.min(1, Math.max(0, item.selection ?? (item.value === value ? 1 : 0))) * 100}%`}
 					onclick={() => onchange?.(item.value)}
 				>
 					{#if content}{@render content(item)}{:else}{item.label}{/if}
@@ -119,7 +119,7 @@
 		white-space: nowrap;
 		background: color-mix(
 			in srgb,
-			var(--spatial-element-body, currentColor) var(--selection),
+			var(--ps-selection, var(--ps-section-muted, #eeeeee)) var(--selection),
 			transparent
 		);
 		color: var(--spatial-element-ink, inherit);
@@ -131,19 +131,8 @@
 		width: 40px;
 		padding: 0;
 	}
-	button:first-child {
-		border-radius: var(--control-radius) 0 0 var(--control-radius);
-	}
-	button:last-child {
-		border-radius: 0 var(--control-radius) var(--control-radius) 0;
-	}
-	button:only-child {
-		border-radius: var(--control-radius);
-	}
-	button + button {
-		border-left: 1px solid
-			color-mix(in srgb, var(--spatial-element-body, currentColor) 12%, transparent);
-	}
+	button { border-radius: max(0px, calc(var(--control-radius) - 2px)); }
+	button[aria-pressed='true'] { color: var(--spatial-element-accent); }
 	.button-group:global([data-mouse-hover]) button:enabled:hover {
 		background: color-mix(in srgb, var(--spatial-element-body, currentColor) 8%, transparent);
 	}

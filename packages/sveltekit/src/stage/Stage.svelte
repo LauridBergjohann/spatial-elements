@@ -839,6 +839,7 @@
 				getMinimapModelLeft: panel.getMinimapModelLeft,
 				getSurfaceOpacity: panel.getSurfaceOpacity,
 				getVisible: panel.getVisible,
+				getMinimapSelected: panel.getMinimapSelected,
 				getFocusAnchor: panel.getFocusAnchor,
 				updateNativeLayout: panel.updateNativeLayout,
 				nativeContent: panel.getNativeContent?.() ?? false,

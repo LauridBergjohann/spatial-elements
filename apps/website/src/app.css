@@ -212,3 +212,14 @@ figcaption {
 	color: var(--ps-body);
 	font-size: 0.85rem;
 }
+
+/* Navigation uses neutral text; green remains the selection accent. */
+.brand-stage-shell {
+	--spatial-element-navigation-ink: #000;
+}
+.brand-stage-shell[data-color-scheme='dark'] {
+	--spatial-element-navigation-ink: #fff;
+}
+.ps-shell .ps-navigation a {
+	color: var(--spatial-element-navigation-ink);
+}

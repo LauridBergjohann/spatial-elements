@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "recipe": "webp-1600-640-v1",
+  "recipe": "webp-trim-transparent-1600-640-v2",
   "sharp": "0.35.4",
   "images": [
     {
@@ -10,15 +10,15 @@
       "sourceBytes": 28977,
       "full": {
         "src": "/assets/showcase/joker/joker-image-01.webp",
-        "width": 341,
-        "height": 192,
-        "bytes": 4880
+        "width": 340,
+        "height": 53,
+        "bytes": 5168
       },
       "small": {
         "src": "/assets/showcase/joker/joker-image-01.webp",
-        "width": 341,
-        "height": 192,
-        "bytes": 4880
+        "width": 340,
+        "height": 53,
+        "bytes": 5168
       }
     },
     {
@@ -82,15 +82,15 @@
       "sourceBytes": 11412,
       "full": {
         "src": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-image-01.webp",
-        "width": 832,
-        "height": 832,
-        "bytes": 9126
+        "width": 828,
+        "height": 147,
+        "bytes": 7994
       },
       "small": {
         "src": "/assets/showcase/ph-kreuzschlitz/ph-kreuzschlitz-image-01-small.webp",
         "width": 640,
-        "height": 640,
-        "bytes": 6440
+        "height": 114,
+        "bytes": 7664
       }
     },
     {
@@ -119,14 +119,14 @@
       "full": {
         "src": "/assets/showcase/kraftform-kompakt/kraftform-kompakt-image-01.webp",
         "width": 600,
-        "height": 600,
-        "bytes": 25666
+        "height": 432,
+        "bytes": 26608
       },
       "small": {
         "src": "/assets/showcase/kraftform-kompakt/kraftform-kompakt-image-01.webp",
         "width": 600,
-        "height": 600,
-        "bytes": 25666
+        "height": 432,
+        "bytes": 26608
       }
     },
     {
@@ -136,15 +136,15 @@
       "sourceBytes": 91378,
       "full": {
         "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-01.webp",
-        "width": 832,
-        "height": 832,
-        "bytes": 62738
+        "width": 826,
+        "height": 666,
+        "bytes": 62216
       },
       "small": {
         "src": "/assets/showcase/kraftform-kompakt-20/kraftform-kompakt-20-image-01-small.webp",
         "width": 640,
-        "height": 640,
-        "bytes": 35962
+        "height": 516,
+        "bytes": 45198
       }
     },
     {
@@ -208,15 +208,15 @@
       "sourceBytes": 55686,
       "full": {
         "src": "/assets/showcase/kraftform-xxl/kraftform-xxl-image-01.webp",
-        "width": 832,
-        "height": 832,
-        "bytes": 43404
+        "width": 828,
+        "height": 567,
+        "bytes": 43544
       },
       "small": {
         "src": "/assets/showcase/kraftform-xxl/kraftform-xxl-image-01-small.webp",
         "width": 640,
-        "height": 640,
-        "bytes": 31982
+        "height": 438,
+        "bytes": 42106
       }
     },
     {
@@ -226,15 +226,15 @@
       "sourceBytes": 33574,
       "full": {
         "src": "/assets/showcase/winkelschluessel/winkelschluessel-image-01.webp",
-        "width": 832,
-        "height": 832,
-        "bytes": 24876
+        "width": 824,
+        "height": 512,
+        "bytes": 25114
       },
       "small": {
         "src": "/assets/showcase/winkelschluessel/winkelschluessel-image-01-small.webp",
         "width": 640,
-        "height": 640,
-        "bytes": 17854
+        "height": 398,
+        "bytes": 23278
       }
     },
     {
@@ -244,15 +244,15 @@
       "sourceBytes": 15570,
       "full": {
         "src": "/assets/showcase/zyklop-speed/zyklop-speed-image-01.webp",
-        "width": 832,
-        "height": 832,
-        "bytes": 12522
+        "width": 829,
+        "height": 155,
+        "bytes": 11370
       },
       "small": {
         "src": "/assets/showcase/zyklop-speed/zyklop-speed-image-01-small.webp",
         "width": 640,
-        "height": 640,
-        "bytes": 9072
+        "height": 120,
+        "bytes": 11474
       }
     },
     {
@@ -280,15 +280,15 @@
       "sourceBytes": 166332,
       "full": {
         "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-01.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 51878
+        "width": 1453,
+        "height": 1215,
+        "bytes": 105940
       },
       "small": {
         "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-01-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 10728
+        "height": 535,
+        "bytes": 45896
       }
     },
     {
@@ -298,15 +298,15 @@
       "sourceBytes": 179956,
       "full": {
         "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-02.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 52660
+        "width": 1495,
+        "height": 1231,
+        "bytes": 115990
       },
       "small": {
         "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-02-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 10402
+        "height": 527,
+        "bytes": 39200
       }
     },
     {
@@ -316,15 +316,15 @@
       "sourceBytes": 102188,
       "full": {
         "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-03.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 35430
+        "width": 1514,
+        "height": 1203,
+        "bytes": 59790
       },
       "small": {
         "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-03-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 6370
+        "height": 509,
+        "bytes": 25454
       }
     },
     {
@@ -334,15 +334,15 @@
       "sourceBytes": 103822,
       "full": {
         "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-04.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 42798
+        "width": 1086,
+        "height": 1199,
+        "bytes": 74934
       },
       "small": {
         "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-04-small.webp",
-        "width": 640,
-        "height": 360,
-        "bytes": 9238
+        "width": 580,
+        "height": 640,
+        "bytes": 41808
       }
     },
     {
@@ -352,15 +352,15 @@
       "sourceBytes": 64180,
       "full": {
         "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-05.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 20280
+        "width": 1477,
+        "height": 470,
+        "bytes": 35716
       },
       "small": {
         "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-05-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 4928
+        "height": 204,
+        "bytes": 9608
       }
     },
     {
@@ -370,15 +370,15 @@
       "sourceBytes": 59112,
       "full": {
         "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-06.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 28758
+        "width": 1230,
+        "height": 905,
+        "bytes": 48794
       },
       "small": {
         "src": "/assets/showcase/logitech-brio-500/logitech-brio-500-image-06-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 6946
+        "height": 471,
+        "bytes": 25528
       }
     },
     {
@@ -407,14 +407,14 @@
       "full": {
         "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-01.webp",
         "width": 1600,
-        "height": 900,
-        "bytes": 116370
+        "height": 848,
+        "bytes": 193320
       },
       "small": {
         "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-01-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 19126
+        "height": 339,
+        "bytes": 35708
       }
     },
     {
@@ -425,14 +425,14 @@
       "full": {
         "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-02.webp",
         "width": 1600,
-        "height": 900,
-        "bytes": 51654
+        "height": 423,
+        "bytes": 77180
       },
       "small": {
         "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-02-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 10402
+        "height": 169,
+        "bytes": 16194
       }
     },
     {
@@ -442,15 +442,15 @@
       "sourceBytes": 180316,
       "full": {
         "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-03.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 68722
+        "width": 1576,
+        "height": 960,
+        "bytes": 137538
       },
       "small": {
         "src": "/assets/showcase/logitech-ergo-k860/logitech-ergo-k860-image-03-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 13312
+        "height": 390,
+        "bytes": 35490
       }
     },
     {
@@ -478,15 +478,15 @@
       "sourceBytes": 45160,
       "full": {
         "src": "/assets/showcase/logitech-m750/logitech-m750-image-01.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 19090
+        "width": 571,
+        "height": 1024,
+        "bytes": 31300
       },
       "small": {
         "src": "/assets/showcase/logitech-m750/logitech-m750-image-01-small.webp",
-        "width": 640,
-        "height": 360,
-        "bytes": 4678
+        "width": 357,
+        "height": 640,
+        "bytes": 18264
       }
     },
     {
@@ -496,15 +496,15 @@
       "sourceBytes": 62520,
       "full": {
         "src": "/assets/showcase/logitech-m750/logitech-m750-image-02.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 22662
+        "width": 1023,
+        "height": 733,
+        "bytes": 41264
       },
       "small": {
         "src": "/assets/showcase/logitech-m750/logitech-m750-image-02-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 4746
+        "height": 459,
+        "bytes": 21978
       }
     },
     {
@@ -514,15 +514,15 @@
       "sourceBytes": 80240,
       "full": {
         "src": "/assets/showcase/logitech-m750/logitech-m750-image-03.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 22458
+        "width": 565,
+        "height": 1014,
+        "bytes": 51642
       },
       "small": {
         "src": "/assets/showcase/logitech-m750/logitech-m750-image-03-small.webp",
-        "width": 640,
-        "height": 360,
-        "bytes": 4918
+        "width": 357,
+        "height": 640,
+        "bytes": 21050
       }
     },
     {
@@ -532,15 +532,15 @@
       "sourceBytes": 60116,
       "full": {
         "src": "/assets/showcase/logitech-m750/logitech-m750-image-04.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 19200
+        "width": 1209,
+        "height": 426,
+        "bytes": 37384
       },
       "small": {
         "src": "/assets/showcase/logitech-m750/logitech-m750-image-04-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 3974
+        "height": 226,
+        "bytes": 14288
       }
     },
     {
@@ -550,15 +550,15 @@
       "sourceBytes": 67660,
       "full": {
         "src": "/assets/showcase/logitech-m750/logitech-m750-image-05.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 23646
+        "width": 1024,
+        "height": 709,
+        "bytes": 43944
       },
       "small": {
         "src": "/assets/showcase/logitech-m750/logitech-m750-image-05-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 5190
+        "height": 443,
+        "bytes": 23458
       }
     },
     {
@@ -604,15 +604,15 @@
       "sourceBytes": 75790,
       "full": {
         "src": "/assets/showcase/logitech-z407/logitech-z407-image-01.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 27554
+        "width": 1566,
+        "height": 976,
+        "bytes": 43050
       },
       "small": {
         "src": "/assets/showcase/logitech-z407/logitech-z407-image-01-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 7840
+        "height": 399,
+        "bytes": 17932
       }
     },
     {
@@ -622,15 +622,15 @@
       "sourceBytes": 88094,
       "full": {
         "src": "/assets/showcase/logitech-z407/logitech-z407-image-02.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 27284
+        "width": 1466,
+        "height": 1071,
+        "bytes": 48572
       },
       "small": {
         "src": "/assets/showcase/logitech-z407/logitech-z407-image-02-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 7224
+        "height": 468,
+        "bytes": 18760
       }
     },
     {
@@ -640,15 +640,15 @@
       "sourceBytes": 90080,
       "full": {
         "src": "/assets/showcase/logitech-z407/logitech-z407-image-03.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 18588
+        "width": 755,
+        "height": 1191,
+        "bytes": 57830
       },
       "small": {
         "src": "/assets/showcase/logitech-z407/logitech-z407-image-03-small.webp",
-        "width": 640,
-        "height": 360,
-        "bytes": 4896
+        "width": 406,
+        "height": 640,
+        "bytes": 14458
       }
     },
     {
@@ -658,15 +658,15 @@
       "sourceBytes": 115088,
       "full": {
         "src": "/assets/showcase/logitech-z407/logitech-z407-image-04.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 17534
+        "width": 1030,
+        "height": 1029,
+        "bytes": 49312
       },
       "small": {
         "src": "/assets/showcase/logitech-z407/logitech-z407-image-04-small.webp",
         "width": 640,
-        "height": 360,
-        "bytes": 4752
+        "height": 639,
+        "bytes": 17444
       }
     },
     {
@@ -676,15 +676,15 @@
       "sourceBytes": 145342,
       "full": {
         "src": "/assets/showcase/logitech-z407/logitech-z407-image-05.webp",
-        "width": 1600,
-        "height": 900,
-        "bytes": 27528
+        "width": 1121,
+        "height": 1124,
+        "bytes": 93416
       },
       "small": {
         "src": "/assets/showcase/logitech-z407/logitech-z407-image-05-small.webp",
-        "width": 640,
-        "height": 360,
-        "bytes": 7240
+        "width": 638,
+        "height": 640,
+        "bytes": 24764
       }
     },
     {

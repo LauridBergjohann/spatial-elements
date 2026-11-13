@@ -219,12 +219,14 @@
 				{
 					"source": "m750-mouse-graphite-lifestyle-gallery-1.webp",
 					"alt": "Graphite M750 mouse on a blue pad beside a keyboard",
-					"label": "Mouse on a desk"
+					"label": "Mouse on a desk",
+					"fit": "cover"
 				},
 				{
 					"source": "m750-mouse-graphite-lifestyle-gallery-2.webp",
 					"alt": "A hand using the M750 mouse beside a keyboard",
-					"label": "Mouse in use"
+					"label": "Mouse in use",
+					"fit": "cover"
 				}
 			]
 		},

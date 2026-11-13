@@ -39,6 +39,7 @@ export function optimizedSpatialElement(product: ShowcaseProduct): SpatialElemen
 				label: photo.label,
 				src: photo.src,
 				thumbnail: photo.small.src,
+				fit: photo.fit as 'contain' | 'cover',
 				alt: photo.alt
 			})),
 			...(product.video

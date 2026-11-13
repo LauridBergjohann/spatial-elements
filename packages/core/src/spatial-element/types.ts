@@ -162,6 +162,8 @@ export type SpatialElementMediaItem =
 		id: string; kind: 'image'; label: string; src: string; alt: string;
 		/** Smaller image for the media selector. The full view always uses src. */
 		thumbnail?: string;
+		/** Image framing in the selector and stage. Defaults to contain. */
+		fit?: 'contain' | 'cover';
 	}
 	| {
 		id: string; kind: 'video'; label: string; src: string; poster?: string;

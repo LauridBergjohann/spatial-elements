@@ -34,6 +34,9 @@ for (const product of manifest.products) {
 	for (const [index, image] of product.images.entries()) {
 		const inputPath = within(source, path.resolve(source, product.directory, image.source));
 		const input = await fs.readFile(inputPath);
+		// Discard transparent canvas padding, never product pixels or photographic backgrounds.
+		const metadata = await sharp(input).metadata();
+		const trimTransparent = metadata.hasAlpha && (await sharp(input).stats()).channels[3]?.min === 0;
 		const basename = `${product.id}-image-${String(index + 1).padStart(2, '0')}`;
 		const variants = {};
 		for (const [variant, size, quality, suffix] of [
@@ -47,8 +50,9 @@ for (const product of manifest.products) {
 				await fs.rm(within(directory, path.join(directory, filename)), { force: true });
 				continue;
 			}
-			const output = await sharp(input)
-				.rotate()
+			const pipeline = sharp(input).rotate();
+			if (trimTransparent) pipeline.trim({ background: '#00000000', threshold: 0 });
+			const output = await pipeline
 				.resize({
 					width: size,
 					height: size,
@@ -70,6 +74,7 @@ for (const product of manifest.products) {
 			alt: image.alt,
 			label: image.label,
 			role: image.role ?? 'gallery',
+			fit: image.fit ?? 'contain',
 			...variants.full,
 			small: variants.small
 		});
@@ -92,7 +97,7 @@ await fs.writeFile(
 	JSON.stringify(
 		{
 			schemaVersion: 1,
-			recipe: 'webp-1600-640-v1',
+			recipe: 'webp-trim-transparent-1600-640-v2',
 			sharp: sharp.versions.sharp,
 			images: report
 		},
