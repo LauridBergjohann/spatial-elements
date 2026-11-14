@@ -24,7 +24,9 @@ export function rememberSpaceMouseConnection() {
 
 export function shouldReconnectSpaceMouse(permission: SpaceMousePermission): boolean {
 	if (permission === 'granted') return true;
-	if (permission !== 'unknown') return false;
+	if (permission === 'denied') return false;
+	// A working driver connection need not change the query from `prompt` (e.g. localhost).
+	// Remember successful use so reloads reconnect, while first visits still require a click.
 	try { return globalThis.localStorage?.getItem(connectionKey) === 'true'; } catch { return false; }
 }
 

@@ -181,7 +181,7 @@
 				including touch-capable desktops. It is a platform hint, not hardware detection. Click it to
 				connect immediately; Chrome may ask for access to apps and services on this device. A
 				successful connection highlights the icon, changes its tooltip to <strong
-					>SpaceMouse connected</strong
+					>spacemouse is connected, click to disconnect</strong
 				>
 				and briefly shows a confirmation. Click again to disconnect, or once more to reconnect.
 			</p>
@@ -195,15 +195,22 @@
 			<p>
 				On desktop platforms, an existing loopback permission grant triggers a silent reconnection.
 				Browsers that expose only the older combined local-network-access permission are also
-				supported. If neither permission can be queried, a successful previous connection saved in
-				local storage allows an automatic retry on the next visit. On those browsers, connect once
-				after updating to establish this preference. An explicit prompt or denied status always
-				requires a click; a saved connection is not a browser permission. If permission cannot be
-				queried and has since been reset, the browser may ask again. An unsuccessful automatic
-				attempt shows no application dialog. Disconnecting lasts for the mounted stage. Both the
-				adapter and 3Dconnexion SDK are imported only for a manual connection or an eligible
-				automatic retry. Localize the
+				supported. A successful connection is also remembered in local storage and allows an
+				automatic retry after reloading, even if the browser still reports prompt or cannot report
+				permission. For example, a local development server can connect without changing that
+				permission status. Without a previous connection or grant, the first attempt requires
+				clicking the icon. An explicit denied status prevents automatic reconnection. A saved
+				connection is not a browser permission: if access has since been reset, the browser may ask
+				again. An unsuccessful automatic attempt shows no application dialog. Disconnecting lasts
+				for the mounted stage. Both the adapter and 3Dconnexion SDK are imported only for a manual
+				connection or an eligible automatic retry. Localize the
 				<code>spaceMouse*</code> strings in <code>interactionHelp</code>.
+			</p>
+			<p>
+				For Vite development, add <code>@3dconnexion/3dconnexionjs</code> to
+				<code>optimizeDeps.include</code>. This prepares the optional SDK on the dev server and
+				prevents a dependency-optimization reload during the first connection. It does not load the
+				SDK into the browser before SpaceMouse is used. The repository apps include this setting.
 			</p>
 			<p>
 				While the detail viewer is open, SpaceMouse navigation follows the active browser window,

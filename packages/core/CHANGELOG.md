@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Reconnect previously used SpaceMouse sessions after reload even when the browser still reports permission as prompt. Keep first visits opt-in and denied permissions blocked. Clarify the connect/disconnect tooltips.
+
 - Restore SpaceMouse reconnection with legacy local-network permissions and remember successful connections for browsers without a supported permission query. Explicit permission decisions take precedence; automatic failures remain silent.
 
 - Load WebGPU rendering only after a usable adapter probe; defer the SpaceMouse adapter and SDK until requested. Add a desktop-only themed SpaceMouse icon, actual connection status, silent granted reconnection, permission recovery and a brief connection toast.

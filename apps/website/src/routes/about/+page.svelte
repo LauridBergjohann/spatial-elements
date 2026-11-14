@@ -102,10 +102,10 @@
 			</p>
 			<p>
 				After a successful SpaceMouse connection, <code>spatial-elements-spacemouse-connected</code>
-				is saved in local storage so the viewer can reconnect when the browser cannot report its device-access
-				permission. This stores only a successful-connection flag, no device identifier. It remains until
-				you clear the site's browser data. Browser permissions still control access to the local 3Dconnexion
-				driver.
+				is saved in local storage so the viewer can reconnect after reloading, including when the browser
+				still reports prompt or cannot report device-access permission. This stores only a successful-connection
+				flag, no device identifier. It remains until you clear the site's browser data. Browser permissions
+				still control access to the local 3Dconnexion driver.
 			</p>
 			<p>
 				The application includes no analytics or advertising services and sets no tracking cookies.

@@ -62,20 +62,22 @@ describe('SpaceMouse permission observation', () => {
 });
 
 describe('SpaceMouse reconnection preference', () => {
-	it('remembers successful use across stages only when the permission cannot be queried', () => {
+	it('reconnects after successful use even if the permission remains prompt or unknown', () => {
 		const values = new Map<string, string>();
 		vi.stubGlobal('localStorage', {
 			getItem: (key: string) => values.get(key) ?? null,
 			setItem: (key: string, value: string) => values.set(key, value)
 		});
 		expect(shouldReconnectSpaceMouse('unknown')).toBe(false);
+		expect(shouldReconnectSpaceMouse('prompt')).toBe(false);
 		expect(shouldReconnectSpaceMouse('granted')).toBe(true);
 		rememberSpaceMouseConnection();
 		expect(shouldReconnectSpaceMouse('unknown')).toBe(true);
-		expect(shouldReconnectSpaceMouse('prompt')).toBe(false);
+		expect(shouldReconnectSpaceMouse('prompt')).toBe(true);
 		expect(shouldReconnectSpaceMouse('denied')).toBe(false);
 		values.clear();
 		expect(shouldReconnectSpaceMouse('unknown')).toBe(false);
+		expect(shouldReconnectSpaceMouse('prompt')).toBe(false);
 	});
 	it('keeps manual connections usable when storage is blocked', () => {
 		vi.stubGlobal('localStorage', {
