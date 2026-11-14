@@ -19,7 +19,7 @@ export const showcaseProducts = documents.map((document) => {
 		segment: productSegment(document.manufacturer),
 		href: productHref({ id: document.id, manufacturerId: document.manufacturer }),
 		manufacturer,
-		manufacturerId: document.manufacturer,
+		manufacturerId: document.manufacturer as keyof typeof manufacturers,
 		photos,
 		video: document.video
 			? {

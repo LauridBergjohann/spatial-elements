@@ -150,6 +150,15 @@
 		}}
 		><div class="prose">
 			<p>
+				Optional <code>headerDetails</code> and <code>actionIcon</code> snippets on
+				<code>SpatialElementPage</code> customize the compact scroll header and the fixed 3XL pane
+				header. Use <code>headerDetails</code> for quantity and price, and use the same icon as the summary
+				CTA. Keep these fields compact enough for a mobile header. Store shared form values in the persistent
+				layout, scoped to the current visitor and keyed by element ID, so editing either presentation
+				immediately updates the other. The website Showcase demonstrates this with illustrative prices
+				and manufacturer links; it is not a shop.
+			</p>
+			<p>
 				The persistent host gives a summary a lifetime beyond a route's placement node. Placement
 				and ownership are different responsibilities: manually reparenting a route-owned Svelte
 				subtree does not prevent the route from destroying it.

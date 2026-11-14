@@ -74,7 +74,8 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 	});
 }
 
-if (process.env.SPATIAL_GPU) test('Industrial retains its branded summary through a carousel transition', async ({ page }, info) => {
+if (process.env.SPATIAL_GPU) for (const mode of ['light', 'dark']) test(`Industrial retains its branded summary through a carousel transition (${mode})`, async ({ page }, info) => {
+	await page.addInitScript(mode => localStorage.setItem('spatial-elements-theme', mode), mode);
 	await page.goto('/showcase/industrial/?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
 	const card = page.locator('#example-products .carousel-spatial-element.selected');
@@ -85,6 +86,7 @@ if (process.env.SPATIAL_GPU) test('Industrial retains its branded summary throug
 	await expect(card).toHaveAttribute('data-catalog-model-ready', '', { timeout: 60000 });
 	const summary = card.locator('.summary-presentation');
 	await expect(summary.getByRole('img', { name: 'Wurm', exact: true })).toBeVisible();
+	await expect(summary.locator('.manufacturer-logo img')).toHaveAttribute('src', `/assets/brands/wurm-logo${mode === 'dark' ? '-dark' : ''}.webp`);
 	await expect(card.locator('.spatial-summary-surface')).toHaveCSS('backdrop-filter', 'blur(5px)');
 	const liveSummary = await summary.elementHandle();
 	await summary.getByRole('spinbutton', { name: 'Quantity' }).fill('3');
@@ -121,6 +123,7 @@ if (process.env.SPATIAL_GPU) test('Industrial retains its branded summary throug
 	await info.attach('logo-frames', { body: JSON.stringify(frames), contentType: 'application/json' });
 	expect(frames.filter(frame => (frame as { opacity: number }).opacity < 0.9)).toEqual([]);
 	await expect(page.locator('.summary-presentation').filter({ visible: true }).getByRole('spinbutton', { name: 'Quantity' })).toHaveValue('3');
+	await expect(page.locator('.summary-presentation').filter({ visible: true }).locator('.manufacturer-logo img')).toHaveAttribute('src', `/assets/brands/wurm-logo${mode === 'dark' ? '-dark' : ''}.webp`);
 	await expect(page.locator('.summary-presentation').filter({ visible: true }).getByRole('link', { name: 'Visit wurm', exact: true })).toBeVisible();
 	await page.screenshot({ path: info.outputPath('industrial-after-transition.png') });
 });

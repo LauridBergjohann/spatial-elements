@@ -30,8 +30,8 @@ export function optimizedSpatialElement(product: ShowcaseProduct): SpatialElemen
 			label:
 				product.segment.id === 'industrial'
 					? `Visit ${product.manufacturer.name.toLowerCase()}`
-					: `Visit ${product.manufacturer.name} \u2014 not sold here`,
-			href: product.segment.id === 'industrial' ? product.manufacturer.href : product.sourceUrl
+					: `Visit ${product.manufacturer.name}`,
+			href: product.manufacturer.href
 		},
 		breadcrumbs: [
 			{ label: 'Showcase', href: '/showcase/' },

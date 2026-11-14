@@ -2,11 +2,21 @@
 	import { SpatialElementPage, Section } from '@spatial-elements/sveltekit';
 	import ArrowUpRight from 'lucide-svelte/icons/arrow-up-right';
 	import Play from 'lucide-svelte/icons/play';
+	import SquareArrowRightExit from 'lucide-svelte/icons/square-arrow-right-exit';
+	import ShowcaseOrder from '$lib/showcase/ShowcaseOrder.svelte';
+	import { useShowcaseOrders } from '$lib/showcase/showcaseOrders.svelte';
+	const orders = useShowcaseOrders();
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
 </script>
 
 <SpatialElementPage spatialElement={data.element}>
+	{#snippet headerDetails()}<ShowcaseOrder product={data.product} {orders} compact />{/snippet}
+	{#snippet actionIcon()}<SquareArrowRightExit
+			size={27}
+			strokeWidth={1.8}
+			aria-hidden="true"
+		/>{/snippet}
 	<Section
 		section={{
 			id: 'product',

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { ResolvedSpatialElementData as SpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 	import { catalogActionSemantic } from '@spatial-elements/core/catalog/catalogAction';
 	import ShoppingCart from 'lucide-svelte/icons/shopping-cart';
@@ -8,9 +9,11 @@
 	import type { SpatialElementSectionNavigationItem } from '@spatial-elements/core/spatial-element/types';
 
 	let {
-		spatialElement,
+		spatialElement, headerDetails, actionIcon
 	}: {
 		activeSectionId?: string;
+		headerDetails?: Snippet;
+		actionIcon?: Snippet;
 		spatialElement: SpatialElementData;
 		sections: SpatialElementSectionNavigationItem[];
 	} = $props();
@@ -51,6 +54,7 @@
 	></a>
 
 	<div class="sticky-header-layout">
+		<div class="sticky-header-content" class:has-details={!!headerDetails}>
 		<div class="sticky-header-copy">
 			{#if spatialElement.eyebrow}
 			<p
@@ -78,6 +82,8 @@
 			</p>
 		</div>
 
+		{#if headerDetails}<div class="sticky-header-details">{@render headerDetails()}</div>{/if}
+		</div>
 		{#if spatialElement.action}
 			{#if spatialElement.action.href}
 				<a
@@ -95,7 +101,7 @@
 					rel="external"
 					aria-label={spatialElement.action.ariaLabel ?? spatialElement.action.label}
 				>
-					<ShoppingCart size={29} strokeWidth={2} aria-hidden="true" />
+					{#if actionIcon}{@render actionIcon()}{:else}<ShoppingCart size={29} strokeWidth={2} aria-hidden="true" />{/if}
 				</a>
 			{:else}
 				<button
@@ -112,7 +118,7 @@
 					type="button"
 						aria-label={spatialElement.action.ariaLabel ?? spatialElement.action.label}
 				>
-					<ShoppingCart size={29} strokeWidth={2} aria-hidden="true" />
+					{#if actionIcon}{@render actionIcon()}{:else}<ShoppingCart size={29} strokeWidth={2} aria-hidden="true" />{/if}
 				</button>
 			{/if}
 		{/if}
@@ -266,7 +272,10 @@
 		z-index: 1;
 	}
 
+	.sticky-header-content { display: flex; align-items: center; gap: 16px; min-width: 0; }
+	.sticky-header-details { flex: none; }
 	.sticky-header-copy {
+		flex: 1;
 		display: grid;
 		gap: 0;
 		min-width: 0;
@@ -313,6 +322,9 @@
 	.spatial-element-sticky-header:global([data-action-active]) .sticky-header-action { visibility: visible; }
 
 	@media (width < 840px) {
+		.sticky-header-content.has-details { display: grid; gap: 2px; }
+		.has-details .sticky-header-kicker { display: none; }
+		.has-details .sticky-header-title { font-size: 14px; line-height: 18px; }
 		.sticky-header-layout {
 			gap: 8px;
 			padding-right: 8px;

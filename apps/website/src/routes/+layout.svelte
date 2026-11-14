@@ -4,6 +4,8 @@
 	import { base } from '$app/paths';
 	import { BrandStageShell } from '@spatial-elements/sveltekit';
 	import ShowcaseSummary from '$lib/showcase/ShowcaseSummary.svelte';
+	import { provideShowcaseOrders } from '$lib/showcase/showcaseOrders.svelte';
+	const orders = provideShowcaseOrders();
 	import { websiteTheme } from '$lib/theme';
 	import { Navigation, PageShell } from '@page-sections/svelte';
 	import Menu from 'lucide-svelte/icons/menu';
@@ -126,7 +128,11 @@
 		navigation={siteNavigation}
 		deviceOrientation
 	>
-		{#snippet summary(context)}<ShowcaseSummary {...context} />{/snippet}
+		{#snippet summary(context)}<ShowcaseSummary
+				{...context}
+				{orders}
+				appearance={surfaceScheme}
+			/>{/snippet}
 		<div id="main-content" tabindex="-1">{@render children()}</div>
 	</BrandStageShell>
 	<footer class="site-footer">

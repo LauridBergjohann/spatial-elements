@@ -42,10 +42,14 @@
 	interface Props {
 		/** Complete element document from this page's load function. Registers assets with the enclosing shell. */
 		spatialElement: SpatialElementData;
+		/** Optional compact controls beside the action in both scroll and 3XL pane headers. */
+		headerDetails?: Snippet;
+		/** Shared header action icon. Use the same snippet as the summary actionIcon. */
+		actionIcon?: Snippet;
 		/** Detail sections; Section components automatically populate the tab navigation. */
 		children?: Snippet;
 	}
-	let { spatialElement: element, children }: Props = $props();
+	let { spatialElement: element, children, headerDetails, actionIcon }: Props = $props();
 	const readTheme = useSpatialTheme();
 	const brand = $derived(readTheme());
 	const spatialElement = $derived.by(() => {
@@ -204,15 +208,16 @@
 		<div class="spatial-element-pane-title-row">
 			<p class="spatial-element-pane-title">{spatialElement.title}</p>
 			{#if spatialElement.eyebrow}<p class="spatial-element-pane-eyebrow">{spatialElement.eyebrow}</p>{/if}
+			{@render headerDetails?.()}
 			{#if spatialElement.action}
 				<button type="button" class="spatial-element-pane-action" onclick={invokePaneAction}
 					aria-label={spatialElement.action.ariaLabel ?? spatialElement.action.label}>
-					<ShoppingCart size={24} aria-hidden="true" />
+					{#if actionIcon}{@render actionIcon()}{:else}<ShoppingCart size={24} aria-hidden="true" />{/if}
 				</button>
 			{/if}
 		</div>
 	</div>
-	<SpatialElementStickyHeader {activeSectionId} {spatialElement} sections={navigationSections} />
+	<SpatialElementStickyHeader {headerDetails} {actionIcon} {activeSectionId} {spatialElement} sections={navigationSections} />
 	<div class="spatial-element-pane-surface" data-spatial-detail-pane-surface data-spatial-detail-fixed aria-hidden="true"></div>
 	<div class="spatial-element-pane-cover spatial-element-pane-cover-top" data-spatial-detail-fixed aria-hidden="true"></div>
 	<div class="spatial-element-pane-cover spatial-element-pane-cover-bottom" data-spatial-detail-fixed aria-hidden="true"></div>
