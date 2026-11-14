@@ -7,7 +7,8 @@ export interface SpaceMouseNavigationUpdate {
 export interface SpaceMouseAdapterOptions {
 	/** Cancel a pending library load before it starts accessing the local driver. */
 	signal?: AbortSignal;
-	viewport: HTMLElement;
+	/** Window ownership keeps navigation active when focus moves to page content. */
+	viewport: HTMLElement | Window;
 	applicationName: string;
 	getViewMatrix: () => readonly number[];
 	getFov: () => number;
@@ -29,7 +30,7 @@ export interface NavigationClient {
 
 export interface NavigationConnection {
 	connect: () => number;
-	create3dmouse: (viewport: HTMLElement, applicationName: string) => void;
+	create3dmouse: (viewport: HTMLElement | Window, applicationName: string) => void;
 	update3dcontroller: (update: Record<string, unknown>) => Promise<unknown>;
 	delete3dmouse: () => void;
 	close: () => void;

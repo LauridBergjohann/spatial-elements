@@ -835,6 +835,8 @@ export class StageExperience {
 
 	/** Page DOM is a replaceable binding, not the owner of the device or element cache. */
 	releasePage() {
+		// Window-level driver focus belongs only to the mounted detail viewer.
+		this.interaction.disconnectSpaceMouse();
 		cancelAnimationFrame(this.zoomPreparationFrame);
 		this.zoomPreparationFrame = 0;
 		this.deferredZoomPreparation = false;
@@ -2786,11 +2788,12 @@ export class StageExperience {
 		this.cssRenderer.render(this.panelContentScene, this.panelCamera);
 		this.renderFlatPanelSurfaces();
 		this.panelTargets.forEach((target, index) => {
-			if (!target.nativeContent || target.getVisible?.() === false) return;
-			target.updateNativeLayout?.();
-			// Only an actively positioned native popover needs a fresh DOM measurement.
-			// Pane summaries use the same resize/scroll-invalidated cache as other panels.
-			this.syncPanelLayout(target, index, Boolean(target.updateNativeLayout));
+			if (!target.nativeContent || !target.updateNativeLayout || target.getVisible?.() === false) return;
+			target.updateNativeLayout();
+			// Only positioned popovers need a second layout pass after their anchor's
+			// DOM projection. Static shell panels already received their focus pose;
+			// resetting their projection here detached glass from the moving content.
+			this.syncPanelLayout(target, index, true);
 			const runtime = this.panelRuntimes[index];
 			if (runtime) runtime.group.visible = this.isPanelTargetVisible(index);
 		});

@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Respect large theme radii in button-group selection surfaces and inset the minimap's 3D indicator accordingly. Give Exclusive a smoky light palette and deeper dark palette. Keep header and satellite glass aligned during zoom, and document window-scoped SpaceMouse navigation and automatic detail reveal.
+
 - Offer a visible SpaceMouse control with an explanation before requesting local-driver access. Reconnect automatically when loopback access is already granted, observe revocation, and offer retry from help. Cancel pending connections when disabled or disposed, avoiding local-device permission prompts during ordinary detail navigation. Restore keyboard focus after the help panel becomes visible. Enable device orientation for both detail geometry and minimaps on the website.
 
   Restore carousel backdrop blur by clipping overflow without creating a backdrop root. Respect the theme's full tint opacity range and solid surface setting, and keep summary fades from isolating the backdrop. Honor glass navigation surfaces on collection pages as well as details. Add browser regressions for sensor motion, permission states, the rendered frosted surface and the route-scoped Watches glass theme.

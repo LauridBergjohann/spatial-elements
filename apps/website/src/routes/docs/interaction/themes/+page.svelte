@@ -125,9 +125,10 @@
 			<p>
 				Visit <a href="/showcase/exclusive/">Exclusive</a> to compare a complete visual identity: Watches-inspired
 				glass, gold accents, 22px corners and a visible studio environment replace the website's green
-				frosted theme. Both light and dark palettes work on the collection and its detail pages. The shared
-				shell selects the theme by route while keeping its namespace ID, menu content and breadcrumb hierarchy.
-				Leaving Exclusive restores the standard theme.
+				frosted theme. Its light palette uses smoky charcoal glass; dark mode deepens the surfaces and
+				environment further. Both work on the collection and its detail pages. The shared shell selects
+				the theme by route while keeping its namespace ID, menu content and breadcrumb hierarchy. Leaving
+				Exclusive restores the standard theme.
 			</p>
 		</div></Section
 	>

@@ -45,6 +45,8 @@
 	);
 	const exclusive = $derived(/^\/showcase\/exclusive(?:\/|$)/.test(page.url.pathname));
 	const stageTheme = $derived(websiteTheme(mode, namespace, exclusive));
+	// Both Exclusive palettes have dark surfaces, including its brighter variant.
+	const surfaceScheme = $derived(exclusive ? 'dark' : mode);
 	const items = $derived(resolveNavigation(navigationTree, { pathname: page.url.pathname }).items);
 </script>
 
@@ -102,7 +104,7 @@
 	</header>
 {/snippet}
 <PageShell
-	{mode}
+	mode={surfaceScheme}
 	theme={{
 		background: stageTheme.background,
 		ink: stageTheme.colors.ink,
@@ -116,7 +118,7 @@
 >
 	<BrandStageShell
 		theme={stageTheme}
-		colorScheme={mode}
+		colorScheme={surfaceScheme}
 		navigation={siteNavigation}
 		deviceOrientation
 	>
@@ -165,6 +167,8 @@
 	}
 	.appearance {
 		display: flex;
+		border-radius: var(--spatial-element-control-radius);
+		overflow: clip;
 	}
 	.appearance button {
 		display: grid;
@@ -173,7 +177,7 @@
 		height: 40px;
 		padding: 0;
 		border: 0;
-		border-radius: 10px;
+		border-radius: 0;
 		background: transparent;
 		color: var(--ps-ink);
 		cursor: pointer;

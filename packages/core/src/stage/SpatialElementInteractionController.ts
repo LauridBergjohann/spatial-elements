@@ -216,7 +216,9 @@ export class SpatialElementInteractionController {
 
 		const adapter = await SpaceMouseAdapter.connect({
 			signal: this.spaceMouseAbort.signal,
-			viewport: this.backgroundCanvas,
+			// The SDK follows focus/blur on this target. Canvas focus hands the device
+			// back to browser scrolling as soon as another part of the page is clicked.
+			viewport: window,
 			applicationName: 'Spatial Panels SpatialElement Viewer',
 			getViewMatrix: () => {
 				this.camera.updateMatrixWorld(true);
@@ -315,8 +317,7 @@ export class SpatialElementInteractionController {
 		this.requestRender();
 	}
 	setSpaceMouseMoving(moving: boolean) {
-		if (this.disposed || !this.canInteract) return;
-		if (this.disposed) {
+		if (this.disposed || (moving && !this.canInteract)) {
 			this._spaceMouseMoving = false;
 			return;
 		}
@@ -325,6 +326,11 @@ export class SpatialElementInteractionController {
 		if (moving) this.recreateOrbitControls();
 		this._spaceMouseMoving = moving;
 		if (moving) {
+			// In the split (3XL) layout the geometry remains visible beside the text.
+			// Otherwise reveal it without moving keyboard focus or resetting its pose.
+			if (!this.ports.readGeometry().detail?.split && window.scrollY > 0) {
+				window.scrollTo({ top: 0, behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+			}
 			this.clearWheelZoom();
 			this.clearZoomReset();
 			this._viewResetActive = false;

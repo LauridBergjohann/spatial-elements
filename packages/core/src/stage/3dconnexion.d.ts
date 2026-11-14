@@ -6,7 +6,7 @@ declare module '@3dconnexion/3dconnexionjs' {
 
 	interface NavigationConnection {
 		connect(): number;
-		create3dmouse(viewport: HTMLElement, applicationName: string, options?: number): void;
+		create3dmouse(viewport: HTMLElement | Window, applicationName: string, options?: number): void;
 		update3dcontroller(update: Record<string, unknown>): Promise<unknown>;
 		delete3dmouse(): void;
 		close(): void;
@@ -15,7 +15,7 @@ declare module '@3dconnexion/3dconnexionjs' {
 	export default class ThreeDConnexion {
 		constructor(client: NavigationClient);
 		connect(): number;
-		create3dmouse(viewport: HTMLElement, applicationName: string, options?: number): void;
+		create3dmouse(viewport: HTMLElement | Window, applicationName: string, options?: number): void;
 		update3dcontroller(update: Record<string, unknown>): Promise<unknown>;
 		delete3dmouse(): void;
 		close(): void;

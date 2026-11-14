@@ -13,6 +13,7 @@ afterEach(() => {
 });
 
 test('SpaceMouse connects only on demand and disabling cancels an unfinished connection', async () => {
+	vi.stubGlobal('window', {});
 	let finish!: (adapter: SpaceMouseAdapter) => void;
 	let options!: SpaceMouseAdapterOptions;
 	const dispose = vi.fn();
@@ -24,6 +25,7 @@ test('SpaceMouse connects only on demand and disabling cancels an unfinished con
 	expect(connect).not.toHaveBeenCalled();
 	const pending = owner.initializeSpaceMouse();
 	expect(connect).toHaveBeenCalledOnce();
+	expect(options.viewport).toBe(window);
 	await owner.initializeSpaceMouse();
 	expect(connect).toHaveBeenCalledOnce();
 	owner.disconnectSpaceMouse();
@@ -31,6 +33,39 @@ test('SpaceMouse connects only on demand and disabling cancels an unfinished con
 	finish({ dispose } as unknown as SpaceMouseAdapter);
 	await pending;
 	expect(dispose).toHaveBeenCalledOnce();
+	owner.dispose();
+});
+
+test.each([false, true])('SpaceMouse reveals an offscreen model unless the detail layout is split (%s)', split => {
+	const scrollTo = vi.fn();
+	vi.stubGlobal('window', { scrollY: 800, scrollTo, matchMedia: () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) });
+	const { owner, ports, camera } = fixture();
+	const read = ports.readGeometry;
+	ports.readGeometry = () => ({ ...read(), visible: split, detail: { media: 'minimap', split, paneHidden: false, paneLeft: 500 } });
+	owner.setSpaceMouseMoving(true);
+	owner.setSpaceMouseMoving(true);
+	if (split) expect(scrollTo).not.toHaveBeenCalled();
+	else {
+		expect(scrollTo).toHaveBeenCalledOnce();
+		expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+	}
+	owner.applySpaceMouseNavigationUpdate({ viewMatrix: new THREE.Matrix4().makeTranslation(3, 0, 8).toArray() });
+	expect(camera.position.x).toBe(3);
+	owner.setSpaceMouseMoving(false);
+	expect(owner.spaceMouseMoving).toBe(false);
+	owner.dispose();
+});
+
+test('SpaceMouse reveal respects reduced motion and ignores transition-owned geometry', () => {
+	const scrollTo = vi.fn();
+	vi.stubGlobal('window', { scrollY: 800, scrollTo, matchMedia: () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }) });
+	const { owner, setOwner } = fixture();
+	setOwner('transition');
+	owner.setSpaceMouseMoving(true);
+	expect(scrollTo).not.toHaveBeenCalled();
+	setOwner('page');
+	owner.setSpaceMouseMoving(true);
+	expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
 	owner.dispose();
 });
 

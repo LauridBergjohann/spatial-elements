@@ -268,8 +268,9 @@
 	}
 	.media-indicator {
 		position: absolute;
-		bottom: 4px;
-		right: 4px;
+		/* Inset along the rounded corner's diagonal; retain a 4px safety margin. */
+		bottom: calc(4px + var(--spatial-element-control-radius) * 0.293);
+		right: calc(4px + var(--spatial-element-control-radius) * 0.293);
 		display: grid;
 		color: color-mix(in srgb, var(--spatial-element-ink) 45%, transparent);
 		opacity: var(--stage-panel-surface-opacity, 1);

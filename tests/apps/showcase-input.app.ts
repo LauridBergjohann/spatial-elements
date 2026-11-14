@@ -2,6 +2,25 @@ import { expect, test } from '@playwright/test';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
 import sharp from 'sharp';
 
+if (process.env.SPATIAL_GPU) test('SpaceMouse reveals the scrolled detail without moving a split layout', async ({ page }) => {
+	for (const width of [1700, 2600]) {
+		await page.setViewportSize({ width, height: 900 });
+		await page.goto('/showcase/consumer/logitech-z407/?stage-test=1');
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+		await page.evaluate(() => window.scrollTo({ top: 600, behavior: 'instant' }));
+		await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(500);
+		await page.waitForTimeout(600);
+		const start = await page.evaluate(() => scrollY);
+		await page.evaluate(() => window.__stageVisualTest!.driveSpaceMouseZoom(0.2, 1));
+		if (width < 2600) await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+		else {
+			await page.waitForTimeout(600);
+			expect(await page.evaluate(() => scrollY)).toBe(start);
+		}
+		await page.evaluate(() => window.__stageVisualTest!.stopSpaceMouse());
+	}
+});
+
 if (process.env.SPATIAL_GPU)
 	test('detail tilt updates the main model and minimap after direct and grid entry', async ({
 		page

@@ -106,6 +106,7 @@
 		width: max-content;
 		height: 40px;
 		border-radius: var(--control-radius);
+		overflow: clip;
 	}
 	button {
 		box-sizing: border-box;
@@ -131,7 +132,7 @@
 		width: 40px;
 		padding: 0;
 	}
-	button { border-radius: max(0px, calc(var(--control-radius) - 2px)); }
+	button { border-radius: 0; }
 	.button-group:global([data-mouse-hover]) button:enabled:hover {
 		background: color-mix(in srgb, var(--spatial-element-body, currentColor) 8%, transparent);
 	}

@@ -192,6 +192,13 @@
 				<code>retrySpaceMouse</code>, <code>spaceMousePermission</code> and
 				<code>spaceMouseDenied</code> in <code>interactionHelp</code>.
 			</p>
+			<p>
+				While the detail viewer is open, SpaceMouse navigation follows the active browser window,
+				not keyboard focus on the model. Using it after scrolling reveals the model with a smooth
+				scroll to the top (instant with reduced motion). The 3XL split layout keeps its scroll
+				position because the model remains visible beside the content. Leaving the detail viewer
+				releases the driver connection.
+			</p>
 		</div></Section
 	>
 	<Section
