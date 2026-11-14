@@ -480,13 +480,16 @@ export function inverseAcesToneMapping(target: Node<'vec3'>) {
 	);
 	const fittedTarget = tslMax(inverse(outputMatrix).mul(target), 0) as Node<'vec3'>;
 	const a = float(1).sub(fittedTarget.mul(0.983729));
-	const b = float(0.0245786).sub(fittedTarget.mul(0.432951));
+	const b = float(0.0245786).sub(fittedTarget.mul(0.983729 * 0.432951));
 	const c = float(-0.000090537).sub(fittedTarget.mul(0.238081));
 	const discriminant = tslMax(b.mul(b).sub(a.mul(c).mul(4)), 0);
 	const fittedInput = b.negate().add(sqrt(discriminant)).div(a.mul(2)) as Node<'vec3'>;
 	const transformedInput = inverse(inputMatrix).mul(fittedInput) as Node<'vec3'>;
 
-	return tslMax(transformedInput.mul(0.6 / STAGE_TONE_MAPPING_EXPOSURE), 0) as Node<'vec3'>;
+	// Saturated UI colors can require a negative scene-linear channel before
+	// ACES. Clamping it here changes the hue (notably blue -> lavender). The
+	// output transform clamps only after reversing the matrix/curve, as intended.
+	return transformedInput.mul(0.6 / STAGE_TONE_MAPPING_EXPOSURE) as Node<'vec3'>;
 }
 
 function getDepthColor(tint: ColorRepresentation) {

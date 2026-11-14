@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Preserve optional summary content such as manufacturer logos and price fields throughout carousel/detail transitions. Correct ACES color compensation so geometry outlines and minimap borders retain their authored theme colors, including saturated accents.
+
 - Keep enabled SpaceMouse navigation attached to the active browser window. Reveal offscreen detail geometry with an animated scroll to the top, preserving the 3XL split layout's scroll position. Release driver focus when leaving the detail viewer. Keep navigation glass and satellite surfaces aligned with their content throughout zoom.
 
 - Offer a visible SpaceMouse control with an explanation before requesting local-driver access. Reconnect automatically when loopback access is already granted, observe revocation, and offer retry from help. Cancel pending connections when disabled or disposed, avoiding local-device permission prompts during ordinary detail navigation. Restore keyboard focus after the help panel becomes visible. Enable device orientation for both detail geometry and minimaps on the website.

@@ -260,7 +260,7 @@
 		position: absolute;
 		inset: 0;
 		border-radius: inherit;
-		box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--spatial-element-accent) 96%, transparent);
+		box-shadow: inset 0 0 0 3px var(--spatial-element-accent);
 		pointer-events: none;
 	}
 	:global(.stage-enhanced[data-stage-page-ready]) .thumb-minimap.active::after {

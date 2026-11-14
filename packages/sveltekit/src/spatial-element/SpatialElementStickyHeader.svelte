@@ -300,8 +300,8 @@
 		visibility: hidden;
 		display: grid;
 		place-items: center;
-		width: 40px;
-		height: 40px;
+		width: 54px;
+		height: 54px;
 		padding: 0;
 		border: 0;
 		border-radius: var(--spatial-element-control-radius);

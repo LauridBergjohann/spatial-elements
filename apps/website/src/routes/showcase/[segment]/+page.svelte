@@ -23,7 +23,7 @@
 			id: 'page-heading',
 			title: data.segment.title,
 			headingLevel: 1,
-			introduction: data.segment.description
+			introduction: data.segment.id === 'industrial' ? undefined : data.segment.description
 		}}
 	/>
 	{#if data.segment.id !== 'exclusive'}
@@ -31,7 +31,7 @@
 			section={{
 				id: data.segment.id === 'industrial' ? 'example-products' : 'new-products',
 				title: data.segment.id === 'industrial' ? 'Example Products' : 'New products',
-				headline: data.segment.id === 'industrial' ? 'Example Products' : 'New products',
+				headline: data.segment.id === 'industrial' ? undefined : 'New products',
 				background: { color: 'transparent', size: 'full' }
 			}}
 			list={data.highlights}
@@ -43,7 +43,7 @@
 				section={{
 					id: brand.id + '-introduction',
 					title: brand.name,
-					headline: brand.name,
+					headline: brand.headline,
 					imageSide: 'right',
 					description: brand.description,
 					image: {
@@ -63,8 +63,7 @@
 			<SpatialCardGridSection
 				section={{
 					id: brand.id + '-products',
-					title: brand.name + ' products',
-					headline: brand.name + ' products'
+					title: brand.name + ' products'
 				}}
 				list={brand.items}
 				cardSize="m"

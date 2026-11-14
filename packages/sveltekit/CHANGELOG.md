@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Keep `leading` and new `beforeAction` summary snippets visible throughout carousel/detail transitions, with live form state retained. Use 54px primary actions and 54px square scroll-header actions. Refine the Industrial showcase with transparent logos, unified teal-blue accents and illustrative price/quantity controls.
+
 - Export `SpatialElementSummaryContent` with optional `leading` and `actionIcon` snippets for branded content without duplicating shared transition endpoints. Respect the control radius in summary actions. Expand Industrial with eight optimized Wurm products, blue frosted themes, manufacturer introductions and branded item/Wurm summaries.
 
 - Respect large theme radii in button-group selection surfaces and inset the minimap's 3D indicator accordingly. Give Exclusive a smoky light palette and deeper dark palette. Keep header and satellite glass aligned during zoom, and document window-scoped SpaceMouse navigation and automatic detail reveal.

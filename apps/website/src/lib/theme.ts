@@ -41,12 +41,12 @@ export function websiteTheme(
 	});
 }
 
-/** Blue palette from the Wurm example, with compact frosted surfaces. */
+/** One teal-blue accent in both modes, with compact frosted surfaces. */
 function industrialTheme(mode: 'light' | 'dark', namespace: string) {
 	const dark = mode === 'dark';
 	const background = dark ? '#131a22' : '#eef1f3';
 	const standard = dark ? '#1b2734' : '#ffffff';
-	const accent = dark ? '#91b8ff' : '#4569b1';
+	const accent = '#135a77';
 	return createSpatialTheme({
 		id: namespace,
 		name: 'Industrial',
@@ -55,7 +55,7 @@ function industrialTheme(mode: 'light' | 'dark', namespace: string) {
 		radii: { panel: 8, control: 4 },
 		panelShape: { radius: 8, contentInset: 30 },
 		minimapTheme: { viewportColor: accent },
-		interactionTheme: { outlineColor: accent, outlineOpacity: 0.96, outlineThickness: 3 },
+		interactionTheme: { outlineColor: accent, outlineOpacity: 1, outlineThickness: 3 },
 		panelTheme: {
 			surface: 'frosted',
 			tint: standard,
@@ -75,7 +75,7 @@ function industrialTheme(mode: 'light' | 'dark', namespace: string) {
 			ink: dark ? '#f1f5fa' : '#141414',
 			body: dark ? '#cbd5e1' : '#111827',
 			accent,
-			onAccent: dark ? '#131a22' : '#ffffff',
+			onAccent: '#ffffff',
 			tabBackground: dark ? '#2c3a4b' : '#e1e5e8'
 		}
 	});

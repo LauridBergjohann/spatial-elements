@@ -511,8 +511,8 @@ export class StageRenderPipeline {
 			depthWrite: false,
 			transparent: true
 		});
-		material.colorNode = inverseAcesToneMapping(this.outlineColor.rgb);
-		material.opacityNode = this.createOutlineOpacity(texture(maskTexture));
+		material.fragmentNode = vec4(inverseAcesToneMapping(this.outlineColor.rgb),
+			this.createOutlineOpacity(texture(maskTexture)));
 		material.toneMapped = false;
 		return material;
 	}

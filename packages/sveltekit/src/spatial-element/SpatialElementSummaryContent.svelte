@@ -5,19 +5,24 @@
  import type { SpatialElementFeature, SpatialElementAction } from '@spatial-elements/core/spatial-element/types';
  import ShoppingCart from 'lucide-svelte/icons/shopping-cart';
  import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
- let { spatialElement, address, contentInset, heading = 'h3', leading, actionIcon, element = $bindable() }: {
+ let { spatialElement, address, contentInset, heading = 'h3', leading, beforeAction, actionIcon, element = $bindable() }: {
   spatialElement: { id: string; eyebrow: string; title: string; features: SpatialElementFeature[]; action?: SpatialElementAction };
   address: (role: CatalogEndpointRole) => CatalogEndpointAddress | undefined;
   contentInset: number;
   heading?: 'h1' | 'h3';
   leading?: Snippet;
+  /** Optional content above the CTA, for example a price and quantity field. */
+  beforeAction?: Snippet;
   actionIcon?: Snippet;
   element?: HTMLDivElement;
  } = $props();
  const catalogEndpoint = createCatalogEndpointAction();
 </script>
 		<div bind:this={element} class="summary-presentation">
-			{@render leading?.()}
+			{#if leading}<div use:catalogEndpoint={address('leading')}
+				data-catalog-rich-shared="leading" data-catalog-semantic={spatialElement.id}>
+				{@render leading()}
+			</div>{/if}
 			<div class="panel-copy">
 				{#if spatialElement.eyebrow}
 				<p
@@ -57,6 +62,10 @@
 				{/each}
 			</ul>{/if}
 
+			{#if beforeAction}<div use:catalogEndpoint={address('action-details')}
+				data-catalog-rich-shared="action-details" data-catalog-semantic={spatialElement.id}>
+				{@render beforeAction()}
+			</div>{/if}
 			{#if spatialElement.action}
 				{#if spatialElement.action.href}
 					<a
@@ -152,7 +161,7 @@
 		display: block;
 		box-sizing: border-box;
 		width: 100%;
-		min-height: 62px;
+		min-height: 54px;
 		border: 0;
 		padding: 0;
 		color: inherit;
@@ -168,7 +177,7 @@
 		gap: 10px;
 		box-sizing: border-box;
 		width: 100%;
-		min-height: 62px;
+		min-height: 54px;
 		border-radius: var(--spatial-element-control-radius, 7px);
 		color: var(--spatial-element-on-accent);
 		background: var(--spatial-element-accent);

@@ -3,6 +3,7 @@ export const industrialBrands = [
 	{
 		id: 'item',
 		name: 'item',
+		headline: 'item - Industrial Modular System',
 		href: 'https://www.item24.com/',
 		image: '/assets/brands/item-picture.webp',
 		width: 1440,
@@ -14,6 +15,7 @@ export const industrialBrands = [
 	{
 		id: 'wurm',
 		name: 'Wurm',
+		headline: 'wurm - refrigeration control systems',
 		href: 'https://www.wurm.de/',
 		image: '/assets/brands/wurm-picture.webp',
 		width: 1440,
@@ -27,6 +29,6 @@ export const industrialBrands = [
 export const industrialHighlights = [
 	'wurm-asv101',
 	'item-profile',
-	'wurm-hks-g4',
-	'item-connector'
+	'wurm-fkl003',
+	'item-impact-protector'
 ];

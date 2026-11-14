@@ -276,7 +276,7 @@ export class StageExperience {
 		capture: SpatialGeometryCapture;
 		minimap: StageMinimapState;
 		opacity: number;
-		ring: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+		ring: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicNodeMaterial>;
 		ringOpacity: number;
 	}[] = [];
 	private adoptedForward = false;

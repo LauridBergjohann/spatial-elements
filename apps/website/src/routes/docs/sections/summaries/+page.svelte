@@ -64,11 +64,14 @@
 			</p>
 			<p>
 				For a smaller adjustment, render <code>SpatialElementSummaryContent</code> with the context
-				props and supply its optional <code>leading</code> and <code>actionIcon</code> snippets. The
-				built-in title, features and action retain their transition endpoints. The
+				props and supply its optional <code>leading</code>, <code>beforeAction</code> and
+				<code>actionIcon</code> snippets. The leading content and action details participate in the
+				transition alongside the built-in title, features and action. The
 				<a href="/showcase/industrial/">Industrial showcase</a> uses this approach for item and Wurm logos
-				and an external-link action icon. The same renderer serves carousel and detail panels; their blue
-				frosted surfaces and corner radii come from the route theme.
+				and an external-link action icon, with an illustrative price and quantity field above the CTA.
+				The quantity stays with the live component when moving from carousel to detail. The same renderer
+				serves carousel and detail panels; their frosted surfaces, blue accents and corner radii come
+				from the route theme.
 			</p>
 
 			<CodeBlock
