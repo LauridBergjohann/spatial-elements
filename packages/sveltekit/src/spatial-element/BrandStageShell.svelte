@@ -16,7 +16,7 @@
 	import type { SpatialTheme } from '@spatial-elements/core/spatial-element/types';
 
 	interface Props {
-		/** Enable automatic sensor access / permission on internal navigation for opted-in lists. */
+		/** Enable sensor motion on detail geometry and minimaps. Lists opt in independently. */
 		deviceOrientation?: boolean;
 		/** Shared appearance and namespace. Use createSpatialTheme for defaults. */
 		theme: SpatialTheme;

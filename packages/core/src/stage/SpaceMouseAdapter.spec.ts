@@ -41,6 +41,20 @@ describe('SpaceMouseUpdateBuffer', () => {
 });
 
 describe('SpaceMouseAdapter', () => {
+	it('never contacts the local driver when consent is withdrawn during library loading', async () => {
+		const signal = new AbortController();
+		const construct = vi.fn();
+		const adapter = await SpaceMouseAdapter.connect({
+			signal: signal.signal, viewport: {} as HTMLElement, applicationName: 'test',
+			getViewMatrix: () => [], getFov: () => 1, getViewFrustum: () => [],
+			getViewTarget: () => [], getModelExtents: () => [], applyNavigationUpdate: vi.fn()
+		}, async () => {
+			signal.abort();
+			return { default: class { constructor() { construct(); } } as unknown as new (client: NavigationClient) => NavigationConnection };
+		});
+		expect(construct).not.toHaveBeenCalled();
+		adapter.dispose();
+	});
 	it('keeps the navigation pivot separate from the OrbitControls view target', async () => {
 		let client: NavigationClient | undefined;
 		const applyNavigationUpdate = vi.fn();

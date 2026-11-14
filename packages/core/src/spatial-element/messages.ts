@@ -16,6 +16,9 @@ export interface SpatialMessages {
 		mousePan: string;
 		/** Plain text; {spacemouse} inserts the external SpaceMouse link. */
 		mouseNavigationHint: string;
+		enableSpaceMouse: string;
+		disableSpaceMouse: string;
+		spaceMousePermission: string;
 		touchRotate: string;
 		touchZoom: string;
 		touchPan: string;
@@ -40,6 +43,9 @@ export const defaultSpatialMessages: Readonly<{
 		mouseZoom: 'Use the scroll wheel',
 		mousePan: 'Drag with the right mouse button',
 		mouseNavigationHint: 'Alternatively, use a {spacemouse} to navigate.',
+		enableSpaceMouse: 'Enable SpaceMouse',
+		disableSpaceMouse: 'Disable SpaceMouse',
+		spaceMousePermission: 'Connect to the local 3Dconnexion driver. Your browser may ask for access to apps on this device.',
 		touchRotate: 'Drag with one finger',
 		touchZoom: 'Pinch with two fingers',
 		touchPan: 'Drag with two fingers',

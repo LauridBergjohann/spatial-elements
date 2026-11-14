@@ -27,14 +27,21 @@ for (const [size, material] of [
 		await page.evaluate(() => window.__stageVisualTest!.settle(60));
 		await waitForCatalogIdle(page, info);
 		const surface = page.locator('#layout-carousel > .ps-section-surface');
-		const bounds = (await surface.boundingBox())!;
+		// Page Sections bleeds full backgrounds beyond the viewport to cover
+		// asymmetric content columns. Compare their visible canvas intersection.
+		const intersectViewport = (rect: { x: number; y: number; width: number; height: number }) => ({
+			x: Math.max(0, rect.x), y: rect.y,
+			width: Math.min(1800, rect.x + rect.width) - Math.max(0, rect.x), height: rect.height
+		});
+		const bounds = intersectViewport((await surface.boundingBox())!);
 		const stats = await page.evaluate(() => window.__stageVisualTest!.getCarouselStats()!);
 		expect(stats.actors.some((actor) => actor.band === 'rear' && actor.opacity > 0)).toBe(true);
 		for (const actor of stats.actors) {
-			expect(actor.clip!.left).toBeCloseTo(bounds.x, 0);
-			expect(actor.clip!.top).toBeCloseTo(bounds.y, 0);
-			expect(actor.clip!.width).toBeCloseTo(bounds.width, 0);
-			expect(actor.clip!.height).toBeCloseTo(bounds.height, 0);
+			const clip = intersectViewport({ x: actor.clip!.left, y: actor.clip!.top, width: actor.clip!.width, height: actor.clip!.height });
+			expect(clip.x).toBeCloseTo(bounds.x, 0);
+			expect(clip.y).toBeCloseTo(bounds.y, 0);
+			expect(clip.width).toBeCloseTo(bounds.width, 0);
+			expect(clip.height).toBeCloseTo(bounds.height, 0);
 		}
 		if (size === 'standard') expect(bounds.width).toBeLessThan(1800);
 		else expect(bounds.width).toBeCloseTo(1800, 0);

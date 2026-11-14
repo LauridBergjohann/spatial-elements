@@ -113,7 +113,12 @@
 		radius: '12px'
 	}}
 >
-	<BrandStageShell theme={stageTheme} colorScheme={mode} navigation={siteNavigation}>
+	<BrandStageShell
+		theme={stageTheme}
+		colorScheme={mode}
+		navigation={siteNavigation}
+		deviceOrientation
+	>
 		<div id="main-content" tabindex="-1">{@render children()}</div>
 	</BrandStageShell>
 	<footer class="site-footer">

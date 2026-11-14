@@ -19,6 +19,7 @@
 	const radii = $derived(resolveSpatialThemeRadii(theme));
 	const stageContext = getContext<StageContext>(STAGE_CONTEXT_KEY);
 	const fullscreen = $derived(stageContext.isFullscreen?.() ?? false);
+	const spaceMouseEnabled = $derived(stageContext.isSpaceMouseEnabled?.() ?? false);
 	const readMessages = useSpatialMessages();
 	const messages = $derived(readMessages());
 	const help = $derived(messages.interactionHelp);
@@ -94,7 +95,12 @@
 		await tick();
 		if (!open || !enhanced) return;
 		requestPosition();
-		if (keyboard) closeButton.focus({ preventScroll: true });
+		if (keyboard) {
+			// The stage restores the native panel's visibility on its next layout frame.
+			// Focusing immediately after Svelte's tick still targets a hidden button.
+			await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+			if (open && enhanced) closeButton.focus({ preventScroll: true });
+		}
 	}
 	function toggleHelp(event: MouseEvent) {
 		if (open) close();
@@ -245,6 +251,13 @@
 						{#each help.mouseNavigationHint.split('{spacemouse}') as part, index}{#if index > 0}<a href="https://3dconnexion.com/" target="_blank" rel="noopener noreferrer">SpaceMouse</a>{/if}{part}{/each}
 					{/if}
 				</p>
+				{#if !touchInput && stageContext.setSpaceMouseEnabled}
+					<button type="button" class="spacemouse-toggle" aria-pressed={spaceMouseEnabled}
+						onclick={() => stageContext.setSpaceMouseEnabled?.(!spaceMouseEnabled)}>
+						{spaceMouseEnabled ? help.disableSpaceMouse : help.enableSpaceMouse}
+					</button>
+					<p class="spacemouse-permission">{help.spaceMousePermission}</p>
+				{/if}
 			</div>
 		</Panel>
 	</div>
@@ -289,4 +302,7 @@
 	.navigation-hint { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid currentColor; font-size: 12px; }
 	.navigation-hint a { color: var(--spatial-element-accent); text-decoration: underline; text-underline-offset: 2px; }
 	.navigation-hint a:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: 3px; border-radius: 2px; }
+	.spacemouse-toggle { margin-top: 12px; padding: 8px 12px; border: 1px solid currentColor; border-radius: var(--spatial-element-control-radius); font: inherit; color: var(--spatial-element-accent); background: transparent; cursor: pointer; }
+	.spacemouse-toggle:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: 3px; }
+	.spacemouse-permission { margin: 8px 0 0; font-size: 12px; color: var(--spatial-element-body); }
 </style>

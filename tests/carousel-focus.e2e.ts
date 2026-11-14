@@ -26,7 +26,9 @@ for (const surface of ['frosted', 'glass']) test(`carousel ${surface}: dots foll
 	await page.mouse.move(x - 150, y, { steps: 12 });
 	await expect(controls.nth(1)).toHaveAttribute('aria-pressed', 'true');
 	await expect(controls.first()).toHaveAttribute('aria-pressed', 'false');
-	const panel = item.locator('.summary');
+	// Blur the visible copy while leaving its backdrop ancestor unfiltered.
+	await expect(item.locator('.summary')).toHaveCSS('filter', 'none');
+	const panel = item.locator('.spatial-summary-query');
 	expect(await panel.evaluate(el => parseFloat(getComputedStyle(el).filter.replace('blur(', '')))).toBeGreaterThan(3);
 	await page.screenshot({ path: info.outputPath('carousel-drag-focus.png') });
 	await page.mouse.move(x, y, { steps: 12 });
@@ -48,7 +50,7 @@ for (const surface of ['frosted', 'glass']) test(`carousel ${surface}: dots foll
 	});
 	await controls.last().click();
 	await expect(controls.last()).toHaveAttribute('aria-pressed', 'true');
-	await expect(carousel.locator('[data-carousel-item]').last().locator('.summary')).toHaveCSS('filter', 'none');
+	await expect(carousel.locator('[data-carousel-item]').last().locator('.spatial-summary-query')).toHaveCSS('filter', 'none');
 	expect(await page.evaluate(() => (window as any).carouselPhases.some((value: number) => value > 0 && value < 4))).toBe(true);
 	const stats = await page.evaluate(() => window.__stageVisualTest!.getCarouselStats()!);
 	expect(stats.depthBlur.targets).toBe(3);

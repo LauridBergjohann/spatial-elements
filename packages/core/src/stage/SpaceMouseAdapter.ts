@@ -5,6 +5,8 @@ export interface SpaceMouseNavigationUpdate {
 }
 
 export interface SpaceMouseAdapterOptions {
+	/** Cancel a pending library load before it starts accessing the local driver. */
+	signal?: AbortSignal;
 	viewport: HTMLElement;
 	applicationName: string;
 	getViewMatrix: () => readonly number[];
@@ -115,7 +117,7 @@ export class SpaceMouseAdapter {
 
 		try {
 			const module = await loadLibrary();
-			if (adapter.disposed) return adapter;
+			if (adapter.disposed || options.signal?.aborted) return adapter;
 
 			adapter.connection = new module.default(adapter.client);
 			if (!adapter.connection.connect()) adapter.connection = undefined;

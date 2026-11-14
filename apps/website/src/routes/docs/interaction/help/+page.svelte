@@ -176,6 +176,14 @@
 				the placeholder displays your text without a link. No translated HTML or configurable URL is
 				needed. The touch scroll hint remains unchanged.
 			</p>
+			<p>
+				SpaceMouse access is off by default. Choose <strong>Enable SpaceMouse</strong> in the 3D
+				controls help to connect to the local 3Dconnexion driver. Chrome may then ask for access to
+				apps and services on the device. Opening a detail page never connects on its own. The choice
+				lasts for this mounted stage and can be disabled in the same dialog. Localize
+				<code>enableSpaceMouse</code>, <code>disableSpaceMouse</code> and
+				<code>spaceMousePermission</code> in <code>interactionHelp</code>.
+			</p>
 		</div></Section
 	>
 	<Section

@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import * as THREE from 'three/webgpu';
 import { getInteractionGuidance } from './interactionGuidance.js';
+import { SpaceMouseAdapter, type SpaceMouseAdapterOptions } from './SpaceMouseAdapter.js';
 import {
 	SpatialElementInteractionController,
 	type SpatialElementInteractionPorts
@@ -9,6 +10,28 @@ import {
 afterEach(() => {
 	vi.unstubAllGlobals();
 	vi.restoreAllMocks();
+});
+
+test('SpaceMouse connects only on demand and disabling cancels an unfinished connection', async () => {
+	let finish!: (adapter: SpaceMouseAdapter) => void;
+	let options!: SpaceMouseAdapterOptions;
+	const dispose = vi.fn();
+	const connect = vi.spyOn(SpaceMouseAdapter, 'connect').mockImplementation(value => {
+		options = value;
+		return new Promise(resolve => { finish = resolve; });
+	});
+	const { owner } = fixture();
+	expect(connect).not.toHaveBeenCalled();
+	const pending = owner.initializeSpaceMouse();
+	expect(connect).toHaveBeenCalledOnce();
+	await owner.initializeSpaceMouse();
+	expect(connect).toHaveBeenCalledOnce();
+	owner.disconnectSpaceMouse();
+	expect(options.signal?.aborted).toBe(true);
+	finish({ dispose } as unknown as SpaceMouseAdapter);
+	await pending;
+	expect(dispose).toHaveBeenCalledOnce();
+	owner.dispose();
 });
 
 test('boolean picking stops after the first exact hit and retains miss behavior', () => {

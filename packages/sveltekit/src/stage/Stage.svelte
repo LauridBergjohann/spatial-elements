@@ -159,6 +159,7 @@
 	let domLayerHidden = $state(false);
 	let domLayerOpacity = $state(1);
 	let experience = $state<StageExperience | null>(null);
+	let spaceMouseEnabled = $state(false);
 	let layoutMetrics: ResponsiveViewportMetrics | undefined;
 	let presentationHost: SpatialSummaryHostController | undefined;
 	setContext<SpatialPresentationOwner>(SPATIAL_PRESENTATION_OWNER, {
@@ -219,6 +220,11 @@
 		},
 		getLayoutMetrics: (mode) => layoutMetrics?.read(mode),
 		isEnhanced: () => isEnhanced,
+		isSpaceMouseEnabled: () => spaceMouseEnabled,
+		setSpaceMouseEnabled(enabled) {
+			spaceMouseEnabled = enabled;
+			experience?.setSpaceMouseEnabled(enabled);
+		},
 		updatePanelAppearance: scheduleAppearanceUpdate,
 		prefetchSpatialElement: (config) => experience?.prefetchSpatialElement(config),
 		registerPanel(panel) {
@@ -333,7 +339,7 @@
 				interactionTheme,
 				panels,
 				viewport,
-				enableSpaceMouse: !isStageVisualTestMode(),
+				enableSpaceMouse: spaceMouseEnabled,
 				onDeviceLost: () => {
 					if (disposed || experience !== instance) return;
 					fullscreenController?.setFullscreen(false);

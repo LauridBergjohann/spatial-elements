@@ -104,8 +104,7 @@ export class SpatialElementInteractionController {
 		this.reducedMotion?.removeEventListener('change', this.motionPreferenceChanged);
 		this._controls?.removeEventListener('change', this._controlsChange);
 		this._controls?.dispose();
-		this._spaceMouse?.dispose();
-		this._spaceMouse = undefined;
+		this.disconnectSpaceMouse();
 	}
 	captureInitialView() {
 		if (!this._controls) return;
@@ -145,6 +144,8 @@ export class SpatialElementInteractionController {
 	private _controls?: OrbitControls;
 	private _spaceMouse?: SpaceMouseAdapter;
 	private _spaceMouseConnecting = false;
+	private spaceMouseGeneration = 0;
+	private spaceMouseAbort?: AbortController;
 	private _spaceMouseMoving = false;
 	private _modelHover = false;
 	private _modelInteractionActive = false;
@@ -210,8 +211,11 @@ export class SpatialElementInteractionController {
 		)
 			return;
 		this._spaceMouseConnecting = true;
+		const generation = ++this.spaceMouseGeneration;
+		this.spaceMouseAbort = new AbortController();
 
 		const adapter = await SpaceMouseAdapter.connect({
+			signal: this.spaceMouseAbort.signal,
 			viewport: this.backgroundCanvas,
 			applicationName: 'Spatial Panels SpatialElement Viewer',
 			getViewMatrix: () => {
@@ -232,14 +236,21 @@ export class SpatialElementInteractionController {
 			applyNavigationUpdate: (update) => this.applySpaceMouseNavigationUpdate(update),
 			onMotionChange: (moving) => this.setSpaceMouseMoving(moving)
 		});
-		this._spaceMouseConnecting = false;
-
-		if (this.disposed) {
+		if (this.disposed || generation !== this.spaceMouseGeneration) {
 			adapter.dispose();
 			return;
 		}
-
+		this._spaceMouseConnecting = false;
 		this._spaceMouse = adapter;
+	}
+	disconnectSpaceMouse() {
+		this.spaceMouseGeneration++;
+		this.spaceMouseAbort?.abort();
+		this.spaceMouseAbort = undefined;
+		this._spaceMouseConnecting = false;
+		this._spaceMouse?.dispose();
+		this._spaceMouse = undefined;
+		this.setSpaceMouseMoving(false);
 	}
 	getSpaceMouseViewFrustum() {
 		this.updateStageCameraProjection();

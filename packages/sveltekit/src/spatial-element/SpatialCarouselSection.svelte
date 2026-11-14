@@ -587,10 +587,12 @@
 	/* Clip projected DOM hit regions to the same surface as the GPU models. */
 	:global(.carousel-drag-section) {
 		position: relative;
-		clip-path: inset(0);
+		/* clip-path creates a Backdrop Root and prevents frosted panels from
+		   sampling the stage canvas. Overflow clipping preserves that backdrop. */
+		overflow: clip;
 	}
 	:global(.carousel-drag-section[data-section-background-size='full']) {
-		clip-path: inset(0 calc(50% - 50vw));
+		overflow-x: visible;
 	}
 	:global(.carousel-drag-section:has(.interactive)) {
 		touch-action: pan-y pinch-zoom;

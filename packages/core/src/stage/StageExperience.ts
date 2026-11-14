@@ -190,7 +190,7 @@ export class StageExperience {
 	private readonly panels: PanelPresentationController;
 	private readonly minimapController: MinimapController;
 	private readonly interaction: SpatialElementInteractionController;
-	private readonly spaceMouseEnabled: boolean;
+	private spaceMouseEnabled: boolean;
 	private fallbackPanelOptions: LiquidGlassPanelOptions[];
 	private readonly catalog: boolean;
 	private catalogLayer?: CatalogSpatialElementLayer;
@@ -621,7 +621,7 @@ export class StageExperience {
 		this.excludedMeshNames = new Set(this.modelSettings.excludeMeshes ?? []);
 		this.interactionTheme = { ...DEFAULT_INTERACTION_THEME, ...options.interactionTheme };
 		this.pageBinding.attach(options.panels, options.viewport);
-		this.spaceMouseEnabled = options.enableSpaceMouse ?? true;
+		this.spaceMouseEnabled = options.enableSpaceMouse ?? false;
 		this.fallbackPanelOptions = this.panelTargets.length
 			? this.panelTargets
 					.filter(
@@ -2545,6 +2545,14 @@ export class StageExperience {
 			this.camera.getWorldQuaternion(this.initialCameraWorldQuaternion);
 			this.model.getWorldQuaternion(this.initialModelWorldQuaternion);
 		}
+	}
+
+	/** Connect only after the host or visitor explicitly enables the local driver. */
+	setSpaceMouseEnabled(enabled: boolean) {
+		if (this.disposed || this.spaceMouseEnabled === enabled) return;
+		this.spaceMouseEnabled = enabled;
+		if (enabled) void this.initializeSpaceMouse();
+		else this.interaction.disconnectSpaceMouse();
 	}
 
 	private initializeSpaceMouse() {
