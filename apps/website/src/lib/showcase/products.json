@@ -180,6 +180,7 @@
 	{
 		"id": "item-end-cap",
 		"manufacturer": "item",
+		"productNumber": "0.0.026.01",
 		"title": "Profile End Cap",
 		"description": "An end-cap example from the supplied item collection. Its compact form complements the profile and connector examples, showing how small components can be presented alongside larger assemblies.",
 		"features": ["End-cap example", "Compact component form", "Detail and underside views"],
@@ -197,6 +198,7 @@
 	{
 		"id": "item-robot",
 		"manufacturer": "item",
+		"productNumber": "Al13",
 		"title": "Robot Assembly",
 		"description": "The supplied Robby model turns geometric components into a playful robot figure. Explore its head, arms, torso and legs from different angles. It is a visual assembly study rather than an orderable industrial robot configuration.",
 		"features": [

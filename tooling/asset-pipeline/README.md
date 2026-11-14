@@ -106,9 +106,8 @@ geometry report, so running the main optimizer does not discard these imports.
 The poster renderer uses the website camera and shared studio lighting. Runtime
 and production builds use only committed assets and do not need those directories.
 
-Product numbers are editorial data in `products.json`. The supplied item end cap
-has no verified article number and the robot is a model study; they are labelled
-accordingly rather than assigning invented order numbers.
+Product numbers are editorial data in `products.json`. The author supplied
+`0.0.026.01` for the item end cap and `Al13` for the robot assembly.
 
 Build the core first, then render the actual optimized geometry with the same
 framing, detail camera pose, material overrides, HDR and lighting as the website:

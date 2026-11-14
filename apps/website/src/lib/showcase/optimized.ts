@@ -20,13 +20,7 @@ export function optimizedSpatialElement(product: ShowcaseProduct): SpatialElemen
 		brandId: 'showcase',
 		title: product.title,
 		pageTitle: product.title + ' | Spatial Elements',
-		eyebrow:
-			product.productNumber ??
-			(product.id === 'item-robot'
-				? 'Assembly study'
-				: product.id === 'item-end-cap'
-					? 'Sample component'
-					: product.manufacturer.name + ' \u00b7 Demonstration'),
+		eyebrow: product.productNumber ?? product.manufacturer.name + ' \u00b7 Demonstration',
 		features: product.features.map((label) => ({ label, marker: '•' })),
 		hdr: showcaseHdr,
 		geometry: geometryFromLodPair(asset.pair as unknown as SpatialElementLodPair),
