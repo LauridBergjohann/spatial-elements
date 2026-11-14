@@ -128,7 +128,11 @@ node tooling/asset-pipeline/render-showcase.mjs --only=joker,tool-check-plus --c
 Set `SHOWCASE_SOURCE_ROOT` for comparisons against a source library elsewhere.
 Comparison sheets and pixel/silhouette measurements go to `.artifacts/showcase/`.
 `showcase-poster-report.json` records each committed poster's hashes, camera pose
-and shared frame; tests catch stale posters after model or presentation changes.
+and shared frame; tests catch stale posters after model or detail-camera changes.
+After editing either in `presentation.json`, regenerate only the affected products,
+for example `npm run assets:showcase:render -- --only=item-profile,item-end-cap`,
+and commit the WebP files together with the updated poster report. Minimap poses
+and hover scales affect only the interactive view and do not require new posters.
 Inspect these visually: silhouette overlap alone cannot verify texture quality,
 small lettering, reflections or internal detail. Posters are committed website
 assets, so neither production builds nor no-JavaScript visitors need the renderer

@@ -286,73 +286,25 @@
     },
     "pose": {
       "camera": {
-        "azimuth": 30,
-        "elevation": 20,
+        "azimuth": 20,
+        "elevation": 40,
         "fitScale": 1.15
+      },
+      "minimap": {
+        "hoverModelScale": 1.3,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.4,
+          "azimuth": 10,
+          "elevation": 45
+        }
       }
     },
     "width": 1024,
     "height": 1024,
-    "posterBytes": 14186,
-    "sha256": "610ed046d1db3c4030ef7e79fde039b0f865105a3f2c23174a3d8fb43e4d2a05",
-    "comparisons": [
-      {
-        "view": "detail-pose",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999526053871877,
-        "meanRgbError": 0.003010435591598866
-      },
-      {
-        "view": "detail-pose",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9996366298205794,
-        "meanRgbError": 0.003162576884872232
-      },
-      {
-        "view": "back",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999842017957292,
-        "meanRgbError": 0.0045789391350947815
-      },
-      {
-        "view": "back",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9993101450801759,
-        "meanRgbError": 0.005245341121607108
-      },
-      {
-        "view": "side",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999584128254846,
-        "meanRgbError": 0.00490138148584519
-      },
-      {
-        "view": "side",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9993449849762427,
-        "meanRgbError": 0.005936268173031335
-      },
-      {
-        "view": "minimap",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999467539256879,
-        "meanRgbError": 0.0008158640018699084
-      },
-      {
-        "view": "minimap",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 1,
-        "meanRgbError": 0.0009346053716348343
-      }
-    ]
+    "posterBytes": 11702,
+    "sha256": "a038ce1681c6a3121676e8b21f6e48e5bba5f3295f0043dd7a8a48cebb8980ed",
+    "comparisons": []
   },
   {
     "id": "item-impact-protector",
@@ -394,73 +346,25 @@
     },
     "pose": {
       "camera": {
-        "azimuth": 30,
+        "azimuth": 45,
         "elevation": 20,
         "fitScale": 1.15
+      },
+      "minimap": {
+        "hoverModelScale": 1.1,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.1,
+          "azimuth": 35,
+          "elevation": 10
+        }
       }
     },
     "width": 1024,
     "height": 1024,
-    "posterBytes": 22826,
-    "sha256": "da90d7ba0e733c135385c32fbd244678e297e6230aebfa5589fda1d1a757113c",
-    "comparisons": [
-      {
-        "view": "detail-pose",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999866326690884,
-        "meanRgbError": 0.0002940725432380188
-      },
-      {
-        "view": "detail-pose",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9995522393047012,
-        "meanRgbError": 0.0009369603303723514
-      },
-      {
-        "view": "back",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999894745705625,
-        "meanRgbError": 0.000452987882777077
-      },
-      {
-        "view": "back",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9999333389468957,
-        "meanRgbError": 0.0005558435716639113
-      },
-      {
-        "view": "side",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999937013428737,
-        "meanRgbError": 0.00036950063422948814
-      },
-      {
-        "view": "side",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.999719747709961,
-        "meanRgbError": 0.0013773915371464562
-      },
-      {
-        "view": "minimap",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 1,
-        "meanRgbError": 0.00021624087313053681
-      },
-      {
-        "view": "minimap",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9999373843567338,
-        "meanRgbError": 0.0011856824543416858
-      }
-    ]
+    "posterBytes": 22142,
+    "sha256": "9871eea59f745312c1430e71930a82c4c9e4489e6223b455b3b39b017396122c",
+    "comparisons": []
   },
   {
     "id": "item-profile",
@@ -502,73 +406,25 @@
     },
     "pose": {
       "camera": {
-        "azimuth": 30,
-        "elevation": 20,
+        "azimuth": -35,
+        "elevation": 15,
         "fitScale": 1.15
+      },
+      "minimap": {
+        "hoverModelScale": 1.3,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.5,
+          "azimuth": -20,
+          "elevation": 20
+        }
       }
     },
     "width": 1024,
     "height": 1024,
-    "posterBytes": 32200,
-    "sha256": "b220dd989c7244666d433f7b686baa8353a0b08b127ebb9e1ae6c39f760052a9",
-    "comparisons": [
-      {
-        "view": "detail-pose",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999815179891572,
-        "meanRgbError": 0.00034920128721769634
-      },
-      {
-        "view": "detail-pose",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.999759789353741,
-        "meanRgbError": 0.0018410392864371058
-      },
-      {
-        "view": "back",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999815179891572,
-        "meanRgbError": 0.0003469383481994736
-      },
-      {
-        "view": "back",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.999759789353741,
-        "meanRgbError": 0.001676382074215106
-      },
-      {
-        "view": "side",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 1,
-        "meanRgbError": 0.000025615154371353304
-      },
-      {
-        "view": "side",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9999969963926676,
-        "meanRgbError": 0.00013276729666054422
-      },
-      {
-        "view": "minimap",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 1,
-        "meanRgbError": 0.00007483422852834049
-      },
-      {
-        "view": "minimap",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9999251826550374,
-        "meanRgbError": 0.0011026248531371065
-      }
-    ]
+    "posterBytes": 20322,
+    "sha256": "2b85b7c9131718c1d5206e9f3d9bc1b2f2fe482c848abbae58f1c3d12618b9de",
+    "comparisons": []
   },
   {
     "id": "item-robot",
