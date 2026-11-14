@@ -30,6 +30,30 @@
 	/>
 	<Section
 		section={{
+			id: 'optional-loading',
+			title: 'Load only what the browser can use',
+			headline: 'Load only what the browser can use',
+			background: { color: 'standard', size: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				The Svelte stage first requests a WebGPU adapter. If the API is absent, the request fails or
+				no adapter is available, the page keeps its HTML, images and native navigation without
+				downloading Three.js, rendering shaders, geometry loaders or staged 3D navigation. The
+				renderer and transition code are imported dynamically only after this capability check.
+			</p>
+			<p>
+				SpaceMouse is a separate optional download: its connection adapter and the 3Dconnexion SDK
+				load only when a desktop visitor clicks the icon, or when an existing loopback permission
+				allows silent reconnection. Mobile pages never load this driver integration. The production
+				browser tests check both the emitted import graph and actual network requests, so an
+				accidental static import cannot silently undo these boundaries.
+			</p>
+		</div>
+	</Section>
+	<Section
+		section={{
 			id: 'introduction',
 			title: 'Introduction',
 			headline: 'Introduction',

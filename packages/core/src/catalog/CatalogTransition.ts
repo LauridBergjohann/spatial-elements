@@ -42,7 +42,7 @@ function isReturnRecipe(recipe: CatalogRecipe) {
 	return recipe.source.startsWith('detail.');
 }
 function isRichRole(role: CatalogSharedRole) {
-	return role === 'features' || role === 'primary-action';
+	return role === 'leading' || role === 'features' || role === 'action-details' || role === 'primary-action';
 }
 
 /** Full summaries retain authored row/icon layout; temporary controls never become interactive. */

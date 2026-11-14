@@ -91,6 +91,12 @@ export interface StageContext {
 	getLayoutMetrics?(mode?: 'stable' | 'visible'): import('../spatial-element/responsiveLayout.js').ResponsiveLayoutInput | undefined;
 	/** Reactive in framework adapters; false during SSR and until the GPU has painted. */
 	isEnhanced?(): boolean;
+	/** Local-driver integration is opt-in and may trigger a browser permission prompt. */
+	setSpaceMouseEnabled?(enabled: boolean): void;
+	isSpaceMouseEnabled?(): boolean;
+	isSpaceMouseDesktop?(): boolean;
+	getSpaceMouseState?(): import('./spaceMousePlatform.js').SpaceMouseState;
+	getSpaceMousePermission?(): import('./spaceMousePermission.js').SpaceMousePermission;
 	prefetchSpatialElement?(stage: import('../spatial-element/spatialElementScene.js').SpatialElementScene): void;
 	registerPanel(panel: StagePanelRegistration): () => void;
 	/** Refresh appearance from registered getters without rebinding the page or its camera. */

@@ -1,5 +1,23 @@
 # @spatial-elements/core
 
+## 1.0.0-beta.11
+
+### Patch Changes
+
+- Reconnect previously used SpaceMouse sessions after reload even when the browser still reports permission as prompt. Keep first visits opt-in and denied permissions blocked. Clarify the connect/disconnect tooltips.
+
+- Restore SpaceMouse reconnection with legacy local-network permissions and remember successful connections for browsers without a supported permission query. Explicit permission decisions take precedence; automatic failures remain silent.
+
+- Load WebGPU rendering only after a usable adapter probe; defer the SpaceMouse adapter and SDK until requested. Add a desktop-only themed SpaceMouse icon, actual connection status, silent granted reconnection, permission recovery and a brief connection toast.
+
+- Preserve optional summary content such as manufacturer logos and price fields throughout carousel/detail transitions. Correct ACES color compensation so geometry outlines and minimap borders retain their authored theme colors, including saturated accents.
+
+- Keep enabled SpaceMouse navigation attached to the active browser window. Reveal offscreen detail geometry with an animated scroll to the top, preserving the 3XL split layout's scroll position. Release driver focus when leaving the detail viewer. Keep navigation glass and satellite surfaces aligned with their content throughout zoom.
+
+- Offer a visible SpaceMouse control with an explanation before requesting local-driver access. Reconnect automatically when loopback access is already granted, observe revocation, and offer retry from help. Cancel pending connections when disabled or disposed, avoiding local-device permission prompts during ordinary detail navigation. Restore keyboard focus after the help panel becomes visible. Enable device orientation for both detail geometry and minimaps on the website.
+
+  Restore carousel backdrop blur by clipping overflow without creating a backdrop root. Respect the theme's full tint opacity range and solid surface setting, and keep summary fades from isolating the backdrop. Honor glass navigation surfaces on collection pages as well as details. Add browser regressions for sensor motion, permission states, the rendered frosted surface and the route-scoped Watches glass theme.
+
 ## 1.0.0-beta.10
 
 ### Patch Changes

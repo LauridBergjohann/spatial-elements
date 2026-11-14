@@ -75,7 +75,7 @@ export function paneRules(tokens) {
 	${root} .spatial-element-pane-heading .breadcrumbs { width: 100%; }
 	${root} .spatial-element-pane-title { min-width: 0; flex: 1; margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 	${root} .spatial-element-pane-eyebrow { margin: 0; font-size: 14px; line-height: 20px; white-space: nowrap; }
-	${root} .spatial-element-pane-action { visibility: hidden; display: grid; place-items: center; flex: none; width: 40px; height: 40px; padding: 0; border: 0; border-radius: var(--spatial-element-control-radius); color: var(--spatial-element-on-accent); background: var(--spatial-element-accent); cursor: pointer; }
+	${root} .spatial-element-pane-action { visibility: hidden; display: grid; place-items: center; flex: none; width: 54px; height: 54px; padding: 0; border: 0; border-radius: var(--spatial-element-control-radius); color: var(--spatial-element-on-accent); background: var(--spatial-element-accent); cursor: pointer; }
 	${root}[data-spatial-detail-pane-action] .spatial-element-pane-action { visibility: visible; }
 	${root} .spatial-element-pane-cover { display: block; position: fixed; z-index: 2; left: var(--spatial-pane-left); width: var(--spatial-pane-width); background: var(--stage-page-background, var(--spatial-element-background)); pointer-events: none; transform: translateY(var(--spatial-pane-fixed-compensation, 0px)); }
 	${root} .spatial-element-pane-cover-top { top: 0; height: var(--spatial-pane-body-top); }

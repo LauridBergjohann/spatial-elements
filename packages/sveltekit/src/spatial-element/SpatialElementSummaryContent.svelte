@@ -1,19 +1,28 @@
 <script lang="ts">
+ import type { Snippet } from "svelte";
  import { catalogActionSemantic } from '@spatial-elements/core/catalog/catalogAction';
  import type { CatalogEndpointAddress, CatalogEndpointRole } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
  import type { SpatialElementFeature, SpatialElementAction } from '@spatial-elements/core/spatial-element/types';
  import ShoppingCart from 'lucide-svelte/icons/shopping-cart';
  import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
- let { spatialElement, address, contentInset, heading = 'h3', element = $bindable() }: {
+ let { spatialElement, address, contentInset, heading = 'h3', leading, beforeAction, actionIcon, element = $bindable() }: {
   spatialElement: { id: string; eyebrow: string; title: string; features: SpatialElementFeature[]; action?: SpatialElementAction };
   address: (role: CatalogEndpointRole) => CatalogEndpointAddress | undefined;
   contentInset: number;
   heading?: 'h1' | 'h3';
+  leading?: Snippet;
+  /** Optional content above the CTA, for example a price and quantity field. */
+  beforeAction?: Snippet;
+  actionIcon?: Snippet;
   element?: HTMLDivElement;
  } = $props();
  const catalogEndpoint = createCatalogEndpointAction();
 </script>
 		<div bind:this={element} class="summary-presentation">
+			{#if leading}<div use:catalogEndpoint={address('leading')}
+				data-catalog-rich-shared="leading" data-catalog-semantic={spatialElement.id}>
+				{@render leading()}
+			</div>{/if}
 			<div class="panel-copy">
 				{#if spatialElement.eyebrow}
 				<p
@@ -53,6 +62,10 @@
 				{/each}
 			</ul>{/if}
 
+			{#if beforeAction}<div use:catalogEndpoint={address('action-details')}
+				data-catalog-rich-shared="action-details" data-catalog-semantic={spatialElement.id}>
+				{@render beforeAction()}
+			</div>{/if}
 			{#if spatialElement.action}
 				{#if spatialElement.action.href}
 					<a
@@ -65,12 +78,12 @@
 						aria-label={spatialElement.action.ariaLabel}
 					>
 						<span class="spatial-element-action-surface" data-catalog-secondary>
-							<ShoppingCart
+							{#if actionIcon}{@render actionIcon()}{:else}<ShoppingCart
 								class="spatial-element-action-icon"
 								size={27}
 								strokeWidth={2}
 								aria-hidden="true"
-							/>
+							/>{/if}
 							<span class="spatial-element-action-label">{spatialElement.action.label}</span>
 						</span>
 					</a>
@@ -84,12 +97,12 @@
 						aria-label={spatialElement.action.ariaLabel}
 					>
 						<span class="spatial-element-action-surface" data-catalog-secondary>
-							<ShoppingCart
+							{#if actionIcon}{@render actionIcon()}{:else}<ShoppingCart
 								class="spatial-element-action-icon"
 								size={27}
 								strokeWidth={2}
 								aria-hidden="true"
-							/>
+							/>{/if}
 							<span class="spatial-element-action-label">{spatialElement.action.label}</span>
 						</span>
 					</button>
@@ -148,7 +161,7 @@
 		display: block;
 		box-sizing: border-box;
 		width: 100%;
-		min-height: 62px;
+		min-height: 54px;
 		border: 0;
 		padding: 0;
 		color: inherit;
@@ -164,8 +177,8 @@
 		gap: 10px;
 		box-sizing: border-box;
 		width: 100%;
-		min-height: 62px;
-		border-radius: 7px;
+		min-height: 54px;
+		border-radius: var(--spatial-element-control-radius, 7px);
 		color: var(--spatial-element-on-accent);
 		background: var(--spatial-element-accent);
 		font:

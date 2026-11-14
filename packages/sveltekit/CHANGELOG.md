@@ -1,5 +1,30 @@
 # @spatial-elements/sveltekit
 
+## 1.0.0-beta.11
+
+### Patch Changes
+
+- Reconnect previously used SpaceMouse sessions after reload even when the browser still reports permission as prompt. Update the themed SpaceMouse icon and connect/disconnect tooltips. Prebundle the optional SDK on the apps' Vite dev servers to prevent a reload on the first connection, while keeping browser loading lazy.
+
+- Restore SpaceMouse reconnection with legacy local-network permissions and remember successful connections for browsers without a supported permission query. Explicit permission decisions take precedence; automatic failures remain silent.
+
+- Load WebGPU rendering only after a usable adapter probe; defer the SpaceMouse adapter and SDK until requested. Add a desktop-only themed SpaceMouse icon, actual connection status, silent granted reconnection, permission recovery and a brief connection toast.
+
+- Add optional `headerDetails` and `actionIcon` snippets to `SpatialElementPage` for both scroll and 3XL pane headers. The showcase shares quantity and illustrative totals across all product summaries and headers, uses manufacturer exit links consistently, and switches item/Wurm logos with the active theme.
+
+- Keep `leading` and new `beforeAction` summary snippets visible throughout carousel/detail transitions, with live form state retained. Use 54px primary actions and 54px square scroll-header actions. Refine the Industrial showcase with transparent logos, unified teal-blue accents and illustrative price/quantity controls.
+
+- Export `SpatialElementSummaryContent` with optional `leading` and `actionIcon` snippets for branded content without duplicating shared transition endpoints. Respect the control radius in summary actions. Expand Industrial with eight optimized Wurm products, blue frosted themes, manufacturer introductions and branded item/Wurm summaries.
+
+- Respect large theme radii in button-group selection surfaces and inset the minimap's 3D indicator accordingly. Give Exclusive a smoky light palette and deeper dark palette. Keep header and satellite glass aligned during zoom, and document window-scoped SpaceMouse navigation and automatic detail reveal.
+
+- Offer a visible SpaceMouse control with an explanation before requesting local-driver access. Reconnect automatically when loopback access is already granted, observe revocation, and offer retry from help. Cancel pending connections when disabled or disposed, avoiding local-device permission prompts during ordinary detail navigation. Restore keyboard focus after the help panel becomes visible. Enable device orientation for both detail geometry and minimaps on the website.
+
+  Restore carousel backdrop blur by clipping overflow without creating a backdrop root. Respect the theme's full tint opacity range and solid surface setting, and keep summary fades from isolating the backdrop. Honor glass navigation surfaces on collection pages as well as details. Add browser regressions for sensor motion, permission states, the rendered frosted surface and the route-scoped Watches glass theme.
+
+- Updated dependencies
+  - @spatial-elements/core@1.0.0-beta.11
+
 ## 1.0.0-beta.10
 
 ### Minor Changes

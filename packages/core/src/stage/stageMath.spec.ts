@@ -246,9 +246,9 @@ describe('stage math', () => {
 		const sidePanel = { ...panelOptions, position: { x: 500, y: 30 } };
 		const centeredPanel = { ...panelOptions, position: { x: 0, y: 0 } };
 
-		expect(getPanelFocusDirection(header, 0.25, -0.4).toArray()).toEqual([0, -1]);
-		expect(getPanelFocusDirection(sidePanel, 0.8, 0.1).toArray()).toEqual([1, 0]);
-		expect(getPanelFocusDirection(centeredPanel, 0, 0).toArray()).toEqual([0, 1]);
+		expect(getPanelFocusDirection(header, 0.25, -0.4)).toEqual({ x: 0, y: -1 });
+		expect(getPanelFocusDirection(sidePanel, 0.8, 0.1)).toEqual({ x: 1, y: 0 });
+		expect(getPanelFocusDirection(centeredPanel, 0, 0)).toEqual({ x: 0, y: 1 });
 	});
 
 	it('advances focused panels smoothly toward the camera', () => {

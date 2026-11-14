@@ -11,6 +11,7 @@
 	import SpatialElementViewToggle from './SpatialElementViewToggle.svelte';
 	import Panel from '../stage/Panel.svelte';
 	import SpatialIconButton from './SpatialIconButton.svelte';
+	import SpaceMouseControl from './SpaceMouseControl.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 	import { useSpatialMessages } from './messagesContext.js';
 
@@ -19,6 +20,7 @@
 	const radii = $derived(resolveSpatialThemeRadii(theme));
 	const stageContext = getContext<StageContext>(STAGE_CONTEXT_KEY);
 	const fullscreen = $derived(stageContext.isFullscreen?.() ?? false);
+	const spaceMouseDesktop = $derived(stageContext.isSpaceMouseDesktop?.() ?? false);
 	const readMessages = useSpatialMessages();
 	const messages = $derived(readMessages());
 	const help = $derived(messages.interactionHelp);
@@ -60,7 +62,7 @@
 		open = false;
 		manual = false;
 		helpHovered = false;
-		if (restoreFocus) button.focus({ preventScroll: true });
+		if (restoreFocus) button?.focus({ preventScroll: true });
 	}
 	function position() {
 		if (!open) return;
@@ -94,7 +96,12 @@
 		await tick();
 		if (!open || !enhanced) return;
 		requestPosition();
-		if (keyboard) closeButton.focus({ preventScroll: true });
+		if (keyboard) {
+			// The stage restores the native panel's visibility on its next layout frame.
+			// Focusing immediately after Svelte's tick still targets a hidden button.
+			await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+			if (open && enhanced) closeButton.focus({ preventScroll: true });
+		}
 	}
 	function toggleHelp(event: MouseEvent) {
 		if (open) close();
@@ -206,11 +213,14 @@
 	});
 </script>
 
-<div bind:this={root} class="model-tools" class:enhanced style={surfaceStyle} style:visibility={active ? undefined : 'hidden'} inert={!active} data-spatial-element-tools data-spatial-model-controls>
+<div bind:this={root} class="model-tools" class:enhanced class:with-spacemouse={spaceMouseDesktop} style={surfaceStyle} style:visibility={active ? undefined : 'hidden'} inert={!active} data-spatial-element-tools data-spatial-model-controls>
 	<div class="model-tools-buttons">
 		<SpatialIconButton bind:element={button} {focusAnchor} label={messages.controls.help} onclick={toggleHelp} expanded={open} controls={id} enabled={enhanced && active}>
 			<CircleHelp size={21} strokeWidth={1.8} aria-hidden="true" />
 		</SpatialIconButton>
+		{#if spaceMouseDesktop}
+			<SpaceMouseControl {focusAnchor} enabled={enhanced && active} />
+		{/if}
 		<SpatialElementViewToggle enabled={enhanced && active} {focusAnchor} onchange={() => close()} />
 	</div>
 	{#if active && enhanced && touchInput && !interacted && !open && !fullscreen}
@@ -238,13 +248,10 @@
 					<div><InteractionGesture action="zoom" touch={touchInput} /><dt>{help.zoom}</dt><dd>{touchInput ? help.touchZoom : help.mouseZoom}</dd></div>
 					<div><InteractionGesture action="pan" touch={touchInput} /><dt>{help.pan}</dt><dd>{touchInput ? help.touchPan : help.mousePan}</dd></div>
 				</dl>
-				<p class="navigation-hint">
-					{#if touchInput}
-						{#if !fullscreen}{help.touchScrollHint}{/if}
-					{:else}
-						{#each help.mouseNavigationHint.split('{spacemouse}') as part, index}{#if index > 0}<a href="https://3dconnexion.com/" target="_blank" rel="noopener noreferrer">SpaceMouse</a>{/if}{part}{/each}
-					{/if}
-				</p>
+				{#if touchInput && !fullscreen}<p class="navigation-hint">{help.touchScrollHint}</p>{/if}
+				{#if spaceMouseDesktop}
+					<p class="navigation-hint">{#each help.mouseNavigationHint.split('{spacemouse}') as part, index}{#if index > 0}<a href="https://3dconnexion.com/" target="_blank" rel="noopener noreferrer">SpaceMouse</a>{/if}{part}{/each}</p>
+				{/if}
 			</div>
 		</Panel>
 	</div>
@@ -257,6 +264,7 @@
 		width: 128px; height: 40px; z-index: 6; visibility: hidden; pointer-events: none;
 	}
 	.model-tools.enhanced { visibility: visible; pointer-events: auto; }
+	.model-tools.with-spacemouse { width: 176px; }
 	.model-tools-buttons { display: flex; gap: 8px; justify-content: flex-end; }
 	.touch-hint {
 		position: absolute; right: 0; top: 48px; width: max-content; max-width: min(260px, calc(100vw - 48px));

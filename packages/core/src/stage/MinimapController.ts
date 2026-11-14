@@ -7,6 +7,7 @@ import {
 	color,
 	float,
 	length,
+	materialOpacity,
 	max as tslMax,
 	min as tslMin,
 	mix,
@@ -21,7 +22,8 @@ import {
 	texture,
 	uniform,
 	uv,
-	vec2
+	vec2,
+	vec4
 } from 'three/tsl';
 import type { Mesh, Object3D } from 'three';
 import {
@@ -450,15 +452,16 @@ export class MinimapController {
 				},
 				MINIMAP_VIEWPORT_BORDER_THICKNESS
 			),
-			new THREE.MeshBasicMaterial({
+			new THREE.MeshBasicNodeMaterial({
 				color: resolved.viewportColor,
 				depthTest: true,
 				depthWrite: false,
-				opacity: 0.96,
+				opacity: 1,
 				transparent: true
 			})
 		);
 		overlayRing.material.toneMapped = false;
+		overlayRing.material.fragmentNode = vec4(inverseAcesToneMapping(color(new THREE.Color(resolved.viewportColor)).rgb), materialOpacity);
 		const ringRestMaterial = overlayRing.material;
 		const ringForegroundMaterial = ringRestMaterial.clone();
 		ringForegroundMaterial.depthTest = false;
@@ -1038,7 +1041,6 @@ export class MinimapController {
 			1
 		);
 		const ringOpacity =
-			0.96 *
 			THREE.MathUtils.lerp(1, overlayFade, overlayProgress) *
 			surfaceOpacity *
 			transitionOpacity;

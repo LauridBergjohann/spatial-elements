@@ -54,10 +54,12 @@
   max-height: max(0px, calc(var(--spatial-detail-summary-max-height, 100000px) - var(--spatial-summary-content-inset, 0px) * 2 - var(--spatial-summary-height-reserve, 0px)));
   overflow: auto; overscroll-behavior: auto;
  }
- :global(.spatial-summary-island[data-presentation-mode='carousel']) { height: 100%; border-radius: var(--carousel-panel-radius, 14px); opacity: var(--carousel-panel-opacity, 1); }
+ :global(.spatial-summary-island[data-presentation-mode='carousel']) { height: 100%; border-radius: var(--carousel-panel-radius, 14px); }
+ /* Fade paint owners, not the backdrop ancestor. Theme opacity must not isolate the canvas. */
+ :global(.spatial-summary-island[data-presentation-mode='carousel']) > * { opacity: var(--carousel-panel-opacity, 1); filter: var(--carousel-focus-blur, none); }
  .spatial-summary-surface {
   position: absolute; inset: 0; border-radius: inherit; background: color-mix(in srgb, var(--carousel-panel-tint, white) var(--carousel-panel-tint-opacity, 65%), transparent);
-  border: 1px solid color-mix(in srgb, var(--spatial-element-accent) 12%, transparent); backdrop-filter: blur(var(--carousel-panel-blur, 5px)); box-shadow: var(--carousel-panel-shadow); pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--spatial-element-accent) 12%, transparent); backdrop-filter: var(--carousel-panel-backdrop, blur(5px)); box-shadow: var(--carousel-panel-shadow); pointer-events: none;
  }
  .spatial-summary-surface[hidden] { display: none; }
  :global([data-carousel-glass-ready]) .spatial-summary-surface,

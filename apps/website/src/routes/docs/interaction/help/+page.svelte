@@ -176,6 +176,49 @@
 				the placeholder displays your text without a link. No translated HTML or configurable URL is
 				needed. The touch scroll hint remains unchanged.
 			</p>
+			<p>
+				The SpaceMouse icon beside the 3D controls is available on Windows, macOS and Linux,
+				including touch-capable desktops. It is a platform hint, not hardware detection. Click it to
+				connect immediately; Chrome may ask for access to apps and services on this device. A
+				successful connection highlights the icon, changes its tooltip to <strong
+					>spacemouse is connected, click to disconnect</strong
+				>
+				and briefly shows a confirmation. Click again to disconnect, or once more to reconnect.
+			</p>
+			<p>
+				A permission failure opens an explanation with an OK button to retry. If permission was
+				blocked permanently, allow it in the browser's site settings. Other failures explain that
+				the device may be absent or the 3DxWare driver unavailable, with a link to 3Dconnexion. The
+				SDK confirms a driver navigation session; it cannot reliably enumerate physical devices.
+				Help contains only the external SpaceMouse link, with no activation controls.
+			</p>
+			<p>
+				On desktop platforms, an existing loopback permission grant triggers a silent reconnection.
+				Browsers that expose only the older combined local-network-access permission are also
+				supported. A successful connection is also remembered in local storage and allows an
+				automatic retry after reloading, even if the browser still reports prompt or cannot report
+				permission. For example, a local development server can connect without changing that
+				permission status. Without a previous connection or grant, the first attempt requires
+				clicking the icon. An explicit denied status prevents automatic reconnection. A saved
+				connection is not a browser permission: if access has since been reset, the browser may ask
+				again. An unsuccessful automatic attempt shows no application dialog. Disconnecting lasts
+				for the mounted stage. Both the adapter and 3Dconnexion SDK are imported only for a manual
+				connection or an eligible automatic retry. Localize the
+				<code>spaceMouse*</code> strings in <code>interactionHelp</code>.
+			</p>
+			<p>
+				For Vite development, add <code>@3dconnexion/3dconnexionjs</code> to
+				<code>optimizeDeps.include</code>. This prepares the optional SDK on the dev server and
+				prevents a dependency-optimization reload during the first connection. It does not load the
+				SDK into the browser before SpaceMouse is used. The repository apps include this setting.
+			</p>
+			<p>
+				While the detail viewer is open, SpaceMouse navigation follows the active browser window,
+				not keyboard focus on the model. Using it after scrolling reveals the model with a smooth
+				scroll to the top (instant with reduced motion). The 3XL split layout keeps its scroll
+				position because the model remains visible beside the content. Leaving the detail viewer
+				releases the driver connection.
+			</p>
 		</div></Section
 	>
 	<Section

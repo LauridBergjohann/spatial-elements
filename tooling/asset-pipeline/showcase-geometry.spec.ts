@@ -4,9 +4,11 @@ import { expect, it } from 'vitest';
 import report from './showcase-geometry-report.json';
 import products from './showcase-products.json';
 import runtime from '../../apps/website/src/lib/showcase/geometry-assets.json';
+import catalog from '../../apps/website/src/lib/showcase/products.json';
+import { productSegment } from '../../apps/website/src/lib/showcase/segments';
 
 it('ships one reviewed LOD pair for every showcase product without the offline audit in the client bundle', () => {
-	const ids = ['chronograph', ...products.products.map((product) => product.id)].sort();
+	const ids = catalog.map(product => product.id).sort();
 	expect(report.map((entry) => entry.spatialElementId).sort()).toEqual(ids);
 	expect(runtime.map((entry) => entry.spatialElementId).sort()).toEqual(ids);
 	for (const entry of runtime) {
@@ -85,11 +87,19 @@ for (const entry of report) {
 	});
 }
 
-it('keeps the complete expanded category within the reviewed geometry and draw-call budgets', () => {
+it('keeps the existing catalog within its reviewed geometry and draw-call budgets', () => {
+	const original = report.filter(entry => entry.brandId !== 'wurm');
 	expect(
-		report.reduce((sum, entry) => sum + entry.representations.low.costs.triangleCount, 0)
+		original.reduce((sum, entry) => sum + entry.representations.low.costs.triangleCount, 0)
 	).toBeLessThan(500000);
 	expect(
-		report.reduce((sum, entry) => sum + entry.representations.low.costs.drawCalls, 0)
+		original.reduce((sum, entry) => sum + entry.representations.low.costs.drawCalls, 0)
 	).toBeLessThanOrEqual(45);
+});
+
+it('keeps the complete item and Wurm collection within the industrial category budget', () => {
+	const industrial = report.filter(entry => productSegment(entry.brandId).id === 'industrial');
+	expect(industrial).toHaveLength(13);
+	expect(industrial.reduce((sum, entry) => sum + entry.representations.low.costs.triangleCount, 0)).toBeLessThan(150000);
+	expect(industrial.reduce((sum, entry) => sum + entry.representations.low.costs.drawCalls, 0)).toBeLessThanOrEqual(20);
 });

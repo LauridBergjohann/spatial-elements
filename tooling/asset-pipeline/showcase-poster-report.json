@@ -286,73 +286,25 @@
     },
     "pose": {
       "camera": {
-        "azimuth": 30,
-        "elevation": 20,
+        "azimuth": 20,
+        "elevation": 40,
         "fitScale": 1.15
+      },
+      "minimap": {
+        "hoverModelScale": 1.3,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.4,
+          "azimuth": 10,
+          "elevation": 45
+        }
       }
     },
     "width": 1024,
     "height": 1024,
-    "posterBytes": 14186,
-    "sha256": "610ed046d1db3c4030ef7e79fde039b0f865105a3f2c23174a3d8fb43e4d2a05",
-    "comparisons": [
-      {
-        "view": "detail-pose",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999526053871877,
-        "meanRgbError": 0.003010435591598866
-      },
-      {
-        "view": "detail-pose",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9996366298205794,
-        "meanRgbError": 0.003162576884872232
-      },
-      {
-        "view": "back",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999842017957292,
-        "meanRgbError": 0.0045789391350947815
-      },
-      {
-        "view": "back",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9993101450801759,
-        "meanRgbError": 0.005245341121607108
-      },
-      {
-        "view": "side",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999584128254846,
-        "meanRgbError": 0.00490138148584519
-      },
-      {
-        "view": "side",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9993449849762427,
-        "meanRgbError": 0.005936268173031335
-      },
-      {
-        "view": "minimap",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999467539256879,
-        "meanRgbError": 0.0008158640018699084
-      },
-      {
-        "view": "minimap",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 1,
-        "meanRgbError": 0.0009346053716348343
-      }
-    ]
+    "posterBytes": 11702,
+    "sha256": "a038ce1681c6a3121676e8b21f6e48e5bba5f3295f0043dd7a8a48cebb8980ed",
+    "comparisons": []
   },
   {
     "id": "item-impact-protector",
@@ -394,73 +346,25 @@
     },
     "pose": {
       "camera": {
-        "azimuth": 30,
+        "azimuth": 45,
         "elevation": 20,
         "fitScale": 1.15
+      },
+      "minimap": {
+        "hoverModelScale": 1.1,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.1,
+          "azimuth": 35,
+          "elevation": 10
+        }
       }
     },
     "width": 1024,
     "height": 1024,
-    "posterBytes": 22826,
-    "sha256": "da90d7ba0e733c135385c32fbd244678e297e6230aebfa5589fda1d1a757113c",
-    "comparisons": [
-      {
-        "view": "detail-pose",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999866326690884,
-        "meanRgbError": 0.0002940725432380188
-      },
-      {
-        "view": "detail-pose",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9995522393047012,
-        "meanRgbError": 0.0009369603303723514
-      },
-      {
-        "view": "back",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999894745705625,
-        "meanRgbError": 0.000452987882777077
-      },
-      {
-        "view": "back",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9999333389468957,
-        "meanRgbError": 0.0005558435716639113
-      },
-      {
-        "view": "side",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999937013428737,
-        "meanRgbError": 0.00036950063422948814
-      },
-      {
-        "view": "side",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.999719747709961,
-        "meanRgbError": 0.0013773915371464562
-      },
-      {
-        "view": "minimap",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 1,
-        "meanRgbError": 0.00021624087313053681
-      },
-      {
-        "view": "minimap",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9999373843567338,
-        "meanRgbError": 0.0011856824543416858
-      }
-    ]
+    "posterBytes": 22142,
+    "sha256": "9871eea59f745312c1430e71930a82c4c9e4489e6223b455b3b39b017396122c",
+    "comparisons": []
   },
   {
     "id": "item-profile",
@@ -502,73 +406,25 @@
     },
     "pose": {
       "camera": {
-        "azimuth": 30,
-        "elevation": 20,
+        "azimuth": -35,
+        "elevation": 15,
         "fitScale": 1.15
+      },
+      "minimap": {
+        "hoverModelScale": 1.3,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.5,
+          "azimuth": -20,
+          "elevation": 20
+        }
       }
     },
     "width": 1024,
     "height": 1024,
-    "posterBytes": 32200,
-    "sha256": "b220dd989c7244666d433f7b686baa8353a0b08b127ebb9e1ae6c39f760052a9",
-    "comparisons": [
-      {
-        "view": "detail-pose",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999815179891572,
-        "meanRgbError": 0.00034920128721769634
-      },
-      {
-        "view": "detail-pose",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.999759789353741,
-        "meanRgbError": 0.0018410392864371058
-      },
-      {
-        "view": "back",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999815179891572,
-        "meanRgbError": 0.0003469383481994736
-      },
-      {
-        "view": "back",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.999759789353741,
-        "meanRgbError": 0.001676382074215106
-      },
-      {
-        "view": "side",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 1,
-        "meanRgbError": 0.000025615154371353304
-      },
-      {
-        "view": "side",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9999969963926676,
-        "meanRgbError": 0.00013276729666054422
-      },
-      {
-        "view": "minimap",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 1,
-        "meanRgbError": 0.00007483422852834049
-      },
-      {
-        "view": "minimap",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9999251826550374,
-        "meanRgbError": 0.0011026248531371065
-      }
-    ]
+    "posterBytes": 20322,
+    "sha256": "2b85b7c9131718c1d5206e9f3d9bc1b2f2fe482c848abbae58f1c3d12618b9de",
+    "comparisons": []
   },
   {
     "id": "item-robot",
@@ -1919,6 +1775,486 @@
         ]
       }
     }
+  },
+  {
+    "id": "wurm-asv101",
+    "browser": "157.0.8103.78",
+    "source": "867b688080209a3042959a6869f8eb082e19f75236696ac092656b9cb88ae1cd",
+    "low": "4cc9a7160682bf6cc59cbb0a736534ca872e43a633d9a03cd2398fad28f38eae",
+    "high": "867b688080209a3042959a6869f8eb082e19f75236696ac092656b9cb88ae1cd",
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.0000010532499290991093,
+        0.003000000387430188,
+        -0.029481330178678027,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.026651053631212562,
+          -0.04814999923110008,
+          -0.029481329955160625
+        ],
+        "max": [
+          0.026651053631212562,
+          0.04814999923110008,
+          0.029481329955160625
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": -20,
+        "elevation": 0,
+        "fitScale": 1.1
+      },
+      "minimap": {
+        "hoverModelScale": 1.4,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.4,
+          "azimuth": -20,
+          "elevation": 10
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 18254,
+    "sha256": "04fd66591d96bd59b750d3f5caf59908a457893ff3b6eba5ced808842a083d68",
+    "comparisons": []
+  },
+  {
+    "id": "wurm-atv230",
+    "browser": "157.0.8103.78",
+    "source": "8bc0871dfb04587e88821404bb689b09bef68f462a633b0b0ef4ae287519ad91",
+    "low": "f97f84e505a52eca446ef3bfff0372c95b7c2252ee8fb2a53b377ada06b87751",
+    "high": "8bc0871dfb04587e88821404bb689b09bef68f462a633b0b0ef4ae287519ad91",
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1.3038516044963644e-7,
+        0.0024999976158140355,
+        -0.028774740472435875,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.0263498704880476,
+          -0.04734999686479569,
+          -0.028774740174412818
+        ],
+        "max": [
+          0.0263498704880476,
+          0.04734999686479569,
+          0.028774740174412814
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": -20,
+        "elevation": 0,
+        "fitScale": 1.1
+      },
+      "minimap": {
+        "hoverModelScale": 1.4,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.4,
+          "azimuth": -20,
+          "elevation": 10
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 12862,
+    "sha256": "ff745a31b23e224f7bdc10889814de3cb57ffc5a0d9bba147180501b4b6233b6",
+    "comparisons": []
+  },
+  {
+    "id": "wurm-dsp-lcd",
+    "browser": "157.0.8103.78",
+    "source": "3d6c1cce3a6444440abfc7b616baccad3563b217d3fb8e276d3eb20ca8533998",
+    "low": "c14924bf34a9437e87e2fab4e9df265b0696d688517c20af58fb492f806b4931",
+    "high": "3d6c1cce3a6444440abfc7b616baccad3563b217d3fb8e276d3eb20ca8533998",
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -3.7764709415188946e-10,
+        0.0000011270955204839561,
+        -0.009061422199010847,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.03137883835006505,
+          -0.01473271194845438,
+          -0.00906142219901085
+        ],
+        "max": [
+          0.03137883835006505,
+          0.01473271194845438,
+          0.00906142219901085
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": -20,
+        "elevation": 0,
+        "fitScale": 1.1
+      },
+      "minimap": {
+        "hoverModelScale": 1.4,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.4,
+          "azimuth": -20,
+          "elevation": 10
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 3658,
+    "sha256": "de13db5f8efd8b454258b3859ad54a10fd91e0787d8ab15265f0a6a47ef31849",
+    "comparisons": []
+  },
+  {
+    "id": "wurm-dsp002",
+    "browser": "157.0.8103.78",
+    "source": "4630d882ba4a39adc4fc4a8871abef58fbf69227c3760ce88010ec3002c0df65",
+    "low": "ca06b860157bae369111d95473e56ecbebcab4c79e2585786b477e7a263e5938",
+    "high": "4630d882ba4a39adc4fc4a8871abef58fbf69227c3760ce88010ec3002c0df65",
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        6.123233995736766e-17,
+        1,
+        0,
+        0,
+        -1,
+        6.123233995736766e-17,
+        0,
+        0,
+        0.0000012218952178983797,
+        -0.009759811917319896,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.04399999976158142,
+          -0.015998778864741325,
+          -0.012759811943396928
+        ],
+        "max": [
+          0.04399999976158142,
+          0.015998778864741325,
+          0.012759811943396928
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": -20,
+        "elevation": 0,
+        "fitScale": 1.1
+      },
+      "minimap": {
+        "hoverModelScale": 1.4,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.4,
+          "azimuth": -20,
+          "elevation": 10
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 6800,
+    "sha256": "17df2dd69d9c19d96cbec763aeec9273ded6eb51e19be635b78e8fb0401e0dfb",
+    "comparisons": []
+  },
+  {
+    "id": "wurm-fkl003",
+    "browser": "157.0.8103.78",
+    "source": "f6b1c583fe39ede8ba219bd4df1e9ecd1cd89efeb17bc65f436c6da07f9a30d1",
+    "low": "5b26c2d52905f55ea811d1651a35cbf12b2b00b75b8590ec3504944e79405628",
+    "high": "f6b1c583fe39ede8ba219bd4df1e9ecd1cd89efeb17bc65f436c6da07f9a30d1",
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        3.838249995613552e-10,
+        0.0018243079734142145,
+        -0.029383951349183916,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.053075000643730164,
+          -0.04832569137215614,
+          -0.02948395092971623
+        ],
+        "max": [
+          0.053075000643730164,
+          0.04832569137215614,
+          0.02948395092971623
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": -20,
+        "elevation": 0,
+        "fitScale": 1.1
+      },
+      "minimap": {
+        "hoverModelScale": 1.4,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.4,
+          "azimuth": -20,
+          "elevation": 10
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 31294,
+    "sha256": "815c7c6de97ffda237f583e31c1ac04feb817db04a64e99eb92cc217c45542e1",
+    "comparisons": []
+  },
+  {
+    "id": "wurm-fkp003",
+    "browser": "157.0.8103.78",
+    "source": "facd0e96021ccf0b4c4485b5c5d73f71afa671ea8e6f0d53964cec93fd0ee249",
+    "low": "ced0f5af62fb000f85c649e0a9adecf6b29a062bcf655148af2be75d479cddb1",
+    "high": "facd0e96021ccf0b4c4485b5c5d73f71afa671ea8e6f0d53964cec93fd0ee249",
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0.0014416538178920746,
+        -0.029949050571303815,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.053199999034404755,
+          -0.04664376378059387,
+          -0.03084905055584386
+        ],
+        "max": [
+          0.053199999034404755,
+          0.04664376378059387,
+          0.03084905055584386
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": -20,
+        "elevation": 0,
+        "fitScale": 1.1
+      },
+      "minimap": {
+        "hoverModelScale": 1.4,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.4,
+          "azimuth": -20,
+          "elevation": 10
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 29830,
+    "sha256": "7db62ff89382e581c75e7db7484035e0e9396844c20405a0d444034e410d2e88",
+    "comparisons": []
+  },
+  {
+    "id": "wurm-hks-g4",
+    "browser": "157.0.8103.78",
+    "source": "0f91c8f4ca0fc793e09285c659ca121339864d69f41472a6dd846ac88055a49f",
+    "low": "40f56cdb3d60476cb95ed207275f1509e226e1632785412c25f153bc3ac64ff5",
+    "high": "0f91c8f4ca0fc793e09285c659ca121339864d69f41472a6dd846ac88055a49f",
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1.3877787807814457e-17,
+        -3.5227593966902226e-9,
+        0.04633045145869255,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.054499998688697815,
+          -0.054499998688697815,
+          -0.04632982239127159
+        ],
+        "max": [
+          0.054499998688697815,
+          0.054499998688697815,
+          0.04632982239127159
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": -20,
+        "elevation": 0,
+        "fitScale": 1.1
+      },
+      "minimap": {
+        "hoverModelScale": 1.4,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.4,
+          "azimuth": -20,
+          "elevation": 10
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 42190,
+    "sha256": "5daab7ee0d160af11a86ff22218493398772f8a7077e5c5d75c05f317f5edc79",
+    "comparisons": []
+  },
+  {
+    "id": "wurm-multigate3",
+    "browser": "157.0.8103.78",
+    "source": "ae8d36960c594f5786a2c91cc632dbfa30831c4d524b8ca2c58e0d52cb06d8d5",
+    "low": "e286a2f2aa8d3a2b01bb3c81257a3ece7af4efb68de2cee71d47b0d8239d2029",
+    "high": "ae8d36960c594f5786a2c91cc632dbfa30831c4d524b8ca2c58e0d52cb06d8d5",
+    "frame": {
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -1.0980315129360818e-9,
+        0.0028145467806607524,
+        -0.030875071256949944,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.10650000080931932,
+          -0.048319264547899365,
+          -0.031125071458518505
+        ],
+        "max": [
+          0.10650000080931932,
+          0.048319264547899365,
+          0.031125071458518505
+        ]
+      }
+    },
+    "pose": {
+      "camera": {
+        "azimuth": -20,
+        "elevation": 0,
+        "fitScale": 1.1
+      },
+      "minimap": {
+        "hoverModelScale": 1.4,
+        "expandedHoverModelScale": 1.1,
+        "dockedView": {
+          "scale": 1.4,
+          "azimuth": -20,
+          "elevation": 10
+        }
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 43728,
+    "sha256": "7efb635252d956b9339f471be4a830ac6d98738dd04b49bd5d12a1d94dc319c2",
+    "comparisons": []
   },
   {
     "id": "zyklop-speed",

@@ -7291,5 +7291,1925 @@
     "decisions": [
       "low: 6333 triangles exceed target 5500; preserving appearance takes precedence over forcing the budget."
     ]
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wurm",
+    "spatialElementId": "wurm-asv101",
+    "source": {
+      "origin": "website-static",
+      "file": "assets/showcase/wurm-asv101/wurm-asv101-high.glb",
+      "sha256": "867b688080209a3042959a6869f8eb082e19f75236696ac092656b9cb88ae1cd",
+      "costs": {
+        "sha256": "867b688080209a3042959a6869f8eb082e19f75236696ac092656b9cb88ae1cd",
+        "transferBytes": 95948,
+        "triangleCount": 34958,
+        "vertexCount": 40108,
+        "drawCalls": 1,
+        "materialCount": 1,
+        "decodedGeometryBytes": 1493204,
+        "estimatedTextureBytes": 683,
+        "textures": [
+          {
+            "width": 32,
+            "height": 4,
+            "bytes": 115,
+            "mimeType": "image/png",
+            "slots": [
+              "baseColorTexture"
+            ],
+            "estimatedGpuBytes": 683
+          }
+        ],
+        "bounds": {
+          "min": [
+            -0.026650000381283463,
+            -0.05114999961853027,
+            2.2351740423809385e-10
+          ],
+          "max": [
+            0.02665210688114166,
+            0.045149998843669895,
+            0.05896266013383865
+          ]
+        },
+        "extensions": [
+          "KHR_draco_mesh_compression"
+        ],
+        "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+      }
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "verified-canonical-frame",
+      "revision": "asv101-metres-front-1",
+      "sourceUrl": "/assets/showcase/wurm-asv101/wurm-asv101-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-asv101/wurm-asv101-low.glb",
+        "format": "glb",
+        "revision": "4cc9a7160682bf6cc59cbb0a736534ca872e43a633d9a03cd2398fad28f38eae",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-asv101/wurm-asv101-high.glb",
+        "format": "glb",
+        "revision": "867b688080209a3042959a6869f8eb082e19f75236696ac092656b9cb88ae1cd",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.0000010532499290991093,
+        0.003000000387430188,
+        -0.029481330178678027,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.026651053631212562,
+          -0.04814999923110008,
+          -0.029481329955160625
+        ],
+        "max": [
+          0.026651053631212562,
+          0.04814999923110008,
+          0.029481329955160625
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-asv101/wurm-asv101-poster.webp",
+      "alt": "ASV101",
+      "width": 1024,
+      "height": 1024
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/showcase/wurm-asv101/wurm-asv101-low.glb",
+          "format": "glb",
+          "revision": "4cc9a7160682bf6cc59cbb0a736534ca872e43a633d9a03cd2398fad28f38eae",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "4cc9a7160682bf6cc59cbb0a736534ca872e43a633d9a03cd2398fad28f38eae",
+          "transferBytes": 31604,
+          "triangleCount": 6208,
+          "vertexCount": 8879,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 321376,
+          "estimatedTextureBytes": 683,
+          "textures": [
+            {
+              "width": 32,
+              "height": 4,
+              "bytes": 115,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 683
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.026650000381283463,
+              -0.05114999961853027,
+              2.2351740423809385e-10
+            ],
+            "max": [
+              0.026652606070041655,
+              0.045149998843669895,
+              0.05885710030794143
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/showcase/wurm-asv101/wurm-asv101-high.glb",
+          "format": "glb",
+          "revision": "867b688080209a3042959a6869f8eb082e19f75236696ac092656b9cb88ae1cd",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "867b688080209a3042959a6869f8eb082e19f75236696ac092656b9cb88ae1cd",
+          "transferBytes": 95948,
+          "triangleCount": 34958,
+          "vertexCount": 40108,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 1493204,
+          "estimatedTextureBytes": 683,
+          "textures": [
+            {
+              "width": 32,
+              "height": 4,
+              "bytes": 115,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 683
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.026650000381283463,
+              -0.05114999961853027,
+              2.2351740423809385e-10
+            ],
+            "max": [
+              0.02665210688114166,
+              0.045149998843669895,
+              0.05896266013383865
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      }
+    },
+    "deviations": [
+      "low: existing optimized source retained; recompression increased bytes",
+      "high: existing optimized source retained; recompression increased bytes"
+    ],
+    "provenance": {
+      "repository": "spatial-elements-brand-examples",
+      "manifest": "src/lib/catalog/assets/generated/optimized/wurm-asv101.json",
+      "source": {
+        "url": "/assets/asv101.glb",
+        "sha256": "867b688080209a3042959a6869f8eb082e19f75236696ac092656b9cb88ae1cd"
+      }
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wurm",
+    "spatialElementId": "wurm-hks-g4",
+    "source": {
+      "origin": "website-static",
+      "file": "assets/showcase/wurm-hks-g4/wurm-hks-g4-high.glb",
+      "sha256": "0f91c8f4ca0fc793e09285c659ca121339864d69f41472a6dd846ac88055a49f",
+      "costs": {
+        "sha256": "0f91c8f4ca0fc793e09285c659ca121339864d69f41472a6dd846ac88055a49f",
+        "transferBytes": 355432,
+        "triangleCount": 141166,
+        "vertexCount": 162553,
+        "drawCalls": 1,
+        "materialCount": 1,
+        "decodedGeometryBytes": 6895688,
+        "estimatedTextureBytes": 2731,
+        "textures": [
+          {
+            "width": 128,
+            "height": 4,
+            "bytes": 213,
+            "mimeType": "image/png",
+            "slots": [
+              "baseColorTexture"
+            ],
+            "estimatedGpuBytes": 2731
+          }
+        ],
+        "bounds": {
+          "min": [
+            -0.05449999868869783,
+            -0.05449999516593842,
+            -0.09266027384996414
+          ],
+          "max": [
+            0.0544999986886978,
+            0.05450000221145721,
+            -6.290674209596947e-7
+          ]
+        },
+        "extensions": [
+          "KHR_draco_mesh_compression"
+        ],
+        "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+      }
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "verified-canonical-frame",
+      "revision": "hks-g4-metres-front-1",
+      "sourceUrl": "/assets/showcase/wurm-hks-g4/wurm-hks-g4-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-hks-g4/wurm-hks-g4-low.glb",
+        "format": "glb",
+        "revision": "40f56cdb3d60476cb95ed207275f1509e226e1632785412c25f153bc3ac64ff5",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-hks-g4/wurm-hks-g4-high.glb",
+        "format": "glb",
+        "revision": "0f91c8f4ca0fc793e09285c659ca121339864d69f41472a6dd846ac88055a49f",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1.3877787807814457e-17,
+        -3.5227593966902226e-9,
+        0.04633045145869255,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.054499998688697815,
+          -0.054499998688697815,
+          -0.04632982239127159
+        ],
+        "max": [
+          0.054499998688697815,
+          0.054499998688697815,
+          0.04632982239127159
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-hks-g4/wurm-hks-g4-poster.webp",
+      "alt": "HKS-G4",
+      "width": 1024,
+      "height": 1024
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/showcase/wurm-hks-g4/wurm-hks-g4-low.glb",
+          "format": "glb",
+          "revision": "40f56cdb3d60476cb95ed207275f1509e226e1632785412c25f153bc3ac64ff5",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "40f56cdb3d60476cb95ed207275f1509e226e1632785412c25f153bc3ac64ff5",
+          "transferBytes": 90748,
+          "triangleCount": 22310,
+          "vertexCount": 31342,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 1136804,
+          "estimatedTextureBytes": 2731,
+          "textures": [
+            {
+              "width": 128,
+              "height": 4,
+              "bytes": 213,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 2731
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.05449999868869783,
+              -0.05449999516593842,
+              -0.09266027384996414
+            ],
+            "max": [
+              0.0544999986886978,
+              0.05450000221145721,
+              1.1599063873268811e-7
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/showcase/wurm-hks-g4/wurm-hks-g4-high.glb",
+          "format": "glb",
+          "revision": "0f91c8f4ca0fc793e09285c659ca121339864d69f41472a6dd846ac88055a49f",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "0f91c8f4ca0fc793e09285c659ca121339864d69f41472a6dd846ac88055a49f",
+          "transferBytes": 355432,
+          "triangleCount": 141166,
+          "vertexCount": 162553,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 6895688,
+          "estimatedTextureBytes": 2731,
+          "textures": [
+            {
+              "width": 128,
+              "height": 4,
+              "bytes": 213,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 2731
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.05449999868869783,
+              -0.05449999516593842,
+              -0.09266027384996414
+            ],
+            "max": [
+              0.0544999986886978,
+              0.05450000221145721,
+              -6.290674209596947e-7
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      }
+    },
+    "deviations": [
+      "low: existing optimized source retained; recompression increased bytes",
+      "high: existing optimized source retained; recompression increased bytes"
+    ],
+    "provenance": {
+      "repository": "spatial-elements-brand-examples",
+      "manifest": "src/lib/catalog/assets/generated/optimized/wurm-hks-g4.json",
+      "source": {
+        "url": "/assets/hks-g4.glb",
+        "sha256": "0f91c8f4ca0fc793e09285c659ca121339864d69f41472a6dd846ac88055a49f"
+      }
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wurm",
+    "spatialElementId": "wurm-atv230",
+    "source": {
+      "origin": "website-static",
+      "file": "assets/showcase/wurm-atv230/wurm-atv230-high.glb",
+      "sha256": "8bc0871dfb04587e88821404bb689b09bef68f462a633b0b0ef4ae287519ad91",
+      "costs": {
+        "sha256": "8bc0871dfb04587e88821404bb689b09bef68f462a633b0b0ef4ae287519ad91",
+        "transferBytes": 62944,
+        "triangleCount": 22834,
+        "vertexCount": 24052,
+        "drawCalls": 1,
+        "materialCount": 1,
+        "decodedGeometryBytes": 906668,
+        "estimatedTextureBytes": 683,
+        "textures": [
+          {
+            "width": 32,
+            "height": 4,
+            "bytes": 116,
+            "mimeType": "image/png",
+            "slots": [
+              "baseColorTexture"
+            ],
+            "estimatedGpuBytes": 683
+          }
+        ],
+        "bounds": {
+          "min": [
+            -0.02635000087320805,
+            -0.04984999448060973,
+            2.980230576210552e-10
+          ],
+          "max": [
+            0.02634974010288715,
+            0.044849999248981656,
+            0.05754948064684869
+          ]
+        },
+        "extensions": [
+          "KHR_draco_mesh_compression"
+        ],
+        "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+      }
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "atv230-source-frame-1",
+      "sourceUrl": "/assets/showcase/wurm-atv230/wurm-atv230-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-atv230/wurm-atv230-low.glb",
+        "format": "glb",
+        "revision": "f97f84e505a52eca446ef3bfff0372c95b7c2252ee8fb2a53b377ada06b87751",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-atv230/wurm-atv230-high.glb",
+        "format": "glb",
+        "revision": "8bc0871dfb04587e88821404bb689b09bef68f462a633b0b0ef4ae287519ad91",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1.3038516044963644e-7,
+        0.0024999976158140355,
+        -0.028774740472435875,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.0263498704880476,
+          -0.04734999686479569,
+          -0.028774740174412818
+        ],
+        "max": [
+          0.0263498704880476,
+          0.04734999686479569,
+          0.028774740174412814
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-atv230/wurm-atv230-poster.webp",
+      "alt": "ATV230",
+      "width": 1024,
+      "height": 1024
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/showcase/wurm-atv230/wurm-atv230-low.glb",
+          "format": "glb",
+          "revision": "f97f84e505a52eca446ef3bfff0372c95b7c2252ee8fb2a53b377ada06b87751",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "f97f84e505a52eca446ef3bfff0372c95b7c2252ee8fb2a53b377ada06b87751",
+          "transferBytes": 17280,
+          "triangleCount": 3714,
+          "vertexCount": 4768,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 174860,
+          "estimatedTextureBytes": 683,
+          "textures": [
+            {
+              "width": 32,
+              "height": 4,
+              "bytes": 116,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 683
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.02635000087320805,
+              -0.04984999448060973,
+              2.980230576210552e-10
+            ],
+            "max": [
+              0.026350216940045353,
+              0.044849999248981656,
+              0.05754973769187929
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/showcase/wurm-atv230/wurm-atv230-high.glb",
+          "format": "glb",
+          "revision": "8bc0871dfb04587e88821404bb689b09bef68f462a633b0b0ef4ae287519ad91",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "8bc0871dfb04587e88821404bb689b09bef68f462a633b0b0ef4ae287519ad91",
+          "transferBytes": 62944,
+          "triangleCount": 22834,
+          "vertexCount": 24052,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 906668,
+          "estimatedTextureBytes": 683,
+          "textures": [
+            {
+              "width": 32,
+              "height": 4,
+              "bytes": 116,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 683
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.02635000087320805,
+              -0.04984999448060973,
+              2.980230576210552e-10
+            ],
+            "max": [
+              0.02634974010288715,
+              0.044849999248981656,
+              0.05754948064684869
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      }
+    },
+    "deviations": [
+      "low: existing optimized source retained; recompression increased bytes",
+      "high: existing optimized source retained; recompression increased bytes"
+    ],
+    "provenance": {
+      "repository": "spatial-elements-brand-examples",
+      "manifest": "src/lib/catalog/assets/generated/optimized/wurm-atv230.json",
+      "source": {
+        "url": "/assets/atv230.glb",
+        "sha256": "8bc0871dfb04587e88821404bb689b09bef68f462a633b0b0ef4ae287519ad91"
+      }
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wurm",
+    "spatialElementId": "wurm-dsp-lcd",
+    "source": {
+      "origin": "website-static",
+      "file": "assets/showcase/wurm-dsp-lcd/wurm-dsp-lcd-high.glb",
+      "sha256": "3d6c1cce3a6444440abfc7b616baccad3563b217d3fb8e276d3eb20ca8533998",
+      "costs": {
+        "sha256": "3d6c1cce3a6444440abfc7b616baccad3563b217d3fb8e276d3eb20ca8533998",
+        "transferBytes": 21320,
+        "triangleCount": 6706,
+        "vertexCount": 6982,
+        "drawCalls": 1,
+        "materialCount": 1,
+        "decodedGeometryBytes": 263660,
+        "estimatedTextureBytes": 683,
+        "textures": [
+          {
+            "width": 32,
+            "height": 4,
+            "bytes": 107,
+            "mimeType": "image/png",
+            "slots": [
+              "baseColorTexture"
+            ],
+            "estimatedGpuBytes": 683
+          }
+        ],
+        "bounds": {
+          "min": [
+            -0.03137883797241796,
+            -0.014733839043974864,
+            -3.2415950891422074e-18
+          ],
+          "max": [
+            0.03137883872771215,
+            0.014731584852933896,
+            0.018122844398021698
+          ]
+        },
+        "extensions": [
+          "KHR_draco_mesh_compression"
+        ],
+        "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+      }
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "dsp-lcd-source-frame-1",
+      "sourceUrl": "/assets/showcase/wurm-dsp-lcd/wurm-dsp-lcd-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-dsp-lcd/wurm-dsp-lcd-low.glb",
+        "format": "glb",
+        "revision": "c14924bf34a9437e87e2fab4e9df265b0696d688517c20af58fb492f806b4931",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-dsp-lcd/wurm-dsp-lcd-high.glb",
+        "format": "glb",
+        "revision": "3d6c1cce3a6444440abfc7b616baccad3563b217d3fb8e276d3eb20ca8533998",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -3.7764709415188946e-10,
+        0.0000011270955204839561,
+        -0.009061422199010847,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.03137883835006505,
+          -0.01473271194845438,
+          -0.00906142219901085
+        ],
+        "max": [
+          0.03137883835006505,
+          0.01473271194845438,
+          0.00906142219901085
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-dsp-lcd/wurm-dsp-lcd-poster.webp",
+      "alt": "DSP-LCD",
+      "width": 1024,
+      "height": 1024
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/showcase/wurm-dsp-lcd/wurm-dsp-lcd-low.glb",
+          "format": "glb",
+          "revision": "c14924bf34a9437e87e2fab4e9df265b0696d688517c20af58fb492f806b4931",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "c14924bf34a9437e87e2fab4e9df265b0696d688517c20af58fb492f806b4931",
+          "transferBytes": 8232,
+          "triangleCount": 1496,
+          "vertexCount": 2077,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 75440,
+          "estimatedTextureBytes": 683,
+          "textures": [
+            {
+              "width": 32,
+              "height": 4,
+              "bytes": 107,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 683
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.03137883797241796,
+              -0.014733839043974864,
+              -3.2415950891422074e-18
+            ],
+            "max": [
+              0.03137883872771215,
+              0.014731197422742856,
+              0.018122974783182144
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/showcase/wurm-dsp-lcd/wurm-dsp-lcd-high.glb",
+          "format": "glb",
+          "revision": "3d6c1cce3a6444440abfc7b616baccad3563b217d3fb8e276d3eb20ca8533998",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "3d6c1cce3a6444440abfc7b616baccad3563b217d3fb8e276d3eb20ca8533998",
+          "transferBytes": 21320,
+          "triangleCount": 6706,
+          "vertexCount": 6982,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 263660,
+          "estimatedTextureBytes": 683,
+          "textures": [
+            {
+              "width": 32,
+              "height": 4,
+              "bytes": 107,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 683
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.03137883797241796,
+              -0.014733839043974864,
+              -3.2415950891422074e-18
+            ],
+            "max": [
+              0.03137883872771215,
+              0.014731584852933896,
+              0.018122844398021698
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      }
+    },
+    "deviations": [
+      "low: existing optimized source retained; recompression increased bytes",
+      "high: existing optimized source retained; recompression increased bytes"
+    ],
+    "provenance": {
+      "repository": "spatial-elements-brand-examples",
+      "manifest": "src/lib/catalog/assets/generated/optimized/wurm-dsp-lcd.json",
+      "source": {
+        "url": "/assets/dsp-lcd.glb",
+        "sha256": "3d6c1cce3a6444440abfc7b616baccad3563b217d3fb8e276d3eb20ca8533998"
+      }
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wurm",
+    "spatialElementId": "wurm-dsp002",
+    "source": {
+      "origin": "website-static",
+      "file": "assets/showcase/wurm-dsp002/wurm-dsp002-high.glb",
+      "sha256": "4630d882ba4a39adc4fc4a8871abef58fbf69227c3760ce88010ec3002c0df65",
+      "costs": {
+        "sha256": "4630d882ba4a39adc4fc4a8871abef58fbf69227c3760ce88010ec3002c0df65",
+        "transferBytes": 91196,
+        "triangleCount": 37276,
+        "vertexCount": 43279,
+        "drawCalls": 1,
+        "materialCount": 1,
+        "decodedGeometryBytes": 1608584,
+        "estimatedTextureBytes": 2731,
+        "textures": [
+          {
+            "width": 128,
+            "height": 4,
+            "bytes": 204,
+            "mimeType": "image/png",
+            "slots": [
+              "baseColorTexture"
+            ],
+            "estimatedGpuBytes": 2731
+          }
+        ],
+        "bounds": {
+          "min": [
+            -0.04399999976158142,
+            -0.0030000000260770325,
+            -0.015997556969523426
+          ],
+          "max": [
+            0.04399999976158142,
+            0.022519623860716823,
+            0.016000000759959224
+          ]
+        },
+        "extensions": [
+          "KHR_draco_mesh_compression"
+        ],
+        "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+      }
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "dsp002-source-frame-1",
+      "sourceUrl": "/assets/showcase/wurm-dsp002/wurm-dsp002-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-dsp002/wurm-dsp002-low.glb",
+        "format": "glb",
+        "revision": "ca06b860157bae369111d95473e56ecbebcab4c79e2585786b477e7a263e5938",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-dsp002/wurm-dsp002-high.glb",
+        "format": "glb",
+        "revision": "4630d882ba4a39adc4fc4a8871abef58fbf69227c3760ce88010ec3002c0df65",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        6.123233995736766e-17,
+        1,
+        0,
+        0,
+        -1,
+        6.123233995736766e-17,
+        0,
+        0,
+        0.0000012218952178983797,
+        -0.009759811917319896,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.04399999976158142,
+          -0.015998778864741325,
+          -0.012759811943396928
+        ],
+        "max": [
+          0.04399999976158142,
+          0.015998778864741325,
+          0.012759811943396928
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-dsp002/wurm-dsp002-poster.webp",
+      "alt": "DSP002",
+      "width": 1024,
+      "height": 1024
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/showcase/wurm-dsp002/wurm-dsp002-low.glb",
+          "format": "glb",
+          "revision": "ca06b860157bae369111d95473e56ecbebcab4c79e2585786b477e7a263e5938",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "ca06b860157bae369111d95473e56ecbebcab4c79e2585786b477e7a263e5938",
+          "transferBytes": 50276,
+          "triangleCount": 17161,
+          "vertexCount": 19856,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 738358,
+          "estimatedTextureBytes": 2731,
+          "textures": [
+            {
+              "width": 128,
+              "height": 4,
+              "bytes": 204,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 2731
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.04399999976158142,
+              -0.0030000000260770325,
+              -0.015997434034943577
+            ],
+            "max": [
+              0.04399999976158142,
+              0.0225197970867157,
+              0.016000000759959224
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/showcase/wurm-dsp002/wurm-dsp002-high.glb",
+          "format": "glb",
+          "revision": "4630d882ba4a39adc4fc4a8871abef58fbf69227c3760ce88010ec3002c0df65",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "4630d882ba4a39adc4fc4a8871abef58fbf69227c3760ce88010ec3002c0df65",
+          "transferBytes": 91196,
+          "triangleCount": 37276,
+          "vertexCount": 43279,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 1608584,
+          "estimatedTextureBytes": 2731,
+          "textures": [
+            {
+              "width": 128,
+              "height": 4,
+              "bytes": 204,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 2731
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.04399999976158142,
+              -0.0030000000260770325,
+              -0.015997556969523426
+            ],
+            "max": [
+              0.04399999976158142,
+              0.022519623860716823,
+              0.016000000759959224
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      }
+    },
+    "deviations": [
+      "low: existing optimized source retained; recompression increased bytes",
+      "high: existing optimized source retained; recompression increased bytes"
+    ],
+    "provenance": {
+      "repository": "spatial-elements-brand-examples",
+      "manifest": "src/lib/catalog/assets/generated/optimized/wurm-dsp002.json",
+      "source": {
+        "url": "/assets/dsp002.glb",
+        "sha256": "4630d882ba4a39adc4fc4a8871abef58fbf69227c3760ce88010ec3002c0df65"
+      }
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wurm",
+    "spatialElementId": "wurm-fkl003",
+    "source": {
+      "origin": "website-static",
+      "file": "assets/showcase/wurm-fkl003/wurm-fkl003-high.glb",
+      "sha256": "f6b1c583fe39ede8ba219bd4df1e9ecd1cd89efeb17bc65f436c6da07f9a30d1",
+      "costs": {
+        "sha256": "f6b1c583fe39ede8ba219bd4df1e9ecd1cd89efeb17bc65f436c6da07f9a30d1",
+        "transferBytes": 487240,
+        "triangleCount": 180514,
+        "vertexCount": 190755,
+        "drawCalls": 1,
+        "materialCount": 1,
+        "decodedGeometryBytes": 8270328,
+        "estimatedTextureBytes": 2731,
+        "textures": [
+          {
+            "width": 128,
+            "height": 4,
+            "bytes": 195,
+            "mimeType": "image/png",
+            "slots": [
+              "baseColorTexture"
+            ],
+            "estimatedGpuBytes": 2731
+          }
+        ],
+        "bounds": {
+          "min": [
+            -0.05307500102755516,
+            -0.05014999934557036,
+            -0.00009999958053231225
+          ],
+          "max": [
+            0.053075000259905164,
+            0.04650138339874193,
+            0.058867902278900146
+          ]
+        },
+        "extensions": [
+          "KHR_draco_mesh_compression"
+        ],
+        "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+      }
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "fkl003-source-frame-1",
+      "sourceUrl": "/assets/showcase/wurm-fkl003/wurm-fkl003-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-fkl003/wurm-fkl003-low.glb",
+        "format": "glb",
+        "revision": "5b26c2d52905f55ea811d1651a35cbf12b2b00b75b8590ec3504944e79405628",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-fkl003/wurm-fkl003-high.glb",
+        "format": "glb",
+        "revision": "f6b1c583fe39ede8ba219bd4df1e9ecd1cd89efeb17bc65f436c6da07f9a30d1",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        3.838249995613552e-10,
+        0.0018243079734142145,
+        -0.029383951349183916,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.053075000643730164,
+          -0.04832569137215614,
+          -0.02948395092971623
+        ],
+        "max": [
+          0.053075000643730164,
+          0.04832569137215614,
+          0.02948395092971623
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-fkl003/wurm-fkl003-poster.webp",
+      "alt": "FKL003",
+      "width": 1024,
+      "height": 1024
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/showcase/wurm-fkl003/wurm-fkl003-low.glb",
+          "format": "glb",
+          "revision": "5b26c2d52905f55ea811d1651a35cbf12b2b00b75b8590ec3504944e79405628",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "5b26c2d52905f55ea811d1651a35cbf12b2b00b75b8590ec3504944e79405628",
+          "transferBytes": 106476,
+          "triangleCount": 23482,
+          "vertexCount": 32478,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 1180188,
+          "estimatedTextureBytes": 2731,
+          "textures": [
+            {
+              "width": 128,
+              "height": 4,
+              "bytes": 195,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 2731
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.05307500102755516,
+              -0.05014999934557036,
+              -0.00009999958053231225
+            ],
+            "max": [
+              0.053075000259905164,
+              0.04650181553241655,
+              0.05886844244599342
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/showcase/wurm-fkl003/wurm-fkl003-high.glb",
+          "format": "glb",
+          "revision": "f6b1c583fe39ede8ba219bd4df1e9ecd1cd89efeb17bc65f436c6da07f9a30d1",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "f6b1c583fe39ede8ba219bd4df1e9ecd1cd89efeb17bc65f436c6da07f9a30d1",
+          "transferBytes": 487240,
+          "triangleCount": 180514,
+          "vertexCount": 190755,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 8270328,
+          "estimatedTextureBytes": 2731,
+          "textures": [
+            {
+              "width": 128,
+              "height": 4,
+              "bytes": 195,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 2731
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.05307500102755516,
+              -0.05014999934557036,
+              -0.00009999958053231225
+            ],
+            "max": [
+              0.053075000259905164,
+              0.04650138339874193,
+              0.058867902278900146
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      }
+    },
+    "deviations": [
+      "low: existing optimized source retained; recompression increased bytes",
+      "high: existing optimized source retained; recompression increased bytes"
+    ],
+    "provenance": {
+      "repository": "spatial-elements-brand-examples",
+      "manifest": "src/lib/catalog/assets/generated/optimized/wurm-fkl003.json",
+      "source": {
+        "url": "/assets/fkl003.glb",
+        "sha256": "f6b1c583fe39ede8ba219bd4df1e9ecd1cd89efeb17bc65f436c6da07f9a30d1"
+      }
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wurm",
+    "spatialElementId": "wurm-fkp003",
+    "source": {
+      "origin": "website-static",
+      "file": "assets/showcase/wurm-fkp003/wurm-fkp003-high.glb",
+      "sha256": "facd0e96021ccf0b4c4485b5c5d73f71afa671ea8e6f0d53964cec93fd0ee249",
+      "costs": {
+        "sha256": "facd0e96021ccf0b4c4485b5c5d73f71afa671ea8e6f0d53964cec93fd0ee249",
+        "transferBytes": 321620,
+        "triangleCount": 116194,
+        "vertexCount": 125467,
+        "drawCalls": 1,
+        "materialCount": 1,
+        "decodedGeometryBytes": 5409272,
+        "estimatedTextureBytes": 1366,
+        "textures": [
+          {
+            "width": 64,
+            "height": 4,
+            "bytes": 160,
+            "mimeType": "image/png",
+            "slots": [
+              "baseColorTexture"
+            ],
+            "estimatedGpuBytes": 1366
+          }
+        ],
+        "bounds": {
+          "min": [
+            -0.053199999034404755,
+            -0.04808541759848595,
+            -0.0008999999845400453
+          ],
+          "max": [
+            0.053199999034404755,
+            0.0452021099627018,
+            0.060798101127147675
+          ]
+        },
+        "extensions": [
+          "KHR_draco_mesh_compression"
+        ],
+        "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+      }
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "fkp003-source-frame-1",
+      "sourceUrl": "/assets/showcase/wurm-fkp003/wurm-fkp003-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-fkp003/wurm-fkp003-low.glb",
+        "format": "glb",
+        "revision": "ced0f5af62fb000f85c649e0a9adecf6b29a062bcf655148af2be75d479cddb1",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-fkp003/wurm-fkp003-high.glb",
+        "format": "glb",
+        "revision": "facd0e96021ccf0b4c4485b5c5d73f71afa671ea8e6f0d53964cec93fd0ee249",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0.0014416538178920746,
+        -0.029949050571303815,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.053199999034404755,
+          -0.04664376378059387,
+          -0.03084905055584386
+        ],
+        "max": [
+          0.053199999034404755,
+          0.04664376378059387,
+          0.03084905055584386
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-fkp003/wurm-fkp003-poster.webp",
+      "alt": "FKP003",
+      "width": 1024,
+      "height": 1024
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/showcase/wurm-fkp003/wurm-fkp003-low.glb",
+          "format": "glb",
+          "revision": "ced0f5af62fb000f85c649e0a9adecf6b29a062bcf655148af2be75d479cddb1",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "ced0f5af62fb000f85c649e0a9adecf6b29a062bcf655148af2be75d479cddb1",
+          "transferBytes": 62792,
+          "triangleCount": 13516,
+          "vertexCount": 18221,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 664168,
+          "estimatedTextureBytes": 1366,
+          "textures": [
+            {
+              "width": 64,
+              "height": 4,
+              "bytes": 160,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 1366
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.053199999034404755,
+              -0.04808541759848595,
+              -0.0008999999845400453
+            ],
+            "max": [
+              0.053199999034404755,
+              0.04520271345973015,
+              0.0607985220849514
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/showcase/wurm-fkp003/wurm-fkp003-high.glb",
+          "format": "glb",
+          "revision": "facd0e96021ccf0b4c4485b5c5d73f71afa671ea8e6f0d53964cec93fd0ee249",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "facd0e96021ccf0b4c4485b5c5d73f71afa671ea8e6f0d53964cec93fd0ee249",
+          "transferBytes": 321620,
+          "triangleCount": 116194,
+          "vertexCount": 125467,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 5409272,
+          "estimatedTextureBytes": 1366,
+          "textures": [
+            {
+              "width": 64,
+              "height": 4,
+              "bytes": 160,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 1366
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.053199999034404755,
+              -0.04808541759848595,
+              -0.0008999999845400453
+            ],
+            "max": [
+              0.053199999034404755,
+              0.0452021099627018,
+              0.060798101127147675
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      }
+    },
+    "deviations": [
+      "low: existing optimized source retained; recompression increased bytes",
+      "high: existing optimized source retained; recompression increased bytes"
+    ],
+    "provenance": {
+      "repository": "spatial-elements-brand-examples",
+      "manifest": "src/lib/catalog/assets/generated/optimized/wurm-fkp003.json",
+      "source": {
+        "url": "/assets/fkp003.glb",
+        "sha256": "facd0e96021ccf0b4c4485b5c5d73f71afa671ea8e6f0d53964cec93fd0ee249"
+      }
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "brandId": "wurm",
+    "spatialElementId": "wurm-multigate3",
+    "source": {
+      "origin": "website-static",
+      "file": "assets/showcase/wurm-multigate3/wurm-multigate3-high.glb",
+      "sha256": "ae8d36960c594f5786a2c91cc632dbfa30831c4d524b8ca2c58e0d52cb06d8d5",
+      "costs": {
+        "sha256": "ae8d36960c594f5786a2c91cc632dbfa30831c4d524b8ca2c58e0d52cb06d8d5",
+        "transferBytes": 611460,
+        "triangleCount": 247166,
+        "vertexCount": 255038,
+        "drawCalls": 1,
+        "materialCount": 1,
+        "decodedGeometryBytes": 11127208,
+        "estimatedTextureBytes": 2731,
+        "textures": [
+          {
+            "width": 128,
+            "height": 4,
+            "bytes": 236,
+            "mimeType": "image/png",
+            "slots": [
+              "baseColorTexture"
+            ],
+            "estimatedGpuBytes": 2731
+          }
+        ],
+        "bounds": {
+          "min": [
+            -0.1064999997112878,
+            -0.05113381132856012,
+            -0.0002500002015685607
+          ],
+          "max": [
+            0.10650000190735083,
+            0.04550471776723861,
+            0.06200014271546845
+          ]
+        },
+        "extensions": [
+          "KHR_draco_mesh_compression"
+        ],
+        "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+      }
+    },
+    "tools": {
+      "gltfTransform": "4.5.0",
+      "sharp": "0.35.4",
+      "recipe": "catalog-1"
+    },
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "multigate3-source-frame-1",
+      "sourceUrl": "/assets/showcase/wurm-multigate3/wurm-multigate3-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-multigate3/wurm-multigate3-low.glb",
+        "format": "glb",
+        "revision": "e286a2f2aa8d3a2b01bb3c81257a3ece7af4efb68de2cee71d47b0d8239d2029",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-multigate3/wurm-multigate3-high.glb",
+        "format": "glb",
+        "revision": "ae8d36960c594f5786a2c91cc632dbfa30831c4d524b8ca2c58e0d52cb06d8d5",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -1.0980315129360818e-9,
+        0.0028145467806607524,
+        -0.030875071256949944,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.10650000080931932,
+          -0.048319264547899365,
+          -0.031125071458518505
+        ],
+        "max": [
+          0.10650000080931932,
+          0.048319264547899365,
+          0.031125071458518505
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-multigate3/wurm-multigate3-poster.webp",
+      "alt": "MULTIGATE3",
+      "width": 1024,
+      "height": 1024
+    },
+    "representations": {
+      "low": {
+        "resource": {
+          "url": "/assets/showcase/wurm-multigate3/wurm-multigate3-low.glb",
+          "format": "glb",
+          "revision": "e286a2f2aa8d3a2b01bb3c81257a3ece7af4efb68de2cee71d47b0d8239d2029",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "e286a2f2aa8d3a2b01bb3c81257a3ece7af4efb68de2cee71d47b0d8239d2029",
+          "transferBytes": 101616,
+          "triangleCount": 24124,
+          "vertexCount": 34194,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 1238952,
+          "estimatedTextureBytes": 2731,
+          "textures": [
+            {
+              "width": 128,
+              "height": 4,
+              "bytes": 236,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 2731
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.1064999997112878,
+              -0.05113381132856012,
+              -0.0002500002015685607
+            ],
+            "max": [
+              0.10650000190735083,
+              0.0455035405755043,
+              0.062000537596240086
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      },
+      "high": {
+        "resource": {
+          "url": "/assets/showcase/wurm-multigate3/wurm-multigate3-high.glb",
+          "format": "glb",
+          "revision": "ae8d36960c594f5786a2c91cc632dbfa30831c4d524b8ca2c58e0d52cb06d8d5",
+          "requirements": {
+            "decoders": [
+              "draco"
+            ],
+            "extensions": [
+              "KHR_draco_mesh_compression"
+            ]
+          }
+        },
+        "costs": {
+          "sha256": "ae8d36960c594f5786a2c91cc632dbfa30831c4d524b8ca2c58e0d52cb06d8d5",
+          "transferBytes": 611460,
+          "triangleCount": 247166,
+          "vertexCount": 255038,
+          "drawCalls": 1,
+          "materialCount": 1,
+          "decodedGeometryBytes": 11127208,
+          "estimatedTextureBytes": 2731,
+          "textures": [
+            {
+              "width": 128,
+              "height": 4,
+              "bytes": 236,
+              "mimeType": "image/png",
+              "slots": [
+                "baseColorTexture"
+              ],
+              "estimatedGpuBytes": 2731
+            }
+          ],
+          "bounds": {
+            "min": [
+              -0.1064999997112878,
+              -0.05113381132856012,
+              -0.0002500002015685607
+            ],
+            "max": [
+              0.10650000190735083,
+              0.04550471776723861,
+              0.06200014271546845
+            ]
+          },
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ],
+          "method": "Scene triangles, vertices and draw calls include instances. Texture GPU bytes estimate RGBA8 plus mipmaps; they are not device measurements."
+        }
+      }
+    },
+    "deviations": [
+      "low: existing optimized source retained; recompression increased bytes",
+      "high: existing optimized source retained; recompression increased bytes"
+    ],
+    "provenance": {
+      "repository": "spatial-elements-brand-examples",
+      "manifest": "src/lib/catalog/assets/generated/optimized/wurm-multigate3.json",
+      "source": {
+        "url": "/assets/multigate3.glb",
+        "sha256": "ae8d36960c594f5786a2c91cc632dbfa30831c4d524b8ca2c58e0d52cb06d8d5"
+      }
+    }
   }
 ]

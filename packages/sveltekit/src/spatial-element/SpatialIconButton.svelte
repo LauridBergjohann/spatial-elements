@@ -5,13 +5,16 @@
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 
-	let { label, children, onclick, expanded, controls, focusAnchor, enabled = true, element = $bindable() }: {
+	let { label, children, onclick, pressed, busy, expanded, controls, focusAnchor, wide = false, enabled = true, element = $bindable() }: {
 		label: string;
 		children: Snippet;
 		onclick: (event: MouseEvent) => void;
+		pressed?: boolean;
+		busy?: boolean;
 		expanded?: boolean;
 		controls?: string;
 		focusAnchor?: HTMLElement;
+		wide?: boolean;
 		enabled?: boolean;
 		element?: HTMLButtonElement;
 	} = $props();
@@ -20,7 +23,7 @@
 	const radii = $derived(resolveSpatialThemeRadii(theme));
 </script>
 
-<div class="icon-frame">
+<div class="icon-frame" class:wide data-spatial-control={label}>
 	<Panel
 		class="spatial-icon-panel"
 		shape={{ radius: radii.control, contentInset: 0 }}
@@ -34,8 +37,8 @@
 		<button bind:this={element} use:mouseHover type="button" {onclick} aria-label={label} title={label}
 			disabled={!enabled}
 			style:visibility={enabled ? 'visible' : 'hidden'}
-			aria-expanded={expanded} aria-controls={controls} aria-haspopup={controls ? 'dialog' : undefined}
-			class="spatial-icon-button">
+			aria-pressed={pressed} aria-busy={busy || undefined} aria-expanded={expanded} aria-controls={controls} aria-haspopup={controls ? 'dialog' : undefined}
+			class="spatial-icon-button" class:wide>
 			{@render children()}
 		</button>
 	</Panel>
@@ -43,17 +46,21 @@
 
 <style>
 	.icon-frame { width: 40px; height: 40px; flex: 0 0 40px; }
+	.icon-frame.wide { width: 104px; flex-basis: 104px; }
+	.icon-frame.wide :global(.spatial-icon-panel), .spatial-icon-button.wide { width: 104px; }
 	/* The renderer moves panel contents into its projection layer; retain the anchor size. */
 	.icon-frame :global(.spatial-icon-panel) { width: 40px; height: 40px; }
 	.spatial-icon-button {
 		box-sizing: border-box; display: grid; place-items: center; width: 40px; height: 40px;
 		padding: 0; border: 0; border-radius: var(--spatial-element-control-radius); background: transparent;
+		font: inherit; font-size: 13px;
 		color: var(--spatial-element-ink); cursor: pointer; touch-action: manipulation;
 		transition: background-color 180ms ease;
 	}
 	.spatial-icon-button:global([data-mouse-hover]):hover {
 		background: color-mix(in srgb, var(--spatial-element-body) 8%, transparent);
 	}
+	.spatial-icon-button[aria-pressed="true"] { color: var(--spatial-element-accent); background: var(--ps-selection, var(--ps-section-muted, #eeeeee)); }
 	.spatial-icon-button:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: 3px; }
 	@media (prefers-reduced-motion: reduce) { .spatial-icon-button { transition: none; } }
 </style>

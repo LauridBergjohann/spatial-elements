@@ -260,7 +260,7 @@
 		position: absolute;
 		inset: 0;
 		border-radius: inherit;
-		box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--spatial-element-accent) 96%, transparent);
+		box-shadow: inset 0 0 0 3px var(--spatial-element-accent);
 		pointer-events: none;
 	}
 	:global(.stage-enhanced[data-stage-page-ready]) .thumb-minimap.active::after {
@@ -268,8 +268,9 @@
 	}
 	.media-indicator {
 		position: absolute;
-		bottom: 4px;
-		right: 4px;
+		/* Inset along the rounded corner's diagonal; retain a 4px safety margin. */
+		bottom: calc(4px + var(--spatial-element-control-radius) * 0.293);
+		right: calc(4px + var(--spatial-element-control-radius) * 0.293);
 		display: grid;
 		color: color-mix(in srgb, var(--spatial-element-ink) 45%, transparent);
 		opacity: var(--stage-panel-surface-opacity, 1);

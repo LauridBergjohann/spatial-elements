@@ -124,7 +124,7 @@
 	data-carousel-theme={JSON.stringify({
 		...brand.panelTheme,
 		radius: radii.panel,
-		tintOpacity: Math.min(brand.panelTheme.tintOpacity ?? 0.28, 0.72)
+		tintOpacity: Math.max(0, Math.min(brand.panelTheme.tintOpacity ?? 0.28, 1))
 	})}
 	data-catalog-occurrence={occurrence}
 >
@@ -196,10 +196,10 @@
 			: typeof brand.panelTheme.tint === 'object'
 				? brand.panelTheme.tint.getStyle()
 				: (brand.panelTheme.tint ?? '#ffffff')}
-		style:--carousel-panel-tint-opacity={Math.min(brand.panelTheme.tintOpacity ?? 0.28, 0.72) *
+		style:--carousel-panel-tint-opacity={Math.max(0, Math.min(brand.panelTheme.tintOpacity ?? 0.28, 1)) *
 			100 +
 			'%'}
-		style:--carousel-panel-blur={(brand.panelTheme.backdropBlur ?? 5) + 'px'}
+		style:--carousel-panel-backdrop={brand.panelTheme.surface === 'solid' ? 'none' : `blur(${Math.max(0, Math.min(brand.panelTheme.backdropBlur ?? 5, 100))}px)`}
 		style:--carousel-focus-blur={interactive && pose.panelOpacity < 1 ? `blur(${(1 - pose.panelOpacity) * 6}px)` : 'none'}
 		style:--carousel-panel-radius={radii.panel + 'px'}
 		use:catalogEndpoint={address('summary-surface')}
@@ -318,7 +318,6 @@
 		margin: 0;
 		--spatial-carousel-compact-height: 40px;
 		box-sizing: border-box;
-		filter: var(--carousel-focus-blur, none);
 
 		border-radius: var(--carousel-panel-radius, 14px);
 		padding: 0;

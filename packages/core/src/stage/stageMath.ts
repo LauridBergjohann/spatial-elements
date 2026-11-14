@@ -1,14 +1,12 @@
+import { smoothstep, getPerspectiveDistance, getPanelFocusPerspectiveOffset, getPanelFocusOffset, getPanelFocusDirection, getPanelFocusProgress, getPanelFocusOpacity, getPanelFocusBlur } from './panelFocusMath.js';
+export { smoothstep, getPerspectiveDistance, getPanelFocusPerspectiveOffset, getPanelFocusOffset, getPanelFocusDirection, getPanelFocusProgress, getPanelFocusOpacity, getPanelFocusBlur } from './panelFocusMath.js';
+import * as ScalarMath from './scalarMath.js';
 import * as THREE from 'three/webgpu';
 import type { LiquidGlassPanelOptions } from './LiquidGlassPanel.js';
 import {
 	DEFAULT_CAMERA_AZIMUTH,
 	DEFAULT_CAMERA_ELEVATION,
 	MINIMAP_DEFAULT_MODEL_SCALE,
-	PANEL_FOCUS_MAX_ADVANCE,
-	PANEL_FOCUS_MAX_BLUR,
-	PANEL_FOCUS_MAX_OFFSET,
-	PANEL_FOCUS_PERSPECTIVE_MAX_SCALE,
-	PANEL_FOCUS_MIN_OPACITY,
 	PANEL_POINTER_MAX_TILT,
 	PANEL_POINTER_PROXIMITY_ASPECT_LIMIT,
 	PANEL_POINTER_PROXIMITY_MAX,
@@ -21,13 +19,13 @@ import {
 /** Resolves declarative orbit angles to a normalized direction from element to camera. */
 export function getCameraOrbitDirection(azimuth?: number, elevation?: number) {
 	const safeAzimuth = Number.isFinite(azimuth) ? (azimuth as number) : DEFAULT_CAMERA_AZIMUTH;
-	const safeElevation = THREE.MathUtils.clamp(
+	const safeElevation = ScalarMath.clamp(
 		Number.isFinite(elevation) ? (elevation as number) : DEFAULT_CAMERA_ELEVATION,
 		-89,
 		89
 	);
-	const azimuthRadians = THREE.MathUtils.degToRad(safeAzimuth);
-	const elevationRadians = THREE.MathUtils.degToRad(safeElevation);
+	const azimuthRadians = ScalarMath.degToRad(safeAzimuth);
+	const elevationRadians = ScalarMath.degToRad(safeElevation);
 	const horizontalScale = Math.cos(elevationRadians);
 
 	return new THREE.Vector3(
@@ -48,16 +46,9 @@ export function getCameraOrbitQuaternion(azimuth?: number, elevation?: number) {
 	return new THREE.Quaternion().setFromRotationMatrix(lookAtMatrix);
 }
 
-/** Applies the cubic Hermite smoothstep curve with clamped endpoints. */
-export function smoothstep(edge0: number, edge1: number, value: number) {
-	if (edge0 === edge1) return value < edge0 ? 0 : 1;
-	const t = THREE.MathUtils.clamp((value - edge0) / (edge1 - edge0), 0, 1);
-	return t * t * (3 - 2 * t);
-}
-
 /** Lets close-up resets travel longer while keeping small corrections responsive. */
 export function getViewResetDuration(focus: number) {
-	return THREE.MathUtils.lerp(
+	return ScalarMath.lerp(
 		VIEW_RESET_MIN_DURATION,
 		VIEW_RESET_MAX_DURATION,
 		smoothstep(0, 1, focus)
@@ -110,13 +101,13 @@ export function getMinimapFocusPositionOffset(
 	focus: number,
 	inset: number
 ) {
-	const progress = THREE.MathUtils.clamp(focus, 0, 1);
+	const progress = ScalarMath.clamp(focus, 0, 1);
 	const baseCenterX = viewportSize.width * 0.5 + basePosition.x;
 	const baseCenterY = viewportSize.height * 0.5 - basePosition.y;
 	const restingLeft = baseCenterX - baseSize.width * 0.5;
 	const restingTop = baseCenterY - baseSize.height * 0.5;
-	const focusedLeft = THREE.MathUtils.lerp(restingLeft, inset, progress);
-	const focusedTop = THREE.MathUtils.lerp(restingTop, inset, progress);
+	const focusedLeft = ScalarMath.lerp(restingLeft, inset, progress);
+	const focusedTop = ScalarMath.lerp(restingTop, inset, progress);
 
 	return {
 		x: focusedLeft + visualSize.width * 0.5 - baseCenterX,
@@ -141,12 +132,12 @@ export function getWheelZoomTargetDistance(
 	minDistance: number,
 	maxDistance: number
 ) {
-	const currentDistance = THREE.MathUtils.clamp(currentTargetDistance, minDistance, maxDistance);
+	const currentDistance = ScalarMath.clamp(currentTargetDistance, minDistance, maxDistance);
 	if (!Number.isFinite(deltaY) || deltaY === 0) return currentDistance;
 
 	const scale = Math.pow(0.95, Math.max(zoomSpeed, 0) * Math.abs(deltaY * 0.01));
 	const targetDistance = deltaY < 0 ? currentDistance * scale : currentDistance / scale;
-	return THREE.MathUtils.clamp(targetDistance, minDistance, maxDistance);
+	return ScalarMath.clamp(targetDistance, minDistance, maxDistance);
 }
 
 /** Resolves the authored minimap scale without imposing an upper creative limit. */
@@ -164,7 +155,7 @@ export function resolveMinimapModelScale(
 
 /** Blends the configured model multiplier through the damped minimap hover state. */
 export function getMinimapHoverScale(hoverModelScale: number, pointerReveal: number) {
-	return THREE.MathUtils.lerp(1, hoverModelScale, THREE.MathUtils.clamp(pointerReveal, 0, 1));
+	return ScalarMath.lerp(1, hoverModelScale, ScalarMath.clamp(pointerReveal, 0, 1));
 }
 
 /**
@@ -200,12 +191,12 @@ export function getEffectiveCameraDistance(
 	currentFov: number,
 	referenceFov: number
 ) {
-	const safeCurrentFov = THREE.MathUtils.clamp(currentFov, 0.01, 179);
-	const safeReferenceFov = THREE.MathUtils.clamp(referenceFov, 0.01, 179);
+	const safeCurrentFov = ScalarMath.clamp(currentFov, 0.01, 179);
+	const safeReferenceFov = ScalarMath.clamp(referenceFov, 0.01, 179);
 	return (
 		distance *
-		(Math.tan(THREE.MathUtils.degToRad(safeCurrentFov * 0.5)) /
-			Math.tan(THREE.MathUtils.degToRad(safeReferenceFov * 0.5)))
+		(Math.tan(ScalarMath.degToRad(safeCurrentFov * 0.5)) /
+			Math.tan(ScalarMath.degToRad(safeReferenceFov * 0.5)))
 	);
 }
 
@@ -237,11 +228,6 @@ export function getCameraZoomReferenceDistance(
 	spatialElementCenterDistance: number
 ) {
 	return Math.min(viewTargetDistance, spatialElementCenterDistance);
-}
-
-/** Returns the perspective camera distance that maps viewport pixels to world units. */
-export function getPerspectiveDistance(viewportHeight: number, fov: number) {
-	return (viewportHeight * 0.5) / Math.tan(THREE.MathUtils.degToRad(fov * 0.5));
 }
 
 /**
@@ -277,39 +263,13 @@ export function getPerspectiveAnchoredPanelPosition(
 	cameraDistance: number
 ) {
 	const safeCameraDistance = Math.max(cameraDistance, 1);
-	const depthScale = THREE.MathUtils.clamp(
+	const depthScale = ScalarMath.clamp(
 		(safeCameraDistance - currentZ) / safeCameraDistance,
 		0.05,
 		2
 	);
 
 	return { x: targetX * depthScale, y: targetY * depthScale };
-}
-
-/**
- * Restores the outward screen-space drift that an off-axis panel would receive
- * from the shared perspective while leaving its hover projection panel-local.
- */
-export function getPanelFocusPerspectiveOffset(
-	position: { x: number; y: number },
-	advance: number,
-	cameraDistance: number
-) {
-	const safeCameraDistance = Math.max(Number.isFinite(cameraDistance) ? cameraDistance : 1, 1);
-	const safeAdvance = Math.max(Number.isFinite(advance) ? advance : 0, 0);
-	if (safeAdvance <= 0) return { x: 0, y: 0 };
-
-	const projectionScale = THREE.MathUtils.clamp(
-		safeCameraDistance / Math.max(safeCameraDistance - safeAdvance, 1),
-		1,
-		PANEL_FOCUS_PERSPECTIVE_MAX_SCALE
-	);
-	const egressScale = projectionScale - 1;
-
-	return {
-		x: position.x * egressScale,
-		y: position.y * egressScale
-	};
 }
 
 /**
@@ -376,7 +336,7 @@ export function getCameraFitDistance(
 	const right = new THREE.Vector3().crossVectors(camera.up, forward).normalize();
 	if (right.lengthSq() < 0.0001) right.set(1, 0, 0);
 	const up = new THREE.Vector3().crossVectors(forward, right).normalize();
-	const verticalFov = THREE.MathUtils.degToRad(camera.fov);
+	const verticalFov = ScalarMath.degToRad(camera.fov);
 	const horizontalFov = 2 * Math.atan(Math.tan(verticalFov * 0.5) * camera.aspect);
 	const tanY = Math.tan(verticalFov * 0.5) * viewportScale.y;
 	const tanX = Math.tan(horizontalFov * 0.5) * viewportScale.x;
@@ -407,68 +367,6 @@ export function getBoxCorners(bounds: THREE.Box3) {
 	];
 }
 
-/** Computes the camera-facing travel used to clear panels during close-up zoom. */
-export function getPanelFocusOffset(
-	options: Pick<Required<LiquidGlassPanelOptions>, 'width' | 'height' | 'position'>,
-	focus: number,
-	viewportWidth: number,
-	viewportHeight: number
-) {
-	if (focus <= 0.001) return { x: 0, y: 0, z: 0 };
-	const edgeDistanceX = Math.max(viewportWidth * 0.5 - options.width * 0.5, 1);
-	const edgeDistanceY = Math.max(viewportHeight * 0.5 - options.height * 0.5, 1);
-	const normalizedX = options.position.x / edgeDistanceX;
-	const normalizedY = options.position.y / edgeDistanceY;
-	const direction = getPanelFocusDirection(options, normalizedX, normalizedY);
-	const horizontal = Math.abs(direction.x) > Math.abs(direction.y);
-	const axisSize = horizontal ? options.width : options.height;
-	const travel = THREE.MathUtils.clamp(
-		axisSize * (horizontal ? 0.16 : 0.42),
-		horizontal ? 48 : 18,
-		PANEL_FOCUS_MAX_OFFSET
-	);
-	const easedFocus = getPanelFocusProgress(focus);
-	return {
-		x: direction.x * travel * easedFocus,
-		y: direction.y * travel * easedFocus,
-		z: PANEL_FOCUS_MAX_ADVANCE * easedFocus
-	};
-}
-
-/** Chooses the least disruptive edge toward which a focused panel should travel. */
-export function getPanelFocusDirection(
-	options: Pick<Required<LiquidGlassPanelOptions>, 'width' | 'height' | 'position'>,
-	normalizedX: number,
-	normalizedY: number
-) {
-	const aspect = options.width / Math.max(options.height, 1);
-	const absX = Math.abs(normalizedX);
-	const absY = Math.abs(normalizedY);
-	if (aspect >= 2.4 && absY > 0.12) return new THREE.Vector2(0, Math.sign(normalizedY) || 1);
-	if (absX > absY * 0.8) return new THREE.Vector2(Math.sign(normalizedX) || 1, 0);
-	if (absY > absX * 0.8) return new THREE.Vector2(0, Math.sign(normalizedY) || 1);
-	const direction = new THREE.Vector2(normalizedX, normalizedY);
-	if (direction.lengthSq() < 0.02) direction.set(0, options.position.y >= 0 ? 1 : -1);
-	return direction.normalize();
-}
-
-/** Shared, eased progress for panel motion, blur, opacity and corner controls. */
-export function getPanelFocusProgress(focus: number) {
-	return smoothstep(0.08, 0.96, focus);
-}
-
-/** Returns panel opacity at a normalized stage UI focus level. */
-export function getPanelFocusOpacity(focus: number) {
-	return THREE.MathUtils.lerp(1, PANEL_FOCUS_MIN_OPACITY, getPanelFocusProgress(focus));
-}
-
-/** Returns CSS content blur at a normalized stage focus level. */
-export function getPanelFocusBlur(focus: number, options: Pick<Required<LiquidGlassPanelOptions>, 'width' | 'height'>) {
-	const shortSide = Math.max(Math.min(options.width, options.height), 1);
-	const sizeScale = THREE.MathUtils.clamp(Math.sqrt(shortSide / 240), 0.34, 1);
-	return PANEL_FOCUS_MAX_BLUR * sizeScale * getPanelFocusProgress(focus);
-}
-
 /**
  * Reduces only the rotation axis amplified by an elongated panel.
  * Square panels keep the full response on both axes.
@@ -493,7 +391,7 @@ export function getPanelPointerProximity(width: number, height: number) {
 		Math.sqrt(longSide / shortSide),
 		PANEL_POINTER_PROXIMITY_ASPECT_LIMIT
 	);
-	return THREE.MathUtils.clamp(
+	return ScalarMath.clamp(
 		shortSide * PANEL_POINTER_PROXIMITY_SCALE * aspectCorrection,
 		PANEL_POINTER_PROXIMITY_MIN,
 		PANEL_POINTER_PROXIMITY_MAX
@@ -513,11 +411,11 @@ export function getPanelPointerRotation(
 	width: number,
 	height: number
 ) {
-	const tilt = PANEL_POINTER_MAX_TILT * THREE.MathUtils.clamp(influence, 0, 1);
+	const tilt = PANEL_POINTER_MAX_TILT * ScalarMath.clamp(influence, 0, 1);
 	const aspectScale = getPanelAspectTiltScale(width, height);
 	return {
-		x: -THREE.MathUtils.clamp(lookY, -1, 1) * tilt * aspectScale.elevation,
-		y: -THREE.MathUtils.clamp(lookX, -1, 1) * tilt * aspectScale.azimuth
+		x: -ScalarMath.clamp(lookY, -1, 1) * tilt * aspectScale.elevation,
+		y: -ScalarMath.clamp(lookX, -1, 1) * tilt * aspectScale.azimuth
 	};
 }
 

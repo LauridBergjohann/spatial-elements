@@ -1,3 +1,6 @@
+import type { SpaceMouseState } from './spaceMousePlatform.js';
+import { querySpaceMousePermission } from './spaceMousePermission.js';
+
 export interface SpaceMouseNavigationUpdate {
 	viewMatrix?: number[];
 	target?: number[];
@@ -5,7 +8,10 @@ export interface SpaceMouseNavigationUpdate {
 }
 
 export interface SpaceMouseAdapterOptions {
-	viewport: HTMLElement;
+	/** Cancel a pending library load before it starts accessing the local driver. */
+	signal?: AbortSignal;
+	/** Window ownership keeps navigation active when focus moves to page content. */
+	viewport: HTMLElement | Window;
 	applicationName: string;
 	getViewMatrix: () => readonly number[];
 	getFov: () => number;
@@ -14,6 +20,7 @@ export interface SpaceMouseAdapterOptions {
 	getModelExtents: () => readonly number[];
 	applyNavigationUpdate: (update: SpaceMouseNavigationUpdate) => void;
 	onMotionChange?: (moving: boolean) => void;
+	onStateChange?: (state: SpaceMouseState) => void;
 }
 
 export interface NavigationClient {
@@ -27,7 +34,7 @@ export interface NavigationClient {
 
 export interface NavigationConnection {
 	connect: () => number;
-	create3dmouse: (viewport: HTMLElement, applicationName: string) => void;
+	create3dmouse: (viewport: HTMLElement | Window, applicationName: string) => void;
 	update3dcontroller: (update: Record<string, unknown>) => Promise<unknown>;
 	delete3dmouse: () => void;
 	close: () => void;
@@ -97,14 +104,19 @@ export class SpaceMouseAdapter {
 	private created = false;
 	private moving = false;
 	private disposed = false;
+	private timeout?: ReturnType<typeof setTimeout>;
+	private readonly abort = () => this.dispose();
 	private frameTime = 0;
 	private pivotPosition?: number[];
 	private readonly updates: SpaceMouseUpdateBuffer;
 	private readonly client: NavigationClient;
 
 	private constructor(private readonly options: SpaceMouseAdapterOptions) {
-		this.updates = new SpaceMouseUpdateBuffer(options.applyNavigationUpdate);
+		this.updates = new SpaceMouseUpdateBuffer(update => {
+			if (!this.disposed) options.applyNavigationUpdate(update);
+		});
 		this.client = this.createClient();
+		options.signal?.addEventListener('abort', this.abort, { once: true });
 	}
 
 	static async connect(
@@ -112,15 +124,18 @@ export class SpaceMouseAdapter {
 		loadLibrary: NavigationLibraryLoader = () => import('@3dconnexion/3dconnexionjs')
 	) {
 		const adapter = new SpaceMouseAdapter(options);
+		if (options.signal?.aborted) { adapter.dispose(); return adapter; }
+		options.onStateChange?.('connecting');
+		adapter.timeout = setTimeout(() => { void adapter.fail(); }, 12000);
 
 		try {
 			const module = await loadLibrary();
-			if (adapter.disposed) return adapter;
+			if (adapter.disposed || options.signal?.aborted) return adapter;
 
 			adapter.connection = new module.default(adapter.client);
-			if (!adapter.connection.connect()) adapter.connection = undefined;
-		} catch {
-			// The spatialElement viewer remains fully mouse-operable without 3DxWare.
+			if (!adapter.connection.connect()) void adapter.fail();
+		} catch (error) {
+			void adapter.fail(error);
 		}
 
 		return adapter;
@@ -136,6 +151,8 @@ export class SpaceMouseAdapter {
 	dispose() {
 		if (this.disposed) return;
 		this.disposed = true;
+		clearTimeout(this.timeout);
+		this.options.signal?.removeEventListener('abort', this.abort);
 		this.setMotion(false);
 
 		try {
@@ -146,7 +163,20 @@ export class SpaceMouseAdapter {
 		}
 
 		this.created = false;
-		this.connection = undefined;
+		// Retain the handle so a late SDK onConnect can close a pending local request.
+	}
+
+	private async fail(error?: unknown) {
+		if (this.disposed) return;
+		let permissionRequired = error instanceof Error && ['SecurityError', 'NotAllowedError'].includes(error.name);
+		try {
+			const permission = await querySpaceMousePermission();
+			// An unrequested prompt does not prove a permission failure (the driver may be absent).
+			permissionRequired ||= permission?.state === 'denied';
+		} catch { /* Unsupported permission descriptor: report connection unavailable. */ }
+		if (this.disposed) return;
+		this.dispose();
+		this.options.onStateChange?.(permissionRequired ? 'permission-required' : 'unavailable');
 	}
 
 	private createClient(): NavigationClient {
@@ -156,15 +186,19 @@ export class SpaceMouseAdapter {
 					this.connection?.close();
 					return;
 				}
-				this.connection?.create3dmouse(this.options.viewport, this.options.applicationName);
+				try { this.connection?.create3dmouse(this.options.viewport, this.options.applicationName); }
+				catch (error) { void this.fail(error); }
 			},
 			onDisconnect: () => {
 				this.created = false;
 				this.setMotion(false);
+				void this.fail();
 			},
 			on3dmouseCreated: () => {
-				if (this.disposed) return;
+				if (this.disposed) { this.connection?.delete3dmouse(); return; }
 				this.created = true;
+				clearTimeout(this.timeout);
+				this.options.onStateChange?.('connected');
 				this.safeControllerUpdate({ frame: { timingSource: 1 } });
 			},
 			onStartMotion: () => {
@@ -216,6 +250,7 @@ export class SpaceMouseAdapter {
 	}
 
 	private setMotion(moving: boolean) {
+		if (moving && this.disposed) return;
 		if (this.moving === moving) return;
 		this.moving = moving;
 		this.options.onMotionChange?.(moving);

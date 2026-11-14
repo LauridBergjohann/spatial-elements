@@ -5,7 +5,7 @@ export interface CatalogIdentity {
 }
 
 export type CatalogSharedRole =
-	'summary-surface' | 'eyebrow' | 'title' | 'features' | 'primary-action';
+	'summary-surface' | 'leading' | 'eyebrow' | 'title' | 'features' | 'action-details' | 'primary-action';
 export type CatalogEndpointRole = CatalogSharedRole | 'geometry' | 'container';
 export type CatalogEndpointSlot =
 	| 'catalog.card'

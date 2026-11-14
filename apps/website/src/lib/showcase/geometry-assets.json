@@ -1332,5 +1332,573 @@
       "width": 1024,
       "height": 1024
     }
+  },
+  {
+    "brandId": "wurm",
+    "spatialElementId": "wurm-asv101",
+    "pair": {
+      "status": "verified-canonical-frame",
+      "revision": "asv101-metres-front-1",
+      "sourceUrl": "/assets/showcase/wurm-asv101/wurm-asv101-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-asv101/wurm-asv101-low.glb",
+        "format": "glb",
+        "revision": "4cc9a7160682bf6cc59cbb0a736534ca872e43a633d9a03cd2398fad28f38eae",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-asv101/wurm-asv101-high.glb",
+        "format": "glb",
+        "revision": "867b688080209a3042959a6869f8eb082e19f75236696ac092656b9cb88ae1cd",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.0000010532499290991093,
+        0.003000000387430188,
+        -0.029481330178678027,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.026651053631212562,
+          -0.04814999923110008,
+          -0.029481329955160625
+        ],
+        "max": [
+          0.026651053631212562,
+          0.04814999923110008,
+          0.029481329955160625
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-asv101/wurm-asv101-poster.webp",
+      "alt": "ASV101",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wurm",
+    "spatialElementId": "wurm-hks-g4",
+    "pair": {
+      "status": "verified-canonical-frame",
+      "revision": "hks-g4-metres-front-1",
+      "sourceUrl": "/assets/showcase/wurm-hks-g4/wurm-hks-g4-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-hks-g4/wurm-hks-g4-low.glb",
+        "format": "glb",
+        "revision": "40f56cdb3d60476cb95ed207275f1509e226e1632785412c25f153bc3ac64ff5",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-hks-g4/wurm-hks-g4-high.glb",
+        "format": "glb",
+        "revision": "0f91c8f4ca0fc793e09285c659ca121339864d69f41472a6dd846ac88055a49f",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1.3877787807814457e-17,
+        -3.5227593966902226e-9,
+        0.04633045145869255,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.054499998688697815,
+          -0.054499998688697815,
+          -0.04632982239127159
+        ],
+        "max": [
+          0.054499998688697815,
+          0.054499998688697815,
+          0.04632982239127159
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-hks-g4/wurm-hks-g4-poster.webp",
+      "alt": "HKS-G4",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wurm",
+    "spatialElementId": "wurm-atv230",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "atv230-source-frame-1",
+      "sourceUrl": "/assets/showcase/wurm-atv230/wurm-atv230-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-atv230/wurm-atv230-low.glb",
+        "format": "glb",
+        "revision": "f97f84e505a52eca446ef3bfff0372c95b7c2252ee8fb2a53b377ada06b87751",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-atv230/wurm-atv230-high.glb",
+        "format": "glb",
+        "revision": "8bc0871dfb04587e88821404bb689b09bef68f462a633b0b0ef4ae287519ad91",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1.3038516044963644e-7,
+        0.0024999976158140355,
+        -0.028774740472435875,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.0263498704880476,
+          -0.04734999686479569,
+          -0.028774740174412818
+        ],
+        "max": [
+          0.0263498704880476,
+          0.04734999686479569,
+          0.028774740174412814
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-atv230/wurm-atv230-poster.webp",
+      "alt": "ATV230",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wurm",
+    "spatialElementId": "wurm-dsp-lcd",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "dsp-lcd-source-frame-1",
+      "sourceUrl": "/assets/showcase/wurm-dsp-lcd/wurm-dsp-lcd-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-dsp-lcd/wurm-dsp-lcd-low.glb",
+        "format": "glb",
+        "revision": "c14924bf34a9437e87e2fab4e9df265b0696d688517c20af58fb492f806b4931",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-dsp-lcd/wurm-dsp-lcd-high.glb",
+        "format": "glb",
+        "revision": "3d6c1cce3a6444440abfc7b616baccad3563b217d3fb8e276d3eb20ca8533998",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -3.7764709415188946e-10,
+        0.0000011270955204839561,
+        -0.009061422199010847,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.03137883835006505,
+          -0.01473271194845438,
+          -0.00906142219901085
+        ],
+        "max": [
+          0.03137883835006505,
+          0.01473271194845438,
+          0.00906142219901085
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-dsp-lcd/wurm-dsp-lcd-poster.webp",
+      "alt": "DSP-LCD",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wurm",
+    "spatialElementId": "wurm-dsp002",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "dsp002-source-frame-1",
+      "sourceUrl": "/assets/showcase/wurm-dsp002/wurm-dsp002-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-dsp002/wurm-dsp002-low.glb",
+        "format": "glb",
+        "revision": "ca06b860157bae369111d95473e56ecbebcab4c79e2585786b477e7a263e5938",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-dsp002/wurm-dsp002-high.glb",
+        "format": "glb",
+        "revision": "4630d882ba4a39adc4fc4a8871abef58fbf69227c3760ce88010ec3002c0df65",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        6.123233995736766e-17,
+        1,
+        0,
+        0,
+        -1,
+        6.123233995736766e-17,
+        0,
+        0,
+        0.0000012218952178983797,
+        -0.009759811917319896,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.04399999976158142,
+          -0.015998778864741325,
+          -0.012759811943396928
+        ],
+        "max": [
+          0.04399999976158142,
+          0.015998778864741325,
+          0.012759811943396928
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-dsp002/wurm-dsp002-poster.webp",
+      "alt": "DSP002",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wurm",
+    "spatialElementId": "wurm-fkl003",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "fkl003-source-frame-1",
+      "sourceUrl": "/assets/showcase/wurm-fkl003/wurm-fkl003-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-fkl003/wurm-fkl003-low.glb",
+        "format": "glb",
+        "revision": "5b26c2d52905f55ea811d1651a35cbf12b2b00b75b8590ec3504944e79405628",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-fkl003/wurm-fkl003-high.glb",
+        "format": "glb",
+        "revision": "f6b1c583fe39ede8ba219bd4df1e9ecd1cd89efeb17bc65f436c6da07f9a30d1",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        3.838249995613552e-10,
+        0.0018243079734142145,
+        -0.029383951349183916,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.053075000643730164,
+          -0.04832569137215614,
+          -0.02948395092971623
+        ],
+        "max": [
+          0.053075000643730164,
+          0.04832569137215614,
+          0.02948395092971623
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-fkl003/wurm-fkl003-poster.webp",
+      "alt": "FKL003",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wurm",
+    "spatialElementId": "wurm-fkp003",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "fkp003-source-frame-1",
+      "sourceUrl": "/assets/showcase/wurm-fkp003/wurm-fkp003-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-fkp003/wurm-fkp003-low.glb",
+        "format": "glb",
+        "revision": "ced0f5af62fb000f85c649e0a9adecf6b29a062bcf655148af2be75d479cddb1",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-fkp003/wurm-fkp003-high.glb",
+        "format": "glb",
+        "revision": "facd0e96021ccf0b4c4485b5c5d73f71afa671ea8e6f0d53964cec93fd0ee249",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0.0014416538178920746,
+        -0.029949050571303815,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.053199999034404755,
+          -0.04664376378059387,
+          -0.03084905055584386
+        ],
+        "max": [
+          0.053199999034404755,
+          0.04664376378059387,
+          0.03084905055584386
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-fkp003/wurm-fkp003-poster.webp",
+      "alt": "FKP003",
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  {
+    "brandId": "wurm",
+    "spatialElementId": "wurm-multigate3",
+    "pair": {
+      "status": "provisional-shared-frame",
+      "revision": "multigate3-source-frame-1",
+      "sourceUrl": "/assets/showcase/wurm-multigate3/wurm-multigate3-high.glb",
+      "low": {
+        "url": "/assets/showcase/wurm-multigate3/wurm-multigate3-low.glb",
+        "format": "glb",
+        "revision": "e286a2f2aa8d3a2b01bb3c81257a3ece7af4efb68de2cee71d47b0d8239d2029",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "high": {
+        "url": "/assets/showcase/wurm-multigate3/wurm-multigate3-high.glb",
+        "format": "glb",
+        "revision": "ae8d36960c594f5786a2c91cc632dbfa30831c4d524b8ca2c58e0d52cb06d8d5",
+        "requirements": {
+          "decoders": [
+            "draco"
+          ],
+          "extensions": [
+            "KHR_draco_mesh_compression"
+          ]
+        }
+      },
+      "assetToFrame": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -1.0980315129360818e-9,
+        0.0028145467806607524,
+        -0.030875071256949944,
+        1
+      ],
+      "bounds": {
+        "min": [
+          -0.10650000080931932,
+          -0.048319264547899365,
+          -0.031125071458518505
+        ],
+        "max": [
+          0.10650000080931932,
+          0.048319264547899365,
+          0.031125071458518505
+        ]
+      }
+    },
+    "poster": {
+      "src": "/assets/showcase/wurm-multigate3/wurm-multigate3-poster.webp",
+      "alt": "MULTIGATE3",
+      "width": 1024,
+      "height": 1024
+    }
   }
 ]

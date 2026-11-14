@@ -1,3 +1,5 @@
+import { initializeDeviceOrientationMath } from '../catalog/listDeviceOrientation.js';
+import { DeviceYawFilter, screenOrientation } from '../catalog/deviceYaw.js';
 import type {
 	CatalogGeometryEndpoint,
 	CatalogGeometryDestination
@@ -79,7 +81,7 @@ import {
 	getZoomFocusDistanceRange,
 	hasPanelGeometryChanged
 } from './stageMath.js';
-import { type SpaceMouseNavigationUpdate } from './SpaceMouseAdapter.js';
+import type { SpaceMouseNavigationUpdate } from './SpaceMouseAdapter.js';
 import { disposeMinimapModelMaterials } from './minimap/MinimapModel.js';
 
 import { type CssProjectionQuad } from './minimap/MinimapProjection.js';
@@ -190,7 +192,7 @@ export class StageExperience {
 	private readonly panels: PanelPresentationController;
 	private readonly minimapController: MinimapController;
 	private readonly interaction: SpatialElementInteractionController;
-	private readonly spaceMouseEnabled: boolean;
+	private spaceMouseEnabled: boolean;
 	private fallbackPanelOptions: LiquidGlassPanelOptions[];
 	private readonly catalog: boolean;
 	private catalogLayer?: CatalogSpatialElementLayer;
@@ -276,7 +278,7 @@ export class StageExperience {
 		capture: SpatialGeometryCapture;
 		minimap: StageMinimapState;
 		opacity: number;
-		ring: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+		ring: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicNodeMaterial>;
 		ringOpacity: number;
 	}[] = [];
 	private adoptedForward = false;
@@ -529,6 +531,7 @@ export class StageExperience {
 			if (this.releaseDeviceOrientation && !this.scrollActive) this.requestRender();
 		});
 		this.interaction = new SpatialElementInteractionController({
+			onSpaceMouseStateChange: options.onSpaceMouseStateChange,
 			camera: this.camera,
 			canvas: this.backgroundCanvas,
 			container,
@@ -621,7 +624,7 @@ export class StageExperience {
 		this.excludedMeshNames = new Set(this.modelSettings.excludeMeshes ?? []);
 		this.interactionTheme = { ...DEFAULT_INTERACTION_THEME, ...options.interactionTheme };
 		this.pageBinding.attach(options.panels, options.viewport);
-		this.spaceMouseEnabled = options.enableSpaceMouse ?? true;
+		this.spaceMouseEnabled = options.enableSpaceMouse ?? false;
 		this.fallbackPanelOptions = this.panelTargets.length
 			? this.panelTargets
 					.filter(
@@ -685,6 +688,7 @@ export class StageExperience {
 			throw new Error('WebGPU is not available in this browser');
 		}
 
+		initializeDeviceOrientationMath(new DeviceYawFilter(), screenOrientation);
 		this.pipeline.configureRenderer();
 		await this.renderer.init();
 		this.environments = new EnvironmentCache(this.renderer, this.preparationGate);
@@ -835,6 +839,8 @@ export class StageExperience {
 
 	/** Page DOM is a replaceable binding, not the owner of the device or element cache. */
 	releasePage() {
+		// Window-level driver focus belongs only to the mounted detail viewer.
+		this.interaction.disconnectSpaceMouse();
 		cancelAnimationFrame(this.zoomPreparationFrame);
 		this.zoomPreparationFrame = 0;
 		this.deferredZoomPreparation = false;
@@ -2547,6 +2553,14 @@ export class StageExperience {
 		}
 	}
 
+	/** Connect only after the host or visitor explicitly enables the local driver. */
+	setSpaceMouseEnabled(enabled: boolean) {
+		if (this.disposed || this.spaceMouseEnabled === enabled) return;
+		this.spaceMouseEnabled = enabled;
+		if (enabled) void this.initializeSpaceMouse();
+		else this.interaction.disconnectSpaceMouse();
+	}
+
 	private initializeSpaceMouse() {
 		return this.interaction.initializeSpaceMouse();
 	}
@@ -2778,11 +2792,12 @@ export class StageExperience {
 		this.cssRenderer.render(this.panelContentScene, this.panelCamera);
 		this.renderFlatPanelSurfaces();
 		this.panelTargets.forEach((target, index) => {
-			if (!target.nativeContent || target.getVisible?.() === false) return;
-			target.updateNativeLayout?.();
-			// Only an actively positioned native popover needs a fresh DOM measurement.
-			// Pane summaries use the same resize/scroll-invalidated cache as other panels.
-			this.syncPanelLayout(target, index, Boolean(target.updateNativeLayout));
+			if (!target.nativeContent || !target.updateNativeLayout || target.getVisible?.() === false) return;
+			target.updateNativeLayout();
+			// Only positioned popovers need a second layout pass after their anchor's
+			// DOM projection. Static shell panels already received their focus pose;
+			// resetting their projection here detached glass from the moving content.
+			this.syncPanelLayout(target, index, true);
 			const runtime = this.panelRuntimes[index];
 			if (runtime) runtime.group.visible = this.isPanelTargetVisible(index);
 		});

@@ -113,16 +113,22 @@
 				the shell.
 			</p>
 			<p>
-				Basics is permanently light. The <a
+				The <a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/apps/website/README.md"
 					>Showcase</a
 				>
 				provides <strong>Light / Dark</strong> in its right satellite (inside the menu on small
-				screens). It follows the operating system until an explicit choice is made; that choice
-				survives reloads in session storage. Its early HTML bootstrap and SSR preview styles apply
-				the palette before hydration, and blocked storage remains usable. The former three-state
-				demo remains an isolated regression fixture at <code>/proof/theming</code>. Applications
-				with a CSP should authorize their bootstrap using their usual nonce/hash policy.
+				screens). It renders a light fallback and restores an explicit choice from local storage
+				after hydration. Blocked storage remains usable. The three-state theme demo remains an
+				isolated regression fixture at <code>/proof/theming</code>.
+			</p>
+			<p>
+				Visit <a href="/showcase/exclusive/">Exclusive</a> to compare a complete visual identity: Watches-inspired
+				glass, gold accents, 22px corners and a visible studio environment replace the website's green
+				frosted theme. Its light palette uses smoky charcoal glass; dark mode deepens the surfaces and
+				environment further. Both work on the collection and its detail pages. The shared shell selects
+				the theme by route while keeping its namespace ID, menu content and breadcrumb hierarchy. Leaving
+				Exclusive restores the standard theme.
 			</p>
 		</div></Section
 	>

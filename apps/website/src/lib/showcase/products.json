@@ -66,7 +66,10 @@
 		"description": "A set of brightly coloured L-keys arranged in a compact clip. The different lengths and colour coding remain readable in both the category view and the detailed model.",
 		"features": ["Colour-coded L-key set", "Compact storage clip", "Different lengths and sizes"],
 		"sourceUrl": "https://www.wera.de/",
-		"video": { "id": "ODDS07HlGqc", "label": "Wera L-keys product demonstration" }
+		"video": {
+			"id": "ODDS07HlGqc",
+			"label": "Wera L-keys product demonstration"
+		}
 	},
 	{
 		"id": "zyklop-speed",
@@ -75,7 +78,10 @@
 		"description": "A ratchet with the characteristic Kraftform handle and swivelling head. Use the product views and supplied video to explore the relationship between its grip, shaft and ratchet mechanism.",
 		"features": ["Swivelling ratchet head", "Kraftform handle", "Reversible ratchet mechanism"],
 		"sourceUrl": "https://www.wera.de/",
-		"video": { "id": "zVjRUIlklmA", "label": "Wera Zyklop Speed product demonstration" }
+		"video": {
+			"id": "zVjRUIlklmA",
+			"label": "Wera Zyklop Speed product demonstration"
+		}
 	},
 	{
 		"id": "chronograph",
@@ -100,7 +106,10 @@
 			"Show Mode for desk demonstrations"
 		],
 		"sourceUrl": "https://www.logitech.com/en-us/shop/p/brio-500-webcam",
-		"video": { "id": "bku8De9oTJQ", "label": "Logitech Brio 500 product demonstration" }
+		"video": {
+			"id": "bku8De9oTJQ",
+			"label": "Logitech Brio 500 product demonstration"
+		}
 	},
 	{
 		"id": "logitech-ergo-k860",
@@ -113,7 +122,10 @@
 			"Full-size keyboard with number pad"
 		],
 		"sourceUrl": "https://www.logitech.com/en-us/shop/p/k860-split-ergonomic",
-		"video": { "id": "q-ZUIAgEda4", "label": "Logitech ERGO K860 product demonstration" }
+		"video": {
+			"id": "q-ZUIAgEda4",
+			"label": "Logitech ERGO K860 product demonstration"
+		}
 	},
 	{
 		"id": "logitech-m750",
@@ -138,7 +150,10 @@
 			"Bluetooth, USB and analogue inputs"
 		],
 		"sourceUrl": "https://www.logi.com/en-us/shop/p/z407-bluetooth-computer-speakers.980-001347",
-		"video": { "id": "YkiZbeBUJCQ", "label": "Logitech Z407 product demonstration" }
+		"video": {
+			"id": "YkiZbeBUJCQ",
+			"label": "Logitech Z407 product demonstration"
+		}
 	},
 	{
 		"id": "item-profile",
@@ -150,7 +165,8 @@
 			"Four open Line 8 grooves",
 			"Light anodised aluminium profile"
 		],
-		"sourceUrl": "https://www.item24.com/en-us/profile-8-40x40-light-natural-2633"
+		"sourceUrl": "https://www.item24.com/en-us/profile-8-40x40-light-natural-2633",
+		"productNumber": "0.0.026.33"
 	},
 	{
 		"id": "item-connector",
@@ -158,11 +174,13 @@
 		"title": "Standard-Fastening Set 8",
 		"description": "The source model identifies this connector as item Standard-Fastening Set 8, article 0.0.026.07. The set combines a zinc-plated connecting plate and an M8 screw for joining Line 8 profiles. The spatial view reveals the plate, screw head and thread together.",
 		"features": ["Connector for Line 8 profiles", "Zinc-plated steel plate", "M8 fastening screw"],
-		"sourceUrl": "https://www.item24.com/en-us/standard-fastening-set-8-bright-zinc-plated-2607"
+		"sourceUrl": "https://www.item24.com/en-us/standard-fastening-set-8-bright-zinc-plated-2607",
+		"productNumber": "0.0.026.07"
 	},
 	{
 		"id": "item-end-cap",
 		"manufacturer": "item",
+		"productNumber": "0.0.026.01",
 		"title": "Profile End Cap",
 		"description": "An end-cap example from the supplied item collection. Its compact form complements the profile and connector examples, showing how small components can be presented alongside larger assemblies.",
 		"features": ["End-cap example", "Compact component form", "Detail and underside views"],
@@ -174,11 +192,13 @@
 		"title": "Collision Guard L",
 		"description": "The supplied model depicts item Collision Guard L with hazard markings, article 0.0.665.48. Its yellow and black surface and L-shaped steel body make the product recognisable at a glance. Turn it around to inspect its shape and floor mounting points.",
 		"features": ["L-shaped steel guard", "405 mm height", "Black and yellow hazard markings"],
-		"sourceUrl": "https://www.item24.com/en-us/collision-guard-l-with-hazard-markings-66548"
+		"sourceUrl": "https://www.item24.com/en-us/collision-guard-l-with-hazard-markings-66548",
+		"productNumber": "0.0.665.48"
 	},
 	{
 		"id": "item-robot",
 		"manufacturer": "item",
+		"productNumber": "Al13",
 		"title": "Robot Assembly",
 		"description": "The supplied Robby model turns geometric components into a playful robot figure. Explore its head, arms, torso and legs from different angles. It is a visual assembly study rather than an orderable industrial robot configuration.",
 		"features": [
@@ -187,5 +207,105 @@
 			"Explore form and construction"
 		],
 		"sourceUrl": "https://www.item24.com/en-us"
+	},
+	{
+		"id": "wurm-asv101",
+		"manufacturer": "wurm",
+		"productNumber": "ASV101",
+		"title": "Compressor Control Module",
+		"description": "A control module for reciprocating compressors, connecting rack field modules through the CAN communication bus.",
+		"features": ["Up to 12 rack field modules", "Up to 18 compressors", "CAN communication bus"],
+		"sourceUrl": "https://www.wurm.de/"
+	},
+	{
+		"id": "wurm-hks-g4",
+		"manufacturer": "wurm",
+		"productNumber": "HKS-G4",
+		"title": "Refrigeration Master Module",
+		"description": "The HKS-G4 coordinates refrigeration field modules with intelligent defrosting and electronic expansion valve control.",
+		"features": [
+			"Connects 8 refrigeration field modules",
+			"Intelligent EC defrosting",
+			"Smartflow+ EEV control"
+		],
+		"sourceUrl": "https://www.wurm.de/"
+	},
+	{
+		"id": "wurm-atv230",
+		"manufacturer": "wurm",
+		"productNumber": "ATV230",
+		"title": "Expansion Valve Driver",
+		"description": "The ATV230 drives a pulsed electronic expansion valve and makes its switching state visible through an LED indicator.",
+		"features": [
+			"One pulsed expansion valve per module",
+			"230 V AC or DC valve operation",
+			"LED switching indicator"
+		],
+		"sourceUrl": "https://www.wurm.de/"
+	},
+	{
+		"id": "wurm-dsp-lcd",
+		"manufacturer": "wurm",
+		"productNumber": "DSP-LCD",
+		"title": "Remote Refrigeration Display",
+		"description": "A compact remote display designed for the thermometer opening of a refrigerated cabinet. It shows temperature and operating status from the associated field module.",
+		"features": [
+			"Temperature display",
+			"Defrost, fan and alarm status",
+			"Snap-in cabinet installation"
+		],
+		"sourceUrl": "https://www.wurm.de/"
+	},
+	{
+		"id": "wurm-dsp002",
+		"manufacturer": "wurm",
+		"productNumber": "DSP002",
+		"title": "Remote Temperature Display",
+		"description": "A remote refrigeration display with 7 mm digits and a preassembled connection cable for its field module.",
+		"features": [
+			"7 mm display digits",
+			"Cooling, defrost and fan status",
+			"Preassembled connection cable"
+		],
+		"sourceUrl": "https://www.wurm.de/"
+	},
+	{
+		"id": "wurm-fkl003",
+		"manufacturer": "wurm",
+		"productNumber": "FKL003",
+		"title": "Extended Refrigeration Field Module",
+		"description": "The FKL003 brings together control for two evaporators and one expansion valve, with connections for external displays and cabinet lighting.",
+		"features": [
+			"Two evaporators and one valve",
+			"Two external displays",
+			"Cabinet lighting control"
+		],
+		"sourceUrl": "https://www.wurm.de/"
+	},
+	{
+		"id": "wurm-fkp003",
+		"manufacturer": "wurm",
+		"productNumber": "FKP003",
+		"title": "Refrigeration Field Module",
+		"description": "A refrigeration field module with a solid-state relay for an electronic expansion valve. It controls an evaporator and supports an external display.",
+		"features": [
+			"One evaporator and expansion valve",
+			"External display connection",
+			"Emergency programme for CAN errors"
+		],
+		"sourceUrl": "https://www.wurm.de/"
+	},
+	{
+		"id": "wurm-multigate3",
+		"manufacturer": "wurm",
+		"productNumber": "Multigate3",
+		"title": "Communication Gateway",
+		"description": "Multigate3 connects Wurm control systems through two C-BUS interfaces. Encrypted LAN communication supports access to system data by multiple users.",
+		"features": [
+			"Two C-BUS interfaces",
+			"Encrypted LAN communication",
+			"Simultaneous multi-user access"
+		],
+		"sourceUrl": "https://www.wurm.de/"
 	}
 ]

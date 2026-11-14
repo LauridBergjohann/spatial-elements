@@ -210,8 +210,9 @@ export interface StageExperienceOptions {
 	interactionTheme?: Partial<StageInteractionTheme>;
 	panels?: StagePanelTarget[];
 	viewport?: StageViewportTarget;
-	/** Enables optional 3DxWare/SpaceMouse navigation. Defaults to true. */
+	/** Connects to the local 3DxWare driver (may prompt for local access). Defaults to false. */
 	enableSpaceMouse?: boolean;
+	onSpaceMouseStateChange?: (state: import('./spaceMousePlatform.js').SpaceMouseState) => void;
 	/** Receives the normalized, sequenced phases of a close-up zoom. */
 	onZoomFocusChange?: (state: StageZoomFocusState) => void;
 }

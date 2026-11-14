@@ -525,8 +525,10 @@
 					<tr>
 						<td>SpatialElementPage</td>
 						<td
-							>Required spatialElement: SpatialElementData; optional children. Owns detail content,
-							model selection and generated section navigation.</td
+							>Required spatialElement: SpatialElementData; optional children, headerDetails and
+							actionIcon snippets. headerDetails supplies compact controls to scroll and 3XL pane
+							headers; actionIcon customizes their CTA. Owns detail content, model selection and
+							generated section navigation.</td
 						>
 					</tr>
 					<tr>

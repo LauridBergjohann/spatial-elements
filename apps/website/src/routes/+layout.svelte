@@ -3,6 +3,9 @@
 	import { page } from '$app/state';
 	import { base } from '$app/paths';
 	import { BrandStageShell } from '@spatial-elements/sveltekit';
+	import ShowcaseSummary from '$lib/showcase/ShowcaseSummary.svelte';
+	import { provideShowcaseOrders } from '$lib/showcase/showcaseOrders.svelte';
+	const orders = provideShowcaseOrders();
 	import { websiteTheme } from '$lib/theme';
 	import { Navigation, PageShell } from '@page-sections/svelte';
 	import Menu from 'lucide-svelte/icons/menu';
@@ -43,7 +46,13 @@
 			? 'docs/examples'
 			: 'showcase'
 	);
-	const stageTheme = $derived(websiteTheme(mode, namespace));
+	const exclusive = $derived(/^\/showcase\/exclusive(?:\/|$)/.test(page.url.pathname));
+	const industrial = $derived(/^\/showcase\/industrial(?:\/|$)/.test(page.url.pathname));
+	const stageTheme = $derived(
+		websiteTheme(mode, namespace, exclusive ? 'exclusive' : industrial ? 'industrial' : 'default')
+	);
+	// Both Exclusive palettes have dark surfaces, including its brighter variant.
+	const surfaceScheme = $derived(exclusive ? 'dark' : mode);
 	const items = $derived(resolveNavigation(navigationTree, { pathname: page.url.pathname }).items);
 </script>
 
@@ -101,7 +110,7 @@
 	</header>
 {/snippet}
 <PageShell
-	{mode}
+	mode={surfaceScheme}
 	theme={{
 		background: stageTheme.background,
 		ink: stageTheme.colors.ink,
@@ -110,10 +119,20 @@
 		onAccent: stageTheme.colors.onAccent,
 		standard: stageTheme.sectionBackgrounds?.standard,
 		muted: stageTheme.sectionBackgrounds?.muted,
-		radius: '12px'
+		radius: `${stageTheme.radii?.panel ?? 12}px`
 	}}
 >
-	<BrandStageShell theme={stageTheme} colorScheme={mode} navigation={siteNavigation}>
+	<BrandStageShell
+		theme={stageTheme}
+		colorScheme={surfaceScheme}
+		navigation={siteNavigation}
+		deviceOrientation
+	>
+		{#snippet summary(context)}<ShowcaseSummary
+				{...context}
+				{orders}
+				appearance={surfaceScheme}
+			/>{/snippet}
 		<div id="main-content" tabindex="-1">{@render children()}</div>
 	</BrandStageShell>
 	<footer class="site-footer">
@@ -159,6 +178,8 @@
 	}
 	.appearance {
 		display: flex;
+		border-radius: var(--spatial-element-control-radius);
+		overflow: clip;
 	}
 	.appearance button {
 		display: grid;
@@ -167,7 +188,7 @@
 		height: 40px;
 		padding: 0;
 		border: 0;
-		border-radius: 10px;
+		border-radius: 0;
 		background: transparent;
 		color: var(--ps-ink);
 		cursor: pointer;

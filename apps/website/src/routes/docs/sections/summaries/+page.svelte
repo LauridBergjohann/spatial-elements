@@ -62,6 +62,17 @@
 			<p>
 				For example, <code>CustomSummary.svelte</code> can register its real title as a shared endpoint:
 			</p>
+			<p>
+				For a smaller adjustment, render <code>SpatialElementSummaryContent</code> with the context
+				props and supply its optional <code>leading</code>, <code>beforeAction</code> and
+				<code>actionIcon</code> snippets. The leading content and action details participate in the
+				transition alongside the built-in title, features and action. The
+				<a href="/showcase/industrial/">Industrial showcase</a> uses this approach for item and Wurm logos
+				and an external-link action icon, with an illustrative price and quantity field above the CTA.
+				The quantity stays with the live component when moving from carousel to detail. The same renderer
+				serves carousel and detail panels; their frosted surfaces, blue accents and corner radii come
+				from the route theme.
+			</p>
 
 			<CodeBlock
 				code={examples[1].code}
@@ -138,6 +149,15 @@
 			background: { color: 'standard', size: 'standard' }
 		}}
 		><div class="prose">
+			<p>
+				Optional <code>headerDetails</code> and <code>actionIcon</code> snippets on
+				<code>SpatialElementPage</code> customize the compact scroll header and the fixed 3XL pane
+				header. Use <code>headerDetails</code> for quantity and price, and use the same icon as the summary
+				CTA. Keep these fields compact enough for a mobile header. Store shared form values in the persistent
+				layout, scoped to the current visitor and keyed by element ID, so editing either presentation
+				immediately updates the other. The website Showcase demonstrates this with illustrative prices
+				and manufacturer links; it is not a shop.
+			</p>
 			<p>
 				The persistent host gives a summary a lifetime beyond a route's placement node. Placement
 				and ownership are different responsibilities: manually reparenting a route-owned Svelte

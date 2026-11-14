@@ -61,10 +61,10 @@ export interface StageMinimapState {
 	blurGuard: number;
 	captureExtentWidth: number;
 	captureExtentHeight: number;
-	overlayRing: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+	overlayRing: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicNodeMaterial>;
 	/** Stable depth variants avoid material recompilation on each zoom boundary. */
-	ringRestMaterial: THREE.MeshBasicMaterial;
-	ringForegroundMaterial: THREE.MeshBasicMaterial;
+	ringRestMaterial: THREE.MeshBasicNodeMaterial;
+	ringForegroundMaterial: THREE.MeshBasicNodeMaterial;
 	overlayProgress: number;
 	overlayGeometryWidth: number;
 	overlayGeometryHeight: number;

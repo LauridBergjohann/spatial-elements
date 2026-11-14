@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import * as THREE from 'three/webgpu';
 import { getInteractionGuidance } from './interactionGuidance.js';
+import { SpaceMouseAdapter, type SpaceMouseAdapterOptions } from './SpaceMouseAdapter.js';
 import {
 	SpatialElementInteractionController,
 	type SpatialElementInteractionPorts
@@ -9,6 +10,74 @@ import {
 afterEach(() => {
 	vi.unstubAllGlobals();
 	vi.restoreAllMocks();
+});
+
+test('SpaceMouse connects only on demand and disabling cancels an unfinished connection', async () => {
+	vi.stubGlobal('window', {});
+	let finish!: (adapter: SpaceMouseAdapter) => void;
+	let options!: SpaceMouseAdapterOptions;
+	const dispose = vi.fn();
+	const connect = vi.spyOn(SpaceMouseAdapter, 'connect').mockImplementation(value => {
+		options = value;
+		return new Promise(resolve => { finish = resolve; });
+	});
+	const { owner } = fixture();
+	expect(connect).not.toHaveBeenCalled();
+	const pending = owner.initializeSpaceMouse();
+	await vi.waitFor(() => expect(connect).toHaveBeenCalledOnce());
+	expect(options.viewport).toBe(window);
+	await owner.initializeSpaceMouse();
+	expect(connect).toHaveBeenCalledOnce();
+	owner.disconnectSpaceMouse();
+	expect(options.signal?.aborted).toBe(true);
+	finish({ dispose } as unknown as SpaceMouseAdapter);
+	await pending;
+	expect(dispose).toHaveBeenCalledOnce();
+	owner.dispose();
+});
+
+test('cancelling during the dynamic import never starts the device adapter', async () => {
+ vi.stubGlobal('window', {});
+ const connect = vi.spyOn(SpaceMouseAdapter, 'connect');
+ const { owner } = fixture();
+ const pending = owner.initializeSpaceMouse();
+ owner.disconnectSpaceMouse();
+ await pending;
+ expect(connect).not.toHaveBeenCalled();
+ owner.dispose();
+});
+
+test.each([false, true])('SpaceMouse reveals an offscreen model unless the detail layout is split (%s)', split => {
+	const scrollTo = vi.fn();
+	vi.stubGlobal('window', { scrollY: 800, scrollTo, matchMedia: () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) });
+	const { owner, ports, camera } = fixture();
+	const read = ports.readGeometry;
+	ports.readGeometry = () => ({ ...read(), visible: split, detail: { media: 'minimap', split, paneHidden: false, paneLeft: 500 } });
+	owner.setSpaceMouseMoving(true);
+	owner.setSpaceMouseMoving(true);
+	if (split) expect(scrollTo).not.toHaveBeenCalled();
+	else {
+		expect(scrollTo).toHaveBeenCalledOnce();
+		expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+	}
+	owner.applySpaceMouseNavigationUpdate({ viewMatrix: new THREE.Matrix4().makeTranslation(3, 0, 8).toArray() });
+	expect(camera.position.x).toBe(3);
+	owner.setSpaceMouseMoving(false);
+	expect(owner.spaceMouseMoving).toBe(false);
+	owner.dispose();
+});
+
+test('SpaceMouse reveal respects reduced motion and ignores transition-owned geometry', () => {
+	const scrollTo = vi.fn();
+	vi.stubGlobal('window', { scrollY: 800, scrollTo, matchMedia: () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }) });
+	const { owner, setOwner } = fixture();
+	setOwner('transition');
+	owner.setSpaceMouseMoving(true);
+	expect(scrollTo).not.toHaveBeenCalled();
+	setOwner('page');
+	owner.setSpaceMouseMoving(true);
+	expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
+	owner.dispose();
 });
 
 test('boolean picking stops after the first exact hit and retains miss behavior', () => {

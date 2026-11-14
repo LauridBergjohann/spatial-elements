@@ -45,6 +45,14 @@
 				compass/north reference is required.
 			</p>
 			<p>
+				This website enables detail orientation on its shared shell, so both the main model and
+				minimap respond to tilt. Sensor permission is separate from the optional SpaceMouse
+				connection: an “apps and services on this device” prompt concerns its local driver. That
+				connection starts after clicking the visible SpaceMouse icon, or automatically when loopback
+				access has already been granted. A browser that requires motion permission still controls
+				whether sensor events are available.
+			</p>
+			<p>
 				W3C Z-X-Y orientation is converted to a quaternion and corrected for screen orientation.
 				Relative twist about screen-up drives model Y rotation; twist about screen-right drives X
 				rotation; screen-normal twist drives Z rotation. These filtered angles are inverted in the

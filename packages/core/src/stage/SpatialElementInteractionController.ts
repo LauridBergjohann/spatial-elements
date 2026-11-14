@@ -13,13 +13,14 @@ import {
 	getViewResetDuration,
 	getViewResetInterpolation
 } from './stageMath.js';
-import { SpaceMouseAdapter, type SpaceMouseNavigationUpdate } from './SpaceMouseAdapter.js';
+import type { SpaceMouseAdapter, SpaceMouseNavigationUpdate } from './SpaceMouseAdapter.js';
 import { dampAndSnap } from './damping.js';
 import { getInteractionGuidance, MODEL_INPUT_EVENT, type ModelInputState } from './interactionGuidance.js';
 import { ModelPointerPreview } from './ModelPointerPreview.js';
 import { resolveDetailGestureOwner } from '../spatial-element/spatialElementMedia.js';
 import type { SpatialElementMediaItem } from '../spatial-element/types.js';
 export interface SpatialElementInteractionPorts {
+	onSpaceMouseStateChange?: (state: import("./spaceMousePlatform.js").SpaceMouseState) => void;
 	camera: THREE.PerspectiveCamera;
 	canvas: HTMLCanvasElement;
 	container: HTMLElement;
@@ -104,8 +105,7 @@ export class SpatialElementInteractionController {
 		this.reducedMotion?.removeEventListener('change', this.motionPreferenceChanged);
 		this._controls?.removeEventListener('change', this._controlsChange);
 		this._controls?.dispose();
-		this._spaceMouse?.dispose();
-		this._spaceMouse = undefined;
+		this.disconnectSpaceMouse();
 	}
 	captureInitialView() {
 		if (!this._controls) return;
@@ -145,6 +145,8 @@ export class SpatialElementInteractionController {
 	private _controls?: OrbitControls;
 	private _spaceMouse?: SpaceMouseAdapter;
 	private _spaceMouseConnecting = false;
+	private spaceMouseGeneration = 0;
+	private spaceMouseAbort?: AbortController;
 	private _spaceMouseMoving = false;
 	private _modelHover = false;
 	private _modelInteractionActive = false;
@@ -210,36 +212,60 @@ export class SpatialElementInteractionController {
 		)
 			return;
 		this._spaceMouseConnecting = true;
+		const generation = ++this.spaceMouseGeneration;
+		this.spaceMouseAbort = new AbortController();
 
-		const adapter = await SpaceMouseAdapter.connect({
-			viewport: this.backgroundCanvas,
-			applicationName: 'Spatial Panels SpatialElement Viewer',
-			getViewMatrix: () => {
-				this.camera.updateMatrixWorld(true);
-				return [...this.camera.matrixWorld.elements];
-			},
-			getFov: () => THREE.MathUtils.degToRad(this.camera.fov),
-			getViewFrustum: () => this.getSpaceMouseViewFrustum(),
-			getViewTarget: () => this._controls?.target.toArray() ?? [0, 0, 0],
-			getModelExtents: () => [
-				this.modelBounds.min.x,
-				this.modelBounds.min.y,
-				this.modelBounds.min.z,
-				this.modelBounds.max.x,
-				this.modelBounds.max.y,
-				this.modelBounds.max.z
-			],
-			applyNavigationUpdate: (update) => this.applySpaceMouseNavigationUpdate(update),
-			onMotionChange: (moving) => this.setSpaceMouseMoving(moving)
-		});
-		this._spaceMouseConnecting = false;
-
-		if (this.disposed) {
-			adapter.dispose();
-			return;
+		this.ports.onSpaceMouseStateChange?.('connecting');
+		try {
+			const { SpaceMouseAdapter } = await import('./SpaceMouseAdapter.js');
+			if (this.disposed || generation !== this.spaceMouseGeneration) return;
+			const adapter = await SpaceMouseAdapter.connect({
+				onStateChange: (state) => { if (!this.disposed && generation === this.spaceMouseGeneration) this.ports.onSpaceMouseStateChange?.(state); },
+				signal: this.spaceMouseAbort.signal,
+				// The SDK follows focus/blur on this target. Canvas focus hands the device
+				// back to browser scrolling as soon as another part of the page is clicked.
+				viewport: window,
+				applicationName: 'Spatial Panels SpatialElement Viewer',
+				getViewMatrix: () => {
+					this.camera.updateMatrixWorld(true);
+					return [...this.camera.matrixWorld.elements];
+				},
+				getFov: () => THREE.MathUtils.degToRad(this.camera.fov),
+				getViewFrustum: () => this.getSpaceMouseViewFrustum(),
+				getViewTarget: () => this._controls?.target.toArray() ?? [0, 0, 0],
+				getModelExtents: () => [
+					this.modelBounds.min.x,
+					this.modelBounds.min.y,
+					this.modelBounds.min.z,
+					this.modelBounds.max.x,
+					this.modelBounds.max.y,
+					this.modelBounds.max.z
+				],
+				applyNavigationUpdate: (update) => this.applySpaceMouseNavigationUpdate(update),
+				onMotionChange: (moving) => this.setSpaceMouseMoving(moving)
+			});
+			if (this.disposed || generation !== this.spaceMouseGeneration) {
+				adapter.dispose();
+				return;
+			}
+			this._spaceMouseConnecting = false;
+			this._spaceMouse = adapter;
+		} catch {
+			if (!this.disposed && generation === this.spaceMouseGeneration) {
+				this._spaceMouseConnecting = false;
+				this.ports.onSpaceMouseStateChange?.('unavailable');
+			}
 		}
-
-		this._spaceMouse = adapter;
+	}
+	disconnectSpaceMouse() {
+		this.spaceMouseGeneration++;
+		this.ports.onSpaceMouseStateChange?.('idle');
+		this.spaceMouseAbort?.abort();
+		this.spaceMouseAbort = undefined;
+		this._spaceMouseConnecting = false;
+		this._spaceMouse?.dispose();
+		this._spaceMouse = undefined;
+		this.setSpaceMouseMoving(false);
 	}
 	getSpaceMouseViewFrustum() {
 		this.updateStageCameraProjection();
@@ -304,8 +330,7 @@ export class SpatialElementInteractionController {
 		this.requestRender();
 	}
 	setSpaceMouseMoving(moving: boolean) {
-		if (this.disposed || !this.canInteract) return;
-		if (this.disposed) {
+		if (this.disposed || (moving && !this.canInteract)) {
 			this._spaceMouseMoving = false;
 			return;
 		}
@@ -314,6 +339,11 @@ export class SpatialElementInteractionController {
 		if (moving) this.recreateOrbitControls();
 		this._spaceMouseMoving = moving;
 		if (moving) {
+			// In the split (3XL) layout the geometry remains visible beside the text.
+			// Otherwise reveal it without moving keyboard focus or resetting its pose.
+			if (!this.ports.readGeometry().detail?.split && window.scrollY > 0) {
+				window.scrollTo({ top: 0, behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+			}
 			this.clearWheelZoom();
 			this.clearZoomReset();
 			this._viewResetActive = false;

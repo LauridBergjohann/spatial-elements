@@ -20,15 +20,18 @@ export function optimizedSpatialElement(product: ShowcaseProduct): SpatialElemen
 		brandId: 'showcase',
 		title: product.title,
 		pageTitle: product.title + ' | Spatial Elements',
-		eyebrow: product.manufacturer.name + ' · Demonstration',
+		eyebrow: product.productNumber ?? product.manufacturer.name + ' \u00b7 Demonstration',
 		features: product.features.map((label) => ({ label, marker: '•' })),
 		hdr: showcaseHdr,
 		geometry: geometryFromLodPair(asset.pair as unknown as SpatialElementLodPair),
 		fallbackImage: `/assets/showcase/${product.id}/${product.id}-poster.webp`,
 		fallbackImageSize: [1024, 1024],
 		action: {
-			label: `Visit ${product.manufacturer.name} — not sold here`,
-			href: product.sourceUrl
+			label:
+				product.segment.id === 'industrial'
+					? `Visit ${product.manufacturer.name.toLowerCase()}`
+					: `Visit ${product.manufacturer.name}`,
+			href: product.manufacturer.href
 		},
 		breadcrumbs: [
 			{ label: 'Showcase', href: '/showcase/' },

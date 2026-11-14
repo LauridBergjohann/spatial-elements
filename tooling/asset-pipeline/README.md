@@ -88,6 +88,27 @@ website and records the reviewed quality tradeoffs.
 
 ## Posters and visual review
 
+### Industrial imports
+
+The eight Wurm products reuse the reviewed canonical low/high pairs from the
+sibling `spatial-elements-brand-examples` checkout. Import them and the supplied
+item/Wurm company images and logos with:
+
+```sh
+node tooling/asset-pipeline/import-industrial.mjs
+node tooling/asset-pipeline/render-showcase.mjs --only=wurm-asv101,wurm-hks-g4,wurm-atv230,wurm-dsp-lcd,wurm-dsp002,wurm-fkl003,wurm-fkp003,wurm-multigate3
+```
+
+`BRAND_EXAMPLES_ROOT` and `BRAND_ASSETS_ROOT` override the sibling checkout and
+`../assets/brands` locations. The import retains source-manifest provenance and
+the existing low/high hashes, transforms and bounds. It merges into the shared
+geometry report, so running the main optimizer does not discard these imports.
+The poster renderer uses the website camera and shared studio lighting. Runtime
+and production builds use only committed assets and do not need those directories.
+
+Product numbers are editorial data in `products.json`. The author supplied
+`0.0.026.01` for the item end cap and `Al13` for the robot assembly.
+
 Build the core first, then render the actual optimized geometry with the same
 framing, detail camera pose, material overrides, HDR and lighting as the website:
 
@@ -107,7 +128,11 @@ node tooling/asset-pipeline/render-showcase.mjs --only=joker,tool-check-plus --c
 Set `SHOWCASE_SOURCE_ROOT` for comparisons against a source library elsewhere.
 Comparison sheets and pixel/silhouette measurements go to `.artifacts/showcase/`.
 `showcase-poster-report.json` records each committed poster's hashes, camera pose
-and shared frame; tests catch stale posters after model or presentation changes.
+and shared frame; tests catch stale posters after model or detail-camera changes.
+After editing either in `presentation.json`, regenerate only the affected products,
+for example `npm run assets:showcase:render -- --only=item-profile,item-end-cap`,
+and commit the WebP files together with the updated poster report. Minimap poses
+and hover scales affect only the interactive view and do not require new posters.
 Inspect these visually: silhouette overlap alone cannot verify texture quality,
 small lettering, reflections or internal detail. Posters are committed website
 assets, so neither production builds nor no-JavaScript visitors need the renderer

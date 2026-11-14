@@ -74,7 +74,7 @@ export function selectCatalogRecipe(
 			source: 'carousel.front',
 			targetGeometry: target === 'dock' ? 'detail.dock' : 'detail.hero',
 			targetShared: target === 'dock' ? 'detail.dock' : 'detail.summary',
-			roles: ['summary-surface', 'eyebrow', 'title', 'features', 'primary-action']
+			roles: ['summary-surface', 'leading', 'eyebrow', 'title', 'features', 'action-details', 'primary-action']
 		};
 	if (
 		intent?.direction === 'detail-to-list' &&
@@ -87,7 +87,7 @@ export function selectCatalogRecipe(
 			source: source === 'dock' ? 'detail.dock' : 'detail.summary',
 			targetGeometry: 'carousel.front',
 			targetShared: 'carousel.front',
-			roles: ['summary-surface', 'eyebrow', 'title', 'features', 'primary-action']
+			roles: ['summary-surface', 'leading', 'eyebrow', 'title', 'features', 'action-details', 'primary-action']
 		};
 	if (
 		intent &&
