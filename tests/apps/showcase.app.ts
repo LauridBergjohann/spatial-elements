@@ -116,7 +116,7 @@ test('theme still changes when storage is blocked', async ({ page }) => {
 	await expect(page.locator('.ps-shell')).toHaveAttribute('data-ps-theme', 'dark');
 });
 
-test('one palette and frosted navigation follow the chosen mode across the website', async ({
+test('the standard palette and frosted navigation follow the chosen mode outside Exclusive', async ({
 	page
 }) => {
 	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
@@ -128,8 +128,7 @@ test('one palette and frosted navigation follow the chosen mode across the websi
 			'/',
 			'/docs/foundations/assets/',
 			'/showcase/',
-			'/showcase/workbench/joker/',
-			'/showcase/exclusive/chronograph/'
+			'/showcase/workbench/joker/'
 		]) {
 			await page.goto(route);
 			await expect(page.locator('.brand-stage-shell')).toHaveAttribute(

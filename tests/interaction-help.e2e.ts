@@ -105,10 +105,11 @@ test('preview settles, transfers its visible pose to dragging and stops after le
 	expect(difference(before, preview)).toBeGreaterThan(0.001);
 	expect(difference(before, preview)).toBeLessThan(0.06);
 	// Opening the panel can finish an asynchronous quality/resize pass after the hover motion.
+	// Require a full quiet second: a 400ms gap can precede the final submitted frame.
 	await expect(help(page)).toBeVisible();
 	await expect.poll(async () => {
 		const passes = await page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().stageModelRenderPasses);
-		await page.waitForTimeout(400);
+		await page.waitForTimeout(1000);
 		return (await page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().stageModelRenderPasses)) - passes;
 	}).toBe(0);
 	const idle = await page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().stageModelRenderPasses);
@@ -187,8 +188,10 @@ test('help surfaces match their DOM in each zoom frame and stay clear of the scr
 		await page.evaluate(() => window.__stageVisualTest!.settle(40));
 		const metrics = await page.evaluate(async () => {
 			const api = window.__stageVisualTest!;
-			const frame = document.querySelector<HTMLElement>('.spatial-icon-panel')!;
-			const control = document.querySelector<HTMLElement>('.spatial-icon-button')!;
+			const frame = document.querySelector<HTMLElement>('[data-spatial-control="3D controls"] .spatial-icon-panel')!;
+			const control = document.querySelector<HTMLElement>('.spatial-icon-button[aria-label="3D controls"]')!;
+			const spaceMouseFrame = document.querySelector<HTMLElement>('[data-spatial-control="SpaceMouse"] .spatial-icon-panel')!;
+			const spaceMouseControl = document.querySelector<HTMLElement>('.spatial-icon-button[aria-label="SpaceMouse"]')!;
 			const popup = document.querySelector<HTMLElement>('[data-spatial-element-help]')!;
 			const popupFrame = popup.querySelector<HTMLElement>('[data-stage-panel-native-content]')!;
 			let maxError = 0, minRightInset = Infinity, minTopInset = Infinity;
@@ -196,7 +199,7 @@ test('help surfaces match their DOM in each zoom frame and stay clear of the scr
 			for (const step of [...Array.from({ length: 41 }, (_, i) => i), ...Array.from({ length: 41 }, (_, i) => 40 - i)]) {
 				// Inspect the first submitted frame at every pose, before anything can catch up.
 				await api.setView({ zoom: step / 40 }, 1);
-				for (const [element, surfaceFrame] of [[control, frame], [popup, popupFrame]]) {
+				for (const [element, surfaceFrame] of [[control, frame], [spaceMouseControl, spaceMouseFrame], [popup, popupFrame]]) {
 					const dom = element.getBoundingClientRect(), gpu = api.getPanelRect(surfaceFrame);
 					if (!gpu) throw new Error('Visible help surface is missing');
 					for (const key of ['x', 'y', 'width', 'height'] as const) maxError = Math.max(maxError, Math.abs(dom[key] - gpu[key]));

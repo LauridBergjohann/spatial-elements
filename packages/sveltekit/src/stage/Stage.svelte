@@ -2,6 +2,7 @@
 	import type { SpatialElementLodPair } from '@spatial-elements/core/catalog/spatialElementLodPair';
 	import { DEFAULT_BACKGROUND } from '@spatial-elements/core/stage/stageConstants';
 	import { onMount, setContext, tick } from 'svelte';
+	import { observeSpaceMousePermission, type SpaceMousePermission } from '@spatial-elements/core/stage/spaceMousePermission';
 	import { ResponsiveViewportMetrics } from '@spatial-elements/core/spatial-element/ResponsiveViewportMetrics';
 	import { SPATIAL_PRESENTATION_OWNER, type SpatialPresentationOwner } from '../spatial-element/spatialPresentationOwner.js';
 	import type { SpatialSummaryHostController } from '../spatial-element/spatialSummaryHost.svelte.js';
@@ -160,6 +161,18 @@
 	let domLayerOpacity = $state(1);
 	let experience = $state<StageExperience | null>(null);
 	let spaceMouseEnabled = $state(false);
+	let spaceMousePermission = $state<SpaceMousePermission>('unknown');
+	let spaceMouseDisabledByUser = false;
+	onMount(() => observeSpaceMousePermission((state) => {
+		spaceMousePermission = state;
+		if (state === 'granted' && !spaceMouseDisabledByUser && window.matchMedia('(any-pointer: fine)').matches) {
+			spaceMouseEnabled = true;
+			experience?.setSpaceMouseEnabled(true);
+		} else if (state === 'denied' || state === 'prompt') {
+			spaceMouseEnabled = false;
+			experience?.setSpaceMouseEnabled(false);
+		}
+	}));
 	let layoutMetrics: ResponsiveViewportMetrics | undefined;
 	let presentationHost: SpatialSummaryHostController | undefined;
 	setContext<SpatialPresentationOwner>(SPATIAL_PRESENTATION_OWNER, {
@@ -221,7 +234,9 @@
 		getLayoutMetrics: (mode) => layoutMetrics?.read(mode),
 		isEnhanced: () => isEnhanced,
 		isSpaceMouseEnabled: () => spaceMouseEnabled,
+		getSpaceMousePermission: () => spaceMousePermission,
 		setSpaceMouseEnabled(enabled) {
+			spaceMouseDisabledByUser = !enabled;
 			spaceMouseEnabled = enabled;
 			experience?.setSpaceMouseEnabled(enabled);
 		},

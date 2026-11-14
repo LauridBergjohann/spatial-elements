@@ -43,7 +43,8 @@
 			? 'docs/examples'
 			: 'showcase'
 	);
-	const stageTheme = $derived(websiteTheme(mode, namespace));
+	const exclusive = $derived(/^\/showcase\/exclusive(?:\/|$)/.test(page.url.pathname));
+	const stageTheme = $derived(websiteTheme(mode, namespace, exclusive));
 	const items = $derived(resolveNavigation(navigationTree, { pathname: page.url.pathname }).items);
 </script>
 
@@ -110,7 +111,7 @@
 		onAccent: stageTheme.colors.onAccent,
 		standard: stageTheme.sectionBackgrounds?.standard,
 		muted: stageTheme.sectionBackgrounds?.muted,
-		radius: '12px'
+		radius: `${stageTheme.radii?.panel ?? 12}px`
 	}}
 >
 	<BrandStageShell

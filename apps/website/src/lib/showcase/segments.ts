@@ -27,7 +27,8 @@ export const showcaseSegments = [
 		title: 'Exclusive',
 		manufacturer: 'watches',
 		cardSize: 'l',
-		description: 'A closer look at luxury watchmaking with a Rolex chronograph.'
+		description:
+			'A closer look at luxury watchmaking with a Rolex chronograph. Glass panels, gold accents and softer corners demonstrate a different visual identity with the same navigation.'
 	}
 ] as const;
 export function productSegment(manufacturer: string) {

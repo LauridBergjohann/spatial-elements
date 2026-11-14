@@ -2,7 +2,7 @@
 
 ## Prepared correction release
 
-Both public packages are prepared as `1.0.0-beta.11`, including explicit SpaceMouse activation and corrected carousel panel materials. The website also restores detail device orientation. Commit and merge the prepared branch without running `changeset` or `release:version` again. The release workflow publishes this version under **beta**; it does not move **latest**. Consumers can explicitly install it with:
+Both public packages are prepared as `1.0.0-beta.11`, including visible SpaceMouse activation, reconnection with existing loopback permission and corrected carousel/navigation panel materials. The website also restores detail device orientation and uses a Watches glass theme throughout `/showcase/exclusive/`. Commit and merge the prepared branch without running `changeset` or `release:version` again. The release workflow publishes this version under **beta**; it does not move **latest**. Consumers can explicitly install it with:
 
 ```sh
 npm install @spatial-elements/core@beta @spatial-elements/sveltekit@beta

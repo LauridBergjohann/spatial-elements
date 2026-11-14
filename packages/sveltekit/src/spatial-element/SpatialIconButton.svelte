@@ -5,13 +5,14 @@
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 
-	let { label, children, onclick, expanded, controls, focusAnchor, enabled = true, element = $bindable() }: {
+	let { label, children, onclick, expanded, controls, focusAnchor, wide = false, enabled = true, element = $bindable() }: {
 		label: string;
 		children: Snippet;
 		onclick: (event: MouseEvent) => void;
 		expanded?: boolean;
 		controls?: string;
 		focusAnchor?: HTMLElement;
+		wide?: boolean;
 		enabled?: boolean;
 		element?: HTMLButtonElement;
 	} = $props();
@@ -20,7 +21,7 @@
 	const radii = $derived(resolveSpatialThemeRadii(theme));
 </script>
 
-<div class="icon-frame">
+<div class="icon-frame" class:wide data-spatial-control={label}>
 	<Panel
 		class="spatial-icon-panel"
 		shape={{ radius: radii.control, contentInset: 0 }}
@@ -35,7 +36,7 @@
 			disabled={!enabled}
 			style:visibility={enabled ? 'visible' : 'hidden'}
 			aria-expanded={expanded} aria-controls={controls} aria-haspopup={controls ? 'dialog' : undefined}
-			class="spatial-icon-button">
+			class="spatial-icon-button" class:wide>
 			{@render children()}
 		</button>
 	</Panel>
@@ -43,11 +44,14 @@
 
 <style>
 	.icon-frame { width: 40px; height: 40px; flex: 0 0 40px; }
+	.icon-frame.wide { width: 104px; flex-basis: 104px; }
+	.icon-frame.wide :global(.spatial-icon-panel), .spatial-icon-button.wide { width: 104px; }
 	/* The renderer moves panel contents into its projection layer; retain the anchor size. */
 	.icon-frame :global(.spatial-icon-panel) { width: 40px; height: 40px; }
 	.spatial-icon-button {
 		box-sizing: border-box; display: grid; place-items: center; width: 40px; height: 40px;
 		padding: 0; border: 0; border-radius: var(--spatial-element-control-radius); background: transparent;
+		font: inherit; font-size: 13px;
 		color: var(--spatial-element-ink); cursor: pointer; touch-action: manipulation;
 		transition: background-color 180ms ease;
 	}

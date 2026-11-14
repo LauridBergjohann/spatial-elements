@@ -20,6 +20,7 @@
 	const stageContext = getContext<StageContext>(STAGE_CONTEXT_KEY);
 	const fullscreen = $derived(stageContext.isFullscreen?.() ?? false);
 	const spaceMouseEnabled = $derived(stageContext.isSpaceMouseEnabled?.() ?? false);
+	const spaceMousePermission = $derived(stageContext.getSpaceMousePermission?.() ?? 'unknown');
 	const readMessages = useSpatialMessages();
 	const messages = $derived(readMessages());
 	const help = $derived(messages.interactionHelp);
@@ -28,6 +29,8 @@
 	let root: HTMLDivElement;
 	let focusAnchor = $state<HTMLElement>();
 	let button = $state<HTMLButtonElement>(null!);
+	let spaceMouseButton = $state<HTMLButtonElement>(null!);
+	let spaceMouseOnly = $state(false);
 	let popover: HTMLDivElement;
 	let closeButton: HTMLButtonElement;
 	let open = $state(false);
@@ -61,11 +64,11 @@
 		open = false;
 		manual = false;
 		helpHovered = false;
-		if (restoreFocus) button.focus({ preventScroll: true });
+		if (restoreFocus) (spaceMouseOnly ? spaceMouseButton : button)?.focus({ preventScroll: true });
 	}
 	function position() {
 		if (!open) return;
-		const rect = button.getBoundingClientRect();
+		const rect = (spaceMouseOnly ? spaceMouseButton : button).getBoundingClientRect();
 		const viewport = window.visualViewport;
 		const leftEdge = (viewport?.offsetLeft ?? 0) + 16;
 		const topEdge = (viewport?.offsetTop ?? 0) + 16;
@@ -103,17 +106,30 @@
 		}
 	}
 	function toggleHelp(event: MouseEvent) {
-		if (open) close();
+		if (open && !spaceMouseOnly) close();
 		else {
+			spaceMouseOnly = false;
 			manual = true;
 			void show(event.detail === 0);
 		}
+	}
+	function toggleSpaceMouse(event: MouseEvent) {
+		if (open && spaceMouseOnly) close();
+		else {
+			spaceMouseOnly = true;
+			manual = true;
+			void show(event.detail === 0);
+		}
+	}
+	function retrySpaceMouse() {
+		stageContext.setSpaceMouseEnabled?.(false);
+		stageContext.setSpaceMouseEnabled?.(true);
 	}
 	function schedule() {
 		clearDelay(); clearHideDelay();
 		if (!active || manual || !enhanced || !visible || modelInput.active || touchInput || guidance?.snapshot.interacted) return;
 		if (modelInput.hovered) {
-			if (!open) delay = setTimeout(() => { void show(); }, 600);
+			if (!open) delay = setTimeout(() => { spaceMouseOnly = false; void show(); }, 600);
 		} else if (open && !helpHovered && !buttonHovered && !popover.contains(document.activeElement)) {
 			hideDelay = setTimeout(() => close(), 350);
 		}
@@ -172,7 +188,7 @@
 		const inputChanged = (event: PointerEvent) => {
 			if (!event.isTrusted) return;
 			const next = event.pointerType !== 'mouse';
-			if (next !== touchInput) { touchInput = next; if (next) { clearDelay(); clearHideDelay(); if (!manual) close(); } }
+			if (next !== touchInput) { touchInput = next; if (next) { clearDelay(); clearHideDelay(); if (spaceMouseOnly || !manual) close(); } }
 		};
 		const buttonEnter = (event: PointerEvent) => { buttonHovered = event.pointerType === 'mouse'; schedule(); };
 		const buttonLeave = () => { buttonHovered = false; schedule(); };
@@ -212,9 +228,14 @@
 	});
 </script>
 
-<div bind:this={root} class="model-tools" class:enhanced style={surfaceStyle} style:visibility={active ? undefined : 'hidden'} inert={!active} data-spatial-element-tools data-spatial-model-controls>
+<div bind:this={root} class="model-tools" class:enhanced class:with-spacemouse={!touchInput && !!stageContext.setSpaceMouseEnabled} style={surfaceStyle} style:visibility={active ? undefined : 'hidden'} inert={!active} data-spatial-element-tools data-spatial-model-controls>
 	<div class="model-tools-buttons">
-		<SpatialIconButton bind:element={button} {focusAnchor} label={messages.controls.help} onclick={toggleHelp} expanded={open} controls={id} enabled={enhanced && active}>
+		{#if !touchInput && stageContext.setSpaceMouseEnabled}
+			<SpatialIconButton bind:element={spaceMouseButton} {focusAnchor} wide label={help.spaceMouseTitle} onclick={toggleSpaceMouse} expanded={open && spaceMouseOnly} controls={id} enabled={enhanced && active}>
+				<span>{help.spaceMouseTitle}</span>
+			</SpatialIconButton>
+		{/if}
+		<SpatialIconButton bind:element={button} {focusAnchor} label={messages.controls.help} onclick={toggleHelp} expanded={open && !spaceMouseOnly} controls={id} enabled={enhanced && active}>
 			<CircleHelp size={21} strokeWidth={1.8} aria-hidden="true" />
 		</SpatialIconButton>
 		<SpatialElementViewToggle enabled={enhanced && active} {focusAnchor} onchange={() => close()} />
@@ -233,12 +254,13 @@
 			shape={{ ...theme.panelShape, radius: radii.panel, contentInset: 0 }} theme={theme.panelTheme}>
 			<div class="help-copy">
 				<div class="help-heading">
-					<h2 id={`${id}-title`}>{help.title}</h2>
+					<h2 id={`${id}-title`}>{spaceMouseOnly ? help.spaceMouseTitle : help.title}</h2>
 					<button bind:this={closeButton} type="button" class="close-help" onclick={() => close(true)}
 						aria-label={messages.controls.closeHelp} title={messages.controls.closeHelp}>
 						<X size={19} aria-hidden="true" />
 					</button>
 				</div>
+				{#if !spaceMouseOnly}
 				<dl>
 					<div><InteractionGesture action="rotate" touch={touchInput} /><dt>{help.rotate}</dt><dd>{touchInput ? help.touchRotate : help.mouseRotate}</dd></div>
 					<div><InteractionGesture action="zoom" touch={touchInput} /><dt>{help.zoom}</dt><dd>{touchInput ? help.touchZoom : help.mouseZoom}</dd></div>
@@ -251,12 +273,17 @@
 						{#each help.mouseNavigationHint.split('{spacemouse}') as part, index}{#if index > 0}<a href="https://3dconnexion.com/" target="_blank" rel="noopener noreferrer">SpaceMouse</a>{/if}{part}{/each}
 					{/if}
 				</p>
+				{/if}
 				{#if !touchInput && stageContext.setSpaceMouseEnabled}
+					<p class="spacemouse-permission">{help.spaceMousePermission}</p>
+					{#if spaceMousePermission === 'denied'}<p class="spacemouse-permission" role="status">{help.spaceMouseDenied}</p>{/if}
 					<button type="button" class="spacemouse-toggle" aria-pressed={spaceMouseEnabled}
 						onclick={() => stageContext.setSpaceMouseEnabled?.(!spaceMouseEnabled)}>
 						{spaceMouseEnabled ? help.disableSpaceMouse : help.enableSpaceMouse}
 					</button>
-					<p class="spacemouse-permission">{help.spaceMousePermission}</p>
+					{#if spaceMouseEnabled || spaceMousePermission === 'denied'}
+						<button type="button" class="spacemouse-toggle" onclick={retrySpaceMouse}>{help.retrySpaceMouse}</button>
+					{/if}
 				{/if}
 			</div>
 		</Panel>
@@ -270,6 +297,7 @@
 		width: 128px; height: 40px; z-index: 6; visibility: hidden; pointer-events: none;
 	}
 	.model-tools.enhanced { visibility: visible; pointer-events: auto; }
+	.model-tools.with-spacemouse { width: 240px; }
 	.model-tools-buttons { display: flex; gap: 8px; justify-content: flex-end; }
 	.touch-hint {
 		position: absolute; right: 0; top: 48px; width: max-content; max-width: min(260px, calc(100vw - 48px));

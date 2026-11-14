@@ -19,6 +19,9 @@ export interface SpatialMessages {
 		enableSpaceMouse: string;
 		disableSpaceMouse: string;
 		spaceMousePermission: string;
+		spaceMouseTitle: string;
+		spaceMouseDenied: string;
+		retrySpaceMouse: string;
 		touchRotate: string;
 		touchZoom: string;
 		touchPan: string;
@@ -45,7 +48,10 @@ export const defaultSpatialMessages: Readonly<{
 		mouseNavigationHint: 'Alternatively, use a {spacemouse} to navigate.',
 		enableSpaceMouse: 'Enable SpaceMouse',
 		disableSpaceMouse: 'Disable SpaceMouse',
-		spaceMousePermission: 'Connect to the local 3Dconnexion driver. Your browser may ask for access to apps on this device.',
+		spaceMousePermission: 'Have a SpaceMouse? Enable it to navigate this model. Allow this website to access the installed 3Dconnexion driver when your browser asks.',
+		spaceMouseTitle: 'SpaceMouse',
+		spaceMouseDenied: 'Access is blocked. Allow access to apps on this device in your browser’s site settings, then try again.',
+		retrySpaceMouse: 'Retry SpaceMouse connection',
 		touchRotate: 'Drag with one finger',
 		touchZoom: 'Pinch with two fingers',
 		touchPan: 'Drag with two fingers',

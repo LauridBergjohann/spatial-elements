@@ -97,7 +97,7 @@
                 getNativeContent: () => true, getVisible: () => role === 'menu' || satellitesVisible,
                 getMinimapOptions: () => undefined, getMinimapDockProgress: () => 0,
                 getMinimapModelScale: () => 1, getMinimapModelTop: () => undefined,
-                getSurface: () => fixedDetail ? theme.panelTheme.surface ?? 'glass' : 'frosted',
+                getSurface: () => theme.panelTheme.surface ?? 'frosted',
                 getSurfaceOpacity: () => 1,
                 getOptions: () => ({ ...theme.panelTheme, radius: role === 'menu' ? radii.panel : radii.control })
             });
@@ -114,7 +114,7 @@
 </script>
 
 <div class="spatial-shell-track" style:--ps-sticky-range={`${spatialLayoutTokens.menu.scrollThreshold}px`} data-spatial-navigation-shell>
- <div bind:this={rack} class="spatial-shell-rack" data-stage-scroll-shell data-catalog-shell data-spatial-navigation-glass={fixedDetail && theme.panelTheme.surface === 'glass' ? '' : undefined}>
+ <div bind:this={rack} class="spatial-shell-rack" data-stage-scroll-shell data-catalog-shell data-spatial-navigation-glass={theme.panelTheme.surface === 'glass' ? '' : undefined}>
   {#if navigation}{@render navigation()}{:else}<Navigation {menu} {items} {brand} {tools} {left} {right} />{/if}
  </div>
 </div>
@@ -131,6 +131,8 @@
   backdrop-filter: blur(var(--spatial-element-panel-backdrop-blur));
   box-shadow: var(--spatial-element-panel-box-shadow);
  }
+ .spatial-shell-rack :global(.header) { border-radius: var(--spatial-element-panel-radius); }
+ .spatial-shell-rack :global(.satellite) { border-radius: var(--spatial-element-control-radius); }
  :global(.stage-virtual-scroll-active) .spatial-shell-rack { position: relative; transform: translateY(var(--spatial-shell-scroll-compensation, 0px)); }
  [data-spatial-navigation-glass] :global([data-stage-panel-bound]) { background: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
 </style>

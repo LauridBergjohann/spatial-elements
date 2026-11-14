@@ -177,12 +177,20 @@
 				needed. The touch scroll hint remains unchanged.
 			</p>
 			<p>
-				SpaceMouse access is off by default. Choose <strong>Enable SpaceMouse</strong> in the 3D
-				controls help to connect to the local 3Dconnexion driver. Chrome may then ask for access to
-				apps and services on the device. Opening a detail page never connects on its own. The choice
-				lasts for this mounted stage and can be disabled in the same dialog. Localize
-				<code>enableSpaceMouse</code>, <code>disableSpaceMouse</code> and
-				<code>spaceMousePermission</code> in <code>interactionHelp</code>.
+				The visible <strong>SpaceMouse</strong> button beside the 3D controls explains access before
+				connecting. Choose <strong>Enable SpaceMouse</strong> to contact the installed 3Dconnexion driver;
+				Chrome may then ask for access to apps and services on the device. Browsers do not expose unapproved
+				devices, and probing the driver would itself require that permission.
+			</p>
+			<p>
+				Where supported, the stage checks existing loopback permission without contacting the
+				driver. An existing grant enables automatic reconnection; unknown or undecided permission
+				requires your action. A grant is not proof that a SpaceMouse is connected. You can disable
+				access or retry from the SpaceMouse dialog and from help. If access was blocked, allow it in
+				the browser's site settings first. Disabling access lasts for the mounted stage. Localize
+				<code>spaceMouseTitle</code>, <code>enableSpaceMouse</code>, <code>disableSpaceMouse</code>,
+				<code>retrySpaceMouse</code>, <code>spaceMousePermission</code> and
+				<code>spaceMouseDenied</code> in <code>interactionHelp</code>.
 			</p>
 		</div></Section
 	>
