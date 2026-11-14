@@ -194,9 +194,15 @@
 			</p>
 			<p>
 				On desktop platforms, an existing loopback permission grant triggers a silent reconnection.
-				Unknown permission requires a click. An unsuccessful automatic attempt shows no dialog.
-				Disconnecting lasts for the mounted stage. Both the adapter and 3Dconnexion SDK are imported
-				only when connection is requested or permission was already granted. Localize the
+				Browsers that expose only the older combined local-network-access permission are also
+				supported. If neither permission can be queried, a successful previous connection saved in
+				local storage allows an automatic retry on the next visit. On those browsers, connect once
+				after updating to establish this preference. An explicit prompt or denied status always
+				requires a click; a saved connection is not a browser permission. If permission cannot be
+				queried and has since been reset, the browser may ask again. An unsuccessful automatic
+				attempt shows no application dialog. Disconnecting lasts for the mounted stage. Both the
+				adapter and 3Dconnexion SDK are imported only for a manual connection or an eligible
+				automatic retry. Localize the
 				<code>spaceMouse*</code> strings in <code>interactionHelp</code>.
 			</p>
 			<p>

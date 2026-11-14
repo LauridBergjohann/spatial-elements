@@ -22,21 +22,29 @@ const sdkFile =
 	Object.entries(manifest).find(([key]) => key.includes('3dconnexion.module.js'))?.[1].file ?? '';
 const detail = '/showcase/consumer/logitech-z407/';
 
-async function permission(page: Page, initial = 'prompt') {
-	await page.addInitScript((initial) => {
-		const status = Object.assign(new EventTarget(), { state: initial });
-		Object.assign(window, {
-			loopbackPermission: status,
-			driverConnects: 0,
-			driverCloses: 0,
-			driverMode: 'success'
-		});
-		const query = navigator.permissions.query.bind(navigator.permissions);
-		navigator.permissions.query = (descriptor) =>
-			String(descriptor.name) === 'loopback-network'
-				? Promise.resolve(status as PermissionStatus)
-				: query(descriptor);
-	}, initial);
+async function permission(page: Page, initial = 'prompt', supported = 'loopback-network') {
+	await page.addInitScript(
+		({ initial, supported }) => {
+			const status = Object.assign(new EventTarget(), { state: initial });
+			Object.assign(window, {
+				loopbackPermission: status,
+				driverConnects: 0,
+				driverCloses: 0,
+				driverMode: 'success'
+			});
+			const query = navigator.permissions.query.bind(navigator.permissions);
+			navigator.permissions.query = (descriptor) => {
+				const name = String(descriptor.name);
+				if (['loopback-network', 'local-network-access'].includes(name)) {
+					return name === supported
+						? Promise.resolve(status as PermissionStatus)
+						: Promise.reject(new TypeError('Unsupported permission'));
+				}
+				return query(descriptor);
+			};
+		},
+		{ initial, supported }
+	);
 }
 async function fakeDriver(page: Page, mode = 'success') {
 	await page.addInitScript((mode) => {
@@ -205,6 +213,91 @@ if (process.env.SPATIAL_GPU) {
 					page.getByRole('button', { name: 'SpaceMouse connected', exact: true })
 				).toBeVisible();
 			}
+		});
+	test('legacy local-network-access grant reconnects without a previous site preference', async ({
+		page
+	}) => {
+		await permission(page, 'granted', 'local-network-access');
+		await fakeDriver(page);
+		await ready(page);
+		await expect(
+			page.getByRole('button', { name: 'SpaceMouse connected', exact: true })
+		).toBeVisible();
+		await expect.poll(() => page.evaluate(() => (window as any).driverConnects)).toBe(1);
+		await expect(page.getByRole('dialog')).not.toBeVisible();
+		await expect(page.locator('.connection-toast')).not.toBeVisible();
+	});
+	test('new permission grants reconnect but do not override a manual disconnect', async ({
+		page
+	}) => {
+		await permission(page);
+		await fakeDriver(page);
+		await ready(page);
+		const changePermission = (state: string) =>
+			page.evaluate((state) => {
+				const permission = (window as any).loopbackPermission;
+				permission.state = state;
+				permission.dispatchEvent(new Event('change'));
+			}, state);
+		await changePermission('granted');
+		const connected = page.getByRole('button', { name: 'SpaceMouse connected', exact: true });
+		await expect(connected).toBeVisible();
+		await connected.click();
+		await changePermission('denied');
+		await changePermission('granted');
+		await expect(page.getByRole('button', { name: 'SpaceMouse', exact: true })).toHaveAttribute(
+			'aria-pressed',
+			'false'
+		);
+		expect(await page.evaluate(() => (window as any).driverConnects)).toBe(1);
+	});
+	for (const mode of ['success', 'missing'])
+		test(
+			'successful connection survives a reload without a queryable permission: ' + mode,
+			async ({ page }) => {
+				await permission(page, 'prompt', 'none');
+				await fakeDriver(page);
+				const requested: string[] = [];
+				page.on('request', (request) => requested.push(new URL(request.url()).pathname));
+				await ready(page);
+				expect(requested.filter((path) => driverFiles.includes(path))).toEqual([]);
+				await page.getByRole('button', { name: 'SpaceMouse', exact: true }).click();
+				await expect(
+					page.getByRole('button', { name: 'SpaceMouse connected', exact: true })
+				).toBeVisible();
+				expect(
+					await page.evaluate(() => localStorage.getItem('spatial-elements-spacemouse-connected'))
+				).toBe('true');
+				await page.addInitScript((mode) => {
+					(window as any).driverMode = mode;
+				}, mode);
+				await page.reload();
+				await expect.poll(() => page.evaluate(() => (window as any).driverConnects)).toBe(1);
+				await expect(
+					page.getByRole('button', {
+						name: mode === 'success' ? 'SpaceMouse connected' : 'SpaceMouse',
+						exact: true
+					})
+				).toHaveAttribute('aria-pressed', String(mode === 'success'));
+				await expect(page.getByRole('dialog')).not.toBeVisible();
+				await expect(page.locator('.connection-toast')).not.toBeVisible();
+			}
+		);
+	for (const state of ['prompt', 'denied'])
+		test('remembered success does not override explicit permission: ' + state, async ({ page }) => {
+			await permission(page, state);
+			await fakeDriver(page);
+			await page.addInitScript(() =>
+				localStorage.setItem('spatial-elements-spacemouse-connected', 'true')
+			);
+			const requested: string[] = [];
+			page.on('request', (request) => requested.push(new URL(request.url()).pathname));
+			await ready(page);
+			await expect(page.getByRole('button', { name: 'SpaceMouse', exact: true })).toHaveAttribute(
+				'aria-pressed',
+				'false'
+			);
+			expect(requested.filter((path) => driverFiles.includes(path))).toEqual([]);
 		});
 	test('mobile never offers or imports SpaceMouse even with a previous grant', async ({ page }) => {
 		await permission(page, 'granted');

@@ -9,7 +9,9 @@ sveltekit contains authoring components, Svelte contexts/lifecycle, actions requ
 SvelteKit preload/navigation/history integration. It imports core through package exports, never
 source aliases. Three.js is a shared peer dependency of both packages; Svelte/Kit are adapter peers.
 The optional SpaceMouse adapter and 3Dconnexion SDK are imported only on connection intent or
-an existing desktop loopback grant. Native layout uses renderer-independent scalar helpers.
+an existing desktop loopback grant (including the legacy combined permission). When no permission
+query is supported, a saved successful connection permits a retry. An explicit prompt or denial
+always takes precedence. Native layout uses renderer-independent scalar helpers.
 Stage probes for a usable WebGPU adapter before importing StageExperience or staged navigation;
 missing, null and rejected adapters keep the semantic HTML fallback without Three.js downloads.
 Production browser tests inspect the emitted manifest and network requests to enforce both boundaries.

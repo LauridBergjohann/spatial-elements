@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Restore SpaceMouse reconnection with legacy local-network permissions and remember successful connections for browsers without a supported permission query. Explicit permission decisions take precedence; automatic failures remain silent.
+
 - Load WebGPU rendering only after a usable adapter probe; defer the SpaceMouse adapter and SDK until requested. Add a desktop-only themed SpaceMouse icon, actual connection status, silent granted reconnection, permission recovery and a brief connection toast.
 
 - Add optional `headerDetails` and `actionIcon` snippets to `SpatialElementPage` for both scroll and 3XL pane headers. The showcase shares quantity and illustrative totals across all product summaries and headers, uses manufacturer exit links consistently, and switches item/Wurm logos with the active theme.

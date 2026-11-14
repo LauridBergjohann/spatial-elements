@@ -1,4 +1,5 @@
 import type { SpaceMouseState } from './spaceMousePlatform.js';
+import { querySpaceMousePermission } from './spaceMousePermission.js';
 
 export interface SpaceMouseNavigationUpdate {
 	viewMatrix?: number[];
@@ -169,7 +170,7 @@ export class SpaceMouseAdapter {
 		if (this.disposed) return;
 		let permissionRequired = error instanceof Error && ['SecurityError', 'NotAllowedError'].includes(error.name);
 		try {
-			const permission = await globalThis.navigator?.permissions?.query({ name: 'loopback-network' as PermissionName });
+			const permission = await querySpaceMousePermission();
 			// An unrequested prompt does not prove a permission failure (the driver may be absent).
 			permissionRequired ||= permission?.state === 'denied';
 		} catch { /* Unsupported permission descriptor: report connection unavailable. */ }

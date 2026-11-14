@@ -4,7 +4,12 @@
 	import type { SpatialElementLodPair } from '@spatial-elements/core/catalog/spatialElementLodPair';
 	import { DEFAULT_BACKGROUND } from '@spatial-elements/core/stage/stageConstants';
 	import { onMount, setContext, tick } from 'svelte';
-	import { observeSpaceMousePermission, type SpaceMousePermission } from '@spatial-elements/core/stage/spaceMousePermission';
+	import {
+		observeSpaceMousePermission,
+		rememberSpaceMouseConnection,
+		shouldReconnectSpaceMouse,
+		type SpaceMousePermission
+	} from '@spatial-elements/core/stage/spaceMousePermission';
 	import { ResponsiveViewportMetrics } from '@spatial-elements/core/spatial-element/ResponsiveViewportMetrics';
 	import { SPATIAL_PRESENTATION_OWNER, type SpatialPresentationOwner } from '../spatial-element/spatialPresentationOwner.js';
 	import type { SpatialSummaryHostController } from '../spatial-element/spatialSummaryHost.svelte.js';
@@ -172,8 +177,12 @@
 		if (!spaceMouseDesktop) return;
 		let first = true;
 		return observeSpaceMousePermission((state) => {
+			const newlyGranted = state === 'granted' && spaceMousePermission !== 'granted';
 			spaceMousePermission = state;
-			if (first && state === 'granted' && !spaceMouseDisabledByUser) {
+			if (
+				(first || newlyGranted) && shouldReconnectSpaceMouse(state) &&
+				!spaceMouseDisabledByUser && !spaceMouseEnabled
+			) {
 				spaceMouseEnabled = true;
 				experience?.setSpaceMouseEnabled(true);
 			} else if (state === 'denied' && spaceMouseEnabled) {
@@ -380,6 +389,7 @@
 				enableSpaceMouse: spaceMouseEnabled,
 				onSpaceMouseStateChange: (state) => {
 					if (disposed) return;
+					if (state === 'connected') rememberSpaceMouseConnection();
 					if (state === 'permission-required' || state === 'unavailable') {
 						// A failed attempt must not keep reconnecting on every route change.
 						spaceMouseEnabled = false;
