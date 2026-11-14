@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { isSpaceMouseDesktop, type SpaceMouseState } from '@spatial-elements/core/stage/spaceMousePlatform';
+	import { hasUsableWebGPU } from '@spatial-elements/core/stage/webgpuSupport';
 	import type { SpatialElementLodPair } from '@spatial-elements/core/catalog/spatialElementLodPair';
 	import { DEFAULT_BACKGROUND } from '@spatial-elements/core/stage/stageConstants';
 	import { onMount, setContext, tick } from 'svelte';
@@ -27,7 +29,7 @@
 	import { VirtualScrollController } from '@spatial-elements/core/stage/VirtualScrollController';
 	import { StageFullscreenController } from '@spatial-elements/core/stage/StageFullscreenController';
 	import ScrollNavigationBridge from '../catalog/ScrollNavigationBridge.svelte';
-	import { startStagedCatalogNavigation, type InterruptedCatalogPresentation } from '../catalog/stagedCatalogNavigation.js';
+	import type { startStagedCatalogNavigation as StartStagedCatalogNavigation, InterruptedCatalogPresentation } from '../catalog/stagedCatalogNavigation.js';
 	import { prepareCatalogSummaryTransfer } from '../catalog/catalogSummaryTransfer.js';
 	import type { EarlyNavigationCancelReason } from '@spatial-elements/core/catalog/EarlyNavigationCoordinator';
 	import { NavigationFeedback } from '@spatial-elements/core/catalog/NavigationFeedback';
@@ -163,16 +165,25 @@
 	let spaceMouseEnabled = $state(false);
 	let spaceMousePermission = $state<SpaceMousePermission>('unknown');
 	let spaceMouseDisabledByUser = false;
-	onMount(() => observeSpaceMousePermission((state) => {
-		spaceMousePermission = state;
-		if (state === 'granted' && !spaceMouseDisabledByUser && window.matchMedia('(any-pointer: fine)').matches) {
-			spaceMouseEnabled = true;
-			experience?.setSpaceMouseEnabled(true);
-		} else if (state === 'denied' || state === 'prompt') {
-			spaceMouseEnabled = false;
-			experience?.setSpaceMouseEnabled(false);
-		}
-	}));
+	let spaceMouseDesktop = $state(false);
+	let spaceMouseState = $state<SpaceMouseState>('idle');
+	onMount(() => {
+		spaceMouseDesktop = isSpaceMouseDesktop(navigator);
+		if (!spaceMouseDesktop) return;
+		let first = true;
+		return observeSpaceMousePermission((state) => {
+			spaceMousePermission = state;
+			if (first && state === 'granted' && !spaceMouseDisabledByUser) {
+				spaceMouseEnabled = true;
+				experience?.setSpaceMouseEnabled(true);
+			} else if (state === 'denied' && spaceMouseEnabled) {
+				spaceMouseEnabled = false;
+				experience?.setSpaceMouseEnabled(false);
+				spaceMouseState = 'permission-required';
+			}
+			first = false;
+		});
+	});
 	let layoutMetrics: ResponsiveViewportMetrics | undefined;
 	let presentationHost: SpatialSummaryHostController | undefined;
 	setContext<SpatialPresentationOwner>(SPATIAL_PRESENTATION_OWNER, {
@@ -194,7 +205,8 @@
 	let visualTestController: StageVisualTestController | undefined;
 	let virtualScroll = $state<VirtualScrollController>();
 	let transition: CatalogTransition | undefined;
-	let earlyTransition: ReturnType<typeof startStagedCatalogNavigation>;
+	let startStagedCatalogNavigation: typeof StartStagedCatalogNavigation | undefined;
+	let earlyTransition: ReturnType<typeof StartStagedCatalogNavigation>;
 	let interruptedPresentation: InterruptedCatalogPresentation | undefined;
 	let summaryTransfer: ReturnType<typeof prepareCatalogSummaryTransfer>;
 	let lastEarlyTimings: NonNullable<typeof earlyTransition>['timings'] | undefined;
@@ -233,9 +245,14 @@
 		},
 		getLayoutMetrics: (mode) => layoutMetrics?.read(mode),
 		isEnhanced: () => isEnhanced,
-		isSpaceMouseEnabled: () => spaceMouseEnabled,
+		isSpaceMouseEnabled: () => spaceMouseState === 'connected',
+		isSpaceMouseDesktop: () => spaceMouseDesktop,
+		getSpaceMouseState: () => spaceMouseState,
 		getSpaceMousePermission: () => spaceMousePermission,
 		setSpaceMouseEnabled(enabled) {
+			if (!spaceMouseDesktop) return;
+			experience?.setSpaceMouseEnabled(false);
+			spaceMouseState = enabled ? 'connecting' : 'idle';
 			spaceMouseDisabledByUser = !enabled;
 			spaceMouseEnabled = enabled;
 			experience?.setSpaceMouseEnabled(enabled);
@@ -281,7 +298,7 @@
 		document.body.classList.add('stage-route');
 		virtualScroll = new VirtualScrollController(stage, domLayer, virtualScrollSpacer);
 		// Native fallback pages keep native document scrolling and browser anchor behavior.
-		if (navigator.gpu) virtualScroll.start();
+		// Start virtual scrolling only after the WebGPU capability probe.
 		navigationFeedback = new NavigationFeedback(stage);
 		transition = new CatalogTransition(stage, catalogEndpoints, {
 			diagnose: reason => { if (visualTestController) stage.dataset.catalogTransitionDecision = reason; },
@@ -321,14 +338,20 @@
 		const init = async () => {
 			await tick();
 			if (disposed) return;
-			if (!navigator.gpu) {
+			if (!await hasUsableWebGPU()) {
 				stageState = 'fallback';
 				showStatus = false;
 				return;
 			}
 
-			const { StageExperience } = await import('@spatial-elements/core/stage/StageExperience');
 			if (disposed) return;
+			const [{ StageExperience }, navigationModule] = await Promise.all([
+				import('@spatial-elements/core/stage/StageExperience'),
+				import('../catalog/stagedCatalogNavigation.js')
+			]);
+			startStagedCatalogNavigation = navigationModule.startStagedCatalogNavigation;
+			if (disposed) return;
+			virtualScroll?.start();
 			const panels = getPanelTargets();
 			const viewport = getViewportTarget();
 			const instance = new StageExperience(stage, {
@@ -355,6 +378,15 @@
 				panels,
 				viewport,
 				enableSpaceMouse: spaceMouseEnabled,
+				onSpaceMouseStateChange: (state) => {
+					if (disposed) return;
+					if (state === 'permission-required' || state === 'unavailable') {
+						// A failed attempt must not keep reconnecting on every route change.
+						spaceMouseEnabled = false;
+						instance.setSpaceMouseEnabled(false);
+					}
+					spaceMouseState = state;
+				},
 				onDeviceLost: () => {
 					if (disposed || experience !== instance) return;
 					fullscreenController?.setFullscreen(false);
@@ -531,7 +563,7 @@
 		const metrics = layoutMetrics?.read();
 		if (!metrics) return;
 		earlyTransition?.cancel('superseded');
-		const candidate = startStagedCatalogNavigation({ root: stage, navigation, endpoints: catalogEndpoints,
+		const candidate = startStagedCatalogNavigation?.({ root: stage, navigation, endpoints: catalogEndpoints,
 			host: presentationHost, experience, metrics, items: catalogSpatialElements, diagnostics: Boolean(visualTestController),
 			onFinish() {
 				if (earlyTransition) lastEarlyTimings = earlyTransition.timings;

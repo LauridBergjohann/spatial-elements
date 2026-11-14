@@ -177,20 +177,27 @@
 				needed. The touch scroll hint remains unchanged.
 			</p>
 			<p>
-				The visible <strong>SpaceMouse</strong> button beside the 3D controls explains access before
-				connecting. Choose <strong>Enable SpaceMouse</strong> to contact the installed 3Dconnexion driver;
-				Chrome may then ask for access to apps and services on the device. Browsers do not expose unapproved
-				devices, and probing the driver would itself require that permission.
+				The SpaceMouse icon beside the 3D controls is available on Windows, macOS and Linux,
+				including touch-capable desktops. It is a platform hint, not hardware detection. Click it to
+				connect immediately; Chrome may ask for access to apps and services on this device. A
+				successful connection highlights the icon, changes its tooltip to <strong
+					>SpaceMouse connected</strong
+				>
+				and briefly shows a confirmation. Click again to disconnect, or once more to reconnect.
 			</p>
 			<p>
-				Where supported, the stage checks existing loopback permission without contacting the
-				driver. An existing grant enables automatic reconnection; unknown or undecided permission
-				requires your action. A grant is not proof that a SpaceMouse is connected. You can disable
-				access or retry from the SpaceMouse dialog and from help. If access was blocked, allow it in
-				the browser's site settings first. Disabling access lasts for the mounted stage. Localize
-				<code>spaceMouseTitle</code>, <code>enableSpaceMouse</code>, <code>disableSpaceMouse</code>,
-				<code>retrySpaceMouse</code>, <code>spaceMousePermission</code> and
-				<code>spaceMouseDenied</code> in <code>interactionHelp</code>.
+				A permission failure opens an explanation with an OK button to retry. If permission was
+				blocked permanently, allow it in the browser's site settings. Other failures explain that
+				the device may be absent or the 3DxWare driver unavailable, with a link to 3Dconnexion. The
+				SDK confirms a driver navigation session; it cannot reliably enumerate physical devices.
+				Help contains only the external SpaceMouse link, with no activation controls.
+			</p>
+			<p>
+				On desktop platforms, an existing loopback permission grant triggers a silent reconnection.
+				Unknown permission requires a click. An unsuccessful automatic attempt shows no dialog.
+				Disconnecting lasts for the mounted stage. Both the adapter and 3Dconnexion SDK are imported
+				only when connection is requested or permission was already granted. Localize the
+				<code>spaceMouse*</code> strings in <code>interactionHelp</code>.
 			</p>
 			<p>
 				While the detail viewer is open, SpaceMouse navigation follows the active browser window,

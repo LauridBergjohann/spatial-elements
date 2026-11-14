@@ -24,7 +24,7 @@ test('SpaceMouse connects only on demand and disabling cancels an unfinished con
 	const { owner } = fixture();
 	expect(connect).not.toHaveBeenCalled();
 	const pending = owner.initializeSpaceMouse();
-	expect(connect).toHaveBeenCalledOnce();
+	await vi.waitFor(() => expect(connect).toHaveBeenCalledOnce());
 	expect(options.viewport).toBe(window);
 	await owner.initializeSpaceMouse();
 	expect(connect).toHaveBeenCalledOnce();
@@ -34,6 +34,17 @@ test('SpaceMouse connects only on demand and disabling cancels an unfinished con
 	await pending;
 	expect(dispose).toHaveBeenCalledOnce();
 	owner.dispose();
+});
+
+test('cancelling during the dynamic import never starts the device adapter', async () => {
+ vi.stubGlobal('window', {});
+ const connect = vi.spyOn(SpaceMouseAdapter, 'connect');
+ const { owner } = fixture();
+ const pending = owner.initializeSpaceMouse();
+ owner.disconnectSpaceMouse();
+ await pending;
+ expect(connect).not.toHaveBeenCalled();
+ owner.dispose();
 });
 
 test.each([false, true])('SpaceMouse reveals an offscreen model unless the detail layout is split (%s)', split => {

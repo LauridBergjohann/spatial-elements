@@ -48,9 +48,9 @@
 				This website enables detail orientation on its shared shell, so both the main model and
 				minimap respond to tilt. Sensor permission is separate from the optional SpaceMouse
 				connection: an “apps and services on this device” prompt concerns its local driver. That
-				connection starts after choosing Enable SpaceMouse via the visible SpaceMouse button, or
-				automatically when loopback access has already been granted. A browser that requires motion
-				permission still controls whether sensor events are available.
+				connection starts after clicking the visible SpaceMouse icon, or automatically when loopback
+				access has already been granted. A browser that requires motion permission still controls
+				whether sensor events are available.
 			</p>
 			<p>
 				W3C Z-X-Y orientation is converted to a quaternion and corrected for screen orientation.

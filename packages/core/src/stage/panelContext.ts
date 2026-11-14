@@ -94,6 +94,8 @@ export interface StageContext {
 	/** Local-driver integration is opt-in and may trigger a browser permission prompt. */
 	setSpaceMouseEnabled?(enabled: boolean): void;
 	isSpaceMouseEnabled?(): boolean;
+	isSpaceMouseDesktop?(): boolean;
+	getSpaceMouseState?(): import('./spaceMousePlatform.js').SpaceMouseState;
 	getSpaceMousePermission?(): import('./spaceMousePermission.js').SpaceMousePermission;
 	prefetchSpatialElement?(stage: import('../spatial-element/spatialElementScene.js').SpatialElementScene): void;
 	registerPanel(panel: StagePanelRegistration): () => void;

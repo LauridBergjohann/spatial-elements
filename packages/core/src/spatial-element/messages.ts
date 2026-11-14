@@ -16,12 +16,18 @@ export interface SpatialMessages {
 		mousePan: string;
 		/** Plain text; {spacemouse} inserts the external SpaceMouse link. */
 		mouseNavigationHint: string;
-		enableSpaceMouse: string;
-		disableSpaceMouse: string;
 		spaceMousePermission: string;
 		spaceMouseTitle: string;
+		spaceMouseConnected: string;
+		spaceMouseConnecting: string;
+		spaceMouseReady: string;
+		spaceMousePermissionTitle: string;
+		spaceMouseUnavailableTitle: string;
+		spaceMouseUnavailable: string;
+		spaceMouseDiscover: string;
+		spaceMouseClose: string;
+		spaceMouseConfirm: string;
 		spaceMouseDenied: string;
-		retrySpaceMouse: string;
 		touchRotate: string;
 		touchZoom: string;
 		touchPan: string;
@@ -46,12 +52,18 @@ export const defaultSpatialMessages: Readonly<{
 		mouseZoom: 'Use the scroll wheel',
 		mousePan: 'Drag with the right mouse button',
 		mouseNavigationHint: 'Alternatively, use a {spacemouse} to navigate.',
-		enableSpaceMouse: 'Enable SpaceMouse',
-		disableSpaceMouse: 'Disable SpaceMouse',
-		spaceMousePermission: 'Have a SpaceMouse? Enable it to navigate this model. Allow this website to access the installed 3Dconnexion driver when your browser asks.',
+		spaceMousePermission: 'To use your SpaceMouse, allow this website to access the local 3Dconnexion driver. Select OK to try again and allow access when your browser asks.',
 		spaceMouseTitle: 'SpaceMouse',
+		spaceMouseConnected: "SpaceMouse connected",
+		spaceMouseConnecting: "Connecting SpaceMouse",
+		spaceMouseReady: "SpaceMouse connected. You can now navigate the model.",
+		spaceMousePermissionTitle: "Allow SpaceMouse access",
+		spaceMouseUnavailableTitle: "No SpaceMouse found",
+		spaceMouseUnavailable: "No SpaceMouse connection could be established. Connect your device and check that the 3Dconnexion 3DxWare driver is installed and running.",
+		spaceMouseDiscover: "Discover SpaceMouse at 3dconnexion.com",
+		spaceMouseClose: "Close",
+		spaceMouseConfirm: "OK",
 		spaceMouseDenied: 'Access is blocked. Allow access to apps on this device in your browser’s site settings, then try again.',
-		retrySpaceMouse: 'Retry SpaceMouse connection',
 		touchRotate: 'Drag with one finger',
 		touchZoom: 'Pinch with two fingers',
 		touchPan: 'Drag with two fingers',

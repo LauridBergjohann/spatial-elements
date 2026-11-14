@@ -1,4 +1,5 @@
-import * as THREE from 'three/webgpu';
+import * as ScalarMath from './scalarMath.js';
+
 import type { LiquidGlassPanelOptions } from './LiquidGlassPanel.js';
 import type { BackgroundSettings, StageInteractionTheme } from './stageTypes.js';
 
@@ -31,7 +32,7 @@ export const DEFAULT_PANELS = [
 export const PANEL_CAMERA_FOV = 36;
 export const PANEL_CONTENT_Z = 0;
 /** Shared maximum tilt for every panel at a pointer edge. */
-export const PANEL_POINTER_MAX_TILT = THREE.MathUtils.degToRad(10);
+export const PANEL_POINTER_MAX_TILT = ScalarMath.degToRad(10);
 export const PANEL_POINTER_MAX_LIFT = 8;
 export const PANEL_POINTER_DAMPING = 12;
 /** Pointer approach distance derived from the short side with a capped aspect correction. */
@@ -75,8 +76,8 @@ export const ZOOM_FOCUS_NOTIFY_EPSILON = 0.000001;
 /** Responsive spatial-element-fit margin that lets authored silhouettes fill the viewport. */
 export const SPATIAL_ELEMENT_CAMERA_FIT_MARGIN = 1;
 /** Existing default view expressed as orbit angles for backwards-compatible framing. */
-export const DEFAULT_CAMERA_AZIMUTH = THREE.MathUtils.radToDeg(Math.atan2(0.45, 1));
-export const DEFAULT_CAMERA_ELEVATION = THREE.MathUtils.radToDeg(
+export const DEFAULT_CAMERA_AZIMUTH = ScalarMath.radToDeg(Math.atan2(0.45, 1));
+export const DEFAULT_CAMERA_ELEVATION = ScalarMath.radToDeg(
 	Math.asin(0.28 / Math.hypot(0.45, 0.28, 1))
 );
 export const DEFAULT_HDR = '';

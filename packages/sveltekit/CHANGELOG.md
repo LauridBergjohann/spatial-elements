@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Load WebGPU rendering only after a usable adapter probe; defer the SpaceMouse adapter and SDK until requested. Add a desktop-only themed SpaceMouse icon, actual connection status, silent granted reconnection, permission recovery and a brief connection toast.
+
 - Add optional `headerDetails` and `actionIcon` snippets to `SpatialElementPage` for both scroll and 3XL pane headers. The showcase shares quantity and illustrative totals across all product summaries and headers, uses manufacturer exit links consistently, and switches item/Wurm logos with the active theme.
 
 - Keep `leading` and new `beforeAction` summary snippets visible throughout carousel/detail transitions, with live form state retained. Use 54px primary actions and 54px square scroll-header actions. Refine the Industrial showcase with transparent logos, unified teal-blue accents and illustrative price/quantity controls.

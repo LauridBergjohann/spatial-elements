@@ -1,3 +1,5 @@
+import { initializeDeviceOrientationMath } from '../catalog/listDeviceOrientation.js';
+import { DeviceYawFilter, screenOrientation } from '../catalog/deviceYaw.js';
 import type {
 	CatalogGeometryEndpoint,
 	CatalogGeometryDestination
@@ -79,7 +81,7 @@ import {
 	getZoomFocusDistanceRange,
 	hasPanelGeometryChanged
 } from './stageMath.js';
-import { type SpaceMouseNavigationUpdate } from './SpaceMouseAdapter.js';
+import type { SpaceMouseNavigationUpdate } from './SpaceMouseAdapter.js';
 import { disposeMinimapModelMaterials } from './minimap/MinimapModel.js';
 
 import { type CssProjectionQuad } from './minimap/MinimapProjection.js';
@@ -529,6 +531,7 @@ export class StageExperience {
 			if (this.releaseDeviceOrientation && !this.scrollActive) this.requestRender();
 		});
 		this.interaction = new SpatialElementInteractionController({
+			onSpaceMouseStateChange: options.onSpaceMouseStateChange,
 			camera: this.camera,
 			canvas: this.backgroundCanvas,
 			container,
@@ -685,6 +688,7 @@ export class StageExperience {
 			throw new Error('WebGPU is not available in this browser');
 		}
 
+		initializeDeviceOrientationMath(new DeviceYawFilter(), screenOrientation);
 		this.pipeline.configureRenderer();
 		await this.renderer.init();
 		this.environments = new EnvironmentCache(this.renderer, this.preparationGate);

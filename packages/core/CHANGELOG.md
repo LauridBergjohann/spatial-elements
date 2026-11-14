@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Load WebGPU rendering only after a usable adapter probe; defer the SpaceMouse adapter and SDK until requested. Add a desktop-only themed SpaceMouse icon, actual connection status, silent granted reconnection, permission recovery and a brief connection toast.
+
 - Preserve optional summary content such as manufacturer logos and price fields throughout carousel/detail transitions. Correct ACES color compensation so geometry outlines and minimap borders retain their authored theme colors, including saturated accents.
 
 - Keep enabled SpaceMouse navigation attached to the active browser window. Reveal offscreen detail geometry with an animated scroll to the top, preserving the 3XL split layout's scroll position. Release driver focus when leaving the detail viewer. Keep navigation glass and satellite surfaces aligned with their content throughout zoom.

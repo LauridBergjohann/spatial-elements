@@ -1,4 +1,4 @@
-import { DeviceYawFilter, screenOrientation } from './deviceYaw.js';
+import type { DeviceYawFilter, screenOrientation as ScreenOrientation } from './deviceYaw.js';
 
 type PermissionConstructor = typeof DeviceOrientationEvent & {
 	requestPermission?: () => Promise<PermissionState>;
@@ -7,7 +7,15 @@ export type OrientationStatus = 'unavailable' | 'permission' | 'active' | 'denie
 const listeners = new Set<() => void>();
 const owners = new Map<HTMLElement, (status: OrientationStatus) => void>();
 const visible = new Set<HTMLElement>();
-const filter = new DeviceYawFilter();
+let filter: DeviceYawFilter | undefined;
+let screenOrientation: typeof ScreenOrientation | undefined;
+/** Installed by the optional renderer; native pages never import quaternion/Three.js code. */
+export function initializeDeviceOrientationMath(value: DeviceYawFilter, project: typeof ScreenOrientation) {
+	if (filter) return;
+	filter = value;
+	screenOrientation = project;
+	if (owners.size) sync();
+}
 let status: OrientationStatus = 'unavailable';
 let yaw = 0;
 let pitch = 0;
@@ -85,7 +93,7 @@ function publish(value: number, pitchValue = 0, rollValue = 0) {
 	for (const callback of listeners) callback();
 }
 function reset() {
-	filter.reset();
+	filter?.reset();
 	lastSample = -Infinity;
 	publish(0);
 }
@@ -98,6 +106,7 @@ function recalibrateScreen() {
 	reset();
 }
 function sample(event: DeviceOrientationEvent) {
+	if (!filter || !screenOrientation) return;
 	const now = performance.now();
 	// Do not parse, filter, allocate quaternions or invalidate GPU rendering during scrolling.
 	if (isDeviceOrientationPaused()) return;
@@ -127,7 +136,7 @@ function sync() {
 	const available = window.isSecureContext && 'DeviceOrientationEvent' in window && !motion?.matches;
 	status = !available ? 'unavailable' : granted ? 'active'
 		: (window.DeviceOrientationEvent as PermissionConstructor).requestPermission ? (denied ? 'denied' : 'permission') : 'active';
-	const active = status === 'active' && visible.size > 0 && !document.hidden;
+	const active = Boolean(filter) && status === 'active' && visible.size > 0 && !document.hidden;
 	if (active !== listening) {
 		listening = active;
 		if (active) window.addEventListener('deviceorientation', sample, { passive: true });

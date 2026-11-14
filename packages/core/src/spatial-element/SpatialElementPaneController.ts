@@ -1,7 +1,7 @@
 import { resolveDetailLayout, type ResponsiveLayoutInput } from './responsiveLayout.js';
 import { STAGE_PANEL_LAYOUT_EVENT } from '../stage/panelContext.js';
 import { getStageVisualScrollPosition, STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame, syncStageScrollToNative } from '../stage/scrollFrame.js';
-import { getPanelFocusBlur, getPanelFocusOffset, getPanelFocusOpacity, getPanelFocusPerspectiveOffset, getPerspectiveDistance } from '../stage/stageMath.js';
+import { getPanelFocusBlur, getPanelFocusOffset, getPanelFocusOpacity, getPanelFocusPerspectiveOffset, getPerspectiveDistance } from '../stage/panelFocusMath.js';
 import { PANEL_CAMERA_FOV, PANEL_FOCUS_PERSPECTIVE_MAX_SCALE } from '../stage/stageConstants.js';
 
 /** The native pane uses the same focus curve and camera-facing motion as panels. */

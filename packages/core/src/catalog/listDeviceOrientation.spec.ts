@@ -98,7 +98,7 @@ it('pauses for held horizontal touch gestures, including a second finger and poi
 	expect(api.getListDevicePitch()).toBeGreaterThan(7);
 });
 
-beforeEach(() => {
+beforeEach(async () => {
 	vi.resetModules();
 	cleanup = [];
 	reduced = Object.assign(new EventTarget(), { matches: false });
@@ -120,6 +120,9 @@ beforeEach(() => {
 	});
 	add = vi.spyOn(browser, 'addEventListener');
 	remove = vi.spyOn(browser, 'removeEventListener');
+	const api = await import('./listDeviceOrientation.js');
+	const math = await import('./deviceYaw.js');
+	api.initializeDeviceOrientationMath(new math.DeviceYawFilter(), math.screenOrientation);
 });
 afterEach(() => { cleanup.forEach(fn => fn()); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 

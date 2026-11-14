@@ -5,10 +5,12 @@
 	import Panel from '../stage/Panel.svelte';
 	import { useSpatialTheme } from './brandContext.js';
 
-	let { label, children, onclick, expanded, controls, focusAnchor, wide = false, enabled = true, element = $bindable() }: {
+	let { label, children, onclick, pressed, busy, expanded, controls, focusAnchor, wide = false, enabled = true, element = $bindable() }: {
 		label: string;
 		children: Snippet;
 		onclick: (event: MouseEvent) => void;
+		pressed?: boolean;
+		busy?: boolean;
 		expanded?: boolean;
 		controls?: string;
 		focusAnchor?: HTMLElement;
@@ -35,7 +37,7 @@
 		<button bind:this={element} use:mouseHover type="button" {onclick} aria-label={label} title={label}
 			disabled={!enabled}
 			style:visibility={enabled ? 'visible' : 'hidden'}
-			aria-expanded={expanded} aria-controls={controls} aria-haspopup={controls ? 'dialog' : undefined}
+			aria-pressed={pressed} aria-busy={busy || undefined} aria-expanded={expanded} aria-controls={controls} aria-haspopup={controls ? 'dialog' : undefined}
 			class="spatial-icon-button" class:wide>
 			{@render children()}
 		</button>
@@ -58,6 +60,7 @@
 	.spatial-icon-button:global([data-mouse-hover]):hover {
 		background: color-mix(in srgb, var(--spatial-element-body) 8%, transparent);
 	}
+	.spatial-icon-button[aria-pressed="true"] { color: var(--spatial-element-accent); background: var(--ps-selection, var(--ps-section-muted, #eeeeee)); }
 	.spatial-icon-button:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: 3px; }
 	@media (prefers-reduced-motion: reduce) { .spatial-icon-button { transition: none; } }
 </style>
