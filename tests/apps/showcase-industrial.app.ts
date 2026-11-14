@@ -34,7 +34,7 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 			await page.getByRole('button', { name: mode, exact: true }).filter({ visible: true }).click();
 			await expect(header).toHaveCSS('border-radius', '8px');
 			await expect.poll(() => header.evaluate(el => getComputedStyle(el).getPropertyValue('--ps-accent').trim())).toBe('#135a77');
-			await expect(page.locator('.appearance').filter({ visible: true })).toHaveCSS('border-radius', '4px');
+			await expect(page.locator('.appearance').filter({ visible: true })).toHaveCSS('border-radius', '8px');
 			await page.screenshot({ path: info.outputPath(`industrial-${mode}.png`) });
 		}
 		// Follow a real card so routing, the branded panel and breadcrumb are checked together.
@@ -57,7 +57,7 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 		const summary = page.locator('.summary-presentation').filter({ visible: true });
 		await expect(summary.getByRole('img', { name: 'Wurm', exact: true })).toBeVisible();
 		await expect(summary.getByRole('link', { name: 'Visit wurm', exact: true })).toHaveAttribute('href', 'https://www.wurm.de/');
-		await expect(summary.locator('.spatial-element-action-surface')).toHaveCSS('border-radius', '4px');
+		await expect(summary.locator('.spatial-element-action-surface')).toHaveCSS('border-radius', '8px');
 		await expect(summary.locator('.spatial-element-action-surface')).toHaveCSS('height', '54px');
 		await expect(summary.locator('.manufacturer-logo')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
 		await summary.getByRole('spinbutton', { name: 'Quantity' }).fill('3');

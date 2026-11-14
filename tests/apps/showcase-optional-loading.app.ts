@@ -198,6 +198,10 @@ if (process.env.SPATIAL_GPU) {
 		await expect(idle).toHaveAttribute('title', connectLabel);
 		await expect(idle.locator('svg')).toHaveAttribute('viewBox', '0 0 583.92242 514.26245');
 		await expect(idle.locator('svg')).toHaveAttribute('fill', 'currentColor');
+		// Enhanced controls are reparented into the stage's native-content layer.
+		const helpBounds = (await page.getByRole('button', { name: '3D controls', exact: true }).boundingBox())!;
+		const spaceMouseBounds = (await idle.boundingBox())!;
+		expect(helpBounds.x + helpBounds.width).toBeLessThan(spaceMouseBounds.x);
 		await idle.focus();
 		await page.keyboard.press('Enter');
 		const connected = page.getByRole('button', { name: disconnectLabel, exact: true });

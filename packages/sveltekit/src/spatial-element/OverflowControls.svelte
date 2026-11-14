@@ -92,7 +92,7 @@
 		height: 100%;
 		padding: 0;
 		border: 1px solid var(--ps-border, transparent);
-		border-radius: var(--spatial-element-control-radius, 12px);
+		--scroll-button-radius: var(--spatial-element-control-radius, 12px);
 		background: var(--ps-section-standard, #fff);
 		color: var(--spatial-element-navigation-ink, var(--spatial-element-ink));
 		box-shadow: 0 2px 8px #0003;
@@ -101,9 +101,11 @@
 	}
 	.before {
 		left: 0;
+		border-radius: 0 var(--scroll-button-radius) var(--scroll-button-radius) 0;
 	}
 	.after {
 		right: 0;
+		border-radius: var(--scroll-button-radius) 0 0 var(--scroll-button-radius);
 	}
 	.vertical button {
 		left: 0;
@@ -113,10 +115,12 @@
 	}
 	.vertical .before {
 		top: 0;
+		border-radius: 0 0 var(--scroll-button-radius) var(--scroll-button-radius);
 	}
 	.vertical .after {
 		top: auto;
 		bottom: 0;
+		border-radius: var(--scroll-button-radius) var(--scroll-button-radius) 0 0;
 	}
 	button:focus-visible {
 		outline: 2px solid var(--spatial-element-accent);

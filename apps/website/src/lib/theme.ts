@@ -52,7 +52,7 @@ function industrialTheme(mode: 'light' | 'dark', namespace: string) {
 		name: 'Industrial',
 		background,
 		sceneBackground: { tint: background, tintIntensity: 1, blurriness: 0.5 },
-		radii: { panel: 8, control: 4 },
+		radii: { panel: 8, control: 8 },
 		panelShape: { radius: 8, contentInset: 30 },
 		minimapTheme: { viewportColor: accent },
 		interactionTheme: { outlineColor: accent, outlineOpacity: 1, outlineThickness: 3 },

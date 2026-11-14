@@ -462,6 +462,8 @@ for (const width of [390, 1920]) {
 		const next = page.getByRole('button', { name: 'Next media', exact: true });
 		const previous = page.getByRole('button', { name: 'Previous media', exact: true });
 		await expect(next).toBeVisible();
+		const radius = await next.evaluate(node => getComputedStyle(node).getPropertyValue('--spatial-element-control-radius').trim());
+		await expect(next).toHaveCSS('border-radius', width >= 840 ? `${radius} ${radius} 0px 0px` : `${radius} 0px 0px ${radius}`);
 		const controlBounds = (await next.boundingBox())!;
 		const railBounds = (await rail.boundingBox())!;
 		expect(width >= 840 ? controlBounds.width : controlBounds.height).toBeCloseTo(
@@ -471,6 +473,7 @@ for (const width of [390, 1920]) {
 		await expect(previous).toHaveCount(0);
 		await next.click();
 		await expect(previous).toBeVisible();
+		await expect(previous).toHaveCSS('border-radius', width >= 840 ? `0px 0px ${radius} ${radius}` : `0px ${radius} ${radius} 0px`);
 		const product = showcaseProducts.find(product => product.id === 'logitech-m750')!;
 		for (const photo of [product.photos.at(-1)!, product.photos[0]]) {
 			const button = page.getByRole('button', { name: photo.label, exact: true });
@@ -494,6 +497,8 @@ for (const width of [390, 1920]) {
 			await tabs.evaluate(element => element.style.maxWidth = '220px');
 			await tabs.getByRole('button', { name: 'Next sections', exact: true }).click();
 			await expect(tabs.getByRole('button', { name: 'Previous sections', exact: true })).toBeVisible();
+			await expect(tabs.getByRole('button', { name: 'Previous sections', exact: true })).toHaveCSS('border-radius', `0px ${radius} ${radius} 0px`);
+			await expect(tabs.getByRole('button', { name: 'Next sections', exact: true })).toHaveCSS('border-radius', `${radius} 0px 0px ${radius}`);
 		}
 	});
 }
@@ -631,7 +636,7 @@ if (process.env.SPATIAL_GPU) test('scrolled-away minimap returns in the dock and
 	await expect(overview.locator('svg')).toHaveCSS('opacity', '1');
 	await expect(overview.locator('svg')).toHaveAttribute('stroke-width', '1.6');
 	for (const icon of await page.locator('[data-spatial-view-icon]').all())
-		await expect(icon).toHaveAttribute('stroke-width', '1.6');
+		await expect(icon).toHaveAttribute('stroke-width', '1.4');
 	await expect.poll(() => tabs.locator('[data-spatial-element-tab-selection]').evaluate(node => getComputedStyle(node, '::after').width)).toBe('24px');
 	await page.getByRole('button', { name: 'Next media', exact: true }).click();
 	await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getVisibilityStats().visibleMinimaps)).toBe(0);

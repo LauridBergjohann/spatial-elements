@@ -215,12 +215,12 @@
 
 <div bind:this={root} class="model-tools" class:enhanced class:with-spacemouse={spaceMouseDesktop} style={surfaceStyle} style:visibility={active ? undefined : 'hidden'} inert={!active} data-spatial-element-tools data-spatial-model-controls>
 	<div class="model-tools-buttons">
-		{#if spaceMouseDesktop}
-			<SpaceMouseControl {focusAnchor} enabled={enhanced && active} />
-		{/if}
 		<SpatialIconButton bind:element={button} {focusAnchor} label={messages.controls.help} onclick={toggleHelp} expanded={open} controls={id} enabled={enhanced && active}>
 			<CircleHelp size={21} strokeWidth={1.8} aria-hidden="true" />
 		</SpatialIconButton>
+		{#if spaceMouseDesktop}
+			<SpaceMouseControl {focusAnchor} enabled={enhanced && active} />
+		{/if}
 		<SpatialElementViewToggle enabled={enhanced && active} {focusAnchor} onchange={() => close()} />
 	</div>
 	{#if active && enhanced && touchInput && !interacted && !open && !fullscreen}
