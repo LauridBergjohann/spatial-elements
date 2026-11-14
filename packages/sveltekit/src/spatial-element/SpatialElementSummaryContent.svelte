@@ -1,19 +1,23 @@
 <script lang="ts">
+ import type { Snippet } from "svelte";
  import { catalogActionSemantic } from '@spatial-elements/core/catalog/catalogAction';
  import type { CatalogEndpointAddress, CatalogEndpointRole } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
  import type { SpatialElementFeature, SpatialElementAction } from '@spatial-elements/core/spatial-element/types';
  import ShoppingCart from 'lucide-svelte/icons/shopping-cart';
  import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
- let { spatialElement, address, contentInset, heading = 'h3', element = $bindable() }: {
+ let { spatialElement, address, contentInset, heading = 'h3', leading, actionIcon, element = $bindable() }: {
   spatialElement: { id: string; eyebrow: string; title: string; features: SpatialElementFeature[]; action?: SpatialElementAction };
   address: (role: CatalogEndpointRole) => CatalogEndpointAddress | undefined;
   contentInset: number;
   heading?: 'h1' | 'h3';
+  leading?: Snippet;
+  actionIcon?: Snippet;
   element?: HTMLDivElement;
  } = $props();
  const catalogEndpoint = createCatalogEndpointAction();
 </script>
 		<div bind:this={element} class="summary-presentation">
+			{@render leading?.()}
 			<div class="panel-copy">
 				{#if spatialElement.eyebrow}
 				<p
@@ -65,12 +69,12 @@
 						aria-label={spatialElement.action.ariaLabel}
 					>
 						<span class="spatial-element-action-surface" data-catalog-secondary>
-							<ShoppingCart
+							{#if actionIcon}{@render actionIcon()}{:else}<ShoppingCart
 								class="spatial-element-action-icon"
 								size={27}
 								strokeWidth={2}
 								aria-hidden="true"
-							/>
+							/>{/if}
 							<span class="spatial-element-action-label">{spatialElement.action.label}</span>
 						</span>
 					</a>
@@ -84,12 +88,12 @@
 						aria-label={spatialElement.action.ariaLabel}
 					>
 						<span class="spatial-element-action-surface" data-catalog-secondary>
-							<ShoppingCart
+							{#if actionIcon}{@render actionIcon()}{:else}<ShoppingCart
 								class="spatial-element-action-icon"
 								size={27}
 								strokeWidth={2}
 								aria-hidden="true"
-							/>
+							/>{/if}
 							<span class="spatial-element-action-label">{spatialElement.action.label}</span>
 						</span>
 					</button>
@@ -165,7 +169,7 @@
 		box-sizing: border-box;
 		width: 100%;
 		min-height: 62px;
-		border-radius: 7px;
+		border-radius: var(--spatial-element-control-radius, 7px);
 		color: var(--spatial-element-on-accent);
 		background: var(--spatial-element-accent);
 		font:

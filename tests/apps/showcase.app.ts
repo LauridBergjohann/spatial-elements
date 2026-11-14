@@ -12,11 +12,12 @@ test('showcase collections own their products, card sizes and breadcrumbs', asyn
 	for (const segment of showcaseSegments) {
 		await page.goto('/showcase/' + segment.id + '/');
 		const products = showcaseProducts.filter(product => product.segment.id === segment.id);
-		await expect(page.locator('#collection [data-catalog-card]')).toHaveCount(products.length);
-		await expect(page.locator('#collection [data-card-size]').first()).toHaveAttribute('data-card-size', segment.cardSize);
-		await expect(page.locator('#new-products')).toHaveCount(segment.id === 'exclusive' ? 0 : 1);
-		await expect(page.locator('#collection')).toContainText(products[0].title);
-		await page.locator('#collection').getByRole('link', {name: products[0].title, exact: true}).click();
+		const collection = page.locator(segment.id === 'industrial' ? '#item-products, #wurm-products' : '#collection');
+		await expect(collection.locator('[data-catalog-card]')).toHaveCount(products.length);
+		await expect(collection.locator('[data-card-size]').first()).toHaveAttribute('data-card-size', segment.cardSize);
+		await expect(page.locator('#new-products, #example-products')).toHaveCount(segment.id === 'exclusive' ? 0 : 1);
+		await expect(collection.first()).toContainText(products[0].title);
+		await collection.getByRole('link', {name: products[0].title, exact: true}).click();
 		await expect(page).toHaveURL(new RegExp(products[0].href + '$'));
 		const crumb = page.getByRole('navigation', {name:'Breadcrumb',exact:true}).filter({visible:true}).first();
 		await expect(crumb.getByRole('link', {name:segment.title,exact:true})).toHaveAttribute('href','/showcase/' + segment.id + '/');

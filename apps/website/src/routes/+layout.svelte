@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { base } from '$app/paths';
 	import { BrandStageShell } from '@spatial-elements/sveltekit';
+	import ShowcaseSummary from '$lib/showcase/ShowcaseSummary.svelte';
 	import { websiteTheme } from '$lib/theme';
 	import { Navigation, PageShell } from '@page-sections/svelte';
 	import Menu from 'lucide-svelte/icons/menu';
@@ -44,7 +45,10 @@
 			: 'showcase'
 	);
 	const exclusive = $derived(/^\/showcase\/exclusive(?:\/|$)/.test(page.url.pathname));
-	const stageTheme = $derived(websiteTheme(mode, namespace, exclusive));
+	const industrial = $derived(/^\/showcase\/industrial(?:\/|$)/.test(page.url.pathname));
+	const stageTheme = $derived(
+		websiteTheme(mode, namespace, exclusive ? 'exclusive' : industrial ? 'industrial' : 'default')
+	);
 	// Both Exclusive palettes have dark surfaces, including its brighter variant.
 	const surfaceScheme = $derived(exclusive ? 'dark' : mode);
 	const items = $derived(resolveNavigation(navigationTree, { pathname: page.url.pathname }).items);
@@ -122,6 +126,7 @@
 		navigation={siteNavigation}
 		deviceOrientation
 	>
+		{#snippet summary(context)}<ShowcaseSummary {...context} />{/snippet}
 		<div id="main-content" tabindex="-1">{@render children()}</div>
 	</BrandStageShell>
 	<footer class="site-footer">

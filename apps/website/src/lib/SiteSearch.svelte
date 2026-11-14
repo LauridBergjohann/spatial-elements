@@ -22,7 +22,7 @@
 			description: segment.description
 		})),
 		...showcaseProducts.map((product) => ({
-			title: product.title,
+			title: product.productNumber ? `${product.productNumber} · ${product.title}` : product.title,
 			href: product.href,
 			group: 'Showcase ? ' + product.segment.title,
 			description: product.description

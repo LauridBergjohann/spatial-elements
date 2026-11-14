@@ -88,6 +88,28 @@ website and records the reviewed quality tradeoffs.
 
 ## Posters and visual review
 
+### Industrial imports
+
+The eight Wurm products reuse the reviewed canonical low/high pairs from the
+sibling `spatial-elements-brand-examples` checkout. Import them and the supplied
+item/Wurm company images and logos with:
+
+```sh
+node tooling/asset-pipeline/import-industrial.mjs
+node tooling/asset-pipeline/render-showcase.mjs --only=wurm-asv101,wurm-hks-g4,wurm-atv230,wurm-dsp-lcd,wurm-dsp002,wurm-fkl003,wurm-fkp003,wurm-multigate3
+```
+
+`BRAND_EXAMPLES_ROOT` and `BRAND_ASSETS_ROOT` override the sibling checkout and
+`../assets/brands` locations. The import retains source-manifest provenance and
+the existing low/high hashes, transforms and bounds. It merges into the shared
+geometry report, so running the main optimizer does not discard these imports.
+The poster renderer uses the website camera and shared studio lighting. Runtime
+and production builds use only committed assets and do not need those directories.
+
+Product numbers are editorial data in `products.json`. The supplied item end cap
+has no verified article number and the robot is a model study; they are labelled
+accordingly rather than assigning invented order numbers.
+
 Build the core first, then render the actual optimized geometry with the same
 framing, detail camera pose, material overrides, HDR and lighting as the website:
 

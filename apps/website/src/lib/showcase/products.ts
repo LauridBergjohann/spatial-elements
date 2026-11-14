@@ -3,6 +3,7 @@ import documents from './products.json' with { type: 'json' };
 import photoAssets from './photo-assets.json' with { type: 'json' };
 
 export const manufacturers = {
+	wurm: { name: 'Wurm', href: 'https://www.wurm.de/', domain: 'wurm.de' },
 	wera: { name: 'Wera', href: 'https://www.wera.de/', domain: 'wera.de' },
 	watches: { name: 'Rolex', href: 'https://www.rolex.com/', domain: 'rolex.com' },
 	logitech: { name: 'Logitech', href: 'https://www.logitech.com/', domain: 'logitech.com' },

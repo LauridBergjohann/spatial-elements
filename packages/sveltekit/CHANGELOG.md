@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Export `SpatialElementSummaryContent` with optional `leading` and `actionIcon` snippets for branded content without duplicating shared transition endpoints. Respect the control radius in summary actions. Expand Industrial with eight optimized Wurm products, blue frosted themes, manufacturer introductions and branded item/Wurm summaries.
+
 - Respect large theme radii in button-group selection surfaces and inset the minimap's 3D indicator accordingly. Give Exclusive a smoky light palette and deeper dark palette. Keep header and satellite glass aligned during zoom, and document window-scoped SpaceMouse navigation and automatic detail reveal.
 
 - Offer a visible SpaceMouse control with an explanation before requesting local-driver access. Reconnect automatically when loopback access is already granted, observe revocation, and offer retry from help. Cancel pending connections when disabled or disposed, avoiding local-device permission prompts during ordinary detail navigation. Restore keyboard focus after the help panel becomes visible. Enable device orientation for both detail geometry and minimaps on the website.

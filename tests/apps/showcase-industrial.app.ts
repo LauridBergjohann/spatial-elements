@@ -1,0 +1,107 @@
+import { expect, test } from '@playwright/test';
+
+for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
+	test(`Industrial groups manufacturers and scopes its frosted theme (enhanced: ${enhanced})`, async ({ page }, info) => {
+		const errors: string[] = [];
+		page.on('pageerror', error => errors.push(error.message));
+		if (!enhanced) await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
+		await page.goto('/showcase/industrial/');
+		if (enhanced) await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
+		await expect(page.locator('#example-products')).toContainText('Example Products');
+		await expect(page.locator('#example-products [data-carousel-spatial-element]')).toHaveCount(4);
+		await expect(page.locator('#item-products [data-catalog-card]')).toHaveCount(5);
+		await expect(page.locator('#wurm-products [data-catalog-card]')).toHaveCount(8);
+		await expect(page.locator('#item-products')).toContainText('0.0.026.33');
+		await expect(page.locator('#wurm-products')).toContainText('HKS-G4');
+		await expect(page.locator('#item-products [data-card-size]').first()).toHaveAttribute('data-card-size', 'm');
+		await expect(page.locator('#wurm-products [data-card-size]').first()).toHaveAttribute('data-card-size', 'm');
+		const intro = page.locator('#item-introduction .ps-media-pair');
+		await expect(intro).toHaveAttribute('data-side', 'right');
+		for (const brand of ['item', 'wurm']) {
+			await expect(page.locator(`#${brand}-introduction img`)).toBeAttached();
+			await expect(page.locator(`#${brand}-introduction a`)).toHaveAttribute('href', brand === 'item' ? 'https://www.item24.com/' : 'https://www.wurm.de/');
+		}
+		const header = page.locator('.ps-navigation .header');
+		for (const mode of ['Dark', 'Light']) {
+			await page.getByRole('button', { name: mode, exact: true }).filter({ visible: true }).click();
+			await expect(header).toHaveCSS('border-radius', '8px');
+			await expect.poll(() => header.evaluate(el => getComputedStyle(el).getPropertyValue('--ps-accent').trim())).toBe(mode === 'Dark' ? '#91b8ff' : '#4569b1');
+			await expect(page.locator('.appearance').filter({ visible: true })).toHaveCSS('border-radius', '4px');
+			await page.screenshot({ path: info.outputPath(`industrial-${mode}.png`) });
+		}
+		// Follow a real card so routing, the branded panel and breadcrumb are checked together.
+		const target = page.locator('#wurm-products').getByRole('link', { name: 'Refrigeration Master Module', exact: true });
+		if (enhanced) {
+			// The spatial stage owns scrolling; drive it with real wheel input.
+			const rect = (await target.boundingBox())!;
+			await page.mouse.move(1650, 450);
+			await page.mouse.wheel(0, rect.y + rect.height / 2 - 450);
+			await expect(target).toBeInViewport({ ratio: 0.99 });
+			await expect(target).toHaveAttribute('data-catalog-model-ready', '', { timeout: 60000 });
+		}
+		await target.click();
+		await expect(page).toHaveURL(/\/industrial\/wurm-hks-g4\/$/);
+		if (enhanced) {
+			await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+			await expect(page.locator('[data-catalog-transition]')).toHaveCount(0, { timeout: 30000 });
+			await expect(page.locator('[data-stage-panel-bound][data-stage-panel-surface="frosted"]').first()).toBeAttached();
+		}
+		const summary = page.locator('.summary-presentation').filter({ visible: true });
+		await expect(summary.getByRole('img', { name: 'Wurm', exact: true })).toBeVisible();
+		await expect(summary.getByRole('link', { name: 'Visit wurm', exact: true })).toHaveAttribute('href', 'https://www.wurm.de/');
+		await expect(summary.locator('.spatial-element-action-surface')).toHaveCSS('border-radius', '4px');
+		await page.screenshot({ path: info.outputPath('wurm-detail.png') });
+		await expect(page.getByRole('navigation', { name: 'Breadcrumb', exact: true }).filter({ visible: true }).first().getByRole('link', { name: 'Industrial', exact: true })).toHaveAttribute('href', '/showcase/industrial/');
+		await page.goto('/showcase/industrial/item-profile/');
+		await expect(page.locator('.summary-presentation').filter({ visible: true }).getByRole('img', { name: 'item', exact: true })).toBeVisible();
+		await expect(page.locator('.summary-presentation').filter({ visible: true }).getByRole('link', { name: 'Visit item', exact: true })).toHaveAttribute('href', 'https://www.item24.com/');
+		await page.goto('/showcase/');
+		await expect(header).toHaveCSS('border-radius', '12px');
+		await expect.poll(() => header.evaluate(el => getComputedStyle(el).getPropertyValue('--ps-accent').trim())).toBe('#007b5e');
+		expect(errors).toEqual([]);
+	});
+}
+
+if (process.env.SPATIAL_GPU) test('Industrial retains its branded summary through a carousel transition', async ({ page }, info) => {
+	await page.goto('/showcase/industrial/?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
+	const card = page.locator('#example-products .carousel-spatial-element.selected');
+	const bounds = (await card.boundingBox())!;
+	await page.mouse.move(1650, 500);
+	await page.mouse.wheel(0, bounds.y + bounds.height / 2 - 500);
+	await expect(card).toBeInViewport({ ratio: 0.99 });
+	await expect(card).toHaveAttribute('data-catalog-model-ready', '', { timeout: 60000 });
+	const summary = card.locator('.summary-presentation');
+	await expect(summary.getByRole('img', { name: 'Wurm', exact: true })).toBeVisible();
+	await expect(card.locator('.spatial-summary-surface')).toHaveCSS('backdrop-filter', 'blur(5px)');
+	const liveSummary = await summary.elementHandle();
+	await page.screenshot({ path: info.outputPath('industrial-carousel.png') });
+	await card.locator('.spatial-element-target').click();
+	await expect(page).toHaveURL(/\/industrial\/wurm-asv101\/$/);
+	await expect(page.locator('[data-catalog-transition]')).toHaveCount(0, { timeout: 30000 });
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+	expect(await liveSummary!.evaluate(el => el.isConnected && el.querySelector('h1')?.textContent?.trim() === 'Compressor Control Module')).toBe(true);
+	await expect(page.locator('.summary-presentation').filter({ visible: true }).getByRole('link', { name: 'Visit wurm', exact: true })).toBeVisible();
+	await page.screenshot({ path: info.outputPath('industrial-after-transition.png') });
+});
+
+test.describe('Industrial without JavaScript', () => {
+	test.use({ javaScriptEnabled: false });
+	test('company introductions and products work on desktop and mobile', async ({ page }, info) => {
+		for (const width of [1700, 390]) {
+			await page.setViewportSize({ width, height: 900 });
+			await page.goto('/showcase/industrial/');
+			for (const brand of ['item', 'wurm']) {
+				const section = page.locator(`#${brand}-introduction`);
+				await section.scrollIntoViewIfNeeded();
+				await expect(section.getByRole('link', { name: `Discover ${brand === 'item' ? 'item' : 'Wurm'}` })).toBeVisible();
+				await expect.poll(() => section.locator('img').evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
+				await section.screenshot({ path: info.outputPath(`${brand}-${width}.png`) });
+			}
+			expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+			await page.locator('#item-products').getByRole('link', { name: 'Profile 8 40 × 40 Light', exact: true }).click();
+			await expect(page).toHaveURL(/\/industrial\/item-profile\/$/);
+			await expect(page.locator('.summary-presentation').getByRole('link', { name: 'Visit item', exact: true })).toBeVisible();
+		}
+	});
+});

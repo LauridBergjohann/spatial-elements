@@ -62,6 +62,14 @@
 			<p>
 				For example, <code>CustomSummary.svelte</code> can register its real title as a shared endpoint:
 			</p>
+			<p>
+				For a smaller adjustment, render <code>SpatialElementSummaryContent</code> with the context
+				props and supply its optional <code>leading</code> and <code>actionIcon</code> snippets. The
+				built-in title, features and action retain their transition endpoints. The
+				<a href="/showcase/industrial/">Industrial showcase</a> uses this approach for item and Wurm logos
+				and an external-link action icon. The same renderer serves carousel and detail panels; their blue
+				frosted surfaces and corner radii come from the route theme.
+			</p>
 
 			<CodeBlock
 				code={examples[1].code}

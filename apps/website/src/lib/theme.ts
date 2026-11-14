@@ -1,8 +1,13 @@
 import { createSpatialTheme } from '@spatial-elements/core';
 
-/** The shared website identity, with a route-scoped Watches glass showcase. */
-export function websiteTheme(mode: 'light' | 'dark', namespace: string, exclusive = false) {
-	if (exclusive) return watchesTheme(mode, namespace);
+/** Route-scoped visual identities retain the same collection namespace. */
+export function websiteTheme(
+	mode: 'light' | 'dark',
+	namespace: string,
+	variant: 'default' | 'exclusive' | 'industrial' = 'default'
+) {
+	if (variant === 'exclusive') return watchesTheme(mode, namespace);
+	if (variant === 'industrial') return industrialTheme(mode, namespace);
 	const dark = mode === 'dark';
 	const background = dark ? '#393c44' : '#e0e4e3';
 	const standard = dark ? '#1c1e22' : '#ffffff';
@@ -33,6 +38,46 @@ export function websiteTheme(mode: 'light' | 'dark', namespace: string, exclusiv
 		},
 		dockedPanelTheme: { tint: standard, tintOpacity: 0.9, backdropBlur: 16, shadowIntensity: 0.2 },
 		sectionTheme: { tint: standard, tintOpacity: 0.8, backdropBlur: 16 }
+	});
+}
+
+/** Blue palette from the Wurm example, with compact frosted surfaces. */
+function industrialTheme(mode: 'light' | 'dark', namespace: string) {
+	const dark = mode === 'dark';
+	const background = dark ? '#131a22' : '#eef1f3';
+	const standard = dark ? '#1b2734' : '#ffffff';
+	const accent = dark ? '#91b8ff' : '#4569b1';
+	return createSpatialTheme({
+		id: namespace,
+		name: 'Industrial',
+		background,
+		sceneBackground: { tint: background, tintIntensity: 1, blurriness: 0.5 },
+		radii: { panel: 8, control: 4 },
+		panelShape: { radius: 8, contentInset: 30 },
+		minimapTheme: { viewportColor: accent },
+		interactionTheme: { outlineColor: accent, outlineOpacity: 0.96, outlineThickness: 3 },
+		panelTheme: {
+			surface: 'frosted',
+			tint: standard,
+			tintOpacity: dark ? 0.8 : 0.6,
+			backdropBlur: 5,
+			shadowIntensity: dark ? 0.55 : 0.25
+		},
+		dockedPanelTheme: {
+			tint: standard,
+			tintOpacity: 0.94,
+			backdropBlur: 5,
+			shadowIntensity: dark ? 0.55 : 0.25
+		},
+		sectionTheme: { tint: standard, tintOpacity: dark ? 0.9 : 0.78, backdropBlur: 50 },
+		sectionBackgrounds: { standard, muted: dark ? '#2c3a4b' : '#f5f7f9' },
+		colors: {
+			ink: dark ? '#f1f5fa' : '#141414',
+			body: dark ? '#cbd5e1' : '#111827',
+			accent,
+			onAccent: dark ? '#131a22' : '#ffffff',
+			tabBackground: dark ? '#2c3a4b' : '#e1e5e8'
+		}
 	});
 }
 
