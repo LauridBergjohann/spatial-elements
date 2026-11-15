@@ -21,9 +21,10 @@
 </script>
 
 <div class="demo-order" class:compact>
-	<label>
-		<span>Quantity</span>
+	<label data-spatial-element-header-field="quantity">
+		<span class:visually-hidden={compact}>Quantity</span>
 		<input
+			title={compact ? 'Quantity' : undefined}
 			type="number"
 			min="1"
 			max="99"
@@ -31,8 +32,11 @@
 			bind:value={() => orders.get(product.id), (value) => orders.set(product.id, value)}
 		/>
 	</label>
-	<div class="demo-price">
-		<span>Example total</span><output aria-live="polite">{total}</output>
+	<div class="demo-price" data-spatial-element-header-field="price">
+		<span class:visually-hidden={compact}>Example total</span><output
+			title={compact ? 'Example total' : undefined}
+			aria-live="polite">{total}</output
+		>
 	</div>
 </div>
 {#if !compact}<p class="demo-notice">Illustrative price only. Not for sale on this website.</p>{/if}
@@ -83,6 +87,7 @@
 	}
 	.compact {
 		gap: 12px;
+		align-items: center;
 	}
 	.compact label,
 	.compact .demo-price {
@@ -91,36 +96,21 @@
 		line-height: 16px;
 	}
 	.compact input {
-		height: 34px;
-		width: 64px;
+		height: 42px;
+		width: 76px;
 		padding: 4px 6px;
 	}
 	.compact output {
 		font-size: 18px;
-		line-height: 34px;
+		line-height: 54px;
 	}
-	@media (width < 840px) {
-		.compact {
-			gap: 6px;
-			justify-content: start;
-		}
-		.compact label span,
-		.compact .demo-price span {
-			position: absolute;
-			width: 1px;
-			height: 1px;
-			overflow: hidden;
-			clip-path: inset(50%);
-		}
-		.compact input {
-			width: 48px;
-			height: 26px;
-			padding: 2px;
-			font-size: 14px;
-		}
-		.compact output {
-			font-size: 12px;
-			line-height: 26px;
-		}
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
 	}
 </style>

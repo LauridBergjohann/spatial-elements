@@ -58,6 +58,12 @@
 				where appropriate, with local summary overflow rather than arbitrary global height
 				assumptions.
 			</p>
+			<p>
+				The standard summary uses container queries: from 500px of content width, highlights form
+				two columns and order details sit beside the action. From 900px, highlights occupy two
+				thirds of the panel and order details with the action occupy the remaining third. This gives
+				S and 3XL compact layouts while narrow side panels keep their vertical composition.
+			</p>
 			<table>
 				<thead>
 					<tr>
@@ -205,13 +211,24 @@
 				is absent at XS/S, 40px at M and 44px from L.
 			</p>
 			<p>
-				The docked model's projected upper edge aligns with the viewport's safe top edge. Its fit
-				square may extend above the header, but its geometry does not get clipped there. Hover
-				enlargement and device rotation recompute this alignment from the live 3D pose; the model
-				grows downward. If enlargement reaches beyond the safe left edge, only the necessary
-				horizontal correction is applied, without reducing the model or its hover motion. The
-				correction blends into the normal scroll morph, and the prepared navigation endpoint uses
-				the same geometry.
+				The header starts fading in when the minimap reaches its top dock and completes as the
+				original rail panel leaves the viewport. The model begins turning toward its docked pose one
+				minimap height earlier, while its position still follows the rail panel until docking. Title
+				and eyebrow remain visible at every size. Available header width determines whether quantity
+				and price fit: quantity disappears first, then price. XS reserves the space for title,
+				eyebrow and the 54px icon action. In 3XL, the eyebrow follows the title on the same line.
+			</p>
+			<p>
+				The compact action fades in once the header covers more than half of the original action.
+				Other header fields appear when their originals are fully covered. The showcase uses a 42px
+				quantity input, with quantity and total labels available as tooltips and accessible names.
+			</p>
+			<p>
+				The docked model is vertically centered in the header, excluding the submenu. If its
+				projected height exceeds the available space above that center, its top aligns with the safe
+				viewport edge instead. Hover and device rotation recompute the visible silhouette:
+				enlargement moves down and right as needed to avoid clipping. Prepared navigation endpoints
+				use the same geometry.
 			</p>
 			<p>
 				There is exactly one live section-navigation element. Its ownership moves from the source
@@ -240,6 +257,13 @@
 				The minimap is bottom-left at XS/S and top-left from M. Tools remain upper-right. Insets and
 				minimap sizes are layout-owned, so they must not be hard-coded by host CSS. Reduced motion
 				changes animation behavior without removing accessible controls.
+			</p>
+			<p>
+				At XS/S, zoom moves media thumbnails down with the summary without sideways perspective
+				drift or clipping at their original row. The minimap travels with its model to the zoom
+				position on the same animation clock, without a delay. Larger layouts retain only a subtle
+				lead for the other panels. The breadcrumb follows the main menu's lower-left corner upward
+				and sideways as it clears the viewport.
 			</p>
 			<p>
 				The <a href="/docs/advanced/reading-pane/">ultra-wide composition</a> uses a fixed media

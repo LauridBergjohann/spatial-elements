@@ -194,7 +194,7 @@ export function getSpatialElementDockBreakpoint(minimapDocumentTop: number, mini
 
 /**
  * Maps page scroll directly to the minimap/header handoff. The transition starts
- * at the top of the page and completes when the source minimap has fully left the viewport.
+ * at the supplied docking threshold and completes when the source panel has left the viewport.
  */
 export function getSpatialElementDockPresentationProgress(
 	scrollY: number,

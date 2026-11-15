@@ -572,6 +572,7 @@ export class StageExperience {
 				hovering: this.modelHover,
 				interacting: this.modelInteractionActive,
 				scrolling: this.scrollActive,
+				minimapFocus: this.minimapFocus,
 				fullscreen: this.fullscreen
 			}),
 			environment: () => this.environmentTarget,
@@ -1958,7 +1959,7 @@ export class StageExperience {
 
 		this.panelFocus = this.getZoomFocusFactor();
 		this.panelUiFocus = getStageUiFocus(this.panelFocus);
-		this.minimapFocus = getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus);
+		this.minimapFocus = getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus, window.innerWidth);
 		this.layoutDirty = true;
 		this.lastFrameTime = performance.now();
 		this.requestRender();
@@ -3216,7 +3217,7 @@ export class StageExperience {
 		// every close-up UI phase. Phase remapping remains, temporal lag does not.
 		this.panelFocus = this.detailMediaActive ? this.getZoomFocusFactor() : 0;
 		this.panelUiFocus = this.fullscreen ? 1 : getStageUiFocus(this.panelFocus);
-		this.minimapFocus = this.fullscreen ? 1 : getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus);
+		this.minimapFocus = this.fullscreen ? 1 : getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus, window.innerWidth);
 		this.updateStageCameraProjection();
 		this.reportZoomFocus({
 			focus: this.panelFocus,

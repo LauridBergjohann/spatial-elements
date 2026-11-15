@@ -15,13 +15,14 @@
 	const stageContext = getContext<StageContext | undefined>(STAGE_CONTEXT_KEY);
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
-	$effect(() => { void theme; void fixedDetail; stageContext?.updatePanelAppearance?.(); });
+	$effect(() => { void theme; void fixedDetail; void edgeToEdge; stageContext?.updatePanelAppearance?.(); });
 	const radii = $derived(resolveSpatialThemeRadii(theme));
 	let rack: HTMLDivElement;
 	let stage: HTMLElement | undefined;
 	let enhancedScroll = false;
 	let satellitesVisible = false;
 	let fixedDetail = $state(false);
+	let edgeToEdge = $state(true);
 
 	function position(scrollY = getStageVisualScrollPosition().scrollY) {
 		if (!rack) return;
@@ -36,6 +37,7 @@
 		const previousMode = `${enhancedScroll}/${fixedDetail}`;
 		enhancedScroll = stage.classList.contains('stage-virtual-scroll-active');
 		satellitesVisible = window.innerWidth >= layoutTokens.layoutMinWidths.xl;
+		edgeToEdge = !satellitesVisible;
 		fixedDetail = getComputedStyle(rack).getPropertyValue('--spatial-shell-fixed').trim() === '1';
 		position();
 		if (previousMode !== `${enhancedScroll}/${fixedDetail}`) window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
@@ -99,7 +101,7 @@
                 getMinimapModelScale: () => 1, getMinimapModelTop: () => undefined,
                 getSurface: () => theme.panelTheme.surface ?? 'frosted',
                 getSurfaceOpacity: () => 1,
-                getOptions: () => ({ ...theme.panelTheme, radius: role === 'menu' ? radii.panel : radii.control })
+                getOptions: () => ({ ...theme.panelTheme, radius: role === 'menu' ? (edgeToEdge ? 0 : radii.panel) : radii.control })
             });
         });
         const stop = subscribeStageScrollFrame(frame => position(frame.scrollY), STAGE_SCROLL_PRIORITY.virtualDocument + 1);
@@ -135,4 +137,5 @@
  .spatial-shell-rack :global(.satellite) { border-radius: var(--spatial-element-control-radius); }
  :global(.stage-virtual-scroll-active) .spatial-shell-rack { position: relative; transform: translateY(var(--spatial-shell-scroll-compensation, 0px)); }
  [data-spatial-navigation-glass] :global([data-stage-panel-bound]) { background: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+@media (width < 1600px) { .spatial-shell-rack :global(.header) { border-radius: 0; } }
 </style>

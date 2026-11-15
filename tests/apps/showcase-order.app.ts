@@ -39,7 +39,7 @@ test('Branded summaries follow the selected theme, including after navigation', 
 	}
 });
 
-if (process.env.SPATIAL_GPU) for (const width of [320, 390, 1700, 2400]) {
+if (process.env.SPATIAL_GPU) for (const width of [320, 390, 600, 760, 840, 1200, 1700, 2100, 2400]) {
 	test(`Quantity and total stay synchronized with the header at ${width}px`, async ({ page }, info) => {
 		const errors: string[] = [];
 		page.on('pageerror', error => errors.push(error.message));
@@ -52,7 +52,21 @@ if (process.env.SPATIAL_GPU) for (const width of [320, 390, 1700, 2400]) {
 		await page.evaluate(() => window.scrollTo({ top: 1800, behavior: 'instant' }));
 		const header = page.locator(width >= 2300 ? '[data-spatial-detail-pane-header]' : '[data-spatial-element-sticky-header]');
 		const quantity = header.getByRole('spinbutton', { name: 'Quantity' });
+		if (width < 700) {
+			await expect(quantity).toBeHidden();
+			if (width < 600) await expect(header.locator('output')).toBeHidden();
+			else await expect(header.locator('output')).toBeVisible();
+			await expect(header.locator('.sticky-header-title')).toBeVisible();
+			await expect(header.locator('.sticky-header-kicker')).toBeVisible();
+			await expect(header.locator('.sticky-header-title')).toHaveCSS('font-size', '18px');
+			await expect(header.locator('.lucide-square-arrow-right-exit')).toBeVisible();
+			await page.screenshot({ path: info.outputPath(`order-header-${width}.png`) });
+			return;
+		}
 		await expect(quantity).toBeVisible();
+		await expect(quantity).toHaveCSS('height', '42px');
+		await expect(quantity).toHaveAttribute('title', 'Quantity');
+		await expect(header.locator('output')).toHaveAttribute('title', 'Example total');
 		await expect(quantity).toHaveValue('3');
 		await expect(header.locator('output')).toHaveText('€387.00');
 		await quantity.fill('4');
@@ -60,15 +74,56 @@ if (process.env.SPATIAL_GPU) for (const width of [320, 390, 1700, 2400]) {
 		await expect(header.locator('output')).toHaveText('€516.00');
 		await expect(header.locator('.lucide-square-arrow-right-exit')).toBeVisible();
 		// Both controls fit the visible header, even at the narrowest supported layout.
-		for (const locator of [quantity, header.locator('output')]) {
+		const headerBox = (await header.boundingBox())!;
+		for (const locator of [quantity, header.locator('output'), header.locator('.sticky-header-action, .spatial-element-pane-action')]) {
 			const box = (await locator.boundingBox())!;
-			expect(box.x).toBeGreaterThanOrEqual(0);
-			expect(box.x + box.width).toBeLessThanOrEqual(width);
+			expect(Math.abs(box.y + box.height / 2 - (headerBox.y + headerBox.height / 2))).toBeLessThanOrEqual(0.5);
+			expect(box.y).toBeGreaterThanOrEqual(headerBox.y);
+			expect(box.y + box.height).toBeLessThanOrEqual(headerBox.y + headerBox.height);
+			expect(box.x).toBeGreaterThanOrEqual(headerBox.x);
+			expect(box.x + box.width).toBeLessThanOrEqual(headerBox.x + headerBox.width);
 		}
 		await page.screenshot({ path: info.outputPath(`order-header-${width}.png`) });
 		await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
 		await expect(summary.getByRole('spinbutton', { name: 'Quantity' })).toHaveValue('4');
 		await expect(summary.locator('output')).toHaveText('€516.00');
 		expect(errors).toEqual([]);
+	});
+}
+
+if (process.env.SPATIAL_GPU) for (const width of [390, 1700, 2400]) {
+	test(`Header fields fade in only once covered at ${width}px`, async ({ page }) => {
+		await page.setViewportSize({ width, height: 900 });
+		await page.goto('/showcase/consumer/logitech-z407/');
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+		const headerSelector = width >= 2300 ? '[data-spatial-detail-pane-header]' : '[data-spatial-element-sticky-header]';
+		const header = page.locator(headerSelector);
+		for (const key of (width < 600 ? ['primary-action'] : ['quantity', 'price', 'primary-action'])) {
+			const sourceSelector = key === 'primary-action' ? '[data-catalog-rich-shared="primary-action"]' : `[data-spatial-element-header-field="${key}"]`;
+			const targetSelector = key === 'primary-action' ? '[data-spatial-element-dock-action]' : sourceSelector;
+			const target = header.locator(targetSelector);
+			for (const offset of [-4, 4, -4]) {
+				await page.evaluate(({ headerSelector, sourceSelector, offset, key }) => {
+					const source = document.querySelector(`.summary-presentation ${sourceSelector}`)!;
+					const header = document.querySelector(headerSelector)!;
+					window.scrollTo({ top: scrollY + source.getBoundingClientRect().bottom - (key === 'primary-action' ? source.getBoundingClientRect().height / 2 : 0) - header.getBoundingClientRect().bottom + offset, behavior: 'instant' });
+				}, { headerSelector, sourceSelector, offset, key });
+				await expect.poll(() => page.evaluate(({ headerSelector, sourceSelector, key }) =>
+					Math.round(document.querySelector(`.summary-presentation ${sourceSelector}`)!.getBoundingClientRect().bottom - (key === 'primary-action' ? document.querySelector(`.summary-presentation ${sourceSelector}`)!.getBoundingClientRect().height / 2 : 0) - document.querySelector(headerSelector)!.getBoundingClientRect().bottom),
+				{ headerSelector, sourceSelector, key })).toBe(-offset);
+				if (offset > 0) {
+					await expect(target).toHaveAttribute('data-header-field-visible', '');
+					await expect(target).toHaveCSS('opacity', '1');
+					await expect(target).not.toHaveAttribute('inert');
+				} else {
+					await expect(target).not.toHaveAttribute('data-header-field-visible');
+					await expect(target).toHaveCSS('opacity', '0');
+					await expect(target).toHaveAttribute('inert', '');
+				}
+			}
+			await expect(target).toHaveCSS('transition-duration', '0.18s, 0.18s, 0s');
+		}
+		await page.emulateMedia({ reducedMotion: 'reduce' });
+		await expect(header.locator('[data-spatial-element-header-field="quantity"]')).toHaveCSS('transition-duration', '0s');
 	});
 }

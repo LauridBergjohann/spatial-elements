@@ -103,6 +103,7 @@ export interface StageRenderPorts {
 
 /** Owns GPU output bands, passes and target lifetimes; never schedules frames or navigation. */
 export class StageRenderPipeline {
+	private heldSceneCaptures = new WeakMap<THREE.RenderTarget, string>();
 	private readonly measurementMode = getMinimapMeasurementMode();
 	private readonly renderMeasurement = parseRenderMeasurement(
 		typeof window === 'undefined' ? '' : (window.location?.search ?? '')
@@ -337,6 +338,7 @@ export class StageRenderPipeline {
 	private readonly backgroundCoverOpacity = uniform(0);
 	private readonly backgroundCoverColor = uniform(new THREE.Vector3(1, 1, 1));
 	setPageBackground(value: string) {
+		this.heldSceneCaptures = new WeakMap();
 		const color = new THREE.Color(value);
 		this.backgroundCoverColor.value.set(color.r, color.g, color.b);
 	}
@@ -347,6 +349,7 @@ export class StageRenderPipeline {
 	private readonly outlineStrength = uniform(1);
 	private readonly outlineGlow = uniform(1);
 	updateInteractionTheme() {
+		this.heldSceneCaptures = new WeakMap();
 		const theme = this.ports.interactionTheme();
 		this.outlineColor.value.set(theme.outlineColor);
 		this.outlineStrength.value = theme.outlineOpacity;
@@ -1266,7 +1269,6 @@ export class StageRenderPipeline {
 		this.backgroundCoverOpacity.value = 1 - this.ports.frame().backgroundReveal;
 		if (this.backgroundCoverOpacity.value > 0) this.backgroundCover.render(this.ports.renderer);
 		if (
-			this.ports.frame().stageViewportVisible &&
 			(!this.ports.frame().catalogHandoff || this.ports.frame().catalogMotionComplete) &&
 			(!this.ports.frame().catalog || this.ports.frame().pageModelReady)
 		) {
@@ -1376,7 +1378,22 @@ export class StageRenderPipeline {
 			} else {
 				if (!this._activeRenderTargets) return;
 				this.ports.renderer.setRenderTarget(this._activeRenderTargets.sceneCapture);
-				this.ports.renderStage();
+				const frame = this.ports.frame();
+				const canHold = !frame.stageViewportVisible && frame.detailMediaActive !== false &&
+					frame.pageModelReady && !frame.catalogHandoff && !this.ports.spatialCapture?.();
+				const target = this._activeRenderTargets.sceneCapture;
+				// The camera clamps at the viewport edge while content passes over the model.
+				// Keep those pixels (also used by frosted panels), rather than clearing the model.
+				// Re-capture on resize, quality, camera, pose, asset or appearance changes.
+				const key = canHold ? [this.warmConfiguration, target.width, target.height,
+					this.ports.scene.environment?.uuid, frame.backgroundReveal,
+					...this.ports.camera.projectionMatrix.elements, ...this.ports.camera.matrixWorld.elements,
+					...this.ports.scene.children.flatMap(child => [child.uuid, ...child.matrixWorld.elements])].join(',') : '';
+				if (!canHold) this.heldSceneCaptures = new WeakMap();
+				if (!canHold || this.heldSceneCaptures.get(target) !== key) {
+					this.ports.renderStage();
+					if (canHold) this.heldSceneCaptures.set(target, key);
+				}
 				this.renderPanelBlurCaptures(this._activeRenderTargets);
 				if (outline && this.ports.frame().detailMediaActive !== false) this.renderModelOutline(this._activeRenderTargets.sceneCapture, 1);
 				this.renderBackgroundOutput();

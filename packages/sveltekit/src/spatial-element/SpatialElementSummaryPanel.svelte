@@ -19,10 +19,12 @@
 		// sync using untransformed content size, including wrapping and font loads.
 		// Explicit ownership transfers finish their reflow before revealing pixels.
 		// offsetHeight is untransformed, unlike the projected CSS3D bounding box.
-		const measureTransfer = () => { panelHeight = presentation.offsetHeight + contentInset * 2; };
+		const measureTransfer = () => { if (!presentation.getClientRects().length) return; panelHeight = presentation.offsetHeight + contentInset * 2; };
 		measureTransfer();
 		presentation.addEventListener('spatial-summary-measure', measureTransfer);
 		const observer = new ResizeObserver(([entry]) => {
+			// CSS3D culling sets display:none; this is not a content resize.
+			if (!presentation.getClientRects().length) return;
 			const height = entry.borderBoxSize?.[0]?.blockSize ?? presentation.offsetHeight;
 			panelHeight = Math.ceil(height + contentInset * 2);
 		});

@@ -1,5 +1,6 @@
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
 import { setInertLease } from './inertLease.js';
+import { getStackedDetailFocusOffset } from './panelFocusMath.js';
 import { parseRenderMeasurement } from './renderMeasurement.js';
 import { dampAndSnap } from './damping.js';
 import * as THREE from 'three/webgpu';
@@ -430,6 +431,14 @@ export class PanelPresentationController {
 				centerY: viewportHeight / 2 - baseY - focusOffset.y, focusOffset,
 				minimap, minimapFocus, visualWidth, visualHeight, viewportVisible: this.isPanelTargetVisible(index) };
 		}
+		const frame = this.panelTargets[index]?.frame;
+		if (!minimap && panel.focusReactive !== false && viewportWidth < 840 &&
+			(frame?.closest('[data-spatial-element-media-rail]') || frame?.closest('[data-spatial-summary-aside]'))) {
+			const focusOffset = getStackedDetailFocusOffset(uiFocus, viewportHeight);
+			return { baseX, baseY, centerX: viewportWidth / 2 + baseX,
+				centerY: viewportHeight / 2 - baseY - focusOffset.y, focusOffset,
+				minimap, minimapFocus, visualWidth, visualHeight, viewportVisible: this.isPanelTargetVisible(index) };
+		}
 		const rawFocusOffset = getPanelFocusOffset(
 			panel.options,
 			uiFocus,
@@ -455,10 +464,17 @@ export class PanelPresentationController {
 		const minimapProjectionScale = minimap
 			? this.panelCamera.position.z / Math.max(this.panelCamera.position.z - focusDepth, 1)
 			: 1;
+		const minimapStartTop = viewportHeight / 2 - baseY - baseHeight / 2;
+		// In stacked layouts the rail exits as a row. Follow its travel distance,
+		// then stop at the minimap's persistent zoom position instead of lagging behind.
+		const minimapPositionProgress = zoom && viewportWidth < 840
+			? Math.min(1, getPanelFocusProgress(uiFocus) * Math.max(1,
+				viewportHeight * 0.6 / Math.max(zoom.minimap.y - minimapStartTop, 1)))
+			: minimapFocus;
 		const minimapPositionOffset = minimap && zoom
 			? {
 					x: THREE.MathUtils.lerp(viewportWidth / 2 + baseX - baseWidth / 2, zoom.minimap.x, minimapFocus) + visualWidth / 2 - (viewportWidth / 2 + baseX),
-					y: viewportHeight / 2 - baseY - (THREE.MathUtils.lerp(viewportHeight / 2 - baseY - baseHeight / 2, zoom.minimap.y, minimapFocus) + visualHeight / 2)
+					y: viewportHeight / 2 - baseY - (THREE.MathUtils.lerp(minimapStartTop, zoom.minimap.y, minimapPositionProgress) + visualHeight / 2)
 				}
 			: minimap
 			? getMinimapFocusPositionOffset(

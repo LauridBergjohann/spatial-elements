@@ -62,7 +62,7 @@ export function paneRules(tokens) {
 		transform: translateY(var(--spatial-pane-fixed-compensation, 0px));
 	}
 	${root} .spatial-element-pane-heading {
-		display: block; box-sizing: border-box; position: fixed; z-index: 3;
+		display: block; box-sizing: border-box; padding-block: 4px; position: fixed; z-index: 3;
 		top: var(--spatial-pane-top); left: var(--spatial-pane-left); width: var(--spatial-pane-width); height: ${pane.headerHeight}px;
 		border-radius: var(--spatial-element-panel-radius) var(--spatial-element-panel-radius) 0 0;
 		background: color-mix(in srgb, var(--spatial-pane-tint) var(--spatial-pane-tint-opacity), transparent);
@@ -71,12 +71,13 @@ export function paneRules(tokens) {
 		box-shadow: 0 4px 10px rgb(0 0 0 / 0.08);
 		transform: translateY(var(--spatial-pane-fixed-compensation, 0px));
 	}
-	${root} .spatial-element-pane-title-row { display: flex; align-items: center; gap: 16px; height: ${pane.headerHeight - tokens.breadcrumb['3xl'].height}px; padding-inline: 16px; }
-	${root} .spatial-element-pane-heading .breadcrumbs { width: 100%; }
-	${root} .spatial-element-pane-title { min-width: 0; flex: 1; margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-	${root} .spatial-element-pane-eyebrow { margin: 0; font-size: 14px; line-height: 20px; white-space: nowrap; }
-	${root} .spatial-element-pane-action { visibility: hidden; display: grid; place-items: center; flex: none; width: 54px; height: 54px; padding: 0; border: 0; border-radius: var(--spatial-element-control-radius); color: var(--spatial-element-on-accent); background: var(--spatial-element-accent); cursor: pointer; }
-	${root}[data-spatial-detail-pane-action] .spatial-element-pane-action { visibility: visible; }
+	${root} .spatial-element-pane-title-row { display: flex; align-items: center; gap: 16px; height: 100%; margin-top: -24px; padding-inline: 16px; }
+	${root} .spatial-element-pane-heading .breadcrumbs { width: 100%; height: 24px; --ps-breadcrumb-height: 24px; padding-inline: 16px; }
+	${root} .spatial-element-pane-copy { padding-top: 24px; display: flex; align-items: baseline; gap: 8px; min-width: 0; flex: 1; }
+	${root} .spatial-element-pane-order { flex: none; }
+	${root} .spatial-element-pane-title { min-width: 0; flex: 0 1 auto; margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+	${root} .spatial-element-pane-eyebrow { min-width: 0; overflow: hidden; text-overflow: ellipsis; margin: 0; font-size: 14px; line-height: 20px; white-space: nowrap; }
+	${root} .spatial-element-pane-action { display: grid; place-items: center; flex: none; width: 54px; height: 54px; padding: 0; border: 0; border-radius: var(--spatial-element-control-radius); color: var(--spatial-element-on-accent); background: var(--spatial-element-accent); cursor: pointer; }
 	${root} .spatial-element-pane-cover { display: block; position: fixed; z-index: 2; left: var(--spatial-pane-left); width: var(--spatial-pane-width); background: var(--stage-page-background, var(--spatial-element-background)); pointer-events: none; transform: translateY(var(--spatial-pane-fixed-compensation, 0px)); }
 	${root} .spatial-element-pane-cover-top { top: 0; height: var(--spatial-pane-body-top); }
 	${root} .spatial-element-pane-cover-bottom { top: calc(100svh - var(--spatial-pane-bottom)); height: var(--spatial-pane-bottom); }

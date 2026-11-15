@@ -9,6 +9,23 @@ import { resolveZoomLayout } from '../spatial-element/responsiveLayout.js';
 
 afterEach(() => vi.unstubAllGlobals());
 
+test.each([390, 700])('stacked minimap travels with the media row until its destination at %ipx', width => {
+	vi.stubGlobal('window', { innerWidth: width, innerHeight: 900, location: { search: '' } });
+	const camera = new THREE.PerspectiveCamera(); camera.position.z = 1400;
+	let focus = 0;
+	const minimap = { baseWidth: 80, baseHeight: 80, options: { expandedHeight: 112 } } as StageMinimapState;
+	const panel = { options: resolveLiquidGlassPanelOptions({ width: 80, height: 80,
+		position: { x: 48 - width / 2, y: 450 - 540 } }) } as StagePanelRuntime;
+	const owner = new PanelPresentationController({ camera, minimaps: () => new Map([[0, minimap]]),
+		registrations: () => [], visible: () => true, zoomLayout: () => resolveZoomLayout({ width, height: 900 }),
+		frame: () => ({ minimapFocus: focus }) } as unknown as PanelPresentationPorts);
+	for (const ui of [0, 0.2, 0.35, 0.5, 0.7, 1, 0.5, 0]) {
+		const t = Math.min(1, Math.max(0, (ui - 0.08) / 0.88)); focus = t * t * (3 - 2 * t);
+		const layout = owner.getPanelPointerLayout(panel, 0, width, 900, ui);
+		expect(layout.centerY - layout.visualHeight / 2).toBeCloseTo(Math.min(780, 500 + 540 * focus), 8);
+	}
+});
+
 test.each([[320, 112, 8], [600, 112, 8], [840, 168, 8], [1200, 178, 8], [1600, 220, 12], [1809, 242, 16], [2300, 242, 28]])(
 	'catalog zoom projects the canonical minimap box at width %i', (width, size, inset) => {
 		vi.stubGlobal('window', { innerWidth: width, innerHeight: 900, location: { search: '' } });

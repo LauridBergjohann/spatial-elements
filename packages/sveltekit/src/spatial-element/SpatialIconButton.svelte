@@ -61,6 +61,13 @@
 		background: color-mix(in srgb, var(--spatial-element-body) 8%, transparent);
 	}
 	.spatial-icon-button[aria-pressed="true"] { color: var(--spatial-element-accent); background: var(--ps-selection, var(--ps-section-muted, #eeeeee)); }
+	/* Busy remains operable so a pending device search can be cancelled. */
+	.spatial-icon-button[aria-busy="true"] { color: var(--spatial-element-accent); background: var(--ps-selection, var(--ps-section-muted, #eeeeee)); }
+	.spatial-icon-button[aria-busy="true"] :global(svg) { animation: searching 1.2s ease-in-out infinite; }
+	@keyframes searching { 50% { opacity: 0.35; } }
 	.spatial-icon-button:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: 3px; }
-	@media (prefers-reduced-motion: reduce) { .spatial-icon-button { transition: none; } }
+	@media (prefers-reduced-motion: reduce) {
+		.spatial-icon-button { transition: none; }
+		.spatial-icon-button[aria-busy="true"] :global(svg) { animation: none; opacity: 0.6; }
+	}
 </style>

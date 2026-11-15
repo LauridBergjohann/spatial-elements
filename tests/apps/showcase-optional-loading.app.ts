@@ -27,6 +27,7 @@ const sdkFile =
 	Object.entries(manifest).find(([key]) => key.includes('3dconnexion.module.js'))?.[1].file ?? '';
 const connectLabel = 'click to connect spacemouse for 3d navigation';
 const disconnectLabel = 'spacemouse is connected, click to disconnect';
+const searchingLabel = 'Searching for SpaceMouse, click to cancel';
 const detail = '/showcase/consumer/logitech-z407/';
 
 async function permission(page: Page, initial = 'prompt', supported = 'loopback-network') {
@@ -64,7 +65,7 @@ async function fakeDriver(page: Page, mode = 'success') {
 				contentType: 'text/javascript',
 				body: `
  export default class {
-  constructor(client) { this.client = client; window.driverDisconnect = () => client.onDisconnect(); }
+  constructor(client) { this.client = client; window.driverDisconnect = () => client.onDisconnect(); window.driverLateConnect = () => client.onConnect(); }
   connect() {
    window.driverConnects++;
    if (window.driverMode === 'permission') throw new DOMException('Denied', 'SecurityError');
@@ -256,6 +257,42 @@ if (process.env.SPATIAL_GPU) {
 		);
 		await page.keyboard.press('Escape');
 		await expect(page.getByRole('button', { name: connectLabel, exact: true })).toBeFocused();
+	});
+	test('pending search pulses, can be cancelled and ignores late driver callbacks', async ({ page }) => {
+		await permission(page);
+		await fakeDriver(page, 'pending');
+		await ready(page);
+		await page.getByRole('button', { name: connectLabel, exact: true }).click();
+		const searching = page.getByRole('button', { name: searchingLabel, exact: true });
+		await expect(searching).toHaveAttribute('aria-busy', 'true');
+		await expect(searching).toBeEnabled();
+		await expect(searching).toHaveAttribute('title', searchingLabel);
+		await expect.poll(() => searching.locator('svg').evaluate(el => getComputedStyle(el).animationName)).not.toBe('none');
+		await expect.poll(() => page.evaluate(() => (window as any).driverConnects)).toBe(1);
+		await searching.click();
+		await expect(page.locator('.connection-toast')).toContainText('SpaceMouse search cancelled at your request.');
+		await page.evaluate(() => (window as any).driverLateConnect());
+		await expect(page.getByRole('button', { name: connectLabel, exact: true })).toHaveAttribute('aria-pressed', 'false');
+		await expect(page.getByRole('dialog')).not.toBeVisible();
+		await expect(page.locator('.connection-toast')).not.toBeVisible({ timeout: 6000 });
+		await page.evaluate(() => { (window as any).driverMode = 'success'; });
+		await page.getByRole('button', { name: connectLabel, exact: true }).click();
+		await expect(page.getByRole('button', { name: disconnectLabel, exact: true })).toBeVisible();
+	});
+	for (const state of ['granted', 'prompt']) test(`manual disconnect persists after reload (${state})`, async ({ page }) => {
+		await permission(page, state);
+		await fakeDriver(page);
+		await ready(page);
+		if (state !== 'granted') await page.getByRole('button', { name: connectLabel, exact: true }).click();
+		await page.getByRole('button', { name: disconnectLabel, exact: true }).click();
+		await page.reload();
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+		await expect(page.getByRole('button', { name: connectLabel, exact: true })).toHaveAttribute('aria-pressed', 'false');
+		expect(await page.evaluate(() => (window as any).driverConnects)).toBe(0);
+		await page.getByRole('button', { name: connectLabel, exact: true }).click();
+		await expect(page.getByRole('button', { name: disconnectLabel, exact: true })).toBeVisible();
+		await page.reload();
+		await expect(page.getByRole('button', { name: disconnectLabel, exact: true })).toBeVisible();
 	});
 	for (const mode of ['success', 'missing'])
 		test('existing grant reconnects silently: ' + mode, async ({ page }) => {

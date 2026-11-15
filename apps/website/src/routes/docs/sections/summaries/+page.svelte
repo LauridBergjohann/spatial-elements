@@ -159,6 +159,14 @@
 				and manufacturer links; it is not a shop.
 			</p>
 			<p>
+				To hand a custom field over when the header covers its summary counterpart, give both copies
+				the same <code>data-spatial-element-header-field</code> value, such as <code>quantity</code>
+				or <code>price</code>. Each header field fades in independently once its source is fully
+				covered, and becomes inactive again when scrolling back. The primary action uses this
+				behavior automatically. Space remains reserved to avoid moving the title; reduced motion
+				disables the animation. This applies to the scroll header and the 3XL pane header.
+			</p>
+			<p>
 				The persistent host gives a summary a lifetime beyond a route's placement node. Placement
 				and ownership are different responsibilities: manually reparenting a route-owned Svelte
 				subtree does not prevent the route from destroying it.

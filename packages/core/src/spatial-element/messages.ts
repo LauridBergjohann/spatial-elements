@@ -21,6 +21,7 @@ export interface SpatialMessages {
 		spaceMouseConnected: string;
 		spaceMouseConnecting: string;
 		spaceMouseReady: string;
+		spaceMouseCancelled: string;
 		spaceMousePermissionTitle: string;
 		spaceMouseUnavailableTitle: string;
 		spaceMouseUnavailable: string;
@@ -55,8 +56,9 @@ export const defaultSpatialMessages: Readonly<{
 		spaceMousePermission: 'To use your SpaceMouse, allow this website to access the local 3Dconnexion driver. Select OK to try again and allow access when your browser asks.',
 		spaceMouseTitle: 'click to connect spacemouse for 3d navigation',
 		spaceMouseConnected: 'spacemouse is connected, click to disconnect',
-		spaceMouseConnecting: "Connecting SpaceMouse",
+		spaceMouseConnecting: "Searching for SpaceMouse, click to cancel",
 		spaceMouseReady: "SpaceMouse connected. You can now navigate the model.",
+		spaceMouseCancelled: "SpaceMouse search cancelled at your request.",
 		spaceMousePermissionTitle: "Allow SpaceMouse access",
 		spaceMouseUnavailableTitle: "No SpaceMouse found",
 		spaceMouseUnavailable: "No SpaceMouse connection could be established. Connect your device and check that the 3Dconnexion 3DxWare driver is installed and running.",

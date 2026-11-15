@@ -1,0 +1,21 @@
+/* Keep the space reserved so revealing order controls never shifts the title. */
+[data-spatial-element-handoff-header] :is([data-spatial-element-header-field], [data-spatial-element-dock-action]) {
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(4px);
+	pointer-events: none;
+	transition: opacity 180ms ease, transform 180ms ease, visibility 0s linear 180ms;
+}
+[data-spatial-element-handoff-header] :is([data-spatial-element-header-field], [data-spatial-element-dock-action])[data-header-field-visible] {
+	opacity: 1;
+	visibility: visible;
+	transform: none;
+	pointer-events: auto;
+	transition-delay: 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+	[data-spatial-element-handoff-header] :is([data-spatial-element-header-field], [data-spatial-element-dock-action]) {
+		transition: none;
+		transform: none;
+	}
+}

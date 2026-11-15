@@ -58,6 +58,35 @@ export function getMinimapTopAlignmentOffset(
 	return Number.isFinite(offset) ? offset : 0;
 }
 
+/** Center the visible silhouette in the header, clamping oversized/hovered models to its safe top. */
+export function getMinimapDockAlignmentOffset(
+	points: readonly THREE.Vector3[], modelMatrix: THREE.Matrix4, camera: THREE.PerspectiveCamera,
+	viewportHeight: number, safeTop: number, centerY = safeTop, parentMatrix = new THREE.Matrix4()
+) {
+	const matrix = modelMatrix.clone();
+	const direction = new THREE.Vector4(0, 1, 0, 0).applyMatrix4(parentMatrix);
+	const point = new THREE.Vector3();
+	let offset = 0;
+	// Recompute after translating: tilted parent panels can change projected height.
+	for (let iteration = 0; iteration < 4; iteration++) {
+		let top = Infinity, bottom = -Infinity;
+		for (const bound of points) {
+			point.copy(bound).applyMatrix4(matrix).project(camera);
+			const y = (1 - point.y) * viewportHeight / 2;
+			top = Math.min(top, y); bottom = Math.max(bottom, y);
+		}
+		if (!Number.isFinite(top + bottom)) return 0;
+		const targetTop = Math.max(safeTop, centerY - (bottom - top) / 2);
+		const step = getMinimapTopAlignmentOffset(points, matrix, camera, viewportHeight, targetTop, parentMatrix);
+		offset += step;
+		matrix.elements[12] += direction.x * step;
+		matrix.elements[13] += direction.y * step;
+		matrix.elements[14] += direction.z * step;
+		if (Math.abs(top - targetTop) < 0.001) break;
+	}
+	return offset;
+}
+
 /** Smallest camera-right translation that keeps every projected corner inside the safe left edge. */
 export function getMinimapLeftAlignmentOffset(
 	points: readonly THREE.Vector3[], modelMatrix: THREE.Matrix4, camera: THREE.PerspectiveCamera,

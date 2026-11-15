@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { observeSpaceMousePermission, querySpaceMousePermission, rememberSpaceMouseConnection, shouldReconnectSpaceMouse } from './spaceMousePermission.js';
+import { observeSpaceMousePermission, querySpaceMousePermission, rememberSpaceMouseConnection, rememberSpaceMouseDisabled, shouldReconnectSpaceMouse } from './spaceMousePermission.js';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -62,6 +62,20 @@ describe('SpaceMouse permission observation', () => {
 });
 
 describe('SpaceMouse reconnection preference', () => {
+	it('keeps explicit disconnection disabled for every permission until a successful manual connection', () => {
+		const values = new Map<string, string>();
+		vi.stubGlobal('localStorage', {
+			getItem: (key: string) => values.get(key) ?? null,
+			setItem: (key: string, value: string) => values.set(key, value)
+		});
+		rememberSpaceMouseConnection();
+		rememberSpaceMouseDisabled();
+		for (const state of ['granted', 'prompt', 'unknown', 'denied'] as const)
+			expect(shouldReconnectSpaceMouse(state)).toBe(false);
+		rememberSpaceMouseConnection();
+		expect(shouldReconnectSpaceMouse('granted')).toBe(true);
+		expect(shouldReconnectSpaceMouse('prompt')).toBe(true);
+	});
 	it('reconnects after successful use even if the permission remains prompt or unknown', () => {
 		const values = new Map<string, string>();
 		vi.stubGlobal('localStorage', {
@@ -85,6 +99,7 @@ describe('SpaceMouse reconnection preference', () => {
 			setItem: () => { throw new Error('Storage blocked'); }
 		});
 		expect(() => rememberSpaceMouseConnection()).not.toThrow();
+		expect(() => rememberSpaceMouseDisabled()).not.toThrow();
 		expect(shouldReconnectSpaceMouse('unknown')).toBe(false);
 		expect(shouldReconnectSpaceMouse('granted')).toBe(true);
 	});

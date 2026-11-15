@@ -46,7 +46,6 @@ export class SpatialElementPaneController {
 	private focus = 0;
 	private focusPose = { x: 0, y: 0, scale: 1, opacity: 1, blur: 0, pivotY: 0 };
 	private savedScroll?: { x: number; y: number };
-	private actionBottom = Infinity;
 	private sectionPositions: { element: HTMLElement; top: number }[] = [];
 	private restoreAnchor?: { element: HTMLElement; offset: number };
 	private resizeAnchor?: { element: HTMLElement; offset: number };
@@ -159,8 +158,6 @@ export class SpatialElementPaneController {
 		this.bodyHeight = rect.height / this.focusPose.scale;
 		this.sectionPositions = Array.from(this.body.querySelectorAll<HTMLElement>('[data-spatial-element-tab-target]'))
 			.map(element => ({ element, top: this.neutralY(element.getBoundingClientRect().top) + this.scrollY }));
-		const action = this.body.querySelector<HTMLElement>('[data-catalog-rich-shared="primary-action"]');
-		this.actionBottom = action ? this.neutralY(action.getBoundingClientRect().bottom) + this.scrollY : Infinity;
 		this.readingTop = this.layout?.pane?.body.y ?? (Number.parseFloat(getComputedStyle(this.root).getPropertyValue('--spatial-element-section-scroll-offset')) || 0);
 		const summaryReady = this.layout?.composition !== 'split' || Boolean(this.body.querySelector('[data-spatial-summary-root]'));
 		if (!metricsChanged && !bodyHeightChanged && summaryReady && this.restoreAnchor && this.restoreAnchor.element.isConnected) {
@@ -190,7 +187,6 @@ export class SpatialElementPaneController {
 		const clip = resolvePaneScrollClip(this.bodyTop, this.bodyHeight, pane.body.y, pane.body.y + pane.body.height, this.scrollY);
 		this.body.style.clipPath = `inset(${clip.top}px 0 ${clip.bottom}px 0 round 0 0 var(--spatial-element-panel-radius) var(--spatial-element-panel-radius))`;
 		this.root.toggleAttribute('data-spatial-detail-pane-clipped', true);
-		this.root.toggleAttribute('data-spatial-detail-pane-action', this.actionBottom - this.scrollY <= pane.body.y);
 	}
 
 	/** Measurements remain in document coordinates while the pane moves in paint. */

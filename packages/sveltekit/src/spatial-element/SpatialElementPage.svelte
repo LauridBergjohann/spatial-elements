@@ -2,6 +2,8 @@
 	import { getContext, onMount, setContext } from 'svelte';
 	import ShoppingCart from 'lucide-svelte/icons/shopping-cart';
 	import { SpatialElementPaneController } from '@spatial-elements/core/spatial-element/SpatialElementPaneController';
+	import { SpatialElementHeaderFields } from '@spatial-elements/core/spatial-element/SpatialElementHeaderFields';
+	import './headerFields.css';
 	import { resolveActiveDetailSection } from '@spatial-elements/core/spatial-element/activeDetailSection';
 	import { resolveDetailLayout } from '@spatial-elements/core/spatial-element/responsiveLayout';
 	import {
@@ -140,6 +142,8 @@
 	}
 
 	onMount(() => {
+		const headerFields = new SpatialElementHeaderFields(mainElement);
+		headerFields.start();
         const orderSections = () => sectionRegistry.order([...mainElement.querySelectorAll<HTMLElement>('[data-ps-section]')].map(node => node.id));
         const sectionOrder = new MutationObserver(orderSections);
         sectionOrder.observe(mainElement, { childList: true, subtree: true });
@@ -174,6 +178,7 @@
 		scheduleScrollSpy();
 
 		return () => {
+			headerFields.destroy();
 			sectionOrder.disconnect();
 			unregisterMedia?.();
 			paneController?.destroy();
@@ -203,14 +208,16 @@
 	style:--spatial-pane-tint-opacity={`${Math.min(1, Math.max(0, brand.panelTheme.tintOpacity ?? 0.28)) * 100}%`}
 	style:--spatial-pane-blur={`${Math.min(100, Math.max(0, brand.panelTheme.backdropBlur ?? 5))}px`}
 >
-	<div class="spatial-element-pane-heading" data-spatial-detail-pane-header data-spatial-detail-fixed>
-		<SpatialElementBreadcrumbs items={spatialElement.breadcrumbs} />
+	<div class="spatial-element-pane-heading" data-spatial-detail-pane-header data-spatial-detail-fixed data-spatial-element-handoff-header>
+		<SpatialElementBreadcrumbs items={spatialElement.breadcrumbs} focusReactive={!splitPane} />
 		<div class="spatial-element-pane-title-row">
+			<div class="spatial-element-pane-copy">
 			<p class="spatial-element-pane-title">{spatialElement.title}</p>
 			{#if spatialElement.eyebrow}<p class="spatial-element-pane-eyebrow">{spatialElement.eyebrow}</p>{/if}
-			{@render headerDetails?.()}
+			</div>
+			{#if headerDetails}<div class="spatial-element-pane-order">{@render headerDetails()}</div>{/if}
 			{#if spatialElement.action}
-				<button type="button" class="spatial-element-pane-action" onclick={invokePaneAction}
+				<button type="button" class="spatial-element-pane-action" data-spatial-element-dock-action onclick={invokePaneAction}
 					aria-label={spatialElement.action.ariaLabel ?? spatialElement.action.label}>
 					{#if actionIcon}{@render actionIcon()}{:else}<ShoppingCart size={24} aria-hidden="true" />{/if}
 				</button>
@@ -319,6 +326,7 @@
 		background: transparent;
 		pointer-events: none;
 	}
+	@media (width < 840px) { .spatial-element-content { padding-top: 12px; } }
 	@media (min-width: 840px) {
 		.spatial-element-hero { height: var(--spatial-detail-fit-height); }
 		.spatial-element-content { padding-top: 8px; }

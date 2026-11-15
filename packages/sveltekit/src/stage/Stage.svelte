@@ -7,6 +7,7 @@
 	import {
 		observeSpaceMousePermission,
 		rememberSpaceMouseConnection,
+		rememberSpaceMouseDisabled,
 		shouldReconnectSpaceMouse,
 		type SpaceMousePermission
 	} from '@spatial-elements/core/stage/spaceMousePermission';
@@ -260,6 +261,7 @@
 		getSpaceMousePermission: () => spaceMousePermission,
 		setSpaceMouseEnabled(enabled) {
 			if (!spaceMouseDesktop) return;
+			if (!enabled) rememberSpaceMouseDisabled();
 			experience?.setSpaceMouseEnabled(false);
 			spaceMouseState = enabled ? 'connecting' : 'idle';
 			spaceMouseDisabledByUser = !enabled;
@@ -899,6 +901,7 @@
 				getMinimapDockProgress: panel.getMinimapDockProgress,
 				getMinimapModelScale: panel.getMinimapModelScale,
 				getMinimapModelTop: panel.getMinimapModelTop,
+				getMinimapModelCenterY: panel.getMinimapModelCenterY,
 				getMinimapModelLeft: panel.getMinimapModelLeft,
 				getSurfaceOpacity: panel.getSurfaceOpacity,
 				getVisible: panel.getVisible,
