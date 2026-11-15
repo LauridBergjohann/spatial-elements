@@ -99,28 +99,4 @@
 		font-size: 18px;
 		line-height: 34px;
 	}
-	@media (width < 840px) {
-		.compact {
-			gap: 6px;
-			justify-content: start;
-		}
-		.compact label span,
-		.compact .demo-price span {
-			position: absolute;
-			width: 1px;
-			height: 1px;
-			overflow: hidden;
-			clip-path: inset(50%);
-		}
-		.compact input {
-			width: 48px;
-			height: 26px;
-			padding: 2px;
-			font-size: 14px;
-		}
-		.compact output {
-			font-size: 12px;
-			line-height: 26px;
-		}
-	}
 </style>

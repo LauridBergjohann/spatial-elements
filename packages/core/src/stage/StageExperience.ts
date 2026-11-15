@@ -572,6 +572,7 @@ export class StageExperience {
 				hovering: this.modelHover,
 				interacting: this.modelInteractionActive,
 				scrolling: this.scrollActive,
+				minimapFocus: this.minimapFocus,
 				fullscreen: this.fullscreen
 			}),
 			environment: () => this.environmentTarget,

@@ -19,7 +19,7 @@
  const catalogEndpoint = createCatalogEndpointAction();
 </script>
 		<div bind:this={element} class="summary-presentation">
-			{#if leading}<div use:catalogEndpoint={address('leading')}
+			{#if leading}<div class="summary-leading" use:catalogEndpoint={address('leading')}
 				data-catalog-rich-shared="leading" data-catalog-semantic={spatialElement.id}>
 				{@render leading()}
 			</div>{/if}
@@ -62,6 +62,7 @@
 				{/each}
 			</ul>{/if}
 
+			{#if beforeAction || spatialElement.action}<div class="summary-commerce">
 			{#if beforeAction}<div use:catalogEndpoint={address('action-details')}
 				data-catalog-rich-shared="action-details" data-catalog-semantic={spatialElement.id}>
 				{@render beforeAction()}
@@ -108,6 +109,7 @@
 					</button>
 				{/if}
 			{/if}
+			</div>{/if}
 		</div>
 <style>
 	.summary-presentation {
@@ -127,6 +129,8 @@
 		font-weight: 780;
 		line-height: 1.16;
 	}
+	.summary-commerce { display: grid; gap: 20px; min-width: 0; align-content: start; }
+	.summary-leading, .panel-copy { min-width: 0; }
 
 	.panel-kicker {
 		margin: 0;
@@ -194,5 +198,15 @@
 		white-space: normal;
 	}
 	@container spatial-summary (min-width: 420px) { .summary-title { font-size: 32px; } }
+	@container spatial-summary (min-width: 500px) {
+		.feature-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		.summary-commerce { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; }
+	}
+	@container spatial-summary (min-width: 900px) {
+		.summary-presentation { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+		.summary-leading, .panel-copy { grid-column: 1 / -1; }
+		.feature-list { grid-column: span 2; }
+		.summary-commerce { grid-column: 3; grid-template-columns: minmax(0, 1fr); }
+	}
 
 </style>

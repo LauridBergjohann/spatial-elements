@@ -39,7 +39,7 @@ test('Branded summaries follow the selected theme, including after navigation', 
 	}
 });
 
-if (process.env.SPATIAL_GPU) for (const width of [320, 390, 1700, 2400]) {
+if (process.env.SPATIAL_GPU) for (const width of [320, 390, 600, 760, 840, 1200, 1700, 2100, 2400]) {
 	test(`Quantity and total stay synchronized with the header at ${width}px`, async ({ page }, info) => {
 		const errors: string[] = [];
 		page.on('pageerror', error => errors.push(error.message));
@@ -52,6 +52,17 @@ if (process.env.SPATIAL_GPU) for (const width of [320, 390, 1700, 2400]) {
 		await page.evaluate(() => window.scrollTo({ top: 1800, behavior: 'instant' }));
 		const header = page.locator(width >= 2300 ? '[data-spatial-detail-pane-header]' : '[data-spatial-element-sticky-header]');
 		const quantity = header.getByRole('spinbutton', { name: 'Quantity' });
+		if (width < 700) {
+			await expect(quantity).toBeHidden();
+			if (width < 600) await expect(header.locator('output')).toBeHidden();
+			else await expect(header.locator('output')).toBeVisible();
+			await expect(header.locator('.sticky-header-title')).toBeVisible();
+			await expect(header.locator('.sticky-header-kicker')).toBeVisible();
+			await expect(header.locator('.sticky-header-title')).toHaveCSS('font-size', '18px');
+			await expect(header.locator('.lucide-square-arrow-right-exit')).toBeVisible();
+			await page.screenshot({ path: info.outputPath(`order-header-${width}.png`) });
+			return;
+		}
 		await expect(quantity).toBeVisible();
 		await expect(quantity).toHaveValue('3');
 		await expect(header.locator('output')).toHaveText('€387.00');
@@ -60,10 +71,13 @@ if (process.env.SPATIAL_GPU) for (const width of [320, 390, 1700, 2400]) {
 		await expect(header.locator('output')).toHaveText('€516.00');
 		await expect(header.locator('.lucide-square-arrow-right-exit')).toBeVisible();
 		// Both controls fit the visible header, even at the narrowest supported layout.
-		for (const locator of [quantity, header.locator('output')]) {
+		const headerBox = (await header.boundingBox())!;
+		for (const locator of [quantity, header.locator('output'), header.locator('.sticky-header-action, .spatial-element-pane-action')]) {
 			const box = (await locator.boundingBox())!;
-			expect(box.x).toBeGreaterThanOrEqual(0);
-			expect(box.x + box.width).toBeLessThanOrEqual(width);
+			expect(box.y).toBeGreaterThanOrEqual(headerBox.y);
+			expect(box.y + box.height).toBeLessThanOrEqual(headerBox.y + headerBox.height);
+			expect(box.x).toBeGreaterThanOrEqual(headerBox.x);
+			expect(box.x + box.width).toBeLessThanOrEqual(headerBox.x + headerBox.width);
 		}
 		await page.screenshot({ path: info.outputPath(`order-header-${width}.png`) });
 		await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
@@ -80,7 +94,7 @@ if (process.env.SPATIAL_GPU) for (const width of [390, 1700, 2400]) {
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
 		const headerSelector = width >= 2300 ? '[data-spatial-detail-pane-header]' : '[data-spatial-element-sticky-header]';
 		const header = page.locator(headerSelector);
-		for (const key of ['quantity', 'price', 'primary-action']) {
+		for (const key of (width < 600 ? ['primary-action'] : ['quantity', 'price', 'primary-action'])) {
 			const sourceSelector = key === 'primary-action' ? '[data-catalog-rich-shared="primary-action"]' : `[data-spatial-element-header-field="${key}"]`;
 			const targetSelector = key === 'primary-action' ? '[data-spatial-element-dock-action]' : sourceSelector;
 			const target = header.locator(targetSelector);

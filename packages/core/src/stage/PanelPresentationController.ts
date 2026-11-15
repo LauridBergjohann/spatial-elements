@@ -1,5 +1,6 @@
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
 import { setInertLease } from './inertLease.js';
+import { getStackedDetailFocusOffset } from './panelFocusMath.js';
 import { parseRenderMeasurement } from './renderMeasurement.js';
 import { dampAndSnap } from './damping.js';
 import * as THREE from 'three/webgpu';
@@ -427,6 +428,14 @@ export class PanelPresentationController {
 		if (panel.focusReactive === 'top-right') {
 			const focusOffset = this.getCornerControlOffset(panel, viewportWidth, viewportHeight, uiFocus);
 			return { baseX, baseY, centerX: viewportWidth / 2 + baseX + focusOffset.x,
+				centerY: viewportHeight / 2 - baseY - focusOffset.y, focusOffset,
+				minimap, minimapFocus, visualWidth, visualHeight, viewportVisible: this.isPanelTargetVisible(index) };
+		}
+		const frame = this.panelTargets[index]?.frame;
+		if (!minimap && panel.focusReactive !== false && viewportWidth < 840 &&
+			(frame?.closest('[data-spatial-element-media-rail]') || frame?.closest('[data-spatial-summary-aside]'))) {
+			const focusOffset = getStackedDetailFocusOffset(uiFocus, viewportHeight);
+			return { baseX, baseY, centerX: viewportWidth / 2 + baseX,
 				centerY: viewportHeight / 2 - baseY - focusOffset.y, focusOffset,
 				minimap, minimapFocus, visualWidth, visualHeight, viewportVisible: this.isPanelTargetVisible(index) };
 		}

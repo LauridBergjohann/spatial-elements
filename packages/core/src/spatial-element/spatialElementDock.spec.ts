@@ -138,6 +138,13 @@ describe('spatialElement dock geometry', () => {
 		expect(getSpatialElementDockPresentationProgress(280, 280)).toBe(1);
 		expect(getSpatialElementDockPresentationProgress(400, 280)).toBe(1);
 		expect(getSpatialElementDockPresentationProgress(-20, 280)).toBe(0);
+		// A mobile rail far below the model must not fade or pull upward before docking.
+		for (const height of [80, 138]) {
+			expect(getSpatialElementDockPresentationProgress(400, 600 + height, 600)).toBe(0);
+			expect(getSpatialElementDockPresentationProgress(600, 600 + height, 600)).toBe(0);
+			expect(getSpatialElementDockPresentationProgress(600 + height / 2, 600 + height, 600)).toBe(0.5);
+			expect(getSpatialElementDockPresentationProgress(600 + height, 600 + height, 600)).toBe(1);
+		}
 	});
 
 	it('holds the dock across a small release hysteresis', () => {

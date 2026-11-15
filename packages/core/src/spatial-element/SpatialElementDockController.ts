@@ -341,7 +341,8 @@ export class SpatialElementDockController {
 
 		const presentationProgress = getSpatialElementDockPresentationProgress(
 			this.scrollY,
-			this.presentationEndScrollY
+			this.presentationEndScrollY,
+			this.breakpoint
 		);
 		const docked = getSpatialElementDockTarget(this.scrollY, this.breakpoint, this.docked);
 		const tabsDocked = getSpatialElementTabsDockTarget(
@@ -388,7 +389,7 @@ export class SpatialElementDockController {
 		// The fit square can extend above the viewport for large layouts. The live
 		// model follows this top edge through the same continuous dock morph,
 		// including its hover and sensor pose, instead of being clipped by it.
-		this.setMinimapModelTop(this.minimapViewportTop);
+		this.setMinimapModelTop(docked ? this.minimapViewportTop : undefined);
 		this.minimapFrame.setAttribute('data-stage-minimap-model-left', this.minimapViewportLeft.toFixed(3));
 		if (docked) this.updateDepartingContentClipping();
 		else if (changed) this.restoreDepartingContentClipping();

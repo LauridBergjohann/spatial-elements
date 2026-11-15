@@ -58,6 +58,12 @@
 				where appropriate, with local summary overflow rather than arbitrary global height
 				assumptions.
 			</p>
+			<p>
+				The standard summary uses container queries: from 500px of content width, highlights form
+				two columns and order details sit beside the action. From 900px, highlights occupy two
+				thirds of the panel and order details with the action occupy the remaining third. This gives
+				S and 3XL compact layouts while narrow side panels keep their vertical composition.
+			</p>
 			<table>
 				<thead>
 					<tr>
@@ -205,6 +211,14 @@
 				is absent at XS/S, 40px at M and 44px from L.
 			</p>
 			<p>
+				The header starts fading in when the minimap reaches its top dock and completes as the
+				original rail panel leaves the viewport. Until docking, the model stays in its rail panel.
+				Title and eyebrow remain visible at every size. Available header width determines whether
+				quantity and price fit: quantity disappears first, then price. XS reserves the space for
+				title, eyebrow and the 54px icon action. In 3XL, the eyebrow follows the title on the same
+				line.
+			</p>
+			<p>
 				The docked model's projected upper edge aligns with the viewport's safe top edge. Its fit
 				square may extend above the header, but its geometry does not get clipped there. Hover
 				enlargement and device rotation recompute this alignment from the live 3D pose; the model
@@ -240,6 +254,11 @@
 				The minimap is bottom-left at XS/S and top-left from M. Tools remain upper-right. Insets and
 				minimap sizes are layout-owned, so they must not be hard-coded by host CSS. Reduced motion
 				changes animation behavior without removing accessible controls.
+			</p>
+			<p>
+				At XS/S, zoom moves media thumbnails down with the summary without sideways perspective
+				drift or clipping at their original row. The minimap travels with its model to the zoom
+				position, while the breadcrumb moves upward with the clearing page chrome.
 			</p>
 			<p>
 				The <a href="/docs/advanced/reading-pane/">ultra-wide composition</a> uses a fixed media

@@ -209,11 +209,13 @@
 	style:--spatial-pane-blur={`${Math.min(100, Math.max(0, brand.panelTheme.backdropBlur ?? 5))}px`}
 >
 	<div class="spatial-element-pane-heading" data-spatial-detail-pane-header data-spatial-detail-fixed data-spatial-element-handoff-header>
-		<SpatialElementBreadcrumbs items={spatialElement.breadcrumbs} />
+		<SpatialElementBreadcrumbs items={spatialElement.breadcrumbs} focusReactive={!splitPane} />
 		<div class="spatial-element-pane-title-row">
+			<div class="spatial-element-pane-copy">
 			<p class="spatial-element-pane-title">{spatialElement.title}</p>
 			{#if spatialElement.eyebrow}<p class="spatial-element-pane-eyebrow">{spatialElement.eyebrow}</p>{/if}
-			{@render headerDetails?.()}
+			</div>
+			{#if headerDetails}<div class="spatial-element-pane-order">{@render headerDetails()}</div>{/if}
 			{#if spatialElement.action}
 				<button type="button" class="spatial-element-pane-action" data-spatial-element-dock-action onclick={invokePaneAction}
 					aria-label={spatialElement.action.ariaLabel ?? spatialElement.action.label}>

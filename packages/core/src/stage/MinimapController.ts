@@ -98,7 +98,7 @@ export interface MinimapPorts {
 		/** Shared model frame center, also used as the initial orbit target. */
 		center: THREE.Vector3;
 	};
-	frame(): { hovering: boolean; interacting: boolean; scrolling: boolean; fullscreen?: boolean };
+	frame(): { hovering: boolean; interacting: boolean; scrolling: boolean; fullscreen?: boolean; minimapFocus?: number };
 	environment(): THREE.RenderTarget | undefined;
 	capture(): { scale: number; sceneCapture: THREE.RenderTarget } | undefined;
 	blurTexture(options: LiquidGlassPanelOptions): THREE.Texture;
@@ -755,7 +755,9 @@ export class MinimapController {
 		minimap.displayModel.position.set(0, 0, modelZ);
 	}
 	alignMinimapModelToDockTop(minimap: StageMinimapState) {
-		if (this.ports.frame().fullscreen) return;
+		// Zoom moves the complete minimap panel. Never pull its model back toward
+		// the scroll dock while the panel is travelling to its zoom destination.
+		if (this.ports.frame().fullscreen || (this.ports.frame().minimapFocus ?? 0) > 0) return;
 		const targetTop = this.ports.target(minimap.panelIndex)?.getMinimapModelTop?.();
 		if (targetTop === undefined || !Number.isFinite(targetTop)) return;
 		const progress = THREE.MathUtils.clamp(this.ports.target(minimap.panelIndex)?.getMinimapDockProgress?.() ?? 1, 0, 1);

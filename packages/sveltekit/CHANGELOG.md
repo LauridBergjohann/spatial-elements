@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Adapt summary columns and compact headers to available space. Preserve title and eyebrow across layouts, contain 3XL header controls, begin the scroll reveal at minimap docking, and keep minimap geometry and mobile media aligned during scroll and zoom.
+
 - Show cancellable SpaceMouse search feedback and remember explicit disconnection across visits. Fade header actions and matched custom fields in only when their summary counterparts are fully covered, using projected screen bounds in both scrolling and 3XL layouts.
 - Updated dependencies
   - @spatial-elements/core@1.0.0-beta.12

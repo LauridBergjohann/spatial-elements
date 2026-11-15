@@ -97,6 +97,11 @@ export function getPanelFocusProgress(focus: number) {
 	return smoothstep(0.08, 0.96, focus);
 }
 
+/** Stacked detail content leaves as one row, without sideways perspective drift. */
+export function getStackedDetailFocusOffset(focus: number, viewportHeight: number) {
+	return { x: 0, y: -viewportHeight * 0.6 * getPanelFocusProgress(focus), z: 0 };
+}
+
 /** Returns panel opacity at a normalized stage UI focus level. */
 export function getPanelFocusOpacity(focus: number) {
 	return ScalarMath.lerp(1, PANEL_FOCUS_MIN_OPACITY, getPanelFocusProgress(focus));

@@ -88,6 +88,7 @@
 	<aside
 		bind:this={rail}
 		class="spatial-element-rail"
+		class:focused
 		data-spatial-element-media-rail
 		aria-label="Product media"
 	>
@@ -219,6 +220,11 @@
 
 	.spatial-element-rail::-webkit-scrollbar {
 		display: none;
+	}
+	@media (width < 840px) {
+		/* Let the row travel down with the summary; keep off-rail thumbnails
+		 * clipped horizontally while removing the stationary vertical cut-off. */
+		.spatial-element-rail.focused { overflow: visible; clip-path: inset(-100vh 0 -100vh 0); }
 	}
 
 	.spatial-element-media-anchor {
