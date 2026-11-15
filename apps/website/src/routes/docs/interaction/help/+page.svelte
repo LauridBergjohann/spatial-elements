@@ -177,10 +177,12 @@
 				needed. The touch scroll hint remains unchanged.
 			</p>
 			<p>
-				The SpaceMouse icon beside the 3D controls is available on Windows, macOS and Linux,
-				including touch-capable desktops. It is a platform hint, not hardware detection. Click it to
-				connect immediately; Chrome may ask for access to apps and services on this device. A
-				successful connection highlights the icon, changes its tooltip to <strong
+				The SpaceMouse icon beside the 3D controls is available on Windows, macOS and desktop Linux.
+				Android, iOS and ChromeOS are excluded. Linux with touch input is also excluded because
+				Android tablets can report that identity in desktop mode. Windows touch devices remain
+				supported. This is a platform hint, not hardware detection. Click it to connect immediately;
+				Chrome may ask for access to apps and services on this device. A successful connection
+				highlights the icon, changes its tooltip to <strong
 					>spacemouse is connected, click to disconnect</strong
 				>
 				and briefly shows a confirmation. Click again to disconnect, or once more to reconnect. While
@@ -277,14 +279,14 @@
 				the controls and summary's projected top-left corner move together, keeping their gap as the
 				panel grows and fades out past the upper-right viewport edge. The switch reaches its final
 				10px top/right inset inside the usable viewport, excluding the scrollbar, exactly when the
-				panels become transparent; help stays 8px to its left. The minimap starts expanding slightly
-				later but also reaches its final position and size at that same endpoint. No peripheral
-				movement continues after clearance. All poses read the same damped camera position and
-				reverse with zoom, without a separate animation or delay. On stacked layouts the controls
-				travel directly from the model column to the corner while the summary below follows its
-				ordinary exit path. They use the theme's panel surface, tint, blur, shadow and ink color.
-				Mouse hover uses the same 8% body-color highlight as the section submenu, without movement
-				or tilt. The help button's accessible name and native tooltip come from <code
+				panels become transparent. The minimap follows the same progress at XS/S and starts only
+				slightly later on larger layouts, reaching its final position at the same endpoint. No
+				peripheral movement continues after clearance. All poses read the same damped camera
+				position and reverse with zoom, without a separate animation or delay. On stacked layouts
+				the controls travel directly from the model column to the corner while the summary below
+				follows its ordinary exit path. They use the theme's panel surface, tint, blur, shadow and
+				ink color. Mouse hover uses the same 8% body-color highlight as the section submenu, without
+				movement or tilt. The help button's accessible name and native tooltip come from <code
 					>controls.help</code
 				>; the button contains no visible text.
 			</p>

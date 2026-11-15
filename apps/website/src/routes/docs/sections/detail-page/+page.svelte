@@ -212,11 +212,16 @@
 			</p>
 			<p>
 				The header starts fading in when the minimap reaches its top dock and completes as the
-				original rail panel leaves the viewport. Until docking, the model stays in its rail panel.
-				Title and eyebrow remain visible at every size. Available header width determines whether
-				quantity and price fit: quantity disappears first, then price. XS reserves the space for
-				title, eyebrow and the 54px icon action. In 3XL, the eyebrow follows the title on the same
-				line.
+				original rail panel leaves the viewport. The model begins turning toward its docked pose one
+				minimap height earlier, while its position still follows the rail panel until docking. Title
+				and eyebrow remain visible at every size. Available header width determines whether quantity
+				and price fit: quantity disappears first, then price. XS reserves the space for title,
+				eyebrow and the 54px icon action. In 3XL, the eyebrow follows the title on the same line.
+			</p>
+			<p>
+				The compact action fades in once the header covers more than half of the original action.
+				Other header fields appear when their originals are fully covered. The showcase uses a 54px
+				quantity input, with quantity and total labels available as tooltips and accessible names.
 			</p>
 			<p>
 				The docked model's projected upper edge aligns with the viewport's safe top edge. Its fit
@@ -258,7 +263,9 @@
 			<p>
 				At XS/S, zoom moves media thumbnails down with the summary without sideways perspective
 				drift or clipping at their original row. The minimap travels with its model to the zoom
-				position, while the breadcrumb moves upward with the clearing page chrome.
+				position on the same animation clock, without a delay. Larger layouts retain only a subtle
+				lead for the other panels. The breadcrumb follows the main menu's lower-left corner upward
+				and sideways as it clears the viewport.
 			</p>
 			<p>
 				The <a href="/docs/advanced/reading-pane/">ultra-wide composition</a> uses a fixed media

@@ -418,6 +418,40 @@ test('a page with no rear output never creates or switches to a carousel canvas'
 	f.restored(); f.originalTarget.dispose();
 });
 
+test('offscreen detail captures keep the model and reuse pixels until camera or appearance changes', () => {
+	const f = rendererFixture();
+	const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera();
+	const model = new THREE.Group(); scene.add(model); scene.updateMatrixWorld(true);
+	let visible = false;
+	const frame = () => ({ stageViewportVisible: visible, detailMediaActive: true, pageModelReady: true,
+		catalogHandoff: false, catalog: true, backgroundReveal: 1 });
+	const draw = vi.fn();
+	const pipeline = new StageRenderPipeline({ renderer: f.renderer, scene, camera, frame,
+		backgroundCanvasTarget: f.originalCanvas, backgroundScene: new THREE.Scene(), tintScene: new THREE.Scene(),
+		renderStage: draw, interactionTheme: () => DEFAULT_INTERACTION_THEME
+	} as unknown as StageRenderPorts);
+	const target = new THREE.RenderTarget(700, 900);
+	Object.assign(pipeline, { _activeRenderTargets: { sceneCapture: target, panelBlurCaptures: new Map() } });
+	vi.spyOn(pipeline, 'syncBackgroundOutputSize').mockImplementation(() => {});
+	vi.spyOn(pipeline, 'renderPanelBlurCaptures').mockImplementation(() => {});
+	vi.spyOn(pipeline, 'renderBackgroundOutput').mockImplementation(() => {});
+	vi.spyOn(pipeline, 'renderCarouselRear').mockImplementation(() => {});
+	vi.spyOn(pipeline, 'renderForegroundLayer').mockImplementation(() => {});
+	try {
+		pipeline.renderStageContents();
+		expect(f.renderer.render).toHaveBeenCalledWith(scene, camera);
+		pipeline.renderFrame(false, false); pipeline.renderFrame(false, false);
+		expect(draw).toHaveBeenCalledTimes(1);
+		camera.position.x = 1; camera.updateMatrixWorld(true);
+		pipeline.renderFrame(false, false); expect(draw).toHaveBeenCalledTimes(2);
+		pipeline.setPageBackground('#333333');
+		pipeline.renderFrame(false, false); expect(draw).toHaveBeenCalledTimes(3);
+		visible = true;
+		pipeline.renderFrame(false, false); pipeline.renderFrame(false, false);
+		expect(draw).toHaveBeenCalledTimes(5);
+	} finally { target.dispose(); }
+});
+
 function rendererFixture() {
 	const originalCanvas = {} as THREE.CanvasTarget;
 	const originalTarget = new THREE.RenderTarget(5, 7);

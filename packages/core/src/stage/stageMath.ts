@@ -77,15 +77,10 @@ export function getMinimapFocus(focus: number) {
 	return smoothstep(0.12, 1, getPanelFocusProgress(getStageUiFocus(focus)));
 }
 
-/**
- * Gates minimap expansion behind the UI-clearance phase.
- *
- * Both values originate from the same smoothed camera focus. The gate retains the
- * intentional lead of ordinary content without adding another temporal lag.
- */
-export function getSequencedMinimapFocus(focus: number, uiFocus: number) {
-	const clearance = smoothstep(0.14, 0.46, uiFocus);
-	return getMinimapFocus(focus) * clearance;
+/** Small layouts share the UI clock exactly; larger layouts retain a subtle lead. */
+export function getSequencedMinimapFocus(_focus: number, uiFocus: number, viewportWidth = 840) {
+ const progress = getPanelFocusProgress(uiFocus);
+ return viewportWidth < 840 ? progress : smoothstep(0.025, 1, progress);
 }
 
 /**

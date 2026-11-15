@@ -64,6 +64,9 @@ if (process.env.SPATIAL_GPU) for (const width of [320, 390, 600, 760, 840, 1200,
 			return;
 		}
 		await expect(quantity).toBeVisible();
+		await expect(quantity).toHaveCSS('height', '54px');
+		await expect(quantity).toHaveAttribute('title', 'Quantity');
+		await expect(header.locator('output')).toHaveAttribute('title', 'Example total');
 		await expect(quantity).toHaveValue('3');
 		await expect(header.locator('output')).toHaveText('€387.00');
 		await quantity.fill('4');
@@ -99,14 +102,14 @@ if (process.env.SPATIAL_GPU) for (const width of [390, 1700, 2400]) {
 			const targetSelector = key === 'primary-action' ? '[data-spatial-element-dock-action]' : sourceSelector;
 			const target = header.locator(targetSelector);
 			for (const offset of [-4, 4, -4]) {
-				await page.evaluate(({ headerSelector, sourceSelector, offset }) => {
+				await page.evaluate(({ headerSelector, sourceSelector, offset, key }) => {
 					const source = document.querySelector(`.summary-presentation ${sourceSelector}`)!;
 					const header = document.querySelector(headerSelector)!;
-					window.scrollTo({ top: scrollY + source.getBoundingClientRect().bottom - header.getBoundingClientRect().bottom + offset, behavior: 'instant' });
-				}, { headerSelector, sourceSelector, offset });
-				await expect.poll(() => page.evaluate(({ headerSelector, sourceSelector }) =>
-					Math.round(document.querySelector(`.summary-presentation ${sourceSelector}`)!.getBoundingClientRect().bottom - document.querySelector(headerSelector)!.getBoundingClientRect().bottom),
-				{ headerSelector, sourceSelector })).toBe(-offset);
+					window.scrollTo({ top: scrollY + source.getBoundingClientRect().bottom - (key === 'primary-action' ? source.getBoundingClientRect().height / 2 : 0) - header.getBoundingClientRect().bottom + offset, behavior: 'instant' });
+				}, { headerSelector, sourceSelector, offset, key });
+				await expect.poll(() => page.evaluate(({ headerSelector, sourceSelector, key }) =>
+					Math.round(document.querySelector(`.summary-presentation ${sourceSelector}`)!.getBoundingClientRect().bottom - (key === 'primary-action' ? document.querySelector(`.summary-presentation ${sourceSelector}`)!.getBoundingClientRect().height / 2 : 0) - document.querySelector(headerSelector)!.getBoundingClientRect().bottom),
+				{ headerSelector, sourceSelector, key })).toBe(-offset);
 				if (offset > 0) {
 					await expect(target).toHaveAttribute('data-header-field-visible', '');
 					await expect(target).toHaveCSS('opacity', '1');

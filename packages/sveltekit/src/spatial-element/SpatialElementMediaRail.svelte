@@ -63,13 +63,15 @@
 	});
 	onMount(() => {
 		const element = rail!;
-		const minimapFrame = element.querySelector<HTMLElement>('[data-spatial-element-dock-minimap-anchor] .stage-panel-fallback');
-		const updateDock = () => { minimapDocked = Number(minimapFrame?.dataset.stageMinimapDockProgress ?? 0) > 0; };
+		const root = element.closest('[data-spatial-element-root]');
+		const updateDock = () => { minimapDocked = root?.hasAttribute('data-spatial-element-dock-active') ?? false; };
 		window.addEventListener(STAGE_PANEL_VISUAL_EVENT, updateDock);
+		window.addEventListener(STAGE_PANEL_LAYOUT_EVENT, updateDock);
 		updateDock();
 		element.addEventListener('scroll', refreshProjection, { passive: true });
 		return () => {
 			window.removeEventListener(STAGE_PANEL_VISUAL_EVENT, updateDock);
+			window.removeEventListener(STAGE_PANEL_LAYOUT_EVENT, updateDock);
 			element.removeEventListener('scroll', refreshProjection);
 			cancelAnimationFrame(refreshFrame);
 		};

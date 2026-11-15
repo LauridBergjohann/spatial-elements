@@ -73,9 +73,11 @@ export class SpatialElementHeaderFields {
 				const source = sources.get(key);
 				const rect = bounds.get(key);
 				const sourceRect = rect?.height ? rect : summaryRect;
-				const visible = active && headerRect.height > 0 && Boolean(source && sourceRect && sourceRect.height > 0 && sourceRect.bottom <= headerRect.bottom);
+				const visible = active && headerRect.height > 0 && Boolean(source && sourceRect && sourceRect.height > 0 && (key === 'primary-action' && rect?.height
+					? sourceRect.top + sourceRect.height / 2 < headerRect.bottom
+					: sourceRect.bottom <= headerRect.bottom));
 				updates.push({ target, visible });
-				if (visible && source) covered.add(source);
+				if (active && source && sourceRect && sourceRect.bottom <= headerRect.bottom) covered.add(source);
 			}
 		}
 		for (const { target, visible } of updates) {

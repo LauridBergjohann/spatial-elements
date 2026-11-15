@@ -84,6 +84,7 @@ export class SpatialElementDockController {
 	private stickyHeaderBottom = 0;
 	private breakpoint = 0;
 	private presentationEndScrollY = 0;
+	private minimapAnimationStart = 0;
 	private tabsBreakpoint = Number.POSITIVE_INFINITY;
 	private tabsPanelRadius = 12;
 	private tabsDockProgress = -1;
@@ -310,6 +311,7 @@ export class SpatialElementDockController {
 			this.minimapDock.top
 		);
 		this.presentationEndScrollY = Math.max(minimapPageTop + minimapRect.height, 0);
+		this.minimapAnimationStart = this.breakpoint - minimapRect.height;
 		this.stickyHeader.style.setProperty('--spatial-element-sticky-minimap-reserve', `${geometry.titleReserve}px`);
 		this.root.style.setProperty('--spatial-element-section-scroll-offset', `${geometry.sectionOffset}px`);
 
@@ -351,7 +353,8 @@ export class SpatialElementDockController {
 			docked,
 			this.tabsDocked
 		);
-		this.applyMinimapPresentation(presentationProgress);
+		const minimapProgress = getSpatialElementDockPresentationProgress(this.scrollY, this.presentationEndScrollY, this.minimapAnimationStart);
+		this.applyMinimapPresentation(minimapProgress, presentationProgress);
 		this.applyHeaderPresentation(presentationProgress);
 		this.applyState(docked);
 		this.applyTabsPresentation(tabsDocked);
@@ -426,9 +429,9 @@ export class SpatialElementDockController {
 		this.stickyTabs.setAttribute('data-spatial-element-tabs-dock-progress', progress.toFixed(3));
 	}
 
-	private applyMinimapPresentation(progress: number) {
+	private applyMinimapPresentation(progress: number, surfaceProgress = progress) {
 		const clampedProgress = Math.min(Math.max(progress, 0), 1);
-		this.setMinimapSurfaceOpacity(1 - clampedProgress);
+		this.setMinimapSurfaceOpacity(1 - Math.min(Math.max(surfaceProgress, 0), 1));
 		this.setMinimapModelScale(1 + (this.dockedMinimapModelScale - 1) * clampedProgress);
 		this.setMinimapDockProgress(clampedProgress);
 	}

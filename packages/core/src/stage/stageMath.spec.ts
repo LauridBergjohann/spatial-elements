@@ -20,6 +20,7 @@ import {
 	getPanelFocusOffset,
 	getPanelFocusPerspectiveOffset,
 	getPanelFocusOpacity,
+	getPanelFocusProgress,
 	getPanelPointerInfluence,
 	getPanelPointerProximity,
 	getPanelPointerRotation,
@@ -332,14 +333,16 @@ describe('stage math', () => {
 		}
 	});
 
-	it('gates minimap expansion behind animated UI clearance', () => {
-		expect(getSequencedMinimapFocus(0.5, 0.1)).toBe(0);
-		expect(getSequencedMinimapFocus(0.5, 0.3)).toBeGreaterThan(0);
-		expect(getSequencedMinimapFocus(0.5, 0.3)).toBeLessThan(getMinimapFocus(0.5));
-		expect(getSequencedMinimapFocus(0.6, getStageUiFocus(0.6))).toBeLessThan(1);
-		expect(getSequencedMinimapFocus(0.78, getStageUiFocus(0.78))).toBe(1);
-		expect(getSequencedMinimapFocus(1, 1)).toBe(1);
-	});
+	it('synchronizes mobile minimaps and leaves only a small desktop lead', () => {
+  for (let step = 0; step <= 100; step++) {
+   const focus = step / 100, ui = getStageUiFocus(focus), progress = getPanelFocusProgress(ui);
+   expect(getSequencedMinimapFocus(focus, ui, 700)).toBe(progress);
+   const desktop = getSequencedMinimapFocus(focus, ui, 1700);
+   expect(Math.abs(desktop - progress)).toBeLessThan(0.12);
+  }
+  expect(getSequencedMinimapFocus(0, 0)).toBe(0);
+  expect(getSequencedMinimapFocus(1, 1)).toBe(1);
+ });
 
 	it('pins only the fully focused minimap to the requested viewport inset', () => {
 		const basePosition = { x: -608, y: 278 };

@@ -326,6 +326,7 @@
 		background: transparent;
 		pointer-events: none;
 	}
+	@media (width < 840px) { .spatial-element-content { padding-top: 12px; } }
 	@media (min-width: 840px) {
 		.spatial-element-hero { height: var(--spatial-detail-fit-height); }
 		.spatial-element-content { padding-top: 8px; }

@@ -37,9 +37,13 @@ if (process.env.SPATIAL_GPU) for (const width of [390, 700]) test(`Minimap stays
 		expect(Math.abs(current.relativeY - start.relativeY)).toBeLessThan(0.02);
 	}
 	const header = page.locator('[data-spatial-element-sticky-header]');
+ await page.evaluate(y => window.scrollTo({ top: y, behavior: 'instant' }), start.panel.y - 40);
+ await expect.poll(async () => (await read()).progress).toBeGreaterThan(0.1);
+ await expect.poll(async () => (await read()).progress).toBeLessThan(0.4);
+ await expect(header).toHaveAttribute('data-spatial-element-dock-progress', '0.000');
 	await page.evaluate(y => window.scrollTo({ top: y, behavior: 'instant' }), start.panel.y + 40);
-	await expect.poll(async () => (await read()).progress).toBeGreaterThan(0.3);
-	await expect.poll(async () => (await read()).progress).toBeLessThan(0.7);
+	await expect.poll(async () => (await read()).progress).toBeGreaterThan(0.7);
+	await expect.poll(async () => (await read()).progress).toBeLessThan(0.9);
 	await page.evaluate(y => window.scrollTo({ top: y, behavior: 'instant' }), start.panel.y + 80);
 	await expect.poll(async () => (await read()).progress).toBe(1);
 	await expect(header.locator('.sticky-header-kicker')).toBeVisible();

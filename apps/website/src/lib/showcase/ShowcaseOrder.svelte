@@ -22,8 +22,9 @@
 
 <div class="demo-order" class:compact>
 	<label data-spatial-element-header-field="quantity">
-		<span>Quantity</span>
+		<span class:visually-hidden={compact}>Quantity</span>
 		<input
+			title={compact ? 'Quantity' : undefined}
 			type="number"
 			min="1"
 			max="99"
@@ -32,7 +33,10 @@
 		/>
 	</label>
 	<div class="demo-price" data-spatial-element-header-field="price">
-		<span>Example total</span><output aria-live="polite">{total}</output>
+		<span class:visually-hidden={compact}>Example total</span><output
+			title={compact ? 'Example total' : undefined}
+			aria-live="polite">{total}</output
+		>
 	</div>
 </div>
 {#if !compact}<p class="demo-notice">Illustrative price only. Not for sale on this website.</p>{/if}
@@ -91,12 +95,21 @@
 		line-height: 16px;
 	}
 	.compact input {
-		height: 34px;
-		width: 64px;
+		height: 54px;
+		width: 76px;
 		padding: 4px 6px;
 	}
 	.compact output {
 		font-size: 18px;
-		line-height: 34px;
+		line-height: 54px;
+	}
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
 	}
 </style>
