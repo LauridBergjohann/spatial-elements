@@ -42,7 +42,8 @@ for (const javaScriptEnabled of [false, true]) {
 			await expect.poll(async () => (await menu.boundingBox())!.y).toBeCloseTo(16, 0);
 			await expect.poll(async () => (await satellite.boundingBox())!.y).toBeCloseTo(28, 0);
 			const breadcrumb = page.getByRole('navigation', { name: 'Breadcrumb' });
-			await expect(breadcrumb).toHaveCSS('height', '40px');
+			// The 3XL pane heading reserves a compact 24px breadcrumb row.
+			await expect(breadcrumb).toHaveCSS('height', '24px');
 			await expect(breadcrumb.locator('[aria-current="page"]')).toBeHidden();
 		} finally { await context.close(); }
 	});
