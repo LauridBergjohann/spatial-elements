@@ -220,17 +220,15 @@
 			</p>
 			<p>
 				The compact action fades in once the header covers more than half of the original action.
-				Other header fields appear when their originals are fully covered. The showcase uses a 54px
+				Other header fields appear when their originals are fully covered. The showcase uses a 42px
 				quantity input, with quantity and total labels available as tooltips and accessible names.
 			</p>
 			<p>
-				The docked model's projected upper edge aligns with the viewport's safe top edge. Its fit
-				square may extend above the header, but its geometry does not get clipped there. Hover
-				enlargement and device rotation recompute this alignment from the live 3D pose; the model
-				grows downward. If enlargement reaches beyond the safe left edge, only the necessary
-				horizontal correction is applied, without reducing the model or its hover motion. The
-				correction blends into the normal scroll morph, and the prepared navigation endpoint uses
-				the same geometry.
+				The docked model is vertically centered in the header, excluding the submenu. If its
+				projected height exceeds the available space above that center, its top aligns with the safe
+				viewport edge instead. Hover and device rotation recompute the visible silhouette:
+				enlargement moves down and right as needed to avoid clipping. Prepared navigation endpoints
+				use the same geometry.
 			</p>
 			<p>
 				There is exactly one live section-navigation element. Its ownership moves from the source

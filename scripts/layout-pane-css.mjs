@@ -71,9 +71,9 @@ export function paneRules(tokens) {
 		box-shadow: 0 4px 10px rgb(0 0 0 / 0.08);
 		transform: translateY(var(--spatial-pane-fixed-compensation, 0px));
 	}
-	${root} .spatial-element-pane-title-row { display: flex; align-items: center; gap: 16px; height: ${pane.headerHeight - 32}px; padding-inline: 16px; }
+	${root} .spatial-element-pane-title-row { display: flex; align-items: center; gap: 16px; height: 100%; margin-top: -24px; padding-inline: 16px; }
 	${root} .spatial-element-pane-heading .breadcrumbs { width: 100%; height: 24px; --ps-breadcrumb-height: 24px; padding-inline: 16px; }
-	${root} .spatial-element-pane-copy { display: flex; align-items: baseline; gap: 8px; min-width: 0; flex: 1; }
+	${root} .spatial-element-pane-copy { padding-top: 24px; display: flex; align-items: baseline; gap: 8px; min-width: 0; flex: 1; }
 	${root} .spatial-element-pane-order { flex: none; }
 	${root} .spatial-element-pane-title { min-width: 0; flex: 0 1 auto; margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 	${root} .spatial-element-pane-eyebrow { min-width: 0; overflow: hidden; text-overflow: ellipsis; margin: 0; font-size: 14px; line-height: 20px; white-space: nowrap; }

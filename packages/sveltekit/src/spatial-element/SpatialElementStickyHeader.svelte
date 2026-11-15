@@ -153,7 +153,7 @@
 		width: 100%;
 		height: var(--spatial-detail-dock-height);
 		border: 0;
-		border-radius: var(--spatial-element-panel-radius);
+		border-radius: 0;
 		visibility: hidden;
 		background: transparent;
 		box-shadow: none;
@@ -320,6 +320,9 @@
 		cursor: pointer;
 	}
 
+	@media (1600px <= width < 2300px) {
+		.spatial-element-sticky-header { border-radius: 0 0 var(--spatial-element-panel-radius) var(--spatial-element-panel-radius); }
+	}
 	@media (width < 840px) {
 		.sticky-header-layout {
 			gap: 8px;

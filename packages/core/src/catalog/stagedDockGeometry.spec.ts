@@ -36,7 +36,9 @@ test.each([
 	expect((center.x + 1) * width / 2).toBeCloseTo(x + size / 2, 10);
 	const top = Math.min(...corners(baseInput().lowBounds).map(point =>
 		(1 - point.applyMatrix4(descriptor.model.matrixWorld).project(descriptor.camera).y) * height / 2));
-	expect(top).toBeCloseTo(0, 10);
+	const bottom = Math.max(...corners(baseInput().lowBounds).map(point =>
+		(1 - point.applyMatrix4(descriptor.model.matrixWorld).project(descriptor.camera).y) * height / 2));
+	expect(top).toBeCloseTo(Math.max(0, (descriptor.framing.dock.surface.height - (bottom - top)) / 2), 3);
 	expect(descriptor.model.children).toHaveLength(0);
 	expect(descriptor.camera.near).toBeGreaterThan(0);
 	expect(descriptor.camera.far).toBeGreaterThan(descriptor.camera.near);
@@ -129,7 +131,7 @@ test.each(parityCases)('CPU descriptor equals mounted minimap matrices and proje
 		renderer: { coordinateSystem: panelCamera.coordinateSystem } as THREE.WebGPURenderer,
 		camera, panelCamera, panelScene: new THREE.Scene(), panel: () => panel,
 		target: () => ({ getMinimapDockProgress: () => progress, getMinimapModelScale: () => presentationScale,
-			getMinimapModelTop: () => dock.header.top, getMinimapModelLeft: () => input.layout.safeArea?.left ?? 0 } as StagePanelTarget),
+			getMinimapModelCenterY: () => dock.header.top + dock.header.height / 2, getMinimapModelTop: () => dock.header.top, getMinimapModelLeft: () => input.layout.safeArea?.left ?? 0 } as StagePanelTarget),
 		sensorRotation: () => sensor,
 		spatialElement: () => ({ model: low, low, camera: input.camera, restCamera: camera.quaternion,
 			restModel, hasControls: false, center: input.center }),
@@ -160,7 +162,8 @@ test.each(parityCases)('CPU descriptor equals mounted minimap matrices and proje
 			view.layer.rotation.set(-0.04 * hover, 0.03 * hover, -0.02 * hover);
 			owner.updateMinimapDisplayModel(view, dock.minimap.width, dock.minimap.height, 0);
 			owner.syncMinimapProjection(view, dock.minimap.width, dock.minimap.height);
-			expect(owner.getProjectedMinimapModelRect(view)!.y).toBeCloseTo(dock.header.top, 7);
+			const rect = owner.getProjectedMinimapModelRect(view)!;
+			expect(rect.y).toBeCloseTo(Math.max(dock.header.top, dock.header.top + (dock.header.height - rect.height) / 2), 4);
 			expect(owner.getProjectedMinimapModelRect(view)!.x).toBeGreaterThanOrEqual((input.layout.safeArea?.left ?? 0) - 0.000001);
 		}
 		// Leaving the rail starts continuously; small progress makes a small change.

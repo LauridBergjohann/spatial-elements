@@ -53,7 +53,7 @@ import {
 } from './stageMath.js';
 import {
 	getMinimapDockedQuaternion, getMinimapModelFitScale, getMinimapModelRadius, getMinimapRestQuaternion,
-	getMinimapTopAlignmentOffset, getMinimapLeftAlignmentOffset
+	getMinimapTopAlignmentOffset, getMinimapDockAlignmentOffset, getMinimapLeftAlignmentOffset
 } from './minimap/MinimapModelGeometry.js';
 import {
 	addMinimapBlurLights,
@@ -766,9 +766,14 @@ export class MinimapController {
 		if (!projected) return;
 		// Blend from the ordinary rail pose throughout the existing scroll morph.
 		// Once the model reaches the viewport edge, do not let any corner cross it.
-		const top = Math.max(targetTop, THREE.MathUtils.lerp(projected.y, targetTop, progress));
-		minimap.displayModel.position.y += getMinimapTopAlignmentOffset(minimap.modelBoundsPoints,
-			minimap.displayModel.matrixWorld, minimap.screenCamera, window.innerHeight, top, minimap.layer.matrixWorld);
+		const centerY = this.ports.target(minimap.panelIndex)?.getMinimapModelCenterY?.() ?? targetTop;
+		minimap.displayModel.position.y += getMinimapDockAlignmentOffset(minimap.modelBoundsPoints,
+			minimap.displayModel.matrixWorld, minimap.screenCamera, window.innerHeight, targetTop, centerY, minimap.layer.matrixWorld) * progress;
+		minimap.displayModel.updateWorldMatrix(true, true);
+		if ((this.getProjectedMinimapModelRect(minimap)?.y ?? targetTop) < targetTop) {
+			minimap.displayModel.position.y += getMinimapTopAlignmentOffset(minimap.modelBoundsPoints,
+				minimap.displayModel.matrixWorld, minimap.screenCamera, window.innerHeight, targetTop, minimap.layer.matrixWorld);
+		}
 		minimap.displayModel.updateWorldMatrix(true, true);
 		const safeLeft = this.ports.target(minimap.panelIndex)?.getMinimapModelLeft?.() ?? 0;
 		const shift = getMinimapLeftAlignmentOffset(minimap.modelBoundsPoints, minimap.displayModel.matrixWorld,

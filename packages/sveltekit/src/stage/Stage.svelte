@@ -901,6 +901,7 @@
 				getMinimapDockProgress: panel.getMinimapDockProgress,
 				getMinimapModelScale: panel.getMinimapModelScale,
 				getMinimapModelTop: panel.getMinimapModelTop,
+				getMinimapModelCenterY: panel.getMinimapModelCenterY,
 				getMinimapModelLeft: panel.getMinimapModelLeft,
 				getSurfaceOpacity: panel.getSurfaceOpacity,
 				getVisible: panel.getVisible,

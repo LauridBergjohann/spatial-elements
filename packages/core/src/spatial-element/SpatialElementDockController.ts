@@ -548,6 +548,8 @@ export class SpatialElementDockController {
 
 	private setMinimapModelTop(top: number | undefined) {
 		if (!this.minimapFrame) return;
+		if (top === undefined) this.minimapFrame.removeAttribute("data-stage-minimap-model-center-y");
+		else this.minimapFrame.setAttribute("data-stage-minimap-model-center-y", ((top + this.stickyHeaderBottom) / 2).toFixed(3));
 		const nextValue = top === undefined ? null : top.toFixed(3);
 		const changed = this.minimapFrame.getAttribute('data-stage-minimap-model-top') !== nextValue;
 		if (nextValue === null) this.minimapFrame.removeAttribute('data-stage-minimap-model-top');
@@ -557,6 +559,7 @@ export class SpatialElementDockController {
 
 	private restoreMinimapModelTop() {
 		if (!this.minimapFrame) return;
+		this.minimapFrame.removeAttribute("data-stage-minimap-model-center-y");
 		if (this.minimapOriginalModelTop === null) {
 			this.minimapFrame.removeAttribute('data-stage-minimap-model-top');
 		} else {

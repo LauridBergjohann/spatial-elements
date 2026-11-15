@@ -64,9 +64,9 @@
  .spatial-summary-surface[hidden] { display: none; }
  :global([data-carousel-glass-ready]) .spatial-summary-surface,
  :global([data-spatial-presentation-glass]) .spatial-summary-surface { visibility: hidden; }
- .compact-copy { position: relative; padding-right: 44px; }
+ .compact-copy { position: relative; box-sizing: border-box; padding: 8px 52px 8px 12px; }
  .compact-copy p { height: 26px; margin: 0; font-size: 12px; line-height: 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
- .compact-copy h3 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; height: 40px; margin: 0; overflow: hidden; font-size: 18px; line-height: 20px; }
+ .compact-copy h3 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 1; height: 24px; margin: 0; overflow: hidden; font-size: 18px; line-height: 24px; }
  .full-summary, .section-information { display: none; }
  .information { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 40px; height: 40px; margin: 0; color: var(--spatial-element-accent); pointer-events: auto; }
  .information svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

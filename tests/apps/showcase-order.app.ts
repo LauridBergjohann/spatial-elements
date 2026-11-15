@@ -64,7 +64,7 @@ if (process.env.SPATIAL_GPU) for (const width of [320, 390, 600, 760, 840, 1200,
 			return;
 		}
 		await expect(quantity).toBeVisible();
-		await expect(quantity).toHaveCSS('height', '54px');
+		await expect(quantity).toHaveCSS('height', '42px');
 		await expect(quantity).toHaveAttribute('title', 'Quantity');
 		await expect(header.locator('output')).toHaveAttribute('title', 'Example total');
 		await expect(quantity).toHaveValue('3');
@@ -77,6 +77,7 @@ if (process.env.SPATIAL_GPU) for (const width of [320, 390, 600, 760, 840, 1200,
 		const headerBox = (await header.boundingBox())!;
 		for (const locator of [quantity, header.locator('output'), header.locator('.sticky-header-action, .spatial-element-pane-action')]) {
 			const box = (await locator.boundingBox())!;
+			expect(Math.abs(box.y + box.height / 2 - (headerBox.y + headerBox.height / 2))).toBeLessThanOrEqual(0.5);
 			expect(box.y).toBeGreaterThanOrEqual(headerBox.y);
 			expect(box.y + box.height).toBeLessThanOrEqual(headerBox.y + headerBox.height);
 			expect(box.x).toBeGreaterThanOrEqual(headerBox.x);

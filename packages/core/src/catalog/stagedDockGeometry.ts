@@ -8,7 +8,7 @@ import { getBoxCorners, getCameraOrbitQuaternion, getPerspectiveDistance } from 
 import { getMinimapDepthRange } from '../stage/minimap/MinimapProjection.js';
 import {
 	getMinimapDockedQuaternion, getMinimapModelFitScale, getMinimapModelRadius, getMinimapRestQuaternion,
-	getMinimapTopAlignmentOffset, getMinimapLeftAlignmentOffset
+	getMinimapDockAlignmentOffset, getMinimapLeftAlignmentOffset
 } from '../stage/minimap/MinimapModelGeometry.js';
 
 /** Explicit route contract; a hash alone never creates this intent. */
@@ -89,8 +89,8 @@ export function createStagedDockGeometry(input: StagedDockGeometryInput) {
 	model.matrixAutoUpdate = false;
 	model.matrix.compose(panelCenter.clone().setZ(MINIMAP_PANEL_Z), quaternion, new THREE.Vector3(scale, scale, scale))
 		.multiply(new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z));
-	model.matrix.elements[13] += getMinimapTopAlignmentOffset(input.lowBoundsPoints ?? getBoxCorners(lowBounds),
-		model.matrix, camera, viewport.height, dock.surface.y);
+	model.matrix.elements[13] += getMinimapDockAlignmentOffset(input.lowBoundsPoints ?? getBoxCorners(lowBounds),
+		model.matrix, camera, viewport.height, dock.surface.y, dock.surface.y + dock.surface.height / 2);
 	const safeLeft = Math.max(Number.isFinite(input.layout.safeArea?.left) ? input.layout.safeArea!.left! : 0, 0);
 	const shift = getMinimapLeftAlignmentOffset(input.lowBoundsPoints ?? getBoxCorners(lowBounds),
 		model.matrix, camera, viewport.width, safeLeft);

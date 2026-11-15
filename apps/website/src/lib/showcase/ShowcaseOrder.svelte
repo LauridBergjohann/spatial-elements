@@ -87,6 +87,7 @@
 	}
 	.compact {
 		gap: 12px;
+		align-items: center;
 	}
 	.compact label,
 	.compact .demo-price {
@@ -95,7 +96,7 @@
 		line-height: 16px;
 	}
 	.compact input {
-		height: 54px;
+		height: 42px;
 		width: 76px;
 		padding: 4px 6px;
 	}
