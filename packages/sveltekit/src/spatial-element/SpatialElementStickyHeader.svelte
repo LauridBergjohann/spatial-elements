@@ -28,6 +28,7 @@
 <header
 	class="spatial-element-sticky-header"
 	data-spatial-element-sticky-header
+	data-spatial-element-handoff-header
 	data-catalog-transition-dom="enter"
 	aria-label="Current element"
 	aria-hidden="true"
@@ -306,7 +307,6 @@
 	}
 
 	.sticky-header-action {
-		visibility: hidden;
 		display: grid;
 		place-items: center;
 		width: 54px;
@@ -319,7 +319,6 @@
 		text-decoration: none;
 		cursor: pointer;
 	}
-	.spatial-element-sticky-header:global([data-action-active]) .sticky-header-action { visibility: visible; }
 
 	@media (width < 840px) {
 		.sticky-header-content.has-details { display: grid; gap: 2px; }

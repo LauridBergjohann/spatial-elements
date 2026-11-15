@@ -24,27 +24,36 @@
 	let toast: HTMLDivElement;
 	let failure = $state<'permission-required' | 'unavailable'>('unavailable');
 	let requested = $state(false);
+	let toastMessage = $state('');
 	let toastTimer: ReturnType<typeof setTimeout> | undefined;
+	function showToast(message: string) {
+		toastMessage = message;
+		toast.showPopover();
+		clearTimeout(toastTimer);
+		toastTimer = setTimeout(() => toast.hidePopover(), 3500);
+	}
 
 	function connect() {
 		dialog.close();
+		toast.hidePopover();
+		clearTimeout(toastTimer);
 		requested = true;
 		stage.setSpaceMouseEnabled?.(true);
 	}
 	function toggle() {
 		if (connected || connecting) {
+			const cancelled = connecting;
 			requested = false;
 			toast.hidePopover();
 			stage.setSpaceMouseEnabled?.(false);
+			if (cancelled) showToast(copy.spaceMouseCancelled);
 		} else connect();
 	}
 	$effect(() => {
 		if (!requested) return;
 		if (connectionState === 'connected') {
 			requested = false;
-			toast.showPopover();
-			clearTimeout(toastTimer);
-			toastTimer = setTimeout(() => toast.hidePopover(), 3500);
+			showToast(copy.spaceMouseReady);
 		} else if (connectionState === 'permission-required' || connectionState === 'unavailable') {
 			requested = false;
 			failure = connectionState;
@@ -101,7 +110,7 @@
 	</div>
 </dialog>
 <div bind:this={toast} popover="manual" role="status" class="connection-toast">
-	{copy.spaceMouseReady}
+	{toastMessage}
 </div>
 
 <style>

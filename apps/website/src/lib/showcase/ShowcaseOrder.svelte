@@ -21,7 +21,7 @@
 </script>
 
 <div class="demo-order" class:compact>
-	<label>
+	<label data-spatial-element-header-field="quantity">
 		<span>Quantity</span>
 		<input
 			type="number"
@@ -31,7 +31,7 @@
 			bind:value={() => orders.get(product.id), (value) => orders.set(product.id, value)}
 		/>
 	</label>
-	<div class="demo-price">
+	<div class="demo-price" data-spatial-element-header-field="price">
 		<span>Example total</span><output aria-live="polite">{total}</output>
 	</div>
 </div>

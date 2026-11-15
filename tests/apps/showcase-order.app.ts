@@ -72,3 +72,40 @@ if (process.env.SPATIAL_GPU) for (const width of [320, 390, 1700, 2400]) {
 		expect(errors).toEqual([]);
 	});
 }
+
+if (process.env.SPATIAL_GPU) for (const width of [390, 1700, 2400]) {
+	test(`Header fields fade in only once covered at ${width}px`, async ({ page }) => {
+		await page.setViewportSize({ width, height: 900 });
+		await page.goto('/showcase/consumer/logitech-z407/');
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+		const headerSelector = width >= 2300 ? '[data-spatial-detail-pane-header]' : '[data-spatial-element-sticky-header]';
+		const header = page.locator(headerSelector);
+		for (const key of ['quantity', 'price', 'primary-action']) {
+			const sourceSelector = key === 'primary-action' ? '[data-catalog-rich-shared="primary-action"]' : `[data-spatial-element-header-field="${key}"]`;
+			const targetSelector = key === 'primary-action' ? '[data-spatial-element-dock-action]' : sourceSelector;
+			const target = header.locator(targetSelector);
+			for (const offset of [-4, 4, -4]) {
+				await page.evaluate(({ headerSelector, sourceSelector, offset }) => {
+					const source = document.querySelector(`.summary-presentation ${sourceSelector}`)!;
+					const header = document.querySelector(headerSelector)!;
+					window.scrollTo({ top: scrollY + source.getBoundingClientRect().bottom - header.getBoundingClientRect().bottom + offset, behavior: 'instant' });
+				}, { headerSelector, sourceSelector, offset });
+				await expect.poll(() => page.evaluate(({ headerSelector, sourceSelector }) =>
+					Math.round(document.querySelector(`.summary-presentation ${sourceSelector}`)!.getBoundingClientRect().bottom - document.querySelector(headerSelector)!.getBoundingClientRect().bottom),
+				{ headerSelector, sourceSelector })).toBe(-offset);
+				if (offset > 0) {
+					await expect(target).toHaveAttribute('data-header-field-visible', '');
+					await expect(target).toHaveCSS('opacity', '1');
+					await expect(target).not.toHaveAttribute('inert');
+				} else {
+					await expect(target).not.toHaveAttribute('data-header-field-visible');
+					await expect(target).toHaveCSS('opacity', '0');
+					await expect(target).toHaveAttribute('inert', '');
+				}
+			}
+			await expect(target).toHaveCSS('transition-duration', '0.18s, 0.18s, 0s');
+		}
+		await page.emulateMedia({ reducedMotion: 'reduce' });
+		await expect(header.locator('[data-spatial-element-header-field="quantity"]')).toHaveCSS('transition-duration', '0s');
+	});
+}

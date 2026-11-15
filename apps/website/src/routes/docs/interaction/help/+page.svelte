@@ -183,7 +183,9 @@
 				successful connection highlights the icon, changes its tooltip to <strong
 					>spacemouse is connected, click to disconnect</strong
 				>
-				and briefly shows a confirmation. Click again to disconnect, or once more to reconnect.
+				and briefly shows a confirmation. Click again to disconnect, or once more to reconnect. While
+				searching, the icon pulses and its tooltip offers cancellation. Click again to cancel the pending
+				search; a brief toast confirms it. Reduced motion uses a static busy indicator.
 			</p>
 			<p>
 				A permission failure opens an explanation with an OK button to retry. If permission was
@@ -201,9 +203,11 @@
 				permission status. Without a previous connection or grant, the first attempt requires
 				clicking the icon. An explicit denied status prevents automatic reconnection. A saved
 				connection is not a browser permission: if access has since been reset, the browser may ask
-				again. An unsuccessful automatic attempt shows no application dialog. Disconnecting lasts
-				for the mounted stage. Both the adapter and 3Dconnexion SDK are imported only for a manual
-				connection or an eligible automatic retry. Localize the
+				again. An unsuccessful automatic attempt shows no application dialog. Explicitly
+				disconnecting or cancelling saves a disabled preference, even when browser permission
+				remains granted. Only a successful manual reconnection enables automatic reconnection again.
+				Both the adapter and 3Dconnexion SDK are imported only for a manual connection or an
+				eligible automatic retry. Localize the
 				<code>spaceMouse*</code> strings in <code>interactionHelp</code>.
 			</p>
 			<p>

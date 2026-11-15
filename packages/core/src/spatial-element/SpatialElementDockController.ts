@@ -42,7 +42,6 @@ interface ContentPresentation {
 	webkitClipPath: string;
 	documentTop: number;
 	height: number;
-	action?: { element: HTMLElement; bottom: number; inert: boolean };
 	appliedClipPath?: string;
 }
 
@@ -56,7 +55,6 @@ export class SpatialElementDockController {
 	private mediaRail?: HTMLElement;
 	private stickyHeader?: HTMLElement;
 	private stickyMinimapAction?: HTMLElement;
-	private stickyAction?: HTMLElement;
 	private stickyHeaderOriginalParent?: HTMLElement;
 	private stickyHeaderOriginalNextSibling?: ChildNode | null;
 	private stickyHeaderOriginalStyle: string | null = null;
@@ -135,7 +133,6 @@ export class SpatialElementDockController {
 		this.stickyHeader = this.root.querySelector<HTMLElement>(STICKY_HEADER) ?? undefined;
 		this.stickyMinimapAction =
 			this.stickyHeader?.querySelector<HTMLElement>(STICKY_MINIMAP_ACTION) ?? undefined;
-		this.stickyAction = this.stickyHeader?.querySelector<HTMLElement>('[data-spatial-element-dock-action]') ?? undefined;
 		this.tabsAnchor = this.root.querySelector<HTMLElement>(TABS_ANCHOR) ?? undefined;
 		this.tabsFrame = this.tabsAnchor?.querySelector<HTMLElement>(PANEL_FRAME) ?? undefined;
 		this.sourceTabsList = this.readTabsList?.() ?? this.tabsFrame?.querySelector<HTMLElement>(TABS_LIST) ?? undefined;
@@ -218,9 +215,6 @@ export class SpatialElementDockController {
 		this.restoreStickyTabs();
 		this.restoreStickyHeader();
 		this.restoreDepartingContentClipping();
-		for (const { action } of this.departingContent) {
-			if (action) action.element.inert = action.inert;
-		}
 		this.root.removeAttribute('data-spatial-element-dock-active');
 		this.root.removeAttribute('data-spatial-element-tabs-dock-active');
 		this.root.style.removeProperty('--spatial-element-section-scroll-offset');
@@ -284,7 +278,6 @@ export class SpatialElementDockController {
 			this.setPaneTabsActive(true);
 			this.applyMinimapPresentation(0);
 			this.applyHeaderPresentation(0);
-			this.updateActionPresentation(false);
 			this.presentationProgress = 0;
 			this.minimapDock = undefined;
 			this.tabsDock = undefined;
@@ -362,7 +355,6 @@ export class SpatialElementDockController {
 		this.applyState(docked);
 		this.applyTabsPresentation(tabsDocked);
 		this.applyTabsState(tabsDocked);
-		this.updateActionPresentation(docked);
 		this.presentationProgress = presentationProgress;
 		this.presentationRevision++;
 	}
@@ -712,9 +704,6 @@ export class SpatialElementDockController {
 			const rect = state.element.getBoundingClientRect();
 			state.documentTop = rect.top + this.scrollY;
 			state.height = rect.height;
-			const action = state.element.querySelector<HTMLElement>('[data-catalog-rich-shared="primary-action"]');
-			if (action) state.action = { element: action, bottom: action.getBoundingClientRect().bottom - rect.top,
-				inert: state.action?.inert ?? action.inert };
 			state.sticky = undefined;
 			if (state.frame?.parentElement) {
 				const style = getComputedStyle(state.frame);
@@ -736,19 +725,6 @@ export class SpatialElementDockController {
 		return sticky
 			? getStickyPanelTop(sticky.documentTop, sticky.height, sticky.boundaryBottom, sticky.inset, this.scrollY) + sticky.contentInset
 			: state.documentTop - this.scrollY;
-	}
-
-	private updateActionPresentation(docked: boolean) {
-		const summary = this.departingContent.find(state => state.action);
-		const hiddenAboveDock = summary?.action
-			? this.contentViewportTop(summary) + summary.action.bottom <= this.stickyHeaderBottom : true;
-		const visible = docked && hiddenAboveDock;
-		this.stickyHeader?.toggleAttribute('data-action-active', visible);
-		if (this.stickyAction && this.stickyAction.inert === visible) this.stickyAction.inert = !visible;
-		if (summary?.action) {
-			const inert = summary.action.inert || visible;
-			if (summary.action.element.inert !== inert) summary.action.element.inert = inert;
-		}
 	}
 
 	private updateDepartingContentClipping() {

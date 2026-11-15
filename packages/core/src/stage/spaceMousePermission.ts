@@ -22,12 +22,19 @@ export function rememberSpaceMouseConnection() {
 	try { globalThis.localStorage?.setItem(connectionKey, 'true'); } catch { /* Storage may be blocked. */ }
 }
 
+/** An explicit disconnect/cancel takes precedence over a browser permission grant. */
+export function rememberSpaceMouseDisabled() {
+	try { globalThis.localStorage?.setItem(connectionKey, 'false'); } catch { /* Storage may be blocked. */ }
+}
+
 export function shouldReconnectSpaceMouse(permission: SpaceMousePermission): boolean {
-	if (permission === 'granted') return true;
 	if (permission === 'denied') return false;
 	// A working driver connection need not change the query from `prompt` (e.g. localhost).
 	// Remember successful use so reloads reconnect, while first visits still require a click.
-	try { return globalThis.localStorage?.getItem(connectionKey) === 'true'; } catch { return false; }
+	try {
+		const preference = globalThis.localStorage?.getItem(connectionKey);
+		return preference !== 'false' && (permission === 'granted' || preference === 'true');
+	} catch { return permission === 'granted'; }
 }
 
 /** Observe permission without contacting the local driver or enumerating devices. */
