@@ -266,14 +266,14 @@
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-pane-body .spatial-element-panel .stage-panel-surface {
 		border-radius: 0;
 		background: color-mix(in srgb, var(--spatial-pane-tint) var(--spatial-pane-tint-opacity), transparent);
-		backdrop-filter: blur(var(--spatial-pane-blur));
+		-webkit-backdrop-filter: none; backdrop-filter: none;
 	}
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .ps-section { --spatial-pane-section-color: var(--spatial-pane-tint); }
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .ps-section[data-background-color='standard'] { --spatial-pane-section-color: var(--ps-section-standard); }
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .ps-section[data-background-color='muted'] { --spatial-pane-section-color: var(--ps-section-muted); }
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .ps-section > .ps-section-surface {
 		background: color-mix(in srgb, var(--spatial-pane-section-color) var(--spatial-pane-tint-opacity), transparent) !important;
-		backdrop-filter: blur(var(--spatial-pane-blur)); border-radius: 0; box-shadow: none;
+		-webkit-backdrop-filter: none; backdrop-filter: none; border-radius: 0; box-shadow: none;
 	}
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-pane-body .panel-copy {
 		position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%);
@@ -287,6 +287,11 @@
 		width: var(--spatial-pane-width); height: var(--spatial-pane-height);
 		border-radius: var(--spatial-element-panel-radius); pointer-events: none;
 		background: transparent;
+		/* The scrolling body's clip-path is a Backdrop Root: child filters cannot
+		 * sample the stage canvas. Blur once on this unclipped sibling, then paint
+		 * the individual (at least 80% opaque) section colors above it. */
+		-webkit-backdrop-filter: blur(var(--spatial-pane-blur));
+		backdrop-filter: blur(var(--spatial-pane-blur));
 		box-shadow: var(--spatial-element-docked-panel-box-shadow);
 		transform: translateY(var(--spatial-pane-fixed-compensation, 0px));
 	}
@@ -295,7 +300,7 @@
 		top: var(--spatial-pane-top); left: var(--spatial-pane-left); width: var(--spatial-pane-width); height: 86px;
 		border-radius: var(--spatial-element-panel-radius) var(--spatial-element-panel-radius) 0 0;
 		background: color-mix(in srgb, var(--spatial-pane-tint) var(--spatial-pane-tint-opacity), transparent);
-		backdrop-filter: blur(var(--spatial-pane-blur)); pointer-events: auto;
+		-webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: auto;
 		border-bottom: 1px solid color-mix(in srgb, var(--spatial-element-ink) 14%, transparent);
 		box-shadow: 0 4px 10px rgb(0 0 0 / 0.08);
 		transform: translateY(var(--spatial-pane-fixed-compensation, 0px));

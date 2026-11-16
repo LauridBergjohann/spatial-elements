@@ -10,3 +10,5 @@ Keep wheel scrolling and model zoom in separate 800ms gestures, route pinch acro
 Hover outlines follow the live device-orientation transform. Zoom reveals the page from the first inward movement and preserves the cursor or pinch anchor across scroll-dependent projection changes. Touch pinch uses one damped dolly path without duplicate OrbitControls pan or zoom.
 
 Keep High-resolution outline sources attached to the live sensor-driven model after refinement, handoff and theme changes. Couple page reveal and interface clearance to one reversible timeline when zoom starts from a scrolled position.
+
+Render the 3XL reading-pane backdrop blur outside the scrolling clip so it actually softens the 3D stage behind all content surfaces. Preserve section colors and at least 80% background opacity without stacking translucent backgrounds.

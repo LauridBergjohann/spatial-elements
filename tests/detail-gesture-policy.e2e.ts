@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import sharp from 'sharp';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
 
 async function open(page: Page) {
@@ -8,7 +9,36 @@ async function open(page: Page) {
 }
 const focus = (page: Page) => page.evaluate(() => window.__stageVisualTest!.getState().focus);
 
-test('3XL content surfaces share theme opacity and blur without a second backdrop', async ({ page }, info) => {
+test('3XL pane actually blurs the canvas backdrop through its scroll clip', async ({ page }, info) => {
+	await page.setViewportSize({ width: 2400, height: 900 });
+	await open(page);
+	// A deterministic high-frequency backdrop at the same paint depth as the
+	// WebGPU canvas makes a broken Backdrop Root visible in pixels, not just CSS.
+	await page.evaluate(() => {
+		const canvas = document.querySelector('.stage-webgpu-background')!;
+		const pattern = document.createElement('div');
+		pattern.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none;background:repeating-linear-gradient(90deg,#000 0px 4px,#fff 4px 8px)';
+		canvas.after(pattern);
+	});
+	for (const chapter of [1, 2]) {
+		await page.locator(`[data-spatial-element-tab-list] [href="#pane-chapter-${chapter}"]`).click();
+		await expect.poll(async () => (await page.locator(`#pane-chapter-${chapter}`).boundingBox())!.y).toBeCloseTo(182, 0);
+		const box = (await page.locator(`#pane-chapter-${chapter}`).boundingBox())!;
+		const clip = { x: Math.round(box.x + box.width - 200), y: 420, width: 128, height: 64 };
+		const contrast = async (blur: number) => {
+			await page.locator('[data-spatial-element-root]').evaluate((node, value) => (node as HTMLElement).style.setProperty('--spatial-pane-blur', `${value}px`), blur);
+			const pixels = await page.screenshot({ clip, path: info.outputPath(`chapter-${chapter}-blur-${blur}.png`) });
+			await info.attach(`chapter-${chapter}-blur-${blur}`, { body: pixels, contentType: 'image/png' });
+			return (await sharp(pixels).stats()).channels[0].stdev;
+		};
+		const sharpContrast = await contrast(0);
+		const blurredContrast = await contrast(12);
+		expect(sharpContrast).toBeGreaterThan(10);
+		expect(blurredContrast).toBeLessThan(sharpContrast * 0.2);
+	}
+});
+
+test('3XL content surfaces share theme opacity and one unclipped backdrop', async ({ page }, info) => {
 	await page.setViewportSize({ width: 2400, height: 900 });
 	await open(page);
 	const styles = await page.evaluate(() => {
@@ -21,9 +51,11 @@ test('3XL content surfaces share theme opacity and blur without a second backdro
 	});
 	for (const style of styles) {
 		expect(style.color).toMatch(/\/ 0\.8\)/);
-		expect(style.blur).toBe(styles[0].blur);
+		expect(style.blur).toBe('none');
 	}
 	await expect(page.locator('.spatial-element-pane-surface')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+	const themeBlur = await page.locator('[data-spatial-element-root]').evaluate(node => getComputedStyle(node).getPropertyValue('--spatial-pane-blur').trim());
+	await expect(page.locator('.spatial-element-pane-surface')).toHaveCSS('backdrop-filter', `blur(${themeBlur})`);
 	expect(styles[2].color).not.toBe(styles[3].color);
 	await page.screenshot({ path: info.outputPath('pane-surfaces.png') });
 });
