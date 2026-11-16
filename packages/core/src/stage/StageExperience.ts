@@ -3233,6 +3233,7 @@ export class StageExperience {
 		this.panelUiFocus = this.fullscreen ? 1 : getStageUiFocus(this.panelFocus);
 		this.minimapFocus = this.fullscreen ? 1 : getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus, window.innerWidth);
 		this.updateStageCameraProjection();
+		this.interaction.compensateZoomAnchor();
 		this.reportZoomFocus({
 			focus: this.panelFocus,
 			uiFocus: this.panelUiFocus,

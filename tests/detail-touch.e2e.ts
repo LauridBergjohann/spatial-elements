@@ -118,3 +118,34 @@ test('touch and pen never leave CSS hover while a real mouse still works', async
 	await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: rect!.x + rect!.width / 2, y: rect!.y + rect!.height / 2, pointerType: 'pen' });
 	await expect(page.locator('[data-mouse-hover]')).toHaveCount(0);
 });
+
+test('a scrolled pinch starts revealing immediately without duplicate dolly or projection jumps', async ({ page }) => {
+	await openDetail(page);
+	await page.evaluate(() => scrollTo(0, 140));
+	await page.evaluate(() => window.__stageVisualTest!.settle(30));
+	const center = await modelPoint(page);
+	const cdp = await page.context().newCDPSession(page);
+	const points = (spread: number) => [{ x: center.x - spread, y: center.y, id: 1 }, { x: center.x + spread, y: center.y, id: 2 }];
+	const initial = await page.evaluate(() => ({ y: scrollY, width: window.__stageVisualTest!.getModelRect()!.width }));
+	await touch(cdp, 'touchStart', points(30));
+	let previousWidth = initial.width;
+	for (let step = 1; step <= 12; step++) {
+		await touch(cdp, 'touchMove', points(30 + step * 0.5));
+		await page.waitForTimeout(40);
+		const sample = await page.evaluate(() => ({ y: scrollY, state: window.__stageVisualTest!.getState(), width: window.__stageVisualTest!.getModelRect()!.width }));
+		if (step === 3) {
+			expect(sample.y).toBeLessThan(initial.y - 2);
+			expect(sample.state.uiFocus).toBeLessThan(0.01);
+		}
+		expect(sample.width / previousWidth).toBeGreaterThan(0.97);
+		expect(sample.width / previousWidth).toBeLessThan(1.09);
+		previousWidth = sample.width;
+	}
+	await touch(cdp, 'touchEnd', []);
+	await page.evaluate(() => window.__stageVisualTest!.settle(60));
+	const final = await page.evaluate(() => ({ y: scrollY, width: window.__stageVisualTest!.getModelRect()!.width }));
+	expect(final.y).toBeLessThan(initial.y - 40);
+	expect(final.width / initial.width).toBeGreaterThan(1.1);
+	expect(final.width / initial.width).toBeLessThan(1.4);
+	expect(await page.evaluate(() => visualViewport!.scale)).toBe(1);
+});

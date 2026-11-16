@@ -267,7 +267,10 @@
 				Touch and trackpad pinch above the content sections zoom the model, including gestures over
 				the media rail and summary. In 3XL this applies to the left-hand viewer. Page pinch
 				magnification is suppressed throughout the shell; keyboard and browser-menu zoom remain
-				available. Outside 3XL, increasing model zoom progressively returns the page to the top.
+				available. Outside 3XL, the first inward zoom movement progressively returns the page to the
+				top, before the interface starts fading. The model point under the cursor or pinch midpoint
+				stays anchored while the stage moves, so scrolling does not add a second zoom or pan
+				gesture.
 			</p>
 			<p>
 				Once the surrounding interface has faded, hidden content cannot intercept pointers or
