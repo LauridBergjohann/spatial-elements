@@ -205,7 +205,7 @@
 	data-brand-id={spatialElement.brandId}
 	data-spatial-selected-media={selectedMedia.kind}
 	style:--spatial-pane-tint={paneTint}
-	style:--spatial-pane-tint-opacity={`${Math.min(1, Math.max(0, brand.panelTheme.tintOpacity ?? 0.28)) * 100}%`}
+	style:--spatial-pane-tint-opacity={`${Math.min(1, Math.max(0.8, brand.panelTheme.tintOpacity ?? 0.28)) * 100}%`}
 	style:--spatial-pane-blur={`${Math.min(100, Math.max(0, brand.panelTheme.backdropBlur ?? 5))}px`}
 >
 	<div class="spatial-element-pane-heading" data-spatial-detail-pane-header data-spatial-detail-fixed data-spatial-element-handoff-header>
@@ -326,7 +326,7 @@
 		background: transparent;
 		pointer-events: none;
 	}
-	@media (width < 840px) { .spatial-element-content { padding-top: 12px; } }
+	@media (width < 840px) { .spatial-element-content { padding-top: 0; } }
 	@media (min-width: 840px) {
 		.spatial-element-hero { height: var(--spatial-detail-fit-height); }
 		.spatial-element-content { padding-top: 8px; }

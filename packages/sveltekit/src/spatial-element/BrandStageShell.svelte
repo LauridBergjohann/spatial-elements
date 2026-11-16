@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { MenuItem } from '@page-sections/core';
 	import type { Snippet } from 'svelte';
+	import { preventBrowserPinch } from '@spatial-elements/core/stage/browserPinch';
 	import '@page-sections/svelte/styles.css';
 	import { retainDeviceOrientationPermission } from '@spatial-elements/core/catalog/listDeviceOrientation';
 	import Stage from '../stage/Stage.svelte';
@@ -54,9 +55,10 @@
 	provideSpatialMessages(() => messages);
 
 	const brandStyle = $derived(getSpatialThemeStyle(theme));
+	function attachPinchPolicy(node: HTMLElement) { return { destroy: preventBrowserPinch(node) }; }
 </script>
 
-<div class="brand-stage-shell" style={brandStyle} style:color-scheme={colorScheme} data-color-scheme={colorScheme}>
+<div use:attachPinchPolicy class="brand-stage-shell" style={brandStyle} style:color-scheme={colorScheme} data-color-scheme={colorScheme}>
 	<Stage
 		{deviceOrientation}
 		brandId={theme.id}

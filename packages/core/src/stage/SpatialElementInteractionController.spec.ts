@@ -55,12 +55,13 @@ test.each([false, true])('SpaceMouse reveals an offscreen model unless the detai
 	ports.readGeometry = () => ({ ...read(), visible: split, detail: { media: 'minimap', split, paneHidden: false, paneLeft: 500 } });
 	owner.setSpaceMouseMoving(true);
 	owner.setSpaceMouseMoving(true);
+	expect(scrollTo).not.toHaveBeenCalled();
+	owner.applySpaceMouseNavigationUpdate({ viewMatrix: new THREE.Matrix4().makeTranslation(3, 0, 8).toArray() });
 	if (split) expect(scrollTo).not.toHaveBeenCalled();
 	else {
 		expect(scrollTo).toHaveBeenCalledOnce();
 		expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
 	}
-	owner.applySpaceMouseNavigationUpdate({ viewMatrix: new THREE.Matrix4().makeTranslation(3, 0, 8).toArray() });
 	expect(camera.position.x).toBe(3);
 	owner.setSpaceMouseMoving(false);
 	expect(owner.spaceMouseMoving).toBe(false);
@@ -76,7 +77,23 @@ test('SpaceMouse reveal respects reduced motion and ignores transition-owned geo
 	expect(scrollTo).not.toHaveBeenCalled();
 	setOwner('page');
 	owner.setSpaceMouseMoving(true);
+	owner.applySpaceMouseNavigationUpdate({ viewMatrix: new THREE.Matrix4().makeTranslation(3, 0, 10).toArray() });
 	expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
+	owner.dispose();
+});
+
+test('SpaceMouse zoom uses the progressive reveal instead of starting an independent scroll animation', () => {
+	const viewport = { scrollY: 800, scrollTo: vi.fn(({ top }: { top: number }) => { viewport.scrollY = top; }) };
+	vi.stubGlobal('window', viewport);
+	const { owner } = fixture();
+	owner.setFocusRange(10, 4);
+	owner.setSpaceMouseMoving(true);
+	owner.applySpaceMouseNavigationUpdate({ fov: THREE.MathUtils.degToRad(40) });
+	expect(viewport.scrollTo).not.toHaveBeenCalled();
+	owner.advance(100, 0.016);
+	expect(viewport.scrollY).toBeGreaterThan(0);
+	expect(viewport.scrollY).toBeLessThan(800);
+	expect(viewport.scrollTo).toHaveBeenCalledWith({ top: viewport.scrollY, behavior: 'instant' });
 	owner.dispose();
 });
 
@@ -194,6 +211,45 @@ test('fullscreen background input bypasses picking, disables hover and retains S
 	owner.setFullscreen(false);
 	expect(ports.canvas.style.touchAction).toBe('manipulation');
 	expect(owner.controls!.enabled).toBe(false);
+	owner.dispose();
+});
+
+test('outline fades with the interface and remains absent in the split viewer', () => {
+	const { owner, ports } = fixture();
+	const geometry = ports.readGeometry();
+	const detail = { media: 'minimap' as const, split: false, paneHidden: false, paneLeft: 60, uiFocus: 0 };
+	ports.readGeometry = () => ({ ...geometry, detail });
+	expect(owner.outlineOpacity).toBe(1);
+	detail.uiFocus = 0.5;
+	expect(owner.outlineOpacity).toBeGreaterThan(0);
+	expect(owner.outlineOpacity).toBeLessThan(1);
+	detail.uiFocus = 1;
+	expect(owner.outlineOpacity).toBe(0);
+	detail.uiFocus = 0;
+	detail.split = true;
+	expect(owner.outlineOpacity).toBe(0);
+	owner.dispose();
+});
+
+test('increasing camera zoom reveals the document top and never scrolls the 3XL pane', () => {
+	const viewport = { scrollY: 400, scrollTo: vi.fn(({ top }: { top: number }) => { viewport.scrollY = top; }) };
+	vi.stubGlobal('window', viewport);
+	const { owner, ports } = fixture();
+	const geometry = ports.readGeometry();
+	const detail = { media: 'minimap' as const, split: false, paneHidden: false, paneLeft: 60 };
+	ports.readGeometry = () => ({ ...geometry, detail });
+	const zoom = vi.spyOn(owner, 'getZoomFocusFactor').mockReturnValue(0.3);
+	owner.advance(100, 0.016);
+	expect(viewport.scrollY).toBeGreaterThan(0);
+	expect(viewport.scrollY).toBeLessThan(400);
+	zoom.mockReturnValue(0.82);
+	owner.advance(116, 0.016);
+	expect(viewport.scrollY).toBe(0);
+	detail.split = true;
+	viewport.scrollY = 400;
+	zoom.mockReturnValue(1);
+	owner.advance(132, 0.016);
+	expect(viewport.scrollY).toBe(400);
 	owner.dispose();
 });
 

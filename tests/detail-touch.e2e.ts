@@ -90,6 +90,10 @@ test('pinch can release one finger, continue rotating, then rotate again without
 	const before = await orientation(page);
 	await drag(page, cdp, await modelPoint(page), -60, 30);
 	await expectRotation(page, before);
+	// Close-up navigation now owns the whole canvas. Restore the overview before
+	// expecting an empty-background swipe to scroll the document again.
+	await page.getByRole('button', { name: 'Detail view', exact: true }).tap();
+	await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getState().focus)).toBeLessThan(0.001);
 	await drag(page, cdp, { x: 8, y: 700 }, 0, -260);
 	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(80);
 	expect(errors).toEqual([]);

@@ -89,6 +89,7 @@ export interface StageRenderPorts {
 		stageViewportVisible: boolean;
 		detailMediaActive?: boolean;
 		modelHover: boolean;
+		outlineOpacity?: number;
 		modelInteractionActive: boolean;
 		catalog: boolean;
 		pageModelReady: boolean;
@@ -1140,6 +1141,8 @@ export class StageRenderPipeline {
 	}
 	renderModelOutline(target: THREE.RenderTarget | null, opacity = 1) {
 		this.displayOutlineOpacity.value = 0;
+		opacity *= this.ports.frame().outlineOpacity ?? 1;
+		if (opacity <= 0.001) return;
 		// The transferred model owns its moving outline, including its interpolated camera.
 		if (this.ports.spatialCapture?.()) return;
 		if (this.renderMeasurement === 'no-halo' || !this.ports.frame().modelHover) return;

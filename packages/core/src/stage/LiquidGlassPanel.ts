@@ -39,6 +39,8 @@ export interface LiquidGlassPanelOptions {
 	width?: number;
 	height?: number;
 	radius?: number;
+	/** Keep the lower corners square when a panel joins the content below it. */
+	squareBottom?: boolean;
 	position?: { x: number; y: number };
 	/** Blur radius of the sampled stage backdrop, in CSS pixels. */
 	backdropBlur?: number;
@@ -61,6 +63,7 @@ const DEFAULT_OPTIONS = {
 	width: 360,
 	height: 230,
 	radius: 42,
+	squareBottom: false,
 	position: { x: 0, y: 42 },
 	backdropBlur: 5,
 	refraction: 12,
@@ -92,6 +95,7 @@ export function resolveLiquidGlassPanelOptions(
 		...merged,
 		width,
 		height,
+		squareBottom: options.squareBottom === true,
 		radius: clampFinite(merged.radius, 0, Math.min(width, height) * 0.5, DEFAULT_OPTIONS.radius),
 		position: {
 			x: finiteOr(merged.position.x, DEFAULT_OPTIONS.position.x),
@@ -161,7 +165,7 @@ export class LiquidGlassPanel {
 			this.geometryOptions.height,
 			this.geometryOptions.radius,
 			128,
-			82
+			82, undefined, this.options.squareBottom
 		);
 		this.bezelGeometry = createRoundedBandGeometry(
 			this.geometryOptions.width,
@@ -169,7 +173,7 @@ export class LiquidGlassPanel {
 			this.geometryOptions.radius,
 			-this.geometryOptions.bezel,
 			14,
-			1.7
+			1.7, this.options.squareBottom
 		);
 		this.shadowLayers = PANEL_SHADOW_RECIPE.map((layer, index) => {
 			const shadowStrength = resolvePanelShadowStrength(this.options.shadowIntensity);
@@ -179,7 +183,7 @@ export class LiquidGlassPanel {
 				this.geometryOptions.radius,
 				layer.blur * WEBGPU_SHADOW_EXTENT_PER_BLUR,
 				Math.max(8, Math.round(layer.blur)),
-				2.1
+				2.1, this.options.squareBottom
 			);
 			const material = createVertexAlphaMaterial(
 				0x000000,
@@ -288,10 +292,10 @@ export class LiquidGlassPanel {
 		this.backdropProjection.panelSize.value.set(nextWidth, nextHeight);
 		this.backdropProjection.radius.value = nextRadius;
 		this.backdropProjection.bezel.value = nextBezel;
-		createRoundedGridGeometry(nextWidth, nextHeight, nextRadius, 128, 82, this.backdropGeometry);
+		createRoundedGridGeometry(nextWidth, nextHeight, nextRadius, 128, 82, this.backdropGeometry, this.options.squareBottom);
 		copyGeometry(
 			this.bezelGeometry,
-			createRoundedBandGeometry(nextWidth, nextHeight, nextRadius, -nextBezel, 14, 1.7)
+			createRoundedBandGeometry(nextWidth, nextHeight, nextRadius, -nextBezel, 14, 1.7, this.options.squareBottom)
 		);
 		this.shadowLayers.forEach(({ geometry }, index) => {
 			const layer = PANEL_SHADOW_RECIPE[index];
@@ -303,7 +307,7 @@ export class LiquidGlassPanel {
 					nextRadius,
 					layer.blur * WEBGPU_SHADOW_EXTENT_PER_BLUR,
 					Math.max(8, Math.round(layer.blur)),
-					2.1
+					2.1, this.options.squareBottom
 				)
 			);
 		});
@@ -389,6 +393,7 @@ function createBackdropProjectionUniforms(options: Required<LiquidGlassPanelOpti
 		uvScale: uniform(new THREE.Vector2(1, 1)),
 		panelSize: uniform(new THREE.Vector2(options.width, options.height)),
 		radius: uniform(options.radius),
+		squareBottom: uniform(options.squareBottom ? 1 : 0),
 		bezel: uniform(options.bezel),
 		refraction: uniform(options.refraction)
 	};
@@ -402,7 +407,8 @@ function createBackdropProjectionUniforms(options: Required<LiquidGlassPanelOpti
 function createBackdropUvNode(projection: ReturnType<typeof createBackdropProjectionUniforms>) {
 	const localPosition = positionLocal.xy;
 	const halfSize = projection.panelSize.mul(0.5);
-	const radius = tslMin(projection.radius, tslMin(halfSize.x, halfSize.y));
+	const radius = tslMin(projection.radius, tslMin(halfSize.x, halfSize.y))
+		.mul(oneMinus(projection.squareBottom.mul(oneMinus(step(0, localPosition.y)))));
 	const signedDistance = roundedRectSdfNode(localPosition, halfSize, radius);
 	const insideDistance = tslMax(signedDistance.negate(), 0);
 	const edge = oneMinus(smoothstep(0, tslMax(projection.bezel, 0.0001), insideDistance)).mul(
@@ -532,7 +538,7 @@ function createRoundedGridGeometry(
 	radius: number,
 	columns: number,
 	rows: number,
-	geometry = new THREE.BufferGeometry()
+	geometry = new THREE.BufferGeometry(), squareBottom = false
 ) {
 	const halfWidth = width * 0.5;
 	const halfHeight = height * 0.5;
@@ -568,10 +574,11 @@ function createRoundedGridGeometry(
 
 		let x = -halfWidth + (gridX / columns) * width;
 		let y = -halfHeight + (gridY / rows) * height;
-		const distance = roundedRectSdf(x, y, halfWidth, halfHeight, r);
+		const cornerRadius = squareBottom && y < 0 ? 0 : r;
+		const distance = roundedRectSdf(x, y, halfWidth, halfHeight, cornerRadius);
 
 		if (distance > 0) {
-			const gradient = roundedRectGradient(x, y, halfWidth, halfHeight, r);
+			const gradient = roundedRectGradient(x, y, halfWidth, halfHeight, cornerRadius);
 			x -= gradient.x * distance;
 			y -= gradient.y * distance;
 		}
@@ -593,7 +600,7 @@ function createRoundedGridGeometry(
 			const y1 = -halfHeight + ((y + 1) / rows) * height;
 			const centerX = -halfWidth + ((x + 0.5) / columns) * width;
 			const centerY = -halfHeight + ((y + 0.5) / rows) * height;
-			const inside =
+			const inside = (squareBottom && centerY < 0) ||
 				roundedRectSdf(centerX, centerY, halfWidth, halfHeight, r) <= 0 ||
 				roundedRectSdf(x0, y0, halfWidth, halfHeight, r) <= 0 ||
 				roundedRectSdf(x1, y0, halfWidth, halfHeight, r) <= 0 ||
@@ -633,7 +640,7 @@ function createRoundedBandGeometry(
 	radius: number,
 	spread: number,
 	rings: number,
-	alphaPower: number
+	alphaPower: number, squareBottom = false
 ) {
 	const positions: number[] = [];
 	const colors: number[] = [];
@@ -647,7 +654,7 @@ function createRoundedBandGeometry(
 		const ringHeight = Math.max(1, height + offset * 2);
 		const ringRadius = Math.max(0, Math.min(radius + offset, ringWidth * 0.5, ringHeight * 0.5));
 		const alpha = Math.pow(1 - t, alphaPower);
-		const points = createRoundedRectPoints(ringWidth, ringHeight, ringRadius, pointsPerRing / 4);
+		const points = createRoundedRectPoints(ringWidth, ringHeight, ringRadius, pointsPerRing / 4, squareBottom);
 
 		points.forEach(({ x, y }) => {
 			positions.push(x, y, 0);
@@ -681,7 +688,7 @@ function createRoundedRectPoints(
 	width: number,
 	height: number,
 	radius: number,
-	segmentsPerCorner: number
+	segmentsPerCorner: number, squareBottom = false
 ) {
 	const halfWidth = width * 0.5;
 	const halfHeight = height * 0.5;
@@ -694,13 +701,14 @@ function createRoundedRectPoints(
 	];
 	const points: { x: number; y: number }[] = [];
 
-	corners.forEach((corner) => {
+	corners.forEach((corner, index) => {
+		const square = squareBottom && (index === 1 || index === 2);
 		for (let step = 0; step < segmentsPerCorner; step += 1) {
 			const t = step / segmentsPerCorner;
 			const angle = THREE.MathUtils.lerp(corner.start, corner.end, t);
 			points.push({
-				x: corner.x + Math.cos(angle) * r,
-				y: corner.y + Math.sin(angle) * r
+				x: square ? (index === 1 ? halfWidth : -halfWidth) : corner.x + Math.cos(angle) * r,
+				y: square ? -halfHeight : corner.y + Math.sin(angle) * r
 			});
 		}
 	});

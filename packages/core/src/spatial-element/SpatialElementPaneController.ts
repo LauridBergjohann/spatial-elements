@@ -83,7 +83,7 @@ export class SpatialElementPaneController {
 		this.hidden = hidden;
 		if (hidden && this.layout?.composition === 'split') this.savedScroll = { x: window.scrollX, y: window.scrollY };
 		this.root.toggleAttribute('data-spatial-detail-pane-hidden', hidden);
-		for (const region of this.hiddenRegions) region.inert = hidden && this.layout?.composition === 'split';
+		for (const region of this.hiddenRegions) region.inert = hidden;
 		if (!hidden && this.savedScroll) {
 			window.scrollTo({ left: this.savedScroll.x, top: this.savedScroll.y, behavior: 'instant' });
 			syncStageScrollToNative();
@@ -145,7 +145,7 @@ export class SpatialElementPaneController {
 			this.root.toggleAttribute('data-spatial-detail-pane', split);
 			this.root.toggleAttribute('data-spatial-detail-flow', next.shortHeightFallback);
 			for (const region of this.regions) region.toggleAttribute('data-stage-fixed-region', split);
-			for (const region of this.hiddenRegions) region.inert = split && this.hidden;
+			for (const region of this.hiddenRegions) region.inert = this.hidden;
 			this.onMode(split);
 			// The framework flushes the native summary ownership before its new box is measured.
 			this.schedule();
@@ -202,7 +202,7 @@ export class SpatialElementPaneController {
 			: { x: 0, y: 0, scale: 1, opacity: 1, blur: 0, pivotY: 0 };
 		const pose = this.focusPose;
 		this.root.toggleAttribute('data-spatial-detail-pane-zooming', Boolean(pane && this.focus > 0.001));
-		this.setHidden(Boolean(pane && pose.opacity < 0.12));
+		this.setHidden(getPanelFocusOpacity(this.focus) < 0.12);
 		const values = { '--spatial-pane-focus-x': `${pose.x}px`, '--spatial-pane-focus-y': `${pose.y}px`,
 			'--spatial-pane-focus-scale': String(pose.scale), '--spatial-pane-focus-opacity': String(pose.opacity),
 			'--spatial-pane-focus-blur': `${pose.blur}px` };

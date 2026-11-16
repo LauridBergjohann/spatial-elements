@@ -46,6 +46,18 @@ export function paneRules(tokens) {
 	${root} .spatial-element-pane-body .spatial-summary-query { max-height: none; overflow: visible; overscroll-behavior: auto; }
 	${root} .spatial-element-pane-body .spatial-element-panel .stage-panel-surface::before,
 	${root} .spatial-element-pane-body .spatial-element-panel .stage-panel-surface::after { display: none; }
+	${root} .spatial-element-pane-body .spatial-element-panel .stage-panel-surface {
+		border-radius: 0;
+		background: color-mix(in srgb, var(--spatial-pane-tint) var(--spatial-pane-tint-opacity), transparent);
+		backdrop-filter: blur(var(--spatial-pane-blur));
+	}
+	${root} .ps-section { --spatial-pane-section-color: var(--spatial-pane-tint); }
+	${root} .ps-section[data-background-color='standard'] { --spatial-pane-section-color: var(--ps-section-standard); }
+	${root} .ps-section[data-background-color='muted'] { --spatial-pane-section-color: var(--ps-section-muted); }
+	${root} .ps-section > .ps-section-surface {
+		background: color-mix(in srgb, var(--spatial-pane-section-color) var(--spatial-pane-tint-opacity), transparent) !important;
+		backdrop-filter: blur(var(--spatial-pane-blur)); border-radius: 0; box-shadow: none;
+	}
 	${root} .spatial-element-pane-body .panel-copy {
 		position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%);
 	}
@@ -57,8 +69,8 @@ export function paneRules(tokens) {
 		display: block; position: fixed; z-index: 0; top: var(--spatial-pane-top); left: var(--spatial-pane-left);
 		width: var(--spatial-pane-width); height: var(--spatial-pane-height);
 		border-radius: var(--spatial-element-panel-radius); pointer-events: none;
-		background: color-mix(in srgb, var(--spatial-pane-tint) var(--spatial-pane-tint-opacity), transparent);
-		backdrop-filter: blur(var(--spatial-pane-blur)); box-shadow: var(--spatial-element-docked-panel-box-shadow);
+		background: transparent;
+		box-shadow: var(--spatial-element-docked-panel-box-shadow);
 		transform: translateY(var(--spatial-pane-fixed-compensation, 0px));
 	}
 	${root} .spatial-element-pane-heading {

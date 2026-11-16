@@ -42,7 +42,8 @@ test('native fullscreen keeps only the viewer tools and supports background navi
 	await page.screenshot({ path: info.outputPath('fullscreen.png') });
 	const toolRects = await page.evaluate(() => Array.from(document.querySelectorAll<HTMLButtonElement>('[data-spatial-element-view-toggle] button')).map((button) => button.getBoundingClientRect().toJSON()));
 	const helpRect = (await page.getByRole('button', { name: '3D controls', exact: true }).boundingBox())!;
-	expect(toolRects[0].x - helpRect.x - helpRect.width).toBeCloseTo(8, 0);
+	const hasSpaceMouse = await page.getByRole('button', { name: 'click to connect spacemouse for 3d navigation', exact: true }).isVisible();
+	expect(toolRects[0].x - helpRect.x - helpRect.width).toBeCloseTo(hasSpaceMouse ? 56 : 8, 0);
 	expect(toolRects[1].x - toolRects[0].x).toBeCloseTo(40, 0);
 	const point = { x: 20, y: 450 };
 	expect(await page.evaluate((point) => document.elementFromPoint(point.x, point.y)?.classList.contains('stage-webgpu-background'), point)).toBe(true);
@@ -75,13 +76,15 @@ test('native fullscreen keeps only the viewer tools and supports background navi
 test('detail selection fades with zoom and the detail button always restores the fitted view', async ({ page }) => {
 	await open(page);
 	const selection = () => detail(page).evaluate((button) => Number.parseFloat(button.style.getPropertyValue('--selection')));
-	expect(await selection()).toBe(8);
+	expect(await selection()).toBe(100);
 	const radius = await page.getByRole('button', { name: '3D controls', exact: true }).evaluate((button) => getComputedStyle(button).borderTopLeftRadius);
-	await expect(detail(page)).toHaveCSS('border-top-left-radius', radius);
-	await expect(fullscreen(page)).toHaveCSS('border-top-right-radius', radius);
+	const group = detail(page).locator('..');
+	await expect(group).toHaveCSS('border-top-left-radius', radius);
+	await expect(group).toHaveCSS('border-top-right-radius', radius);
+	await expect(group).toHaveCSS('overflow', 'clip');
 	await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.45 }));
 	expect(await selection()).toBeGreaterThan(0);
-	expect(await selection()).toBeLessThan(8);
+	expect(await selection()).toBeLessThan(100);
 	await expect(detail(page)).toHaveAttribute('aria-pressed', 'false');
 	await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 1 }));
 	expect(await selection()).toBe(0);
@@ -189,6 +192,7 @@ for (const failure of ['missing', 'denied'] as const) {
 test.describe('touch fullscreen', () => {
 	test.use({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 812 } });
 	test('fallback rotates from empty background without scrolling and can return to detail', async ({ page }, info) => {
+		await page.addInitScript(() => Object.defineProperty(navigator, 'userAgentData', { value: { platform: 'Android', mobile: true } }));
 		await page.addInitScript(() => Object.defineProperty(Element.prototype, 'requestFullscreen', { value: undefined, configurable: true }));
 		await open(page);
 		await fullscreen(page).tap();
