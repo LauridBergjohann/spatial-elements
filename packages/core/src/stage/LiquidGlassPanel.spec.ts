@@ -15,6 +15,27 @@ function getBackdropGeometry(panel: LiquidGlassPanel) {
 }
 
 describe('LiquidGlassPanel backdrop projection', () => {
+	it('joins square lower corners to content while retaining rounded upper corners, including after resizing', () => {
+		const texture = new THREE.Texture();
+		const panel = new LiquidGlassPanel(texture, { width: 240, height: 160, radius: 24, squareBottom: true });
+		for (const [width, height] of [[240, 160], [320, 220]]) {
+			panel.setVisualSize(width, height, 24);
+			const geometry = getBackdropGeometry(panel);
+			const position = geometry.getAttribute('position');
+			const indices = geometry.index!;
+			let bottomRight = false, topRight = false;
+			for (let i = 0; i < geometry.drawRange.count; i++) {
+				const index = indices.getX(i), x = position.getX(index), y = position.getY(index);
+				if (Math.abs(x - width / 2) < 0.01) {
+					bottomRight ||= Math.abs(y + height / 2) < 0.01;
+					topRight ||= Math.abs(y - height / 2) < 0.01;
+				}
+			}
+			expect(bottomRight).toBe(true);
+			expect(topRight).toBe(false);
+		}
+		panel.dispose(); texture.dispose();
+	});
 	it('keeps buffer identities and versions while the panel shape is unchanged', () => {
 		const texture = new THREE.Texture();
 		const panel = new LiquidGlassPanel(texture, { width: 240, height: 160, radius: 12 });

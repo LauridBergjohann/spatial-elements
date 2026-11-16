@@ -46,6 +46,18 @@ export function paneRules(tokens) {
 	${root} .spatial-element-pane-body .spatial-summary-query { max-height: none; overflow: visible; overscroll-behavior: auto; }
 	${root} .spatial-element-pane-body .spatial-element-panel .stage-panel-surface::before,
 	${root} .spatial-element-pane-body .spatial-element-panel .stage-panel-surface::after { display: none; }
+	${root} .spatial-element-pane-body .spatial-element-panel .stage-panel-surface {
+		border-radius: 0;
+		background: color-mix(in srgb, var(--spatial-pane-tint) var(--spatial-pane-tint-opacity), transparent);
+		-webkit-backdrop-filter: none; backdrop-filter: none;
+	}
+	${root} .ps-section { --spatial-pane-section-color: var(--spatial-pane-tint); }
+	${root} .ps-section[data-background-color='standard'] { --spatial-pane-section-color: var(--ps-section-standard); }
+	${root} .ps-section[data-background-color='muted'] { --spatial-pane-section-color: var(--ps-section-muted); }
+	${root} .ps-section > .ps-section-surface {
+		background: color-mix(in srgb, var(--spatial-pane-section-color) var(--spatial-pane-tint-opacity), transparent) !important;
+		-webkit-backdrop-filter: none; backdrop-filter: none; border-radius: 0; box-shadow: none;
+	}
 	${root} .spatial-element-pane-body .panel-copy {
 		position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%);
 	}
@@ -57,8 +69,13 @@ export function paneRules(tokens) {
 		display: block; position: fixed; z-index: 0; top: var(--spatial-pane-top); left: var(--spatial-pane-left);
 		width: var(--spatial-pane-width); height: var(--spatial-pane-height);
 		border-radius: var(--spatial-element-panel-radius); pointer-events: none;
-		background: color-mix(in srgb, var(--spatial-pane-tint) var(--spatial-pane-tint-opacity), transparent);
-		backdrop-filter: blur(var(--spatial-pane-blur)); box-shadow: var(--spatial-element-docked-panel-box-shadow);
+		background: transparent;
+		/* The scrolling body's clip-path is a Backdrop Root: child filters cannot
+		 * sample the stage canvas. Blur once on this unclipped sibling, then paint
+		 * the individual (at least 80% opaque) section colors above it. */
+		-webkit-backdrop-filter: blur(var(--spatial-pane-blur));
+		backdrop-filter: blur(var(--spatial-pane-blur));
+		box-shadow: var(--spatial-element-docked-panel-box-shadow);
 		transform: translateY(var(--spatial-pane-fixed-compensation, 0px));
 	}
 	${root} .spatial-element-pane-heading {
@@ -66,7 +83,7 @@ export function paneRules(tokens) {
 		top: var(--spatial-pane-top); left: var(--spatial-pane-left); width: var(--spatial-pane-width); height: ${pane.headerHeight}px;
 		border-radius: var(--spatial-element-panel-radius) var(--spatial-element-panel-radius) 0 0;
 		background: color-mix(in srgb, var(--spatial-pane-tint) var(--spatial-pane-tint-opacity), transparent);
-		backdrop-filter: blur(var(--spatial-pane-blur)); pointer-events: auto;
+		-webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: auto;
 		border-bottom: 1px solid color-mix(in srgb, var(--spatial-element-ink) 14%, transparent);
 		box-shadow: 0 4px 10px rgb(0 0 0 / 0.08);
 		transform: translateY(var(--spatial-pane-fixed-compensation, 0px));

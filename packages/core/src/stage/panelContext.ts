@@ -18,12 +18,13 @@ export interface StagePanelPose {
 
 export interface StagePanelShape {
 	radius: number;
+	squareBottom?: boolean;
 	contentInset?: number;
 }
 
 export type StagePanelTheme = Omit<
 	LiquidGlassPanelOptions,
-	'width' | 'height' | 'position' | 'radius'
+	'width' | 'height' | 'position' | 'radius' | 'squareBottom'
 > & {
 	/** Semantic surface style. Defaults to the WebGPU-backed `glass` mode. */
 	surface?: StagePanelSurface;

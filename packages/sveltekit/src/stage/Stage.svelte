@@ -810,6 +810,7 @@
 			captureHeroPresentation: () => experience?.captureHeroPresentation() ?? false,
 			getSpatialCapture: () => experience?.getSpatialCapture() ?? null,
 			getDetailProjection: kind => experience?.getVisualTestDetailProjection(kind) ?? null,
+			getOutlinePose: () => experience?.getVisualTestOutlinePose() ?? null,
 			releaseSpatialCapture: () => experience?.releaseSpatialCapture(),
 			registerCatalogEndpoint: (address, element) => catalogEndpoints.register(address, element),
 			getCatalogPresentation: () => experience?.getCatalogPresentation() ?? null,

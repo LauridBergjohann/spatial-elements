@@ -89,6 +89,7 @@ export interface StageRenderPorts {
 		stageViewportVisible: boolean;
 		detailMediaActive?: boolean;
 		modelHover: boolean;
+		outlineOpacity?: number;
 		modelInteractionActive: boolean;
 		catalog: boolean;
 		pageModelReady: boolean;
@@ -365,6 +366,7 @@ export class StageRenderPipeline {
 	private _panelSceneRenderPasses = 0;
 	private _minimapSceneRenderPasses = 0;
 	private outlineMaskModel?: Object3D;
+	private outlineSourceModel?: Object3D;
 	private outlineMaskMaterial?: THREE.MeshBasicMaterial;
 	private outlineCompositeMaterial?: THREE.MeshBasicNodeMaterial;
 	private outlineQuad?: THREE.QuadMesh;
@@ -471,6 +473,8 @@ export class StageRenderPipeline {
 		});
 
 		this.outlineMaskModel = maskModel;
+		this.outlineSourceModel = model;
+		maskModel.matrixAutoUpdate = false;
 		this.outlineMaskScene.add(maskModel);
 		// Low/High changes replace the silhouette, not its viewport-sized storage.
 		// StageDisplay binds this sampler even while its opacity branch is zero;
@@ -1138,8 +1142,11 @@ export class StageRenderPipeline {
 			}
 		);
 	}
+	getOutlineWorldMatrix() { return this.outlineMaskModel?.matrixWorld.toArray() ?? null; }
 	renderModelOutline(target: THREE.RenderTarget | null, opacity = 1) {
 		this.displayOutlineOpacity.value = 0;
+		opacity *= this.ports.frame().outlineOpacity ?? 1;
+		if (opacity <= 0.001) return;
 		// The transferred model owns its moving outline, including its interpolated camera.
 		if (this.ports.spatialCapture?.()) return;
 		if (this.renderMeasurement === 'no-halo' || !this.ports.frame().modelHover) return;
@@ -1159,6 +1166,13 @@ export class StageRenderPipeline {
 				const previousOpacity = this.outlineOpacityScale.value;
 
 				if (this.renderMeasurement !== 'halo-frozen-mask' || !this.outlineMaskValid) {
+					// Device motion changes the live model after the silhouette is created.
+					// Copy its world transform, including any parent pose, on every capture.
+					if (this.outlineSourceModel && this.outlineMaskModel) {
+						this.outlineSourceModel.updateWorldMatrix(true, false);
+						this.outlineMaskModel.matrix.copy(this.outlineSourceModel.matrixWorld);
+						this.outlineMaskModel.matrixWorldNeedsUpdate = true;
+					}
 					this.ports.renderer.setRenderTarget(this.outlineMaskTarget);
 					this.ports.renderer.setClearColor(0x000000, 0);
 					this.ports.renderer.clear();
@@ -1285,6 +1299,7 @@ export class StageRenderPipeline {
 		this.outlineCompositeMaterial?.dispose();
 		this.outlineMaskTarget?.dispose();
 		this.outlineMaskModel = undefined;
+		this.outlineSourceModel = undefined;
 		this.outlineMaskMaterial = undefined;
 		this.outlineCompositeMaterial = undefined;
 		this.outlineMaskTarget = undefined;

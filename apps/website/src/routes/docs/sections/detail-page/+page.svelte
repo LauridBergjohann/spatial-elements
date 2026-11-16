@@ -59,6 +59,10 @@
 				assumptions.
 			</p>
 			<p>
+				At XS/S the summary joins the following sections without a gap. Its lower corners are square
+				so the scene cannot show through between the summary and the text.
+			</p>
+			<p>
 				The standard summary uses container queries: from 500px of content width, highlights form
 				two columns and order details sit beside the action. From 900px, highlights occupy two
 				thirds of the panel and order details with the action occupy the remaining third. This gives
@@ -252,6 +256,27 @@
 				button returns to the fitted pose. Fullscreen uses the browser API when available and a
 				viewport presentation otherwise; Escape returns without discarding the page's scroll
 				position.
+			</p>
+			<p>
+				Wheel gestures retain their owner for 800ms after the last event. A gesture that starts
+				scrolling the document continues scrolling even if the model moves under the pointer. At the
+				fitted overview, scrolling down over the model also scrolls the document, unless the same
+				gesture was still zooming out. Pause briefly to switch between those actions.
+			</p>
+			<p>
+				Touch and trackpad pinch above the content sections zoom the model, including gestures over
+				the media rail and summary. In 3XL this applies to the left-hand viewer. Page pinch
+				magnification is suppressed throughout the shell; keyboard and browser-menu zoom remain
+				available. Outside 3XL, zooming from a scrolled position reveals the page top and clears the
+				interface together on one reversible timeline. The model point under the cursor or pinch
+				midpoint stays anchored while the stage moves, so scrolling does not add a second zoom or
+				pan gesture.
+			</p>
+			<p>
+				Once the surrounding interface has faded, hidden content cannot intercept pointers or
+				keyboard focus. The complete canvas supports 3D navigation, as in fullscreen. The outline
+				fades with the interface and is omitted in fullscreen and the 3XL viewer; the pointer hint
+				still indicates navigation.
 			</p>
 			<p>
 				The minimap is bottom-left at XS/S and top-left from M. Tools remain upper-right. Insets and

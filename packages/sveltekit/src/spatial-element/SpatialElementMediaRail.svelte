@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
 	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
+	import { getPanelFocusOpacity } from '@spatial-elements/core/stage/panelFocusMath';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
 	import Play from 'lucide-svelte/icons/play';
 	import OverflowControls from './OverflowControls.svelte';
@@ -92,6 +93,7 @@
 		class="spatial-element-rail"
 		class:focused
 		data-spatial-element-media-rail
+		inert={getPanelFocusOpacity(stage.getZoomUiFocus?.() ?? 0) < 0.12 || (stage.isFullscreen?.() ?? false)}
 		aria-label="Product media"
 	>
 		{#each spatialElement.media as media (media.id)}

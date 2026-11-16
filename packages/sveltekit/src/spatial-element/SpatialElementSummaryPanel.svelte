@@ -13,6 +13,7 @@
 	const contentInset = $derived(theme.panelShape.contentInset ?? Math.max(16, Math.round(theme.panelShape.radius * 0.7)));
 	let presentation = $state<HTMLDivElement>(null!);
 	let panelHeight = $state<number>();
+	let viewportWidth = $state<number>();
 
 	onMount(() => {
 		// The stage reparents the rendered content. Keep its layout placeholder in
@@ -33,6 +34,8 @@
 	});
 </script>
 
+<svelte:window bind:innerWidth={viewportWidth} />
+
 <div class="spatial-element-aside" data-spatial-summary-aside style:--summary-panel-height={panelHeight === undefined ? undefined : `${panelHeight}px`}>
 	<Panel
 		{nativeContent}
@@ -47,7 +50,7 @@
 		focusReactive={!nativeContent}
 		transitionGroup="shared"
 		class="spatial-element-panel"
-		shape={{ ...theme.panelShape, radius: radii.panel, contentInset }}
+		shape={{ ...theme.panelShape, radius: radii.panel, squareBottom: viewportWidth !== undefined && viewportWidth < 840, contentInset }}
 		theme={theme.panelTheme}
 		contentClass="stage-panel-content spatial-element-content"
 		aria-labelledby="spatial-element-title"
@@ -89,5 +92,10 @@
 
 	@media (min-width: 840px) {
 		.spatial-element-aside { position: absolute; top: 0; right: var(--spatial-detail-summary-right); margin: 0; }
+	}
+	@media (width < 840px) {
+		:global(.spatial-element-panel .stage-panel-surface), :global(.spatial-element-panel) {
+			border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+		}
 	}
 </style>

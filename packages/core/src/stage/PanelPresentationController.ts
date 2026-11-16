@@ -784,6 +784,8 @@ export class PanelPresentationController {
 					transitionBlocked || contentOpacity * transitionOpacity < 0.12 ? 'none' : 'auto';
 				contentObject.element.style.pointerEvents = pointerEvents;
 				interactiveContent.style.pointerEvents = pointerEvents;
+				this.nativeShellInteractivity.add(interactiveContent);
+				setInertLease(interactiveContent, this, pointerEvents === 'none' || !viewportVisible);
 				animationActive =
 					this.easePanelTransform(
 						contentObject,

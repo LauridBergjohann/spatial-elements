@@ -32,6 +32,13 @@
 				stationary media area and a document-scrolling content pane. ContentPages and carousels
 				retain their ordinary centered composition.
 			</p>
+			<p>
+				The header, summary and sections use the theme's panel opacity and backdrop blur, with a
+				minimum opacity of 0.8 for readability. Transparent sections inherit the panel tint;
+				standard and muted sections retain their respective section colors. Each region paints its
+				own tint over a shared, untinted blur surface outside the scrolling clip. This lets the blur
+				sample the 3D stage without adding a second layer of background opacity.
+			</p>
 			<p><img src="/documentation/images/detail-pane-scrolled.png" alt="" loading="lazy" /></p>
 			<p>
 				<em

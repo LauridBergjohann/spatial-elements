@@ -1,5 +1,22 @@
 # @spatial-elements/sveltekit
 
+## 1.0.0-beta.13
+
+### Patch Changes
+
+- Fix 3XL reading-pane backdrop blur by sampling the stage outside the scrolling clip, preserving section colors and at least 80% background opacity.
+
+- Keep High-resolution outlines attached to the live model after refinement, handoff and theme changes. Unify page reveal and interface clearance when zooming from a scrolled position.
+
+- Keep hover outlines synchronized with device orientation. Start page reveal at the first inward zoom and preserve the cursor or pinch anchor while scrolling. Use one damped touch zoom path to avoid duplicate dolly and pan.
+
+- Unify 3XL reading-pane surfaces with theme blur and at least 80% opacity. Join compact summaries to their sections with square lower corners, including glass panels. Release hidden content from interaction during zoom and fade geometry outlines with the interface.
+
+  Keep wheel scrolling and model zoom in separate 800ms gestures, route pinch across detail media and summary content to the model, and progressively reveal the page top while zooming. Suppress browser pinch magnification throughout the shell while retaining keyboard/browser-menu zoom.
+
+- Updated dependencies
+  - @spatial-elements/core@1.0.0-beta.13
+
 ## 1.0.0-beta.12
 
 ### Patch Changes

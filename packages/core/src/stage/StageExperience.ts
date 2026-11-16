@@ -77,7 +77,6 @@ import {
 	getPanelFocusOpacity,
 	getPerspectiveDistance,
 	getSequencedMinimapFocus,
-	getStageUiFocus,
 	getZoomFocusDistanceRange,
 	hasPanelGeometryChanged
 } from './stageMath.js';
@@ -367,6 +366,8 @@ export class StageExperience {
 	private readonly pointerDown = (event: PointerEvent) => this.handlePointerDown(event);
 	private readonly pointerUp = (event: PointerEvent) => this.handlePointerUp(event);
 	private readonly touchStart = (event: TouchEvent) => this.interaction.handleTouchStart(event);
+	private readonly touchMove = (event: TouchEvent) => this.interaction.handleTouchMove(event);
+	private readonly touchEnd = (event: TouchEvent) => this.interaction.handleTouchEnd(event);
 	private readonly wheel = (event: WheelEvent) => this.handleWheel(event);
 	private readonly scroll = (frame: StageScrollFrame) => this.handleScrollFrame(frame);
 	private readonly finishScroll = () => {
@@ -454,8 +455,11 @@ export class StageExperience {
 		if (!input) return;
 		const layout = resolveDetailLayout(input);
 		const split = layout.composition === 'split';
+		const container = this.container;
 		return { media: this.detailMedia, split,
-			paneHidden: split && (this.fullscreen || this.panelUiFocus >= 0.99),
+			paneHidden: this.fullscreen || getPanelFocusOpacity(this.panelUiFocus) < 0.12,
+			uiFocus: this.panelUiFocus,
+			get contentTop() { return container.querySelector('.spatial-element-section-list')?.getBoundingClientRect().top; },
 			paneLeft: layout.base.pane.x };
 	}
 	private fullscreen = false;
@@ -668,6 +672,7 @@ export class StageExperience {
 				stageViewportVisible: this.stageViewportVisible,
 				detailMediaActive: this.detailMediaActive,
 				modelHover: this.modelHover,
+				outlineOpacity: this.interaction.outlineOpacity,
 				modelInteractionActive: this.modelInteractionActive,
 				catalog: this.catalog,
 				pageModelReady: this.pageModelReady,
@@ -766,8 +771,11 @@ export class StageExperience {
 		window.addEventListener('blur', this.pointerLeave);
 		document.addEventListener('visibilitychange', this.visibilityChange);
 		this.backgroundCanvas.addEventListener('pointerdown', this.pointerDown, { capture: true });
-		this.backgroundCanvas.addEventListener('touchstart', this.touchStart, { passive: false });
-		this.backgroundCanvas.addEventListener('wheel', this.wheel, {
+		window.addEventListener('touchstart', this.touchStart, { capture: true, passive: false });
+		window.addEventListener('touchmove', this.touchMove, { capture: true, passive: false });
+		window.addEventListener('touchend', this.touchEnd, true);
+		window.addEventListener('touchcancel', this.touchEnd, true);
+		window.addEventListener('wheel', this.wheel, {
 			capture: true,
 			passive: false
 		});
@@ -807,8 +815,11 @@ export class StageExperience {
 		this.backgroundCanvas.removeEventListener('pointerdown', this.pointerDown, {
 			capture: true
 		});
-		this.backgroundCanvas.removeEventListener('wheel', this.wheel, { capture: true });
-		this.backgroundCanvas.removeEventListener('touchstart', this.touchStart);
+		window.removeEventListener('wheel', this.wheel, { capture: true });
+		window.removeEventListener('touchstart', this.touchStart, true);
+		window.removeEventListener('touchmove', this.touchMove, true);
+		window.removeEventListener('touchend', this.touchEnd, true);
+		window.removeEventListener('touchcancel', this.touchEnd, true);
 		if (this.renderRequestId) cancelAnimationFrame(this.renderRequestId);
 		this.renderRequestId = 0;
 		if (this.scrollEndTimer) window.clearTimeout(this.scrollEndTimer);
@@ -1001,12 +1012,7 @@ export class StageExperience {
 		if (previousExcludeMesh !== this.interactionTheme.excludeMesh && this.model) {
 			const pickModel = this.refinementState === 'high' && this.highPose ? this.highPose : this.model;
 			this.collectModelPickTargets(pickModel);
-			if (pickModel === this.model) this.pipeline.createModelOutline(this.model);
-			else {
-				const outline = this.model.clone(false);
-				outline.add(pickModel.clone(true));
-				this.pipeline.createModelOutline(outline);
-			}
+			this.pipeline.createModelOutline(pickModel);
 		}
 		const changed: number[] = [];
 		let surfaceChanged = false;
@@ -1565,7 +1571,9 @@ export class StageExperience {
 		this.pageModelReady = false;
 		this.spatialCapture = new SpatialGeometryCapture(model, projection, {
 			environment: this.scene.environment,
-			outlineTheme: this.modelHover ? this.interactionTheme : undefined,
+			outlineTheme: this.modelHover && this.interaction.outlineOpacity > 0 ? {
+				...this.interactionTheme, outlineOpacity: this.interactionTheme.outlineOpacity * this.interaction.outlineOpacity
+			} : undefined,
 			environmentIntensity: this.scene.environmentIntensity,
 			lights: this.scene.children.filter(
 				(child): child is THREE.Light => child instanceof THREE.Light
@@ -1880,9 +1888,7 @@ export class StageExperience {
 		this.presentation.finishHandoff(this.catalogMode === 'synchronous');
 		if (!this.disposed && this.highPose && this.model && this.refinementState === 'high') {
 			this.collectModelPickTargets(this.highPose);
-			const outline = this.model.clone(false);
-			outline.add(this.highPose.clone(true));
-			this.pipeline.createModelOutline(outline);
+			this.pipeline.createModelOutline(this.highPose);
 		}
 		if (this.pageModelReady && !this.disposed) this.startHighRequest();
 		this.requestRender();
@@ -1958,7 +1964,7 @@ export class StageExperience {
 		this.controls.update();
 
 		this.panelFocus = this.getZoomFocusFactor();
-		this.panelUiFocus = getStageUiFocus(this.panelFocus);
+		this.panelUiFocus = this.interaction.getUiFocus(this.panelFocus);
 		this.minimapFocus = getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus, window.innerWidth);
 		this.layoutDirty = true;
 		this.lastFrameTime = performance.now();
@@ -2072,6 +2078,13 @@ export class StageExperience {
 		// its actual successor instead of expecting a final retained-capture frame.
 		if (kind === 'dock') return this.getDockProjection(true)?.clip.toArray() ?? null;
 		return this.model ? captureSpatialElementProjection(this.model, this.camera).clip.toArray() : null;
+	}
+	/** Compare the last rendered mask with the live representation, including High refinement. */
+	getVisualTestOutlinePose() {
+		const model = this.refinementState === 'high' && this.highPose ? this.highPose : this.model;
+		if (!model) return null;
+		model.updateWorldMatrix(true, false);
+		return { model: model.matrixWorld.toArray(), mask: this.pipeline.getOutlineWorldMatrix(), high: this.refinementState === 'high' };
 	}
 
 	/** Returns the main element's projected bounds for query-gated layout regressions. */
@@ -3216,9 +3229,10 @@ export class StageExperience {
 		// The damped camera distance is the single animation clock for geometry and
 		// every close-up UI phase. Phase remapping remains, temporal lag does not.
 		this.panelFocus = this.detailMediaActive ? this.getZoomFocusFactor() : 0;
-		this.panelUiFocus = this.fullscreen ? 1 : getStageUiFocus(this.panelFocus);
+		this.panelUiFocus = this.fullscreen ? 1 : this.interaction.getUiFocus(this.panelFocus);
 		this.minimapFocus = this.fullscreen ? 1 : getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus, window.innerWidth);
 		this.updateStageCameraProjection();
+		this.interaction.compensateZoomAnchor();
 		this.reportZoomFocus({
 			focus: this.panelFocus,
 			uiFocus: this.panelUiFocus,

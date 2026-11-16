@@ -2,6 +2,44 @@ import { expect, test } from '@playwright/test';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
 import sharp from 'sharp';
 
+if (process.env.SPATIAL_GPU) test('High detail outline follows the live sensor pose after refinement and renewed hover', async ({ page }, info) => {
+	await page.addInitScript(() => Object.defineProperty(DeviceOrientationEvent, 'requestPermission', {
+		configurable: true, value: async () => 'granted'
+	}));
+	await page.goto('/showcase/industrial/wurm-asv101/?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+	await expect.poll(() => page.evaluate(() => window.__stageVisualTest?.getOutlinePose()?.high), { timeout: 60000 }).toBe(true);
+	const box = await page.evaluate(() => window.__stageVisualTest!.getModelRect()!);
+	const hover = () => page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+	await hover();
+	const emit = (from: number, to: number) => page.evaluate(async ({ from, to }) => {
+		for (let i = 0; i <= 30; i++) {
+			window.dispatchEvent(new DeviceOrientationEvent('deviceorientation', { alpha: 0, beta: from + (to - from) * Math.min(i / 20, 1), gamma: 0 }));
+			await new Promise(resolve => setTimeout(resolve, 25));
+		}
+	}, { from, to });
+	const aligned = () => expect.poll(() => page.evaluate(() => {
+		const pose = window.__stageVisualTest!.getOutlinePose()!;
+		return pose.mask ? Math.max(...pose.mask.map((value, i) => Math.abs(value - pose.model[i]))) : Infinity;
+	})).toBeLessThan(0.000001);
+	await emit(0, 0);
+	await aligned();
+	const neutral = await page.evaluate(() => window.__stageVisualTest!.getOutlinePose()!.model);
+	await emit(0, 20);
+	await aligned();
+	const tilted = await page.evaluate(() => window.__stageVisualTest!.getOutlinePose()!.model);
+	expect(Math.max(...tilted.map((value, i) => Math.abs(value - neutral[i])))).toBeGreaterThan(0.001);
+	await page.screenshot({ path: info.outputPath('high-outline-tilted.png') });
+	await page.mouse.move(10, 10);
+	await emit(20, -10);
+	await hover();
+	await aligned();
+	await page.mouse.down();
+	await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 + 30, { steps: 8 });
+	await page.mouse.up();
+	await aligned();
+});
+
 if (process.env.SPATIAL_GPU) test('SpaceMouse reveals the scrolled detail without moving a split layout', async ({ page }) => {
 	for (const width of [1700, 2600]) {
 		await page.setViewportSize({ width, height: 900 });

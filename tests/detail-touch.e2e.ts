@@ -90,6 +90,10 @@ test('pinch can release one finger, continue rotating, then rotate again without
 	const before = await orientation(page);
 	await drag(page, cdp, await modelPoint(page), -60, 30);
 	await expectRotation(page, before);
+	// Close-up navigation now owns the whole canvas. Restore the overview before
+	// expecting an empty-background swipe to scroll the document again.
+	await page.getByRole('button', { name: 'Detail view', exact: true }).tap();
+	await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getState().focus)).toBeLessThan(0.001);
 	await drag(page, cdp, { x: 8, y: 700 }, 0, -260);
 	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(80);
 	expect(errors).toEqual([]);
@@ -113,4 +117,38 @@ test('touch and pen never leave CSS hover while a real mouse still works', async
 	const cdp = await page.context().newCDPSession(page);
 	await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: rect!.x + rect!.width / 2, y: rect!.y + rect!.height / 2, pointerType: 'pen' });
 	await expect(page.locator('[data-mouse-hover]')).toHaveCount(0);
+});
+
+test('a scrolled pinch starts revealing immediately without duplicate dolly or projection jumps', async ({ page }) => {
+	await openDetail(page);
+	await page.evaluate(() => scrollTo(0, 140));
+	await page.evaluate(() => window.__stageVisualTest!.settle(30));
+	const center = await modelPoint(page);
+	const cdp = await page.context().newCDPSession(page);
+	const points = (spread: number) => [{ x: center.x - spread, y: center.y, id: 1 }, { x: center.x + spread, y: center.y, id: 2 }];
+	const initial = await page.evaluate(() => ({ y: scrollY, width: window.__stageVisualTest!.getModelRect()!.width }));
+	await touch(cdp, 'touchStart', points(30));
+	let previousWidth = initial.width;
+	for (let step = 1; step <= 12; step++) {
+		await touch(cdp, 'touchMove', points(30 + step * 0.5));
+		await page.waitForTimeout(40);
+		const sample = await page.evaluate(() => ({ y: scrollY, state: window.__stageVisualTest!.getState(), width: window.__stageVisualTest!.getModelRect()!.width }));
+		if (step === 3) {
+			expect(sample.y).toBeLessThan(initial.y - 2);
+			expect(sample.state.uiOpacity).toBeLessThan(0.99);
+		}
+		// Page reveal and surface fade share one progress value, rather than
+		// first restoring the main header and then hiding it again.
+		expect(Math.abs(sample.state.uiOpacity - sample.y / initial.y)).toBeLessThan(0.06);
+		expect(sample.width / previousWidth).toBeGreaterThan(0.97);
+		expect(sample.width / previousWidth).toBeLessThan(1.09);
+		previousWidth = sample.width;
+	}
+	await touch(cdp, 'touchEnd', []);
+	await page.evaluate(() => window.__stageVisualTest!.settle(60));
+	const final = await page.evaluate(() => ({ y: scrollY, width: window.__stageVisualTest!.getModelRect()!.width }));
+	expect(final.y).toBeLessThan(initial.y - 40);
+	expect(final.width / initial.width).toBeGreaterThan(1.1);
+	expect(final.width / initial.width).toBeLessThan(1.4);
+	expect(await page.evaluate(() => visualViewport!.scale)).toBe(1);
 });

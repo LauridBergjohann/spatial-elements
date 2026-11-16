@@ -127,6 +127,29 @@ test('fused halo renders the live mask without a separate composite submission',
 	}
 });
 
+test('detail silhouette follows live device rotation and its parent transform on every frame', () => {
+	const f = rendererFixture();
+	const model = new THREE.Group(), parent = new THREE.Group();
+	parent.add(model);
+	parent.position.set(2, 3, 4);
+	const pipeline = new StageRenderPipeline({
+		renderer: f.renderer, camera: new THREE.PerspectiveCamera(),
+		interactionTheme: () => DEFAULT_INTERACTION_THEME, isInteractionMesh: () => true,
+		panelRuntimes: () => [], frame: () => ({ stageViewportVisible: true, modelHover: true })
+	} as unknown as StageRenderPorts);
+	pipeline.createModelOutline(model);
+	for (const angle of [0, 0.2, -0.4]) {
+		model.rotation.set(angle, angle * 2, angle / 2);
+		parent.rotation.set(angle / 2, -angle, angle);
+		pipeline.renderModelOutline(null);
+		const maskScene = f.renderer.render.mock.lastCall![0] as THREE.Scene;
+		maskScene.updateMatrixWorld(true);
+		expect(maskScene.children[0].matrixWorld.elements).toEqual(model.matrixWorld.elements);
+	}
+	pipeline.releaseOutline();
+	f.originalTarget.dispose();
+});
+
 test('active touch manipulation does not submit the mouse hover glow pass', () => {
 	const f = rendererFixture();
 	const frame = { stageViewportVisible: true, modelHover: false, modelInteractionActive: true };

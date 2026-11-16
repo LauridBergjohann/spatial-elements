@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import * as THREE from 'three/webgpu';
 import { getInteractionGuidance } from './interactionGuidance.js';
+import { getPanelFocusOpacity } from './panelFocusMath.js';
 import { SpaceMouseAdapter, type SpaceMouseAdapterOptions } from './SpaceMouseAdapter.js';
 import {
 	SpatialElementInteractionController,
@@ -55,12 +56,13 @@ test.each([false, true])('SpaceMouse reveals an offscreen model unless the detai
 	ports.readGeometry = () => ({ ...read(), visible: split, detail: { media: 'minimap', split, paneHidden: false, paneLeft: 500 } });
 	owner.setSpaceMouseMoving(true);
 	owner.setSpaceMouseMoving(true);
+	expect(scrollTo).not.toHaveBeenCalled();
+	owner.applySpaceMouseNavigationUpdate({ viewMatrix: new THREE.Matrix4().makeTranslation(3, 0, 8).toArray() });
 	if (split) expect(scrollTo).not.toHaveBeenCalled();
 	else {
 		expect(scrollTo).toHaveBeenCalledOnce();
 		expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
 	}
-	owner.applySpaceMouseNavigationUpdate({ viewMatrix: new THREE.Matrix4().makeTranslation(3, 0, 8).toArray() });
 	expect(camera.position.x).toBe(3);
 	owner.setSpaceMouseMoving(false);
 	expect(owner.spaceMouseMoving).toBe(false);
@@ -76,7 +78,23 @@ test('SpaceMouse reveal respects reduced motion and ignores transition-owned geo
 	expect(scrollTo).not.toHaveBeenCalled();
 	setOwner('page');
 	owner.setSpaceMouseMoving(true);
+	owner.applySpaceMouseNavigationUpdate({ viewMatrix: new THREE.Matrix4().makeTranslation(3, 0, 10).toArray() });
 	expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
+	owner.dispose();
+});
+
+test('SpaceMouse zoom uses the progressive reveal instead of starting an independent scroll animation', () => {
+	const viewport = { scrollY: 800, scrollTo: vi.fn(({ top }: { top: number }) => { viewport.scrollY = top; }) };
+	vi.stubGlobal('window', viewport);
+	const { owner } = fixture();
+	owner.setFocusRange(10, 4);
+	owner.setSpaceMouseMoving(true);
+	owner.applySpaceMouseNavigationUpdate({ fov: THREE.MathUtils.degToRad(40) });
+	expect(viewport.scrollTo).not.toHaveBeenCalled();
+	owner.advance(100, 0.016);
+	expect(viewport.scrollY).toBeGreaterThan(0);
+	expect(viewport.scrollY).toBeLessThan(800);
+	expect(viewport.scrollTo).toHaveBeenCalledWith({ top: viewport.scrollY, behavior: 'instant' });
 	owner.dispose();
 });
 
@@ -134,7 +152,10 @@ vi.mock('three/addons/controls/OrbitControls.js', () => ({
 	OrbitControls: class {
 		target = new THREE.Vector3();
 		minDistance = 1;
-		maxDistance = 20;
+		maxDistance = 10;
+		zoomSpeed = 1;
+		enableZoom = true;
+		enablePan = true;
 		update = vi.fn(() => false);
 		dispose = vi.fn();
 		addEventListener() {}
@@ -194,6 +215,85 @@ test('fullscreen background input bypasses picking, disables hover and retains S
 	owner.setFullscreen(false);
 	expect(ports.canvas.style.touchAction).toBe('manipulation');
 	expect(owner.controls!.enabled).toBe(false);
+	owner.dispose();
+});
+
+test('outline fades with the interface and remains absent in the split viewer', () => {
+	const { owner, ports } = fixture();
+	const geometry = ports.readGeometry();
+	const detail = { media: 'minimap' as const, split: false, paneHidden: false, paneLeft: 60, uiFocus: 0 };
+	ports.readGeometry = () => ({ ...geometry, detail });
+	expect(owner.outlineOpacity).toBe(1);
+	detail.uiFocus = 0.5;
+	expect(owner.outlineOpacity).toBeGreaterThan(0);
+	expect(owner.outlineOpacity).toBeLessThan(1);
+	detail.uiFocus = 1;
+	expect(owner.outlineOpacity).toBe(0);
+	detail.uiFocus = 0;
+	detail.split = true;
+	expect(owner.outlineOpacity).toBe(0);
+	owner.dispose();
+});
+
+test('a scrolled inward dolly reveals the page and fades UI on one reversible timeline, except in 3XL', () => {
+	const viewport = { scrollY: 400, scrollTo: vi.fn(({ top }: { top: number }) => { viewport.scrollY = top; }) };
+	vi.stubGlobal('window', viewport);
+	const { owner, ports } = fixture();
+	const geometry = ports.readGeometry();
+	const detail = { media: 'minimap' as const, split: false, paneHidden: false, paneLeft: 60 };
+	ports.readGeometry = () => ({ ...geometry, detail });
+	owner.setFocusRange(8.4, 1);
+	owner.setCameraDistance(9.9);
+	expect(owner.getZoomFocusFactor()).toBe(0);
+	owner.advance(100, 0.016);
+	expect(viewport.scrollY).toBeGreaterThan(0);
+	expect(viewport.scrollY).toBeLessThan(400);
+	expect(getPanelFocusOpacity(owner.getUiFocus(owner.getZoomFocusFactor()))).toBeCloseTo(viewport.scrollY / 400, 8);
+	owner.setCameraDistance(6);
+	owner.advance(116, 0.016);
+	expect(viewport.scrollY).toBe(0);
+	expect(getPanelFocusOpacity(owner.getUiFocus(owner.getZoomFocusFactor()))).toBe(0);
+	owner.setCameraDistance(9);
+	owner.advance(124, 0.016);
+	expect(getPanelFocusOpacity(owner.getUiFocus(owner.getZoomFocusFactor()))).toBeCloseTo(1 - 1 / 3.5, 8);
+	owner.setCameraDistance(10);
+	owner.advance(128, 0.016);
+	expect(owner.getUiFocus(0)).toBe(0);
+	detail.split = true;
+	viewport.scrollY = 400;
+	owner.setCameraDistance(5);
+	owner.advance(132, 0.016);
+	expect(viewport.scrollY).toBe(400);
+	owner.dispose();
+});
+
+test('pinch owns zoom once and preserves its world point across scrolling projection changes', () => {
+	vi.stubGlobal('window', { innerWidth: 100, innerHeight: 100, scrollY: 0 });
+	const { owner, ports, camera } = fixture();
+	const geometry = ports.readGeometry();
+	ports.readGeometry = () => ({ ...geometry, detail: { media: 'minimap', split: false, paneHidden: false, paneLeft: 60, contentTop: 100 } });
+	const touches = (distance: number) => [{ clientX: 60 - distance, clientY: 40 }, { clientX: 60 + distance, clientY: 40 }];
+	const event = (distance: number) => ({ touches: touches(distance), preventDefault: vi.fn(), stopImmediatePropagation: vi.fn() } as unknown as TouchEvent);
+	owner.handleTouchStart(event(10));
+	expect(owner.controls!.enableZoom).toBe(false);
+	expect(owner.controls!.enablePan).toBe(false);
+	const ray = new THREE.Raycaster();
+	ray.setFromCamera(new THREE.Vector2(0.2, 0.2), camera);
+	const anchor = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), new THREE.Vector3())!;
+	owner.handleTouchMove(event(12));
+	// A 20% finger spread produces exactly one 1.2x dolly, independent of scroll.
+	expect(owner.wheelZoomTargetDistance).toBeCloseTo(10 / 1.2, 8);
+	for (let step = 1; step <= 12; step++) {
+		owner.advance(step * 16, 0.016);
+		camera.setViewOffset(100, 100, 0, -step * 2, 100, 100);
+		owner.compensateZoomAnchor();
+		const projected = anchor.clone().project(camera);
+		expect(projected.x).toBeCloseTo(0.2, 7);
+		expect(projected.y).toBeCloseTo(0.2, 7);
+	}
+	owner.handleTouchEnd({ touches: [touches(12)[0]] } as unknown as TouchEvent);
+	expect(owner.controls!.enableZoom).toBe(true);
+	expect(owner.controls!.enablePan).toBe(true);
 	owner.dispose();
 });
 

@@ -143,7 +143,8 @@
 		return {
 			...visualTheme,
 			...(pose ?? {}),
-			radius: shape.radius
+			radius: shape.radius,
+			squareBottom: shape.squareBottom
 		};
 	}
 
@@ -197,6 +198,7 @@
 		const backdropBlur = Math.max(theme.backdropBlur ?? 5, 0);
 		const style = [
 			`--stage-panel-radius: ${shape.radius}px`,
+			`--stage-panel-bottom-radius: ${shape.squareBottom ? 0 : shape.radius}px`,
 			`--stage-panel-content-inset: ${getContentInset()}px`,
 			`--stage-panel-tint-rgb: ${getTintRgb()}`,
 			`--stage-panel-tint-opacity: ${tintOpacity}`,
@@ -317,7 +319,7 @@
 	.stage-panel-fallback {
 		z-index: 2;
 		box-sizing: border-box;
-		border-radius: var(--stage-panel-radius);
+		border-radius: var(--stage-panel-radius) var(--stage-panel-radius) var(--stage-panel-bottom-radius, var(--stage-panel-radius)) var(--stage-panel-bottom-radius, var(--stage-panel-radius));
 	}
 
 	.stage-panel-posed {
@@ -335,7 +337,7 @@
 		width: 100%;
 		height: 100%;
 		padding: var(--stage-panel-content-inset);
-		border-radius: var(--stage-panel-radius);
+		border-radius: var(--stage-panel-radius) var(--stage-panel-radius) var(--stage-panel-bottom-radius, var(--stage-panel-radius)) var(--stage-panel-bottom-radius, var(--stage-panel-radius));
 		/* Keep opacity/filter off the element that owns backdrop-filter. Chrome
 		 * otherwise creates a new Backdrop Root as soon as zoom starts. */
 		opacity: 1;
