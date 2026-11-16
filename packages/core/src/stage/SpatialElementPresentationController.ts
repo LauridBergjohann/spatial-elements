@@ -438,9 +438,9 @@ export class SpatialElementPresentationController {
 			if (refinement.complete) {
 				refinement.invalidateSceneEndpoints();
 				if (highEnvironment) scene.environment = highEnvironment;
-				const outline = model.clone(false);
-				outline.add(high.pose.clone(true));
-				representationChanged(high.pose, outline);
+				// The live High child retains its parent chain. A detached snapshot
+				// loses later sensor motion even when its own matrix is refreshed.
+				representationChanged(high.pose, high.pose);
 				this.retainedBlend?.dispose();
 				this.retainedBlend = refinement;
 				this.blend = undefined;
@@ -452,7 +452,7 @@ export class SpatialElementPresentationController {
 			this.state = 'failed';
 			this.cancelHigh();
 			this.state = 'failed';
-			representationChanged(model, this.low ?? model);
+			representationChanged(model, model);
 			return false;
 		} finally {
 			if (originalVisibility) model.children.forEach((child, i) => { child.visible = originalVisibility[i]; });

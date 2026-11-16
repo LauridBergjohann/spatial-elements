@@ -135,8 +135,11 @@ test('a scrolled pinch starts revealing immediately without duplicate dolly or p
 		const sample = await page.evaluate(() => ({ y: scrollY, state: window.__stageVisualTest!.getState(), width: window.__stageVisualTest!.getModelRect()!.width }));
 		if (step === 3) {
 			expect(sample.y).toBeLessThan(initial.y - 2);
-			expect(sample.state.uiFocus).toBeLessThan(0.01);
+			expect(sample.state.uiOpacity).toBeLessThan(0.99);
 		}
+		// Page reveal and surface fade share one progress value, rather than
+		// first restoring the main header and then hiding it again.
+		expect(Math.abs(sample.state.uiOpacity - sample.y / initial.y)).toBeLessThan(0.06);
 		expect(sample.width / previousWidth).toBeGreaterThan(0.97);
 		expect(sample.width / previousWidth).toBeLessThan(1.09);
 		previousWidth = sample.width;

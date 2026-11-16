@@ -77,7 +77,6 @@ import {
 	getPanelFocusOpacity,
 	getPerspectiveDistance,
 	getSequencedMinimapFocus,
-	getStageUiFocus,
 	getZoomFocusDistanceRange,
 	hasPanelGeometryChanged
 } from './stageMath.js';
@@ -1013,12 +1012,7 @@ export class StageExperience {
 		if (previousExcludeMesh !== this.interactionTheme.excludeMesh && this.model) {
 			const pickModel = this.refinementState === 'high' && this.highPose ? this.highPose : this.model;
 			this.collectModelPickTargets(pickModel);
-			if (pickModel === this.model) this.pipeline.createModelOutline(this.model);
-			else {
-				const outline = this.model.clone(false);
-				outline.add(pickModel.clone(true));
-				this.pipeline.createModelOutline(outline);
-			}
+			this.pipeline.createModelOutline(pickModel);
 		}
 		const changed: number[] = [];
 		let surfaceChanged = false;
@@ -1894,9 +1888,7 @@ export class StageExperience {
 		this.presentation.finishHandoff(this.catalogMode === 'synchronous');
 		if (!this.disposed && this.highPose && this.model && this.refinementState === 'high') {
 			this.collectModelPickTargets(this.highPose);
-			const outline = this.model.clone(false);
-			outline.add(this.highPose.clone(true));
-			this.pipeline.createModelOutline(outline);
+			this.pipeline.createModelOutline(this.highPose);
 		}
 		if (this.pageModelReady && !this.disposed) this.startHighRequest();
 		this.requestRender();
@@ -1972,7 +1964,7 @@ export class StageExperience {
 		this.controls.update();
 
 		this.panelFocus = this.getZoomFocusFactor();
-		this.panelUiFocus = getStageUiFocus(this.panelFocus);
+		this.panelUiFocus = this.interaction.getUiFocus(this.panelFocus);
 		this.minimapFocus = getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus, window.innerWidth);
 		this.layoutDirty = true;
 		this.lastFrameTime = performance.now();
@@ -2086,6 +2078,13 @@ export class StageExperience {
 		// its actual successor instead of expecting a final retained-capture frame.
 		if (kind === 'dock') return this.getDockProjection(true)?.clip.toArray() ?? null;
 		return this.model ? captureSpatialElementProjection(this.model, this.camera).clip.toArray() : null;
+	}
+	/** Compare the last rendered mask with the live representation, including High refinement. */
+	getVisualTestOutlinePose() {
+		const model = this.refinementState === 'high' && this.highPose ? this.highPose : this.model;
+		if (!model) return null;
+		model.updateWorldMatrix(true, false);
+		return { model: model.matrixWorld.toArray(), mask: this.pipeline.getOutlineWorldMatrix(), high: this.refinementState === 'high' };
 	}
 
 	/** Returns the main element's projected bounds for query-gated layout regressions. */
@@ -3230,7 +3229,7 @@ export class StageExperience {
 		// The damped camera distance is the single animation clock for geometry and
 		// every close-up UI phase. Phase remapping remains, temporal lag does not.
 		this.panelFocus = this.detailMediaActive ? this.getZoomFocusFactor() : 0;
-		this.panelUiFocus = this.fullscreen ? 1 : getStageUiFocus(this.panelFocus);
+		this.panelUiFocus = this.fullscreen ? 1 : this.interaction.getUiFocus(this.panelFocus);
 		this.minimapFocus = this.fullscreen ? 1 : getSequencedMinimapFocus(this.panelFocus, this.panelUiFocus, window.innerWidth);
 		this.updateStageCameraProjection();
 		this.interaction.compensateZoomAnchor();

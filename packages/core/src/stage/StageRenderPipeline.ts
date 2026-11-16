@@ -1142,6 +1142,7 @@ export class StageRenderPipeline {
 			}
 		);
 	}
+	getOutlineWorldMatrix() { return this.outlineMaskModel?.matrixWorld.toArray() ?? null; }
 	renderModelOutline(target: THREE.RenderTarget | null, opacity = 1) {
 		this.displayOutlineOpacity.value = 0;
 		opacity *= this.ports.frame().outlineOpacity ?? 1;

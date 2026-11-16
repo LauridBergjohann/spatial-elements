@@ -11,7 +11,8 @@ import {
 	getWheelZoomTargetDistance,
 	normalizeWheelZoomDelta,
 	getViewResetDuration,
-	getViewResetInterpolation
+	getViewResetInterpolation,
+	getStageUiFocus
 } from './stageMath.js';
 import { markStageScrollInput } from './scrollFrame.js';
 import type { SpaceMouseAdapter, SpaceMouseNavigationUpdate } from './SpaceMouseAdapter.js';
@@ -21,7 +22,7 @@ import { ModelPointerPreview } from './ModelPointerPreview.js';
 import { resolveDetailGestureOwner } from '../spatial-element/spatialElementMedia.js';
 import type { SpatialElementMediaItem } from '../spatial-element/types.js';
 import { DetailWheelGesture } from './DetailWheelGesture.js';
-import { getPanelFocusOpacity } from './panelFocusMath.js';
+import { getPanelFocusOpacity, getPanelFocusProgress, getPanelFocusFromProgress } from './panelFocusMath.js';
 export interface SpatialElementInteractionPorts {
 	onSpaceMouseStateChange?: (state: import("./spaceMousePlatform.js").SpaceMouseState) => void;
 	camera: THREE.PerspectiveCamera;
@@ -44,7 +45,7 @@ export class SpatialElementInteractionController {
 	private readonly wheelGesture = new DetailWheelGesture();
 	private pinch?: { distance: number; zoom: boolean; pan: boolean };
 	private zoomAnchor?: { point: THREE.Vector3; client: THREE.Vector2; until: number };
-	private zoomScroll?: { focus: number; scrollY: number };
+	private zoomScroll?: { focus: number; scrollY: number; uiProgress: number };
 	private previousZoomFocus = 0;
 	private fullscreen = false;
 	setFullscreen(fullscreen: boolean) {
@@ -923,15 +924,21 @@ export class SpatialElementInteractionController {
 			this.preview.advance(this.camera, delta, this.reducedMotion?.matches);
 		return { controls: controls || preview, wheel };
 	}
-	/** Couple document reveal to actual camera focus for wheel, touch and SpaceMouse. */
-	private revealStageOnZoom() {
+	private getRevealFocus() {
 		// Start at the fitted distance, before the later UI-clearance phase. The
 		// first 35% of inward dolly reveals the whole stage without a second clock.
 		const maxDistance = this._controls!.maxDistance;
-		const focus = THREE.MathUtils.clamp((maxDistance - this.getEffectiveCameraDistance()) /
+		return THREE.MathUtils.clamp((maxDistance - this.getEffectiveCameraDistance()) /
 			Math.max(maxDistance * 0.35, 0.001), 0, 1);
+	}
+	/** Couple document reveal and UI clearance to one camera-driven timeline. */
+	private revealStageOnZoom() {
+		const focus = this.getRevealFocus();
 		if (focus > this.previousZoomFocus + 0.00001 && !this.ports.readGeometry().detail?.split) {
-			if (!this.zoomScroll && window.scrollY > 0) this.zoomScroll = { focus: this.previousZoomFocus, scrollY: window.scrollY };
+			if (!this.zoomScroll && window.scrollY > 0) this.zoomScroll = {
+				focus: this.previousZoomFocus, scrollY: window.scrollY,
+				uiProgress: getPanelFocusProgress(this.ports.readGeometry().detail?.uiFocus ?? getStageUiFocus(this.getZoomFocusFactor()))
+			};
 			if (this.zoomScroll) {
 				const progress = Math.min(1, (focus - this.zoomScroll.focus) / Math.max(1 - this.zoomScroll.focus, 0.001));
 				const y = Math.max(0, this.zoomScroll.scrollY * (1 - progress));
@@ -940,8 +947,19 @@ export class SpatialElementInteractionController {
 					window.scrollTo({ top: y < 1 ? 0 : y, behavior: 'instant' });
 				}
 			}
-		} else if (focus < this.previousZoomFocus - 0.00001) this.zoomScroll = undefined;
+		}
+		// Keep the same curve when zooming back out; dropping it at the first
+		// outward sample would abruptly show the interface again.
+		if (this.zoomScroll && focus <= this.zoomScroll.focus) this.zoomScroll = undefined;
 		this.previousZoomFocus = focus;
+	}
+	getUiFocus(cameraFocus: number) {
+		const normal = getStageUiFocus(cameraFocus);
+		if (!this.zoomScroll || this.ports.readGeometry().detail?.split) return normal;
+		const progress = THREE.MathUtils.clamp((this.getRevealFocus() - this.zoomScroll.focus) /
+			Math.max(1 - this.zoomScroll.focus, 0.001), 0, 1);
+		return Math.max(normal, getPanelFocusFromProgress(
+			THREE.MathUtils.lerp(this.zoomScroll.uiProgress, 1, progress)));
 	}
 	get outlineOpacity() {
 		const detail = this.ports.readGeometry().detail;

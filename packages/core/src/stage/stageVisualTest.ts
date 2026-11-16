@@ -49,6 +49,7 @@ export interface StageVisualTestController {
 	getSpatialCapture(): ReturnType<StageExperience['getSpatialCapture']> | null;
 	/** Clip matrix of the bound detail owner, after the retained source is released. */
 	getDetailProjection(kind: 'hero' | 'dock'): number[] | null;
+	getOutlinePose(): ReturnType<StageExperience['getVisualTestOutlinePose']>;
 	releaseSpatialCapture(): void;
 	getCatalogOwnership(): ReturnType<
 		import('../catalog/CatalogTransition.js').CatalogTransition['getOwnership']

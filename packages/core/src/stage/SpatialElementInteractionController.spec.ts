@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import * as THREE from 'three/webgpu';
 import { getInteractionGuidance } from './interactionGuidance.js';
+import { getPanelFocusOpacity } from './panelFocusMath.js';
 import { SpaceMouseAdapter, type SpaceMouseAdapterOptions } from './SpaceMouseAdapter.js';
 import {
 	SpatialElementInteractionController,
@@ -234,7 +235,7 @@ test('outline fades with the interface and remains absent in the split viewer', 
 	owner.dispose();
 });
 
-test('the first inward dolly reveals the page before UI focus starts, except in 3XL', () => {
+test('a scrolled inward dolly reveals the page and fades UI on one reversible timeline, except in 3XL', () => {
 	const viewport = { scrollY: 400, scrollTo: vi.fn(({ top }: { top: number }) => { viewport.scrollY = top; }) };
 	vi.stubGlobal('window', viewport);
 	const { owner, ports } = fixture();
@@ -247,9 +248,17 @@ test('the first inward dolly reveals the page before UI focus starts, except in 
 	owner.advance(100, 0.016);
 	expect(viewport.scrollY).toBeGreaterThan(0);
 	expect(viewport.scrollY).toBeLessThan(400);
+	expect(getPanelFocusOpacity(owner.getUiFocus(owner.getZoomFocusFactor()))).toBeCloseTo(viewport.scrollY / 400, 8);
 	owner.setCameraDistance(6);
 	owner.advance(116, 0.016);
 	expect(viewport.scrollY).toBe(0);
+	expect(getPanelFocusOpacity(owner.getUiFocus(owner.getZoomFocusFactor()))).toBe(0);
+	owner.setCameraDistance(9);
+	owner.advance(124, 0.016);
+	expect(getPanelFocusOpacity(owner.getUiFocus(owner.getZoomFocusFactor()))).toBeCloseTo(1 - 1 / 3.5, 8);
+	owner.setCameraDistance(10);
+	owner.advance(128, 0.016);
+	expect(owner.getUiFocus(0)).toBe(0);
 	detail.split = true;
 	viewport.scrollY = 400;
 	owner.setCameraDistance(5);

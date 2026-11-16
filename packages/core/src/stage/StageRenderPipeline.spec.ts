@@ -140,6 +140,7 @@ test('detail silhouette follows live device rotation and its parent transform on
 	pipeline.createModelOutline(model);
 	for (const angle of [0, 0.2, -0.4]) {
 		model.rotation.set(angle, angle * 2, angle / 2);
+		parent.rotation.set(angle / 2, -angle, angle);
 		pipeline.renderModelOutline(null);
 		const maskScene = f.renderer.render.mock.lastCall![0] as THREE.Scene;
 		maskScene.updateMatrixWorld(true);

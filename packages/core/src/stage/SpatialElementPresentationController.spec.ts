@@ -115,6 +115,9 @@ test('hidden warm-up keeps the representation/clock intact; cache completion ret
 	f.owner.renderRefinement(f.renderer, f.scene, undefined, draw, changed, true, { backgroundReveal: 0.63 });
 	expect(draw).toHaveBeenCalledTimes(1); // Existing full-resolution final High draw, not Low+High rerender.
 	expect(changed).toHaveBeenCalledTimes(1); expect(f.owner.refinementState).toBe('high');
+	// Outline input must remain attached to the sensor-driven model, not a pose snapshot.
+	expect(changed.mock.calls[0][1]).toBe(f.high.scene);
+	expect(changed.mock.calls[0][1].parent).toBe(f.owner.model);
 	expect(f.owner.getRenderTargets()).toHaveLength(2);
 	expect(f.owner.getSceneEndpointStats()[0]).toMatchObject({ hits: 1, active: false });
 	f.owner.release();

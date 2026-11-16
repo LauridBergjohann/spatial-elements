@@ -97,6 +97,13 @@ export function getPanelFocusProgress(focus: number) {
 	return smoothstep(0.08, 0.96, focus);
 }
 
+/** Inverse of the shared curve, for a timeline that already owns eased progress. */
+export function getPanelFocusFromProgress(progress: number) {
+	if (progress <= 0) return 0;
+	if (progress >= 1) return 1;
+	return 0.08 + 0.88 * (0.5 - Math.sin(Math.asin(1 - 2 * progress) / 3));
+}
+
 /** Stacked detail content leaves as one row, without sideways perspective drift. */
 export function getStackedDetailFocusOffset(focus: number, viewportHeight: number) {
 	return { x: 0, y: -viewportHeight * 0.6 * getPanelFocusProgress(focus), z: 0 };

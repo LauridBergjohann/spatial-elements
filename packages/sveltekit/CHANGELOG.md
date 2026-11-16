@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Keep High-resolution outlines attached to the live model after refinement, handoff and theme changes. Unify page reveal and interface clearance when zooming from a scrolled position.
+
 - Keep hover outlines synchronized with device orientation. Start page reveal at the first inward zoom and preserve the cursor or pinch anchor while scrolling. Use one damped touch zoom path to avoid duplicate dolly and pan.
 
 - Unify 3XL reading-pane surfaces with theme blur and at least 80% opacity. Join compact summaries to their sections with square lower corners, including glass panels. Release hidden content from interaction during zoom and fade geometry outlines with the interface.
