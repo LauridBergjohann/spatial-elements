@@ -213,12 +213,14 @@ describe('catalog preview lifetime', () => {
 				right: index * 200 + 180,
 				bottom: top + 220
 			};
+			const attributes = new Set<string>();
 			const card = {
 				isConnected: true,
 				style: { transform: '', setProperty: vi.fn(), removeProperty: vi.fn() },
 				getBoundingClientRect: () => rect,
-				setAttribute: vi.fn(),
-				removeAttribute: vi.fn()
+				hasAttribute: (name: string) => attributes.has(name),
+				setAttribute: vi.fn((name: string) => attributes.add(name)),
+				removeAttribute: vi.fn((name: string) => attributes.delete(name))
 			};
 			slots.set(String(index), {
 				isConnected: true,
@@ -292,6 +294,13 @@ describe('catalog preview lifetime', () => {
 			return animating;
 		};
 		expect(renderFrame(100)).toBe(false);
+		const firstCard = (slots.get('0') as HTMLElement).closest('[data-catalog-card]')!;
+		for (let frame = 1; frame < 60; frame++) renderFrame(100 + frame / 60);
+		expect(firstCard.setAttribute).toHaveBeenCalledExactlyOnceWith('data-catalog-model-ready', '');
+		// Retained DOM may remove presentation ownership; a later draw restores it.
+		firstCard.removeAttribute('data-catalog-model-ready');
+		renderFrame(101);
+		expect(firstCard.setAttribute).toHaveBeenCalledTimes(2);
 		const listDraws = vi.mocked(renderer.render).mock.calls.length;
 		layer.draw(renderer, 'rear');
 		expect(renderer.render).toHaveBeenCalledTimes(listDraws);
@@ -363,6 +372,7 @@ describe('catalog preview lifetime', () => {
 			style: { transform: '', visibility: '', removeProperty: vi.fn() },
 			getBoundingClientRect: () => rect,
 			querySelector: (selector: string) => selector === '.summary' ? summary : hitTarget,
+			hasAttribute: () => false,
 			setAttribute: vi.fn(),
 			removeAttribute: vi.fn()
 		};

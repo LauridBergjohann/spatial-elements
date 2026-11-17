@@ -52,8 +52,12 @@ export class CarouselSectionSurfaces {
 
 	update(scrollX: number, scrollY: number, opacity: number) {
 		for (const { output, rect, scrollX: measuredX, scrollY: measuredY } of this.entries.values()) {
-			output.style.transform = `translate(${rect.left + measuredX - scrollX}px, ${rect.top + measuredY - scrollY}px)`;
-			output.style.opacity = String(opacity);
+			const transform = `translate(${rect.left + measuredX - scrollX}px, ${rect.top + measuredY - scrollY}px)`;
+			const alpha = String(opacity);
+			// Model hover/rotation can render many frames without moving the section.
+			// Keep the decorative DOM surface untouched until its own pose changes.
+			if (output.style.transform !== transform) output.style.transform = transform;
+			if (output.style.opacity !== alpha) output.style.opacity = alpha;
 		}
 	}
 

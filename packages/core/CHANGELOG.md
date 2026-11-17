@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Complete click-to-reset despite residual wheel events and delayed scroll notifications. Reduce repeated layout calculations, DOM writes and temporary allocations in detail, catalog transitions, rendering and SpaceMouse buffering without changing visual output or animation curves.
+
 - Synchronize section movement with the submenu, preserve its 12px viewport inset, and anchor the 3XL pane to the corner controls. Center click enlargement in the entire viewport and let a new click interrupt wheel zoom immediately.
 
 - Let carousel models overflow inset and transparent section boundaries while respecting full-width backgrounds. Only immersive zoom retains wheel ownership outside the model; shallow zoom releases it immediately. Outward wheel zoom returns to the fitted stage center independently of pointer position.

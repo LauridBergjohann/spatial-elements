@@ -90,6 +90,28 @@ test('a real pointer click resets a still-moving wheel zoom without waiting for 
 	await expect.poll(async () => Math.hypot((await modelPoint(page)).x - point.x, (await modelPoint(page)).y - point.y)).toBeLessThan(2);
 });
 
+test('one click completes the reset while the previous wheel burst is still delivering events', async ({ page }) => {
+	await open(page);
+	const initial = await page.evaluate(() => window.__stageVisualTest!.getModelRect()!);
+	await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.3 }));
+	const point = await modelPoint(page);
+	await page.mouse.move(point.x, point.y);
+	await page.mouse.wheel(0, -300);
+	await page.mouse.click(point.x, point.y);
+	// Physical wheels/trackpads can finish their inertial stream after pointerup.
+	await page.evaluate(({ x, y }) => {
+		for (const delay of [0, 30, 80]) setTimeout(() => {
+			document.querySelector('.stage-webgpu-background')!.dispatchEvent(new WheelEvent('wheel', {
+				bubbles: true, cancelable: true, clientX: x, clientY: y, deltaY: -30
+			}));
+		}, delay);
+	}, point);
+	await expect.poll(async () => page.evaluate(initial => {
+		const current = window.__stageVisualTest!.getModelRect()!;
+		return Math.max(...(['x', 'y', 'width', 'height'] as const).map(key => Math.abs(current[key] - initial[key])));
+	}, initial)).toBeLessThan(2);
+});
+
 test('sections keep their gap to the projected submenu and nearby sections blur', async ({ page }) => {
 	await page.setViewportSize({ width: 1700, height: 900 });
 	await open(page);

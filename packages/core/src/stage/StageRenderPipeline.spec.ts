@@ -472,7 +472,42 @@ test('offscreen detail captures keep the model and reuse pixels until camera or 
 		visible = true;
 		pipeline.renderFrame(false, false); pipeline.renderFrame(false, false);
 		expect(draw).toHaveBeenCalledTimes(5);
+		visible = false;
+		pipeline.renderFrame(false, false);
+		expect(draw).toHaveBeenCalledTimes(6);
+		model.rotation.y = 0.1; scene.updateMatrixWorld(true);
+		draw.mockImplementationOnce(() => { throw new Error('capture failed'); });
+		expect(() => pipeline.renderFrame(false, false)).toThrow('capture failed');
+		pipeline.renderFrame(false, false); pipeline.renderFrame(false, false);
+		expect(draw).toHaveBeenCalledTimes(8);
 	} finally { target.dispose(); }
+});
+
+test('nested renderer scopes reuse independent snapshots and recover after failed passes', () => {
+	const f = rendererFixture(), r = f.renderer;
+	const readColor = vi.spyOn(r, 'getClearColor');
+	const outer = new THREE.Vector4(10, 20, 30, 40);
+	const inner = new THREE.Vector4(50, 60, 70, 80);
+	for (let iteration = 0; iteration < 2; iteration++) {
+		expect(() => withRendererState(r, () => {
+			r.setClearColor('blue', 0.2); r.setViewport(outer);
+			expect(() => withRendererState(r, () => {
+				r.setClearColor('green', 0.8); r.setViewport(inner);
+				throw new Error('inner failed');
+			})).toThrow('inner failed');
+			expect(f.clear.getHex()).toBe(0x0000ff);
+			expect(r.getClearAlpha()).toBe(0.2);
+			expect(f.viewport).toEqual(outer);
+			throw new Error('outer failed');
+		})).toThrow('outer failed');
+		expect(f.clear.getHex()).toBe(0xff0000);
+		expect(r.getClearAlpha()).toBe(0.4);
+		expect(f.viewport.toArray()).toEqual([1, 2, 3, 4]);
+	}
+	expect(readColor.mock.calls[0][0]).not.toBe(readColor.mock.calls[1][0]);
+	expect(readColor.mock.calls[0][0]).toBe(readColor.mock.calls[2][0]);
+	expect(readColor.mock.calls[1][0]).toBe(readColor.mock.calls[3][0]);
+	f.originalTarget.dispose();
 });
 
 function rendererFixture() {

@@ -442,6 +442,85 @@ test('a click interrupts damped wheel zoom immediately even if the picked surfac
 	owner.dispose();
 });
 
+test('a click reset owns its animation despite delayed document scroll notification', () => {
+	const { owner, camera } = detailFixture();
+	owner.handleWheel(wheel(50, -700));
+	owner.advance(1, 0.1);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	owner.advance(2, 0.016);
+	owner.requestScrollZoomReset(2);
+	expect(owner.viewResetActive).toBe(true);
+	owner.advance(3, 2);
+	expect(camera.position.toArray()).toEqual([0, 0, 10]);
+	owner.dispose();
+});
+
+test('a click reset ignores the old inertial wheel tail but accepts a new burst after 320ms', () => {
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const { owner, camera } = detailFixture();
+	owner.handleWheel(wheel(50, -700));
+	owner.advance(1, 0.1);
+	time.mockReturnValue(30);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	owner.advance(2, 0.016);
+	for (const now of [40, 90, 180]) {
+		time.mockReturnValue(now);
+		const tail = wheel(50, -30);
+		owner.handleWheel(tail);
+		expect(tail.preventDefault).toHaveBeenCalled();
+		expect(owner.viewResetActive).toBe(true);
+	}
+	owner.advance(3, 2);
+	expect(camera.position.toArray()).toEqual([0, 0, 10]);
+	time.mockReturnValue(500);
+	owner.handleWheel(wheel(50, -30));
+	expect(owner.wheelZoomTargetDistance).toBeDefined();
+	owner.dispose();
+});
+
+test('3XL content scrolling stays available while the spatial wheel tail is cancelled', () => {
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const { owner, camera } = detailFixture(true);
+	owner.handleWheel(wheel(50, -700));
+	owner.advance(1, 0.1);
+	time.mockReturnValue(30);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	time.mockReturnValue(40);
+	const tail = wheel(50, -30);
+	owner.handleWheel(tail);
+	expect(tail.preventDefault).toHaveBeenCalled();
+	const content = wheel(80, 100);
+	owner.handleWheel(content);
+	expect(content.preventDefault).not.toHaveBeenCalled();
+	expect(content.stopImmediatePropagation).not.toHaveBeenCalled();
+	expect(owner.viewResetActive).toBe(true);
+	owner.requestScrollZoomReset(100);
+	owner.advance(2, 2);
+	expect(camera.position.toArray()).toEqual([0, 0, 10]);
+	owner.dispose();
+});
+
+test.each([false, true])('a changed ctrl modifier starts a fresh wheel gesture after click reset (previous ctrl=%s)', ctrlKey => {
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const { owner } = detailFixture();
+	owner.handleWheel({ ...wheel(50, -100), ctrlKey } as WheelEvent);
+	owner.advance(1, 0.1);
+	time.mockReturnValue(30);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	expect(owner.viewResetActive).toBe(true);
+	time.mockReturnValue(40);
+	const fresh = { ...wheel(50, -30), ctrlKey: !ctrlKey } as WheelEvent;
+	owner.handleWheel(fresh);
+	expect(fresh.preventDefault).toHaveBeenCalled();
+	expect(owner.viewResetActive).toBe(false);
+	expect(owner.wheelZoomTargetDistance).toBeDefined();
+	owner.dispose();
+});
+
 test('wheel zoom-out returns viewport-centered enlargement to the original stage alignment', () => {
 	const { owner } = detailFixture(true);
 	owner.handlePointerDown(pointer(1));

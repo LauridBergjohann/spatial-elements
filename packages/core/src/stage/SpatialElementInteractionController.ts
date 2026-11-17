@@ -43,6 +43,10 @@ export interface SpatialElementInteractionPorts {
 export class SpatialElementInteractionController {
 	private disposed = false;
 	private readonly wheelGesture = new DetailWheelGesture();
+	private lastWheelTime = -Infinity;
+	private lastWheelCtrlKey = false;
+	private cancelledWheelUntil = -Infinity;
+	private cancelledWheelCtrlKey = false;
 	private pinch?: { distance: number; zoom: boolean; pan: boolean };
 	private zoomAnchor?: { point: THREE.Vector3; client: THREE.Vector2; until: number };
 	private tap?: { id: number; x: number; y: number; time: number };
@@ -55,6 +59,7 @@ export class SpatialElementInteractionController {
 	get viewportCentering() { return this._viewportCentering; }
 	setFullscreen(fullscreen: boolean) {
 		this.fullscreen = fullscreen;
+		this.cancelledWheelUntil = -Infinity;
 		this.wheelGesture.reset();
 		this.clearWheelZoom();
 		this._viewResetActive = false;
@@ -104,6 +109,7 @@ export class SpatialElementInteractionController {
 		});
 	}
 	releasePage() {
+		this.lastWheelTime = this.cancelledWheelUntil = -Infinity;
 		this._viewportCentering = 0;
 		this.tap = undefined;
 		this.wheelGesture.reset();
@@ -154,6 +160,10 @@ export class SpatialElementInteractionController {
 	private readonly _pointerNdc = new THREE.Vector2();
 	private readonly _wheelZoomDirection = new THREE.Vector3();
 	private readonly _wheelZoomForward = new THREE.Vector3();
+	private readonly zoomAnchorPlane = new THREE.Plane();
+	private readonly zoomAnchorNormal = new THREE.Vector3();
+	private readonly zoomAnchorIntersection = new THREE.Vector3();
+	private readonly zoomAnchorShift = new THREE.Vector3();
 	private readonly _controlsChange = () => this.requestRender();
 	private readonly _pointer = { x: 0, y: 0, active: false };
 	private readonly _modelPickTargets: Mesh[] = [];
@@ -212,6 +222,13 @@ export class SpatialElementInteractionController {
 	private startViewAnimation() {
 		if (!this._controls) return;
 		this.guidance.interact();
+		// A click supersedes the previous wheel burst, including hardware/trackpad
+		// inertia delivered after pointerup. A fresh burst still interrupts normally.
+		if (performance.now() - this.lastWheelTime < DETAIL_WHEEL_IDLE_MS) {
+			this.cancelledWheelUntil = this.lastWheelTime + DETAIL_WHEEL_IDLE_MS;
+			this.cancelledWheelCtrlKey = this.lastWheelCtrlKey;
+		}
+		this.wheelGesture.reset();
 
 		this.clearWheelZoom();
 		this.clearZoomReset();
@@ -431,6 +448,7 @@ export class SpatialElementInteractionController {
 		if (this.tap?.id === event.pointerId && Math.hypot(event.clientX - this.tap.x, event.clientY - this.tap.y) >= 6) this.tap = undefined;
 		const start = this._interactionPointers.get(event.pointerId);
 		if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) >= 6) {
+			this.cancelledWheelUntil = -Infinity;
 			this.guidance.interact();
 		}
 		if (event.pointerType !== 'mouse') {
@@ -502,6 +520,7 @@ export class SpatialElementInteractionController {
 	}
 	handleTouchStart(event: TouchEvent) {
 		if (event.touches?.length >= 2 && !this.pinch) {
+			this.cancelledWheelUntil = -Infinity;
 			this.tap = undefined;
 			const [a, b] = Array.from(event.touches);
 			const x = (a.clientX + b.clientX) / 2, y = (a.clientY + b.clientY) / 2;
@@ -566,18 +585,34 @@ export class SpatialElementInteractionController {
 		if (changed) this.requestRender();
 	}
 	handleWheel(event: WheelEvent) {
+		if (!this._controls || !this.canInteract || event.deltaY === 0) return;
+		const now = performance.now();
+		const detail = this.ports.readGeometry().detail;
+		let modelHit: boolean | undefined;
+		// Only swallow the cancelled spatial gesture. The separate 3XL content
+		// region and a changed pinch modifier represent independent new input.
+		if (now < this.cancelledWheelUntil && Boolean(event.ctrlKey) === this.cancelledWheelCtrlKey &&
+			(!detail?.split || (modelHit = this.hitTestModel(event.clientX, event.clientY, event.target)))) {
+			this.cancelledWheelUntil = now + DETAIL_WHEEL_IDLE_MS;
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			return;
+		}
+		this.cancelledWheelUntil = -Infinity;
+		this.lastWheelTime = now;
+		this.lastWheelCtrlKey = Boolean(event.ctrlKey);
 		const pinch = event.ctrlKey && this.isPinchArea(event.clientX, event.clientY);
-		const hit = pinch || this.hitTestModel(event.clientX, event.clientY, event.target);
+		const hit = pinch || (modelHit ?? this.hitTestModel(event.clientX, event.clientY, event.target));
 		this.setModelHover(hit);
 		this.updateControlsAvailability();
-		if (!this._controls || !this.canInteract || event.deltaY === 0) return;
 		const atOverview = !this.fullscreen && this.getEffectiveCameraDistance() >= this._controls.maxDistance - 0.001;
-		const separateArea = this.fullscreen || this.ports.readGeometry().detail?.split;
+		const separateArea = this.fullscreen || detail?.split;
 		if (separateArea) this.wheelGesture.reset();
 		const owner = separateArea ? (hit ? 'zoom' : 'scroll') :
 			this.wheelGesture.resolve(performance.now(), hit, event.deltaY > 0, atOverview, pinch,
-				Boolean(this.ports.readGeometry().detail?.paneHidden));
+				Boolean(detail?.paneHidden));
 		if (owner === 'scroll') {
+			if (!separateArea) this._viewResetActive = false;
 			this.clearWheelZoom();
 			// Let the browser scroll, but never let OrbitControls consume this burst.
 			this._controls.enabled = false;
@@ -619,7 +654,7 @@ export class SpatialElementInteractionController {
 		// A different pointer position chooses a new world point. Moving the old
 		// point to a new screen position would pan the model along with the mouse.
 		if (!this.zoomAnchor || performance.now() >= this.zoomAnchor.until ||
-			this.zoomAnchor.client.distanceTo(new THREE.Vector2(event.clientX, event.clientY)) > 0.5)
+			Math.hypot(this.zoomAnchor.client.x - event.clientX, this.zoomAnchor.client.y - event.clientY) > 0.5)
 			this.captureZoomAnchor(event.clientX, event.clientY);
 		this.zoomAnchor!.until = performance.now() + DETAIL_WHEEL_IDLE_MS;
 		this.setPointerNdc(event.clientX, event.clientY);
@@ -641,8 +676,8 @@ export class SpatialElementInteractionController {
 		this._raycaster.setFromCamera(this._pointerNdc, this.camera);
 		const point = new THREE.Vector3();
 		const hits = this._raycaster.intersectObjects(this._modelPickTargets, false);
-		const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-			this.camera.getWorldDirection(new THREE.Vector3()), this._controls!.target);
+		const plane = this.zoomAnchorPlane.setFromNormalAndCoplanarPoint(
+			this.camera.getWorldDirection(this.zoomAnchorNormal), this._controls!.target);
 		if (hits.length) point.copy(hits[0].point);
 		else if (!this._raycaster.ray.intersectPlane(plane, point)) point.copy(this._controls!.target);
 		this.zoomAnchor = { point, client: new THREE.Vector2(x, y), until: performance.now() + DETAIL_WHEEL_IDLE_MS };
@@ -658,18 +693,18 @@ export class SpatialElementInteractionController {
 		this.camera.updateMatrixWorld(true);
 		this.setPointerNdc(anchor.client.x, anchor.client.y);
 		this._raycaster.setFromCamera(this._pointerNdc, this.camera);
-		const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-			this.camera.getWorldDirection(new THREE.Vector3()), anchor.point);
-		const intersection = this._raycaster.ray.intersectPlane(plane, new THREE.Vector3());
+		const plane = this.zoomAnchorPlane.setFromNormalAndCoplanarPoint(
+			this.camera.getWorldDirection(this.zoomAnchorNormal), anchor.point);
+		const intersection = this._raycaster.ray.intersectPlane(plane, this.zoomAnchorIntersection);
 		if (!intersection) return;
-		const shift = anchor.point.clone().sub(intersection);
+		const shift = this.zoomAnchorShift.copy(anchor.point).sub(intersection);
 		this.camera.position.add(shift);
 		this._controls.target.add(shift);
 		this.camera.updateMatrixWorld(true);
 		if (!this.pinch && this._wheelZoomTargetDistance === undefined) this.zoomAnchor = undefined;
 	}
 	requestScrollZoomReset(scrollDelta: number) {
-		if (!this._controls || this.fullscreen || this.ports.readGeometry().detail?.split) return;
+		if (!this._controls || this.fullscreen || this._viewResetActive || this.ports.readGeometry().detail?.split) return;
 		if (this.pinch || this._interactionPointers.size > 1 ||
 			(this._wheelZoomTargetDistance !== undefined && this.wheelGesture.zooming(performance.now()))) return;
 		this.clearWheelZoom();

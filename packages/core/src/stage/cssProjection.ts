@@ -11,12 +11,12 @@ export type CssProjectionQuad = readonly [
 ];
 
 /**
- * Returns a CSS matrix that maps a local rectangle onto a projected screen quad.
+ * Returns matrix elements mapping a local rectangle onto a projected screen quad.
  *
  * Corners are ordered clockwise from the top-left. The resulting homography keeps
  * a flat DOM surface in the exact same perspective projection as its WebGPU plane.
  */
-export function getProjectiveCssMatrix3d(
+export function getProjectiveCssMatrixElements(
 	corners: CssProjectionQuad,
 	width: number,
 	height: number
@@ -65,5 +65,11 @@ export function getProjectiveCssMatrix3d(
 	];
 	if (matrix.some((value) => !Number.isFinite(value))) return null;
 
-	return `matrix3d(${matrix.map((value) => (Math.abs(value) < 1e-10 ? 0 : value)).join(',')})`;
+	return matrix.map((value) => (Math.abs(value) < 1e-10 ? 0 : value));
+}
+
+/** CSS serialization is only needed when writing the final DOM transform. */
+export function getProjectiveCssMatrix3d(corners: CssProjectionQuad, width: number, height: number) {
+	const matrix = getProjectiveCssMatrixElements(corners, width, height);
+	return matrix ? `matrix3d(${matrix.join(',')})` : null;
 }

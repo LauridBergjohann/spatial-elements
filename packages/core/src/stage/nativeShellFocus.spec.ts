@@ -13,8 +13,9 @@ test.each(['frosted', 'glass'] as const)('native %s shell follows the GPU focus 
 	const width = 1440, height = 900;
 	vi.stubGlobal('window', { innerWidth: width, innerHeight: height, location: { search: '' } });
 	let focus = 0;
+	const writes = vi.fn();
 	const style = () => ({
-		setProperty(name: string, value: string) { (this as Record<string, unknown>)[name] = value; },
+		setProperty(name: string, value: string) { writes(name, value); (this as Record<string, unknown>)[name] = value; },
 		getPropertyValue(name: string) { return String((this as Record<string, unknown>)[name] ?? ''); }
 	});
 	const frame = { closest: (selector: string) => selector === '[data-spatial-element-tabs-panel-anchor]' ? null : ({}),
@@ -52,6 +53,9 @@ test.each(['frosted', 'glass'] as const)('native %s shell follows the GPU focus 
 		expect(content.parentElement).toBe(surface); expect(surface.parentElement).toBe(frame);
 		expect(Number((content.style as Record<string, unknown>)['--stage-panel-content-opacity']))
 			.toBeCloseTo(getPanelFocusOpacity(getStageUiFocus(focus)), 10);
+		writes.mockClear();
+		owner.updatePanelPointerInteraction(1 / 60);
+		expect(writes).not.toHaveBeenCalled();
 		if (focus === .6) intermediateDelta = y;
 		if (focus === 1) {
 			expect(surface.inert).toBe(true);

@@ -948,7 +948,8 @@ export class CatalogSpatialElementLayer {
 			for (const actor of this.actors.values()) {
 				if (actor.root.visible && this.handoff?.actor !== actor) {
 					actor.rendered = true;
-					actor.card?.setAttribute('data-catalog-model-ready', '');
+					if (actor.card && !actor.card.hasAttribute('data-catalog-model-ready'))
+						actor.card.setAttribute('data-catalog-model-ready', '');
 				}
 			}
 		}, warmOutput, this.frozenSourceForBand(band, warmOutput));

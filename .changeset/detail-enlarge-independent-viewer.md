@@ -10,3 +10,5 @@ Add animated click/tap enlargement to the UI-clearance endpoint and a centered r
 Let carousel models overflow inset and transparent section boundaries while respecting full-width backgrounds. Cap inset L sections at 1536px with rounded outer corners and aligned submenus. Only immersive zoom retains wheel ownership outside the model; shallow zoom releases it immediately. Outward wheel zoom returns to the fitted stage center independently of pointer position.
 
 Synchronize section movement with the submenu, preserve its 12px viewport inset, and anchor the 3XL pane to the corner controls. Center click enlargement in the entire viewport and let a new click interrupt wheel zoom immediately.
+
+Keep click-to-reset authoritative over residual wheel events and delayed scroll notifications. Reduce repeated responsive-layout calculations and DOM writes in detail and catalog animation frames, reuse render/zoom scratch state, and compare held scene captures numerically without changing rendering quality, motion curves or SpaceMouse connection behavior.

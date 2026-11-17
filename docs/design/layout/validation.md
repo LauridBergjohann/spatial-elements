@@ -38,3 +38,11 @@ Heights include short, typical and tall viewports, zero/invalid inputs, asymmetr
 Unit tests establish the mathematical invariants; browser tests establish actual geometry and behavior. Screenshots document appearance but do not replace these assertions. Performance uses production builds and reports separate cold/warm distributions, not a single best run. Required device tests unavailable to automation are recorded as outstanding, never marked passed.
 
 Per step record its commit, command, result and relevant screenshots/traces in the implementation plan. Full release and package-consumer checks run after integration; do not repeat every expensive check for documentation-only edits.
+
+## Detail animation performance invariants
+
+Keep the existing focus curves, projected panel positions, theme blur, render resolution and transition ownership unchanged when optimizing the animation path. Panel layout snapshots live for one update only; pane geometry may persist until viewport metrics change. Tests assert that unchanged presentation does not rewrite CSS and that resize invalidates cached geometry.
+
+Held scene captures compare camera, projection, model transforms, appearance revision, environment and dimensions without allocating serialized matrix keys. Renderer-state scratch objects must support nested calls and restore state after failures. SpaceMouse transactions retain defensive input copies and their existing flush timing; an empty transaction must not request navigation work.
+
+Click-reset regressions include delayed document-scroll notifications and residual wheel events after pointer release, plus immediate independent input in the 3XL content area. Compare production-build model, minimap, pane and section rectangles at rest and intermediate zoom levels across compact, ordinary and split layouts; inspect screenshots as well as interaction tests. Allocation/write-count improvements are not substitutes for measured whole-page frame rates.

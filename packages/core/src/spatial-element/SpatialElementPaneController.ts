@@ -7,22 +7,30 @@ import { PANEL_CAMERA_FOV, PANEL_FOCUS_PERSPECTIVE_MAX_SCALE } from '../stage/st
 /** The native pane uses the same focus curve and camera-facing motion as panels. */
 export function resolvePaneFocusPresentation(rect: { x: number; y: number; width: number; height: number },
 	viewport: ResponsiveLayoutInput, focus: number) {
+	return createPaneFocusPresentation(rect, viewport, resolveDetailLayout(viewport))(focus);
+}
+
+/** Resolve viewport geometry once; zoom and scroll frames only evaluate its focus curve. */
+function createPaneFocusPresentation(rect: { x: number; y: number; width: number; height: number },
+	viewport: ResponsiveLayoutInput, layout: ReturnType<typeof resolveDetailLayout>) {
 	const position = { x: rect.x + rect.width / 2 - viewport.width / 2,
 		y: viewport.height / 2 - rect.y - rect.height / 2 };
 	const options = { width: rect.width, height: rect.height, position };
-	const offset = getPanelFocusOffset(options, focus, viewport.width, viewport.height);
 	const distance = getPerspectiveDistance(viewport.height, PANEL_CAMERA_FOV);
-	const scale = Math.min(PANEL_FOCUS_PERSPECTIVE_MAX_SCALE, Math.max(1, distance / Math.max(distance - offset.z, 1)));
-	const start = resolveDetailLayout(viewport).controls.viewSelector;
+	const start = layout.controls.viewSelector;
 	const end = resolveZoomLayout(viewport).controls.viewSelector;
-	const progress = getPanelFocusProgress(focus);
-	// Preserve the gap between the pane's top-left corner and the control row,
-	// countering perspective growth exactly like an anchored summary panel.
-	return { x: (end.x - start.x) * progress + rect.width * (scale - 1) / 2,
-		y: (end.y - start.y) * progress + rect.height * (scale - 1) / 2,
-		scale,
-		opacity: getPanelFocusOpacity(focus), blur: getPanelFocusBlur(focus, options),
-		pivotY: rect.y + rect.height / 2 };
+	return (focus: number) => {
+		const offset = getPanelFocusOffset(options, focus, viewport.width, viewport.height);
+		const scale = Math.min(PANEL_FOCUS_PERSPECTIVE_MAX_SCALE, Math.max(1, distance / Math.max(distance - offset.z, 1)));
+		const progress = getPanelFocusProgress(focus);
+		// Preserve the gap between the pane's top-left corner and the control row,
+		// countering perspective growth exactly like an anchored summary panel.
+		return { x: (end.x - start.x) * progress + rect.width * (scale - 1) / 2,
+			y: (end.y - start.y) * progress + rect.height * (scale - 1) / 2,
+			scale,
+			opacity: getPanelFocusOpacity(focus), blur: getPanelFocusBlur(focus, options),
+			pivotY: rect.y + rect.height / 2 };
+	};
 }
 
 /** One document coordinate system; clipping changes paint and hit testing only. */
@@ -50,6 +58,8 @@ export class SpatialElementPaneController {
 	private scrollY = 0;
 	private hidden = false;
 	private focus = 0;
+	private focusDirty = true;
+	private focusPresentation?: ReturnType<typeof createPaneFocusPresentation>;
 	private focusPose = { x: 0, y: 0, scale: 1, opacity: 1, blur: 0, pivotY: 0 };
 	private savedScroll?: { x: number; y: number };
 	private sectionPositions: { element: HTMLElement; top: number }[] = [];
@@ -98,7 +108,10 @@ export class SpatialElementPaneController {
 	}
 
 	setFocus(focus: number, fullscreen = false) {
-		this.focus = fullscreen ? 1 : Math.max(0, Math.min(1, Number.isFinite(focus) ? focus : 0));
+		const next = fullscreen ? 1 : Math.max(0, Math.min(1, Number.isFinite(focus) ? focus : 0));
+		if (next === this.focus) return;
+		this.focus = next;
+		this.focusDirty = true;
 		this.paintFocus();
 	}
 
@@ -147,6 +160,8 @@ export class SpatialElementPaneController {
 			if (!this.restoreAnchor) this.resizeAnchor = undefined;
 			this.metricKey = key;
 			this.layout = next;
+			this.focusPresentation = next.pane ? createPaneFocusPresentation(next.pane.surface, metrics, next) : undefined;
+			this.focusDirty = true;
 			const split = next.composition === 'split';
 			this.root.toggleAttribute('data-spatial-detail-pane', split);
 			this.root.toggleAttribute('data-spatial-detail-flow', next.shortHeightFallback);
@@ -189,9 +204,10 @@ export class SpatialElementPaneController {
 			return;
 		}
 		const enhanced = this.stage?.classList.contains('stage-virtual-scroll-active');
-		this.root.style.setProperty('--spatial-pane-fixed-compensation', `${enhanced ? this.scrollY : 0}px`);
+		this.setStyle(this.root, '--spatial-pane-fixed-compensation', `${enhanced ? this.scrollY : 0}px`);
 		const clip = resolvePaneScrollClip(this.bodyTop, this.bodyHeight, pane.body.y, pane.body.y + pane.body.height, this.scrollY);
-		this.body.style.clipPath = `inset(${clip.top}px 0 ${clip.bottom}px 0 round 0 0 var(--spatial-element-panel-radius) var(--spatial-element-panel-radius))`;
+		const clipPath = `inset(${clip.top}px 0 ${clip.bottom}px 0 round 0 0 var(--spatial-element-panel-radius) var(--spatial-element-panel-radius))`;
+		if (this.body.style.clipPath !== clipPath) this.body.style.clipPath = clipPath;
 		this.root.toggleAttribute('data-spatial-detail-pane-clipped', true);
 	}
 
@@ -203,25 +219,29 @@ export class SpatialElementPaneController {
 
 	private paintFocus() {
 		const pane = this.layout?.pane;
-		const metrics = this.readMetrics();
-		this.focusPose = pane && metrics ? resolvePaneFocusPresentation(pane.surface, metrics, this.focus)
-			: { x: 0, y: 0, scale: 1, opacity: 1, blur: 0, pivotY: 0 };
+		if (this.focusDirty) {
+			this.focusPose = this.focusPresentation?.(this.focus)
+				?? { x: 0, y: 0, scale: 1, opacity: 1, blur: 0, pivotY: 0 };
+			this.focusDirty = false;
+		}
 		const pose = this.focusPose;
 		this.root.toggleAttribute('data-spatial-detail-pane-zooming', Boolean(pane && this.focus > 0.001));
 		this.setHidden(getPanelFocusOpacity(this.focus) < 0.12);
 		const values = { '--spatial-pane-focus-x': `${pose.x}px`, '--spatial-pane-focus-y': `${pose.y}px`,
 			'--spatial-pane-focus-scale': String(pose.scale), '--spatial-pane-focus-opacity': String(pose.opacity),
 			'--spatial-pane-focus-blur': `${pose.blur}px` };
-		for (const [name, value] of Object.entries(values)) {
-			if (this.root.style.getPropertyValue(name) !== value) this.root.style.setProperty(name, value);
-		}
+		for (const [name, value] of Object.entries(values)) this.setStyle(this.root, name, value);
 		if (!pane || !this.body) return;
-		this.body.style.setProperty('--spatial-pane-focus-origin-y', `${pose.pivotY - this.bodyTop + this.scrollY}px`);
+		this.setStyle(this.body, '--spatial-pane-focus-origin-y', `${pose.pivotY - this.bodyTop + this.scrollY}px`);
 		for (const region of this.regions) {
 			const top = region.hasAttribute('data-spatial-detail-pane-submenu-shell') ? this.layout!.submenu!.y
 				: region.hasAttribute('data-spatial-detail-pane-header') || region.hasAttribute('data-spatial-detail-pane-surface') ? pane.surface.y : undefined;
-			if (top !== undefined) region.style.setProperty('--spatial-pane-focus-origin-y', `${pose.pivotY - top}px`);
+			if (top !== undefined) this.setStyle(region, '--spatial-pane-focus-origin-y', `${pose.pivotY - top}px`);
 		}
+	}
+
+	private setStyle(element: HTMLElement, name: string, value: string) {
+		if (element.style.getPropertyValue(name) !== value) element.style.setProperty(name, value);
 	}
 
 	private readonly handleFocus = (event: FocusEvent) => {
