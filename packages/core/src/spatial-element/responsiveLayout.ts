@@ -114,6 +114,7 @@ export function resolveDetailLayout(input: ResponsiveLayoutInput) {
 	const hero = tokens.hero[layout];
 	const horizontal = layout === 'xs' || layout === 's';
 	const wide = layout === 'xl' || layout === '2xl';
+	const insetL = layout === 'l' && base.viewport.width > 1536;
 	const right = available.x + available.width;
 	const contentLeft = content.x - available.x;
 	const railSize = layout === '2xl'
@@ -151,9 +152,10 @@ export function resolveDetailLayout(input: ResponsiveLayoutInput) {
 		x: base.paneSubmenu.x, y: base.paneSubmenu.y, maxWidth: base.paneSubmenu.width,
 		height: base.paneSubmenu.height, inlineAlignment: 'center', position: 'fixed'
 	} : {
-		x: wide ? content.x : available.x + hero.submenuLeft,
+		x: wide ? content.x : insetL ? Math.max(available.x + 12, content.x) : available.x + hero.submenuLeft,
 		y: top + fitHeight + hero.submenuGap,
-		maxWidth: wide ? content.width : Math.max(0, available.width - hero.submenuLeft - hero.submenuRight),
+		maxWidth: wide ? content.width : insetL ? Math.min(content.width, Math.max(0, available.width - 24))
+			: Math.max(0, available.width - hero.submenuLeft - hero.submenuRight),
 		height: hero.submenuHeight, inlineAlignment: 'start', position: 'document'
 	};
 	const dock = split ? undefined : {

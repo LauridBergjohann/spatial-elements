@@ -17,7 +17,8 @@ test.each(['frosted', 'glass'] as const)('native %s shell follows the GPU focus 
 		setProperty(name: string, value: string) { (this as Record<string, unknown>)[name] = value; },
 		getPropertyValue(name: string) { return String((this as Record<string, unknown>)[name] ?? ''); }
 	});
-	const frame = { closest: () => ({}), getBoundingClientRect() { throw new Error('Focus must not remeasure or move the anchor'); } };
+	const frame = { closest: (selector: string) => selector === '[data-spatial-element-tabs-panel-anchor]' ? null : ({}),
+		getBoundingClientRect() { throw new Error('Focus must not remeasure or move the anchor'); } };
 	const surface = { style: style(), inert: false, parentElement: frame };
 	const content = { style: style(), parentElement: surface };
 	const target = { frame, surfaceElement: surface, content, nativeContent: true } as unknown as StagePanelTarget;

@@ -1,20 +1,26 @@
-import { resolveDetailLayout, type ResponsiveLayoutInput } from './responsiveLayout.js';
+import { resolveDetailLayout, resolveZoomLayout, type ResponsiveLayoutInput } from './responsiveLayout.js';
 import { STAGE_PANEL_LAYOUT_EVENT } from '../stage/panelContext.js';
 import { getStageVisualScrollPosition, STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame, syncStageScrollToNative } from '../stage/scrollFrame.js';
-import { getPanelFocusBlur, getPanelFocusOffset, getPanelFocusOpacity, getPanelFocusPerspectiveOffset, getPerspectiveDistance } from '../stage/panelFocusMath.js';
+import { getPanelFocusBlur, getPanelFocusOffset, getPanelFocusOpacity, getPanelFocusProgress, getPerspectiveDistance } from '../stage/panelFocusMath.js';
 import { PANEL_CAMERA_FOV, PANEL_FOCUS_PERSPECTIVE_MAX_SCALE } from '../stage/stageConstants.js';
 
 /** The native pane uses the same focus curve and camera-facing motion as panels. */
 export function resolvePaneFocusPresentation(rect: { x: number; y: number; width: number; height: number },
-	viewport: { width: number; height: number }, focus: number) {
+	viewport: ResponsiveLayoutInput, focus: number) {
 	const position = { x: rect.x + rect.width / 2 - viewport.width / 2,
 		y: viewport.height / 2 - rect.y - rect.height / 2 };
 	const options = { width: rect.width, height: rect.height, position };
 	const offset = getPanelFocusOffset(options, focus, viewport.width, viewport.height);
 	const distance = getPerspectiveDistance(viewport.height, PANEL_CAMERA_FOV);
-	const perspective = getPanelFocusPerspectiveOffset({ x: position.x + offset.x, y: position.y + offset.y }, offset.z, distance);
-	return { x: offset.x + perspective.x, y: -offset.y - perspective.y,
-		scale: Math.min(PANEL_FOCUS_PERSPECTIVE_MAX_SCALE, Math.max(1, distance / Math.max(distance - offset.z, 1))),
+	const scale = Math.min(PANEL_FOCUS_PERSPECTIVE_MAX_SCALE, Math.max(1, distance / Math.max(distance - offset.z, 1)));
+	const start = resolveDetailLayout(viewport).controls.viewSelector;
+	const end = resolveZoomLayout(viewport).controls.viewSelector;
+	const progress = getPanelFocusProgress(focus);
+	// Preserve the gap between the pane's top-left corner and the control row,
+	// countering perspective growth exactly like an anchored summary panel.
+	return { x: (end.x - start.x) * progress + rect.width * (scale - 1) / 2,
+		y: (end.y - start.y) * progress + rect.height * (scale - 1) / 2,
+		scale,
 		opacity: getPanelFocusOpacity(focus), blur: getPanelFocusBlur(focus, options),
 		pivotY: rect.y + rect.height / 2 };
 }

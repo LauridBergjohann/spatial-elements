@@ -42,7 +42,7 @@ test('wheel zoom-out recenters the model even when the pointer changes sides', a
 });
 
 for (const width of [430, 1700, 2400]) {
-	test(`click enlarges and recenters the detail at ${width}px`, async ({ page }) => {
+	test(`click enlarges and recenters the detail at ${width}px`, async ({ page }, info) => {
 		await page.setViewportSize({ width, height: 900 });
 		await open(page);
 		const initial = await modelPoint(page);
@@ -50,10 +50,9 @@ for (const width of [430, 1700, 2400]) {
 		await expect.poll(async () => (await state(page)).uiOpacity).toBeLessThan(0.001);
 		await expect.poll(async () => (await state(page)).minimapFocus).toBeGreaterThan(0.999);
 		await expect(page.locator('[data-spatial-detail-pane-body]')).toHaveAttribute('inert', '');
-		// Keep the pointer on the column's visible front surface. At close range
-		// its projected 3D bounding box crosses the near plane, so its center is
-		// no longer a reliable surface hit (especially in the left 3XL viewer).
-		await page.mouse.click(initial.x, initial.y);
+		await page.screenshot({ path: info.outputPath('enlarged.png') });
+		// Enlargement uses the whole viewport, including the former content-pane area.
+		await page.mouse.click(width / 2, 450);
 		await expect.poll(async () => (await state(page)).focus).toBeLessThan(0.001);
 		await expect(page.locator('[data-spatial-detail-pane-body]')).not.toHaveAttribute('inert', '');
 		await expect.poll(async () => Math.hypot((await modelPoint(page)).x - initial.x, (await modelPoint(page)).y - initial.y)).toBeLessThan(2);
@@ -80,7 +79,54 @@ test('3XL scrolling does not reset zoom and wheel input switches areas without a
 	expect(ownership).toEqual([false, true, false, true]);
 });
 
-test('zoom-out keeps the empty-background gesture until the 500ms idle boundary', async ({ page }) => {
+test('a real pointer click resets a still-moving wheel zoom without waiting for idle', async ({ page }) => {
+	await open(page);
+	const point = await modelPoint(page);
+	await page.mouse.move(point.x, point.y);
+	await page.mouse.wheel(0, -700);
+	await page.mouse.click(point.x, point.y);
+	await page.evaluate(() => window.__stageVisualTest!.settle(30));
+	await expect.poll(async () => (await state(page)).focus).toBeLessThan(0.001);
+	await expect.poll(async () => Math.hypot((await modelPoint(page)).x - point.x, (await modelPoint(page)).y - point.y)).toBeLessThan(2);
+});
+
+test('sections keep their gap to the projected submenu and nearby sections blur', async ({ page }) => {
+	await page.setViewportSize({ width: 1700, height: 900 });
+	await open(page);
+	const read = () => page.evaluate(() => {
+		const frame = document.querySelector('[data-spatial-element-tabs-panel-anchor] [data-stage-panel-fallback]') as HTMLElement;
+		const panel = window.__stageVisualTest!.getPanelRect(frame)!;
+		const list = document.querySelector('.spatial-element-section-list')!;
+		const section = list.querySelector('[data-spatial-element-section-near-viewport]')!;
+		return { gap: list.getBoundingClientRect().top - panel.y - panel.height, blur: getComputedStyle(section).filter };
+	});
+	const initial = await read();
+	await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.45 }));
+	const zoomed = await read();
+	expect(zoomed.gap).toBeCloseTo(initial.gap, 0);
+	expect(zoomed.blur).toMatch(/^blur\(/);
+});
+
+test('3XL pane corner keeps its distance to the projected control row', async ({ page }) => {
+	await page.setViewportSize({ width: 2400, height: 900 });
+	await open(page);
+	const gap = () => page.evaluate(() => {
+		const frames = Array.from(document.querySelectorAll<HTMLElement>('[data-spatial-element-tools] [data-stage-panel-fallback]'));
+		const controls = frames.map(frame => window.__stageVisualTest!.getPanelRect(frame)).filter(rect => rect !== null);
+		const control = controls.sort((a, b) => b!.x - a!.x)[0]!;
+		const pane = document.querySelector('[data-spatial-detail-pane-header]')!.getBoundingClientRect();
+		return { x: pane.x - control.x - control.width, y: pane.y - control.y };
+	});
+	const rest = await gap();
+	for (const zoom of [0.3, 0.45, 0.6]) {
+		await page.evaluate(zoom => window.__stageVisualTest!.setView({ zoom }), zoom);
+		const current = await gap();
+		expect(current.x).toBeCloseTo(rest.x, 0);
+		expect(current.y).toBeCloseTo(rest.y, 0);
+	}
+});
+
+test('zoom-out keeps the empty-background gesture until the 320ms idle boundary', async ({ page }) => {
 	await open(page);
 	await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.9 }));
 	const prevented = await page.evaluate(() => {
@@ -92,7 +138,7 @@ test('zoom-out keeps the empty-background gesture until the 500ms idle boundary'
 	});
 	expect(prevented).toBe(true);
 	await expect.poll(async () => (await state(page)).focus).toBeLessThan(0.001);
-	await page.waitForTimeout(510);
+	await page.waitForTimeout(330);
 	await page.mouse.move(5, 600);
 	await page.mouse.wheel(0, 120);
 	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
@@ -124,7 +170,7 @@ test('stacked sections move down and nearby content and breadcrumbs blur with zo
 		const list = document.querySelector('.spatial-element-section-list')!;
 		const root = document.querySelector('[data-spatial-element-root]')!;
 		const breadcrumb = document.querySelector('.spatial-element-hero')!.parentElement!.parentElement!.querySelector('.breadcrumbs')!;
-		return { travel: parseFloat(getComputedStyle(root).getPropertyValue('--spatial-detail-content-travel')),
+		return { travel: parseFloat(getComputedStyle(root).getPropertyValue('--spatial-detail-content-fallback-travel')),
 			translate: getComputedStyle(list).translate, blur: getComputedStyle(breadcrumb).filter,
 			sectionBlur: getComputedStyle(root).getPropertyValue('--spatial-detail-content-blur') };
 	});

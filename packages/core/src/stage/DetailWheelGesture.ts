@@ -1,4 +1,4 @@
-export const DETAIL_WHEEL_IDLE_MS = 500;
+export const DETAIL_WHEEL_IDLE_MS = 320;
 /** Keep one wheel burst with its original owner, including inertial samples. */
 export class DetailWheelGesture {
 	private lastTime = -Infinity;

@@ -17,7 +17,7 @@ test('inset L sections cap at 1536px, round grouped outer edges and align the de
 			const content = (await page.locator('.spatial-element-section-list').boundingBox())!;
 			const tabs = (await page.locator('.spatial-element-tabs-anchor').boundingBox())!;
 			expect(content.width).toBe(1536);
-			expect(tabs.x).toBeCloseTo(content.x, 1);
+			expect(tabs.x).toBeCloseTo(Math.max(12, content.x), 1);
 		}
 	} finally { await context.close(); }
 });

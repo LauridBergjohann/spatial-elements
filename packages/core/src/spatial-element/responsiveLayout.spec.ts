@@ -6,6 +6,10 @@ import {
 } from './responsiveLayout.js';
 
 describe('responsive layout contract', () => {
+	it.each([1537, 1540, 1568, 1599])('keeps a 12px minimum submenu inset in capped L at %ipx', width => {
+		const layout = resolveDetailLayout({ width, height: 900 });
+		expect(layout.submenu!.x).toBe(Math.max(12, layout.base.content.x));
+	});
 	it('distinguishes media-query width from space reserved for a classic scrollbar', () => {
 		const result = resolveResponsiveLayout({ width: 1600, height: 900, scrollbarWidth: 15 });
 		expect(result.layout).toBe('xl');

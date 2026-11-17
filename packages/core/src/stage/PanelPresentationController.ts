@@ -574,6 +574,15 @@ export class PanelPresentationController {
 				visualWidth,
 				viewportVisible
 			} = layouts[index];
+			const tabsAnchor = this.panelTargets[index]?.frame?.closest?.('[data-spatial-element-tabs-panel-anchor]');
+			const detailRoot = tabsAnchor?.closest<HTMLElement>('[data-spatial-element-root]');
+			if (detailRoot && viewportWidth >= 840 && !detailRoot.hasAttribute('data-spatial-detail-pane')) {
+				// Attach the section stack to the projected bottom edge of its submenu.
+				// Its layout anchor stays unchanged, so scrolling never feeds back into measurement.
+				const scale = this.panelCamera.position.z / Math.max(this.panelCamera.position.z - focusOffset.z, 1);
+				const travel = -focusOffset.y + visualHeight * (scale - 1) / 2;
+				detailRoot.style.setProperty('--spatial-detail-content-travel', `${travel}px`);
+			} else detailRoot?.style.removeProperty('--spatial-detail-content-travel');
 			const transitionOpacity = this.getPanelTransitionOpacity(panel);
 			const transitionBlocked = this.catalogPresentation.active && Boolean(panel.transitionGroup);
 			if (viewportVisible) this.visiblePanelCount += 1;

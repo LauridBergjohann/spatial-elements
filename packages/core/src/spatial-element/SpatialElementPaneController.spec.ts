@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest';
 import { resolvePaneScrollClip, resolvePaneFocusPresentation } from './SpatialElementPaneController.js';
-import { resolveDetailLayout } from './responsiveLayout.js';
+import { resolveDetailLayout, resolveZoomLayout } from './responsiveLayout.js';
+import { getPanelFocusProgress } from '../stage/panelFocusMath.js';
 
 test.each([2300, 2456, 3128, 3440])('pane paint and native document coordinates agree at width %s', width => {
 	const pane = resolveDetailLayout({ width, height: 900 }).pane!;
@@ -27,6 +28,10 @@ test.each([2300, 2456, 3440])('pane zoom leaves document layout intact and clear
 	expect(rest).toMatchObject({ x: 0, scale: 1, opacity: 1, blur: 0 });
 	expect(Math.abs(rest.y)).toBe(0);
 	const partial = resolvePaneFocusPresentation(pane, viewport, 0.5);
+	const start = resolveDetailLayout(viewport).controls.viewSelector;
+	const end = resolveZoomLayout(viewport).controls.viewSelector;
+	expect(partial.x - pane.width * (partial.scale - 1) / 2).toBeCloseTo((end.x - start.x) * getPanelFocusProgress(0.5), 8);
+	expect(partial.y - pane.height * (partial.scale - 1) / 2).toBeCloseTo((end.y - start.y) * getPanelFocusProgress(0.5), 8);
 	expect(partial.x).toBeGreaterThan(0);
 	expect(partial.scale).toBeGreaterThan(1);
 	expect(partial.opacity).toBeGreaterThan(0);

@@ -49,6 +49,10 @@ export class SpatialElementInteractionController {
 	private zoomScroll?: { focus: number; scrollY: number; uiProgress: number };
 	private previousZoomFocus = 0;
 	private fullscreen = false;
+	private _viewportCentering = 0;
+	private _viewStartCentering = 0;
+	private _viewEndCentering = 0;
+	get viewportCentering() { return this._viewportCentering; }
 	setFullscreen(fullscreen: boolean) {
 		this.fullscreen = fullscreen;
 		this.wheelGesture.reset();
@@ -100,6 +104,7 @@ export class SpatialElementInteractionController {
 		});
 	}
 	releasePage() {
+		this._viewportCentering = 0;
 		this.tap = undefined;
 		this.wheelGesture.reset();
 		this.endPinch();
@@ -198,6 +203,7 @@ export class SpatialElementInteractionController {
 	private _viewEndFov = 45;
 	resetView() {
 		if (!this._controls || !this._initialViewCaptured) return;
+		this._viewEndCentering = 0;
 		this._viewEndPosition.copy(this._initialCameraPosition);
 		this._viewEndTarget.copy(this._initialControlsTarget);
 		this._viewEndFov = this._initialCameraFov;
@@ -212,6 +218,7 @@ export class SpatialElementInteractionController {
 		this._viewResetStartCameraPosition.copy(this.camera.position);
 		this._viewResetStartControlsTarget.copy(this._controls.target);
 		this._viewResetStartFov = this.camera.fov;
+		this._viewStartCentering = this._viewportCentering;
 		this._viewResetElapsed = 0;
 		this._viewResetDuration = getViewResetDuration(this.getZoomFocusFactor());
 		this._viewResetActive = true;
@@ -242,6 +249,7 @@ export class SpatialElementInteractionController {
 		this._viewEndTarget.copy(this._initialControlsTarget);
 		this._viewEndPosition.copy(this.camera.position).sub(this._controls.target).setLength(near).add(this._viewEndTarget);
 		this._viewEndFov = this._initialCameraFov;
+		this._viewEndCentering = 1;
 		this.startViewAnimation();
 	}
 	createControls() {
@@ -486,9 +494,10 @@ export class SpatialElementInteractionController {
 		);
 		this.notifyModelInput();
 		this.updateControlsAvailability();
+		// The down event already picked the geometry. A moving/damped camera can
+		// move that surface away before release; that does not cancel a stationary tap.
 		if (tap?.id === event.pointerId && event.type === 'pointerup' && performance.now() - tap.time < 500 &&
-			Math.hypot(event.clientX - tap.x, event.clientY - tap.y) < 6 &&
-			this.hitTestModel(event.clientX, event.clientY, event.target, true)) this.toggleEnlargedView();
+			Math.hypot(event.clientX - tap.x, event.clientY - tap.y) < 6) this.toggleEnlargedView();
 		this.requestRender();
 	}
 	handleTouchStart(event: TouchEvent) {
@@ -708,6 +717,7 @@ export class SpatialElementInteractionController {
 			ZOOM_RESET_DAMPING,
 			delta
 		);
+		this.restoreStageAlignment(currentDistance, nextDistance);
 		this.setCameraDistance(nextDistance);
 		this.camera.fov = THREE.MathUtils.damp(
 			this.camera.fov,
@@ -725,6 +735,7 @@ export class SpatialElementInteractionController {
 			this.camera.fov = this._initialCameraFov;
 			this.camera.updateProjectionMatrix();
 			if (targetDistance >= this._controls.maxDistance - 0.001) {
+				this._viewportCentering = 0;
 				this.clearZoomReset();
 			} else {
 				this._zoomResetTargetDistance = undefined;
@@ -741,6 +752,7 @@ export class SpatialElementInteractionController {
 			this._viewResetElapsed,
 			this._viewResetDuration
 		);
+		this._viewportCentering = THREE.MathUtils.lerp(this._viewStartCentering, this._viewEndCentering, interpolation);
 		this.camera.position
 			.copy(this._viewResetStartCameraPosition)
 			.lerp(this._viewEndPosition, interpolation);
@@ -792,6 +804,7 @@ export class SpatialElementInteractionController {
 		);
 		const radiusDelta = currentDistance - nextDistance;
 		if (this._wheelZoomOut) {
+			this.restoreStageAlignment(currentDistance, nextDistance);
 			const direction = this._wheelZoomForward.copy(this.camera.position).sub(this._controls.target).normalize();
 			const remaining = this._controls.maxDistance - currentDistance;
 			const progress = remaining > 0.0001 ? THREE.MathUtils.clamp((nextDistance - currentDistance) / remaining, 0, 1) : 1;
@@ -807,6 +820,12 @@ export class SpatialElementInteractionController {
 
 		if (nextDistance === targetDistance) this._wheelZoomTargetDistance = undefined;
 		return this._wheelZoomTargetDistance !== undefined;
+	}
+	private restoreStageAlignment(current: number, next: number) {
+		if (!this._controls || next < current) return;
+		const remaining = this._controls.maxDistance - current;
+		this._viewportCentering *= remaining > 0.0001
+			? THREE.MathUtils.clamp((this._controls.maxDistance - next) / remaining, 0, 1) : 0;
 	}
 	setCameraDistance(distance: number) {
 		if (!this._controls) return;
@@ -900,6 +919,7 @@ export class SpatialElementInteractionController {
 		}
 
 		this.updateStageCameraProjection();
+		this.camera.updateMatrixWorld();
 		this._pointerNdc.set(
 			(clientX / window.innerWidth) * 2 - 1,
 			-(clientY / window.innerHeight) * 2 + 1

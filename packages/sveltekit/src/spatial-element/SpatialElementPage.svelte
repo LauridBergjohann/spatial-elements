@@ -210,7 +210,7 @@
 	style:--spatial-pane-tint={paneTint}
 	style:--spatial-pane-tint-opacity={`${Math.min(1, Math.max(0.8, brand.panelTheme.tintOpacity ?? 0.28)) * 100}%`}
 	style:--spatial-pane-blur={`${Math.min(100, Math.max(0, brand.panelTheme.backdropBlur ?? 5))}px`}
-	style:--spatial-detail-content-travel={`${contentFocus * 100}svh`}
+	style:--spatial-detail-content-fallback-travel={`${contentFocus * 60}svh`}
 	style:--spatial-detail-content-blur={contentFocus > 0 ? `blur(${contentFocus * 4}px)` : 'none'}
 >
 	<div class="spatial-element-pane-heading" data-spatial-detail-pane-header data-spatial-detail-fixed data-spatial-element-handoff-header>
@@ -313,7 +313,7 @@
 	.spatial-element-section-list {
 		order: 2;
 		margin-top: var(--spatial-detail-submenu-after-gap, 0px);
-		translate: 0 var(--spatial-detail-content-travel, 0px);
+		translate: 0 var(--spatial-detail-content-travel, var(--spatial-detail-content-fallback-travel, 0px));
 	}
 	.spatial-element-section-viewport { order: 2; display: flow-root; }
 	/* Keep translated sections from extending the document's scroll range. */
@@ -355,6 +355,6 @@
 		.spatial-element-content { padding-top: 12px; }
 	}
 	@media (min-width: 1537px) {
-		.spatial-element-content :global(.spatial-element-tabs-anchor) { margin-left: calc((100% - var(--spatial-detail-content-width)) / 2); max-width: var(--spatial-detail-content-width); }
+		.spatial-element-content :global(.spatial-element-tabs-anchor) { margin-left: max(12px, calc((100% - var(--spatial-detail-content-width)) / 2)); max-width: min(var(--spatial-detail-content-width), calc(100% - 24px)); }
 	}
 </style>

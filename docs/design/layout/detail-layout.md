@@ -189,6 +189,8 @@ For a body content height `B`, the document must provide at least `max(0,B+242-H
 
 Gesture ownership is decided at pointer-down/wheel target, then retained through that gesture. In the normal 3D split view, the left free area controls the geometry and the right area scrolls the document. UI controls, rail scrolling and player controls take precedence. When an image or video is selected, left free space also scrolls the document. With the pane hidden, all free space is available to 3D. Cross-origin YouTube controls own their internal events; no parent-level gesture handler may promise to intercept all iframe input.
 
+In flow layouts, one wheel burst retains its owner for 320ms. Only an immersive zoom continues to own wheel input outside the model; a shallow zoom yields immediately there. Click/tap enlargement centers the model in the whole viewport and a subsequent click interrupts any ongoing wheel zoom to restore the fitted stage view. During focus, sections follow the submenu?s projected bottom edge (or the media/summary row at XS/S), with blur restricted to nearby sections. The split pane?s top-left corner follows the corner controls with a constant gap. In the capped L range, submenu inset is at least 12px.
+
 ## Carousel composition
 
 A carousel remains an ordinary section: normal content width, grid padding on all four sides, optional section headline and the shared section backgrounds. Its selection/drag behavior and forward placement of the selected element remain intact. Only the deterministic selected-media fit target and summary placement change. There is no media rail or detail view selector.

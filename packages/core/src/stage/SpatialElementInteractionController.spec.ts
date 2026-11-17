@@ -416,12 +416,44 @@ test.each(['mouse', 'touch'])('a %s tap enlarges to UI clearance and returns any
 	owner.advance(200, 2);
 	expect(getPanelFocusOpacity(owner.getUiFocus(owner.getZoomFocusFactor()))).toBe(0);
 	expect(owner.getUiFocus(owner.getZoomFocusFactor())).toBeCloseTo(0.96, 5);
+	expect(owner.viewportCentering).toBe(1);
 	owner.controls!.target.x = 2;
 	camera.position.set(2, 0, 1);
 	tap();
 	owner.advance(300, 2);
 	expect(camera.position.toArray()).toEqual([0, 0, 10]);
 	expect(owner.controls!.target.toArray()).toEqual([0, 0, 0]);
+	expect(owner.viewportCentering).toBe(0);
+	owner.dispose();
+});
+
+test('a click interrupts damped wheel zoom immediately even if the picked surface moves before release', () => {
+	const { owner, camera } = detailFixture();
+	owner.handleWheel(wheel(50, -700));
+	owner.advance(1, 0.016);
+	expect(owner.wheelZoomTargetDistance).toBeDefined();
+	owner.handlePointerDown({ ...pointer(1, 'mouse'), button: 0 } as PointerEvent);
+	vi.mocked(owner.hitTestModel).mockReturnValue(false);
+	owner.handlePointerUp({ ...pointer(1, 'mouse', 'pointerup'), button: 0 } as PointerEvent);
+	expect(owner.viewResetActive).toBe(true);
+	expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	owner.advance(2, 2);
+	expect(camera.position.toArray()).toEqual([0, 0, 10]);
+	owner.dispose();
+});
+
+test('wheel zoom-out returns viewport-centered enlargement to the original stage alignment', () => {
+	const { owner } = detailFixture(true);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	owner.advance(1, 2);
+	expect(owner.viewportCentering).toBe(1);
+	owner.handleWheel(wheel(50, 5000));
+	owner.advance(2, 0.016);
+	expect(owner.viewportCentering).toBeGreaterThan(0);
+	expect(owner.viewportCentering).toBeLessThan(1);
+	for (let i = 0; i < 200; i++) owner.advance(3 + i, 0.016);
+	expect(owner.viewportCentering).toBe(0);
 	owner.dispose();
 });
 
