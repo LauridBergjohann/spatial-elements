@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Restore simultaneous two-finger pan and pinch navigation on detail pages through the updated core, while preserving scroll reveal and mouse navigation.
+
 - Complete immediate click-to-reset after wheel zoom and use the optimized detail, transition and render paths from core while preserving presentation and interaction behavior.
 
 - Synchronize section movement with the submenu, preserve its 12px viewport inset, and anchor the 3XL pane to the corner controls. Center click enlargement in the entire viewport and let a new click interrupt wheel zoom immediately.

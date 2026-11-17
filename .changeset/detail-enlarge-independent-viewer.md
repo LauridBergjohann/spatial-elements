@@ -12,3 +12,5 @@ Let carousel models overflow inset and transparent section boundaries while resp
 Synchronize section movement with the submenu, preserve its 12px viewport inset, and anchor the 3XL pane to the corner controls. Center click enlargement in the entire viewport and let a new click interrupt wheel zoom immediately.
 
 Keep click-to-reset authoritative over residual wheel events and delayed scroll notifications. Reduce repeated responsive-layout calculations and DOM writes in detail and catalog animation frames, reuse render/zoom scratch state, and compare held scene captures numerically without changing rendering quality, motion curves or SpaceMouse connection behavior.
+
+Restore two-finger touch panning at a fixed zoom and while pinching in or out. Keep the grabbed point under the moving touch midpoint through scroll reveal and zoom damping, and release it when returning to one-finger rotation. Preserve mouse zoom-out recentering.

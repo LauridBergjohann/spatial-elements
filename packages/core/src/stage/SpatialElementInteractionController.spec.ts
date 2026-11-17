@@ -297,6 +297,61 @@ test('pinch owns zoom once and preserves its world point across scrolling projec
 	owner.dispose();
 });
 
+test.each([1, 1.2, 0.8])('two-finger pan follows its midpoint during a %sx pinch and its damped tail', spread => {
+	vi.stubGlobal('window', { innerWidth: 100, innerHeight: 100, scrollY: 0 });
+	const { owner, ports, camera } = fixture();
+	const geometry = ports.readGeometry();
+	ports.readGeometry = () => ({ ...geometry, detail: { media: 'minimap', split: false, paneHidden: false, paneLeft: 60, contentTop: 100 } });
+	owner.setCameraDistance(6);
+	const event = (x: number, y: number, radius: number) => ({
+		touches: [{ clientX: x - radius, clientY: y }, { clientX: x + radius, clientY: y }],
+		preventDefault: vi.fn(), stopImmediatePropagation: vi.fn()
+	} as unknown as TouchEvent);
+	owner.handleTouchStart(event(50, 50, 10));
+	const orientation = camera.quaternion.clone();
+	owner.handleTouchMove(event(65, 60, 10 * spread));
+	if (spread === 1) expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	else expect(owner.wheelZoomTargetDistance).toBeCloseTo(6 / spread, 8);
+	for (let step = 1; step <= 80; step++) {
+		owner.advance(step * 16, 0.016);
+		// Scroll reveal also moves the stage projection during the first frames.
+		camera.setViewOffset(100, 100, 0, -Math.min(step, 12) * 2, 100, 100);
+		owner.compensateZoomAnchor();
+		const projected = new THREE.Vector3().project(camera);
+		expect(projected.x).toBeCloseTo(0.3, 7);
+		expect(projected.y).toBeCloseTo(-0.2, 7);
+		expect(camera.quaternion.angleTo(orientation)).toBeCloseTo(0, 7);
+		if (step === 12) owner.handleTouchEnd({ touches: [] } as unknown as TouchEvent);
+	}
+	expect(camera.position.distanceTo(owner.controls!.target)).toBeCloseTo(6 / spread, 3);
+	expect(owner.controls!.enablePan).toBe(true);
+	expect(owner.controls!.enableZoom).toBe(true);
+	owner.dispose();
+});
+
+test('a remaining touch resumes rotation without the preceding pinch anchor or dolly', () => {
+	vi.stubGlobal('window', { innerWidth: 100, innerHeight: 100, scrollY: 0 });
+	const { owner, ports, camera } = fixture();
+	owner.setFullscreen(true);
+	const pointer = { pointerId: 1, pointerType: 'touch', clientX: 50, clientY: 50, target: ports.canvas } as unknown as PointerEvent;
+	owner.handlePointerDown(pointer);
+	const event = (radius: number) => ({
+		touches: [{ clientX: 50 - radius, clientY: 50 }, { clientX: 50 + radius, clientY: 50 }],
+		preventDefault: vi.fn(), stopImmediatePropagation: vi.fn()
+	} as unknown as TouchEvent);
+	owner.handleTouchStart(event(10));
+	owner.handleTouchMove(event(12));
+	expect(owner.wheelZoomTargetDistance).toBeDefined();
+	owner.handleTouchEnd({ touches: [event(12).touches[0]] } as unknown as TouchEvent);
+	owner.handlePointerMove({ ...pointer, clientX: 70 });
+	expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	const position = camera.position.clone();
+	camera.setViewOffset(100, 100, 0, -20, 100, 100);
+	owner.compensateZoomAnchor();
+	expect(camera.position.equals(position)).toBe(true);
+	owner.dispose();
+});
+
 test('transition ownership prevents SpaceMouse and ordinary frame damping from writing the camera', () => {
 	const { owner, camera, ports, setOwner } = fixture();
 	setOwner('transition');

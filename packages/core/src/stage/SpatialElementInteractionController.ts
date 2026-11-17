@@ -445,6 +445,9 @@ export class SpatialElementInteractionController {
 		);
 	}
 	handlePointerMove(event: PointerEvent) {
+		// A remaining finger resumes Orbit rotation. Do not keep pulling its old
+		// two-finger anchor back into place while that rotation is being applied.
+		if (event.pointerType === 'touch' && !this.pinch && this._interactionPointers.size === 1) this.clearWheelZoom();
 		if (this.tap?.id === event.pointerId && Math.hypot(event.clientX - this.tap.x, event.clientY - this.tap.y) >= 6) this.tap = undefined;
 		const start = this._interactionPointers.get(event.pointerId);
 		if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) >= 6) {
@@ -522,7 +525,7 @@ export class SpatialElementInteractionController {
 		if (event.touches?.length >= 2 && !this.pinch) {
 			this.cancelledWheelUntil = -Infinity;
 			this.tap = undefined;
-			const [a, b] = Array.from(event.touches);
+			const a = event.touches[0], b = event.touches[1];
 			const x = (a.clientX + b.clientX) / 2, y = (a.clientY + b.clientY) / 2;
 			if (this.isPinchArea(x, y)) {
 				// Orbit keeps pointer bookkeeping for seamless one-finger rotation,
@@ -530,8 +533,11 @@ export class SpatialElementInteractionController {
 				this.pinch = { distance: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
 					zoom: this._controls!.enableZoom, pan: this._controls!.enablePan };
 				this._controls!.enableZoom = this._controls!.enablePan = false;
+				this.wheelGesture.reset();
 				this.clearWheelZoom();
-				this.captureZoomAnchor(x, y);
+				// Match Orbit's screen-space pan plane through its target. Surface
+				// picking is reserved for mouse zoom, which has no moving touch anchor.
+				this.captureZoomAnchor(x, y, false);
 				event.preventDefault();
 				event.stopImmediatePropagation();
 				return;
@@ -544,18 +550,27 @@ export class SpatialElementInteractionController {
 		}
 	}
 	handleTouchMove(event: TouchEvent) {
-		if (!this.pinch || event.touches.length < 2) return;
-		const [a, b] = Array.from(event.touches);
+		if (!this.pinch || event.touches.length < 2 || !this.canInteract) return;
+		const a = event.touches[0], b = event.touches[1];
+		const x = (a.clientX + b.clientX) / 2, y = (a.clientY + b.clientY) / 2;
 		const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 		event.preventDefault();
 		event.stopImmediatePropagation();
-		// Convert the distance ratio once into the wheel curve (including ctrl's
-		// factor ten): doubling finger distance halves camera distance.
-		const delta = Math.log(Math.max(distance, 1) / Math.max(this.pinch.distance, 1)) * 10 / Math.log(0.95);
-		this.handleWheel({ clientX: (a.clientX + b.clientX) / 2, clientY: (a.clientY + b.clientY) / 2, deltaY: delta,
-			deltaMode: 0, ctrlKey: true, target: this.backgroundCanvas,
-			preventDefault() {}, stopImmediatePropagation() {} } as unknown as WheelEvent);
+		this.guidance.interact();
+		this.clearZoomReset();
+		this._viewResetActive = false;
+		if (!this.zoomAnchor) this.captureZoomAnchor(x, y, false);
+		// Keep the same world point under the moving midpoint. Compensation runs
+		// after scroll/projection updates, so even pan without dolly stays stable.
+		if (this.pinch.pan) this.zoomAnchor!.client.set(x, y);
+		this.zoomAnchor!.until = performance.now() + DETAIL_WHEEL_IDLE_MS;
+		if (this.pinch.zoom && distance !== this.pinch.distance) {
+			// Normalized wheel curve: doubling finger distance halves camera distance.
+			const delta = Math.log(Math.max(distance, 1) / Math.max(this.pinch.distance, 1)) * 100 / Math.log(0.95);
+			this.queueDolly(delta, x, y, true);
+		}
 		this.pinch.distance = distance;
+		this.requestRender();
 	}
 	handleTouchEnd(event: TouchEvent) {
 		if (event.touches.length < 2) this.endPinch();
@@ -626,11 +641,14 @@ export class SpatialElementInteractionController {
 		// advance from one shared damped camera distance instead.
 		event.preventDefault();
 		event.stopImmediatePropagation();
+		this.queueDolly(normalizeWheelZoomDelta(event.deltaY, event.deltaMode, event.ctrlKey), event.clientX, event.clientY);
+	}
+	private queueDolly(deltaY: number, x: number, y: number, touch = false) {
+		if (!this._controls) return;
 		this.normalizeCameraFovForOrbitControls();
 		this.clearZoomReset();
 		this._viewResetActive = false;
 
-		const deltaY = normalizeWheelZoomDelta(event.deltaY, event.deltaMode, event.ctrlKey);
 		const currentDistance = this.camera.position.distanceTo(this._controls.target);
 		const previousTargetDistance = this._wheelZoomTargetDistance ?? currentDistance;
 		const targetDistance = getWheelZoomTargetDistance(
@@ -643,7 +661,9 @@ export class SpatialElementInteractionController {
 		this._wheelZoomTargetDistance =
 			Math.abs(targetDistance - currentDistance) > 0.0001 ? targetDistance : undefined;
 
-		this._wheelZoomOut = deltaY > 0;
+		// Mouse zoom-out returns to the fitted centre; a touch gesture keeps its
+		// freely movable anchor in either direction, including the damped tail.
+		this._wheelZoomOut = deltaY > 0 && !touch;
 		if (this._wheelZoomOut) {
 			// Outward dolly converges on the authored centre, regardless of cursor
 			// movement since zoom-in. Do not anchor it to another off-centre point.
@@ -653,11 +673,11 @@ export class SpatialElementInteractionController {
 		}
 		// A different pointer position chooses a new world point. Moving the old
 		// point to a new screen position would pan the model along with the mouse.
-		if (!this.zoomAnchor || performance.now() >= this.zoomAnchor.until ||
-			Math.hypot(this.zoomAnchor.client.x - event.clientX, this.zoomAnchor.client.y - event.clientY) > 0.5)
-			this.captureZoomAnchor(event.clientX, event.clientY);
+		if (!this.zoomAnchor || (!touch && (performance.now() >= this.zoomAnchor.until ||
+			Math.hypot(this.zoomAnchor.client.x - x, this.zoomAnchor.client.y - y) > 0.5)))
+			this.captureZoomAnchor(x, y, !touch);
 		this.zoomAnchor!.until = performance.now() + DETAIL_WHEEL_IDLE_MS;
-		this.setPointerNdc(event.clientX, event.clientY);
+		this.setPointerNdc(x, y);
 		this._wheelZoomDirection
 			.set(this._pointerNdc.x, this._pointerNdc.y, 1)
 			.unproject(this.camera)
@@ -669,16 +689,16 @@ export class SpatialElementInteractionController {
 		this._pointerNdc.set(x / Math.max(window.innerWidth, 1) * 2 - 1,
 			1 - y / Math.max(window.innerHeight, 1) * 2);
 	}
-	private captureZoomAnchor(x: number, y: number) {
+	private captureZoomAnchor(x: number, y: number, pickSurface = true) {
 		this.updateStageCameraProjection();
 		this.camera.updateMatrixWorld(true);
 		this.setPointerNdc(x, y);
 		this._raycaster.setFromCamera(this._pointerNdc, this.camera);
 		const point = new THREE.Vector3();
-		const hits = this._raycaster.intersectObjects(this._modelPickTargets, false);
+		const hits = pickSurface ? this._raycaster.intersectObjects(this._modelPickTargets, false) : undefined;
 		const plane = this.zoomAnchorPlane.setFromNormalAndCoplanarPoint(
 			this.camera.getWorldDirection(this.zoomAnchorNormal), this._controls!.target);
-		if (hits.length) point.copy(hits[0].point);
+		if (hits?.length) point.copy(hits[0].point);
 		else if (!this._raycaster.ray.intersectPlane(plane, point)) point.copy(this._controls!.target);
 		this.zoomAnchor = { point, client: new THREE.Vector2(x, y), until: performance.now() + DETAIL_WHEEL_IDLE_MS };
 	}

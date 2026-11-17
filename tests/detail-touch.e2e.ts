@@ -47,6 +47,98 @@ async function openDetail(page: Page) {
 	await page.evaluate(() => window.__stageVisualTest!.settle(30));
 }
 
+async function projectedModelOrigin(page: Page) {
+	return page.evaluate(() => {
+		const projection = window.__stageVisualTest!.getDetailProjection('hero')!;
+		return {
+			x: (1 + projection[12] / projection[15]) * innerWidth / 2,
+			y: (1 - projection[13] / projection[15]) * innerHeight / 2
+		};
+	});
+}
+
+async function expectTwoFingerPan(page: Page, spreadRatio: number, scrolled = false) {
+	if (scrolled) await page.evaluate(() => scrollTo(0, 140));
+	else await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.25 }));
+	await page.evaluate(() => window.__stageVisualTest!.settle(30));
+	const initial = await page.evaluate(() => ({
+		y: scrollY, width: window.__stageVisualTest!.getModelRect()!.width,
+		orientation: window.__stageVisualTest!.getMinimapOrientation()!.live
+	}));
+	const center = await projectedModelOrigin(page);
+	const cdp = await page.context().newCDPSession(page);
+	const points = (progress: number) => {
+		const spread = 36 * (1 + (spreadRatio - 1) * progress);
+		const x = center.x + 48 * progress, y = center.y + 30 * progress;
+		return [{ x: x - spread, y, id: 1 }, { x: x + spread, y, id: 2 }];
+	};
+	await touch(cdp, 'touchStart', points(0));
+	for (let step = 1; step <= 12; step++) {
+		await touch(cdp, 'touchMove', points(step / 12));
+		await page.waitForTimeout(30);
+	}
+	// Keep both fingers down while the existing dolly damping settles. The
+	// grabbed model point must follow their midpoint even as page reveal
+	// changes the camera projection; pan must not turn into orbit rotation.
+	await page.evaluate(() => window.__stageVisualTest!.settle(45));
+	const moved = await projectedModelOrigin(page);
+	expect(moved.x - center.x).toBeCloseTo(48, 0);
+	expect(moved.y - center.y).toBeCloseTo(30, 0);
+	await touch(cdp, 'touchEnd', []);
+	await page.evaluate(() => window.__stageVisualTest!.settle(30));
+	const released = await projectedModelOrigin(page);
+	expect(Math.hypot(released.x - moved.x, released.y - moved.y)).toBeLessThan(1);
+	const final = await page.evaluate(() => ({
+		y: scrollY, width: window.__stageVisualTest!.getModelRect()!.width,
+		orientation: window.__stageVisualTest!.getMinimapOrientation()!.live,
+		scale: visualViewport!.scale
+	}));
+	const ratio = final.width / initial.width;
+	if (spreadRatio > 1) expect(ratio).toBeGreaterThan(1.1);
+	else if (spreadRatio < 1) expect(ratio).toBeLessThan(0.9);
+	else expect(ratio).toBeCloseTo(1, 1);
+	expect(Math.max(...final.orientation.map((value, index) => Math.abs(value - initial.orientation[index])))).toBeLessThan(0.001);
+	if (scrolled) expect(final.y).toBeLessThan(initial.y - 40);
+	else expect(final.y).toBeLessThan(3);
+	expect(final.scale).toBe(1);
+	await cdp.detach();
+}
+
+for (const gesture of [
+	{ name: 'at a fixed zoom', spread: 1, scrolled: false },
+	{ name: 'while pinching in', spread: 1.2, scrolled: false },
+	{ name: 'while pinching out', spread: 0.8, scrolled: false },
+	{ name: 'while pinching in from a scrolled page', spread: 1.2, scrolled: true }
+]) {
+	test(`two fingers pan the model ${gesture.name}`, async ({ page }) => {
+		await openDetail(page);
+		await expectTwoFingerPan(page, gesture.spread, gesture.scrolled);
+	});
+}
+
+test.describe('desktop touch navigation', () => {
+	test.use({ isMobile: false, viewport: { width: 2560, height: 1000 } });
+	for (const gesture of [{ name: 'at a fixed zoom', spread: 1 }, { name: 'while pinching out', spread: 0.8 }]) {
+		test(`two fingers pan the split 3XL model ${gesture.name}`, async ({ page }) => {
+			await openDetail(page);
+			await expect(page.locator('[data-spatial-element-root]')).toHaveAttribute('data-spatial-detail-pane', '');
+			await expectTwoFingerPan(page, gesture.spread);
+		});
+	}
+
+	test('two fingers pan the fullscreen model while pinching in', async ({ page }) => {
+		await page.addInitScript(() => {
+			Object.defineProperty(Element.prototype, 'requestFullscreen', {
+				configurable: true, value: () => Promise.reject(new Error('Fullscreen denied by fixture'))
+			});
+		});
+		await openDetail(page);
+		await page.getByRole('button', { name: 'Fullscreen', exact: true }).tap();
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-fullscreen', '');
+		await expectTwoFingerPan(page, 1.2);
+	});
+});
+
 test('first model touch rotates, then background scroll works on the very next gesture', async ({ page }) => {
 	const errors: string[] = [];
 	page.on('pageerror', (error) => errors.push(error.message));
