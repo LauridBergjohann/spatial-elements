@@ -29,7 +29,7 @@
  });
  const resolved = $derived(items.map(item => ({ ...item, href: item.href ? resolve(...([item.href] as unknown as Parameters<typeof resolve>)) : undefined })));
 </script>
-<div bind:this={element} class="breadcrumbs spatial-content-width" style:translate={travel} data-stage-dom-content data-catalog-transition-dom={transition}>
+<div bind:this={element} class="breadcrumbs spatial-content-width" style:translate={travel} style:filter={focus > 0 ? `blur(${focus * 4}px)` : 'none'} data-stage-dom-content data-catalog-transition-dom={transition}>
  <Breadcrumbs items={resolved} />
 </div>
 <style>

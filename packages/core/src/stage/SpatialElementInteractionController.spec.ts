@@ -333,6 +333,105 @@ function pointer(pointerId: number, pointerType = 'touch', type = 'pointerdown')
 	return { pointerId, pointerType, type, clientX: 50, clientY: 50, target: null } as PointerEvent;
 }
 
+function detailFixture(split = false) {
+	vi.stubGlobal('window', { innerWidth: 100, innerHeight: 100, scrollY: 0 });
+	const f = fixture();
+	const geometry = f.ports.readGeometry();
+	f.ports.readGeometry = () => ({ ...geometry, detail: { media: 'minimap', split, paneHidden: false, paneLeft: 60 } });
+	f.owner.setFocusRange(8.4, 1);
+	vi.spyOn(f.owner, 'hitTestModel').mockImplementation(x => x < 60);
+	return f;
+}
+function wheel(x: number, deltaY: number) {
+	return { clientX: x, clientY: 50, deltaY, deltaMode: 0, ctrlKey: false, target: null,
+		preventDefault: vi.fn(), stopImmediatePropagation: vi.fn() } as unknown as WheelEvent;
+}
+
+test('3XL changes wheel owner immediately by area and never resets zoom from document scrolling', () => {
+	const { owner, camera } = detailFixture(true);
+	const pageWheel = wheel(80, 100);
+	owner.handleWheel(pageWheel);
+	expect(pageWheel.preventDefault).not.toHaveBeenCalled();
+	const modelWheel = wheel(50, -100);
+	owner.handleWheel(modelWheel);
+	expect(modelWheel.preventDefault).toHaveBeenCalledOnce();
+	owner.advance(100, 0.1);
+	expect(camera.position.z).toBeLessThan(10);
+	const target = owner.wheelZoomTargetDistance;
+	owner.requestScrollZoomReset(600);
+	expect(owner.zoomResetTargetDistance).toBeUndefined();
+	expect(owner.wheelZoomTargetDistance).toBe(target);
+	owner.clearWheelZoom();
+	owner.setCameraDistance(10);
+	const atOverview = wheel(50, 100);
+	owner.handleWheel(atOverview);
+	expect(atOverview.preventDefault).toHaveBeenCalledOnce();
+	owner.dispose();
+});
+
+test('changing the wheel focus captures a new point instead of dragging the old point to the cursor', () => {
+	const { owner, camera } = detailFixture();
+	owner.handleWheel(wheel(40, -50));
+	owner.advance(100, 0.016);
+	owner.compensateZoomAnchor();
+	const position = camera.position.clone();
+	owner.handleWheel(wheel(55, -50));
+	owner.compensateZoomAnchor();
+	expect(camera.position.distanceTo(position)).toBeLessThan(1e-8);
+	for (let i = 0; i < 200; i++) { owner.advance(116 + i * 16, 0.016); owner.compensateZoomAnchor(); }
+	expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	// Once dolly has settled, an unrelated projection update must not retain an anchor.
+	const settled = camera.position.clone();
+	camera.setViewOffset(100, 100, 10, 0, 100, 100);
+	owner.compensateZoomAnchor();
+	expect(camera.position.distanceTo(settled)).toBeLessThan(1e-8);
+	owner.dispose();
+});
+
+test.each(['mouse', 'touch'])('a %s tap enlarges to UI clearance and returns any zoom to the centered initial view', type => {
+	const { owner, camera } = detailFixture();
+	const tap = () => {
+		owner.handlePointerDown({ ...pointer(1, type), button: 0 } as PointerEvent);
+		owner.handlePointerUp({ ...pointer(1, type, 'pointerup'), button: 0 } as PointerEvent);
+	};
+	tap();
+	expect(owner.viewResetActive).toBe(true);
+	owner.advance(100, 0.05);
+	expect(camera.position.z).toBeLessThan(10);
+	owner.advance(200, 2);
+	expect(getPanelFocusOpacity(owner.getUiFocus(owner.getZoomFocusFactor()))).toBe(0);
+	expect(owner.getUiFocus(owner.getZoomFocusFactor())).toBeCloseTo(0.96, 5);
+	owner.controls!.target.x = 2;
+	camera.position.set(2, 0, 1);
+	tap();
+	owner.advance(300, 2);
+	expect(camera.position.toArray()).toEqual([0, 0, 10]);
+	expect(owner.controls!.target.toArray()).toEqual([0, 0, 0]);
+	owner.dispose();
+});
+
+test('drag, long press, cancelled contacts and multiple fingers never trigger tap zoom', () => {
+	const { owner } = detailFixture();
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerMove({ ...pointer(1), clientX: 40 } as PointerEvent);
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	expect(owner.viewResetActive).toBe(false);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerDown(pointer(2));
+	owner.handlePointerUp(pointer(2, 'touch', 'pointerup'));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	expect(owner.viewResetActive).toBe(false);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointercancel'));
+	expect(owner.viewResetActive).toBe(false);
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	owner.handlePointerDown(pointer(1));
+	time.mockReturnValue(501);
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	expect(owner.viewResetActive).toBe(false);
+	owner.dispose();
+});
+
 test('touch claims geometry on the first contact and leaves the next background gesture native', () => {
 	const { owner, ports } = fixture();
 	const hit = vi.spyOn(owner, 'hitTestModel').mockReturnValue(true);
