@@ -1,5 +1,27 @@
 import { expect, test } from '@playwright/test';
 
+test('inset L sections cap at 1536px, round grouped outer edges and align the detail submenu', async ({ browser, baseURL }) => {
+	const context = await browser.newContext({ baseURL, javaScriptEnabled: false });
+	try {
+		const page = await context.newPage();
+		for (const width of [1537, 1568, 1599]) {
+			await page.setViewportSize({ width, height: 1000 });
+			await page.goto('/demo/layout-sections');
+			const first = page.locator('#surface-first');
+			const box = (await first.boundingBox())!;
+			expect(box.width).toBe(1536);
+			expect(box.x).toBeCloseTo((width - 1536) / 2, 1);
+			await expect(first.locator('.ps-section-surface')).not.toHaveCSS('border-top-left-radius', '0px');
+			await expect(first.locator('.ps-section-surface')).toHaveCSS('border-bottom-left-radius', '0px');
+			await page.goto('/demo/layout-pane');
+			const content = (await page.locator('.spatial-element-section-list').boundingBox())!;
+			const tabs = (await page.locator('.spatial-element-tabs-anchor').boundingBox())!;
+			expect(content.width).toBe(1536);
+			expect(tabs.x).toBeCloseTo(content.x, 1);
+		}
+	} finally { await context.close(); }
+});
+
 for (const javaScriptEnabled of [false, true]) test(`section surfaces and labels ${javaScriptEnabled ? 'after hydration' : 'without JS'}`, async ({ browser, baseURL }, info) => {
 	const context = await browser.newContext({ baseURL, javaScriptEnabled, viewport: { width: 2400, height: 1100 } });
 	try {
@@ -16,7 +38,8 @@ for (const javaScriptEnabled of [false, true]) test(`section surfaces and labels
 			return { id: node.id, padding: parseFloat(getComputedStyle(node.querySelector('.ps-section-content')!).paddingLeft),
 				top: parseFloat(css.borderTopLeftRadius), bottom: parseFloat(css.borderBottomLeftRadius),
 				background: css.backgroundColor, gradient: css.backgroundImage,
-				width: surface.getBoundingClientRect().width };
+				width: surface.getBoundingClientRect().width,
+				left: surface.getBoundingClientRect().left, right: surface.getBoundingClientRect().right };
 		}));
 		const byId = Object.fromEntries(samples.map(sample => [sample.id, sample]));
 		expect(byId['surface-first'].top).toBeGreaterThan(0);
@@ -24,7 +47,10 @@ for (const javaScriptEnabled of [false, true]) test(`section surfaces and labels
 		expect(byId['surface-second'].top).toBe(0);
 		expect(byId['surface-second'].bottom).toBeGreaterThan(0);
 		expect(byId['surface-full'].gradient).toContain('linear-gradient');
-		expect(byId['surface-full'].width).toBe(2400);
+		// Page Sections deliberately overdraws full surfaces inside the page's
+		// clip, so their measured box can exceed the viewport.
+		expect(byId['surface-full'].left).toBeLessThanOrEqual(0);
+		expect(byId['surface-full'].right).toBeGreaterThanOrEqual(2400);
 		expect(byId['surface-full'].top).toBe(0);
 		expect(byId['surface-single'].top).toBeGreaterThan(0);
 		expect(byId['surface-single'].bottom).toBeGreaterThan(0);

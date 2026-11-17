@@ -1,5 +1,6 @@
 import { CatalogGeometryFade } from './CatalogGeometryFade.js';
 import { CarouselDeviceCamera } from './CarouselDeviceCamera.js';
+import { carouselRenderClip } from './carouselRenderClip.js';
 import { isCatalogActivationFocus } from './catalogActivationFocus.js';
 import { isDeviceOrientationPaused, getListDeviceYaw, getListDevicePitch, getListDeviceRoll, subscribeListDeviceYaw } from './listDeviceOrientation.js';
 import { cardModelFit } from './cardModelFit.js';
@@ -90,7 +91,7 @@ interface CatalogActor {
 	slot?: HTMLElement;
 	cardRect?: Rect;
 	slotRect?: Rect;
-	/** Measured section surface; translated with scroll without per-frame DOM reads. */
+	/** Allowed carousel render area; translated with scroll without per-frame DOM reads. */
 	sectionRect?: Rect;
 	hitTarget?: HTMLElement;
 	summaryPanel?: HTMLElement;
@@ -1544,19 +1545,28 @@ export class CatalogSpatialElementLayer {
 		}
 		// Batch neutral-pose writes, measurements, and restoration to avoid per-card layout thrashing.
 		const surfaces = new Map<HTMLElement, Rect>();
+		// Measure once per layout invalidation, never during scrolling/rendering.
+		const fullSections = measured.some(({ actor }) => actor.pose) ? Array.from(document.querySelectorAll<HTMLElement>(
+			'.ps-section[data-background-size="full"]:not([data-background-color="transparent"])')) : [];
+		const fullSurfaces = fullSections.map(section => {
+			const { left, top, width, height } = section.getBoundingClientRect();
+			return { left, top, width, height };
+		});
 		for (const { actor } of measured) {
 			actor.cardRect = actor.card!.getBoundingClientRect();
 			actor.slotRect = actor.slot!.getBoundingClientRect();
 			if (!actor.pose)
 				actor.cardScale = cardModelFit(actor.fitCorners, actor.slotRect.width, actor.slotRect.height);
 			if (actor.pose) {
-				const surface = actor.card!.closest('[data-section-background-size]')
-					?.querySelector<HTMLElement>(':scope > .ps-section-surface');
+				const section = actor.card!.closest('[data-section-background-size]');
+				const surface = section?.querySelector<HTMLElement>(':scope > .ps-section-surface');
 				if (surface && !surfaces.has(surface)) {
 					const { left, top, width, height } = surface.getBoundingClientRect();
 					surfaces.set(surface, { left, top, width, height });
 				}
-				actor.sectionRect = surface ? surfaces.get(surface) : undefined;
+				actor.sectionRect = surface ? carouselRenderClip(surfaces.get(surface)!, fullSurfaces,
+					window.innerWidth, -scrollY, Math.max(document.documentElement.scrollHeight, window.innerHeight) - scrollY,
+					fullSections.includes(section as HTMLElement)) : undefined;
 				actor.hitTarget = actor.card!.querySelector<HTMLElement>('.spatial-element-target') ?? undefined;
 				const panel = actor.card!.querySelector<HTMLElement>('.summary') ?? undefined;
 				if (actor.summaryPanel && actor.summaryPanel !== panel)

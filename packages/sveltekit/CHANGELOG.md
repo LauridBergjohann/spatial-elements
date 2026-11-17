@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Cap inset L sections at 1536px with rounded outer corners and aligned submenus. Improve carousel overflow and detail wheel navigation through the updated core.
+
 - Decouple 3XL viewer zoom from document scrolling and switch wheel ownership immediately between its separate regions. In stacked layouts, retain scroll/zoom gestures for 500ms, including zoom-out over empty canvas. Correct cursor anchoring so moving the wheel focus no longer drags the model or leaves a stale anchor.
 
   Add animated click/tap enlargement to the UI-clearance endpoint and a centered return from any zoom. Exclude drags, long presses and multi-touch gestures. Move stacked content sections down during zoom, with lightweight blur on nearby sections and breadcrumbs.

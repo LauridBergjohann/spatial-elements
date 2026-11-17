@@ -353,6 +353,8 @@
 	}
 	@media (min-width: 1600px) {
 		.spatial-element-content { padding-top: 12px; }
+	}
+	@media (min-width: 1537px) {
 		.spatial-element-content :global(.spatial-element-tabs-anchor) { margin-left: calc((100% - var(--spatial-detail-content-width)) / 2); max-width: var(--spatial-detail-content-width); }
 	}
 </style>

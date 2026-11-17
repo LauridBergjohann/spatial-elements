@@ -182,6 +182,7 @@ export class SpatialElementInteractionController {
 	private _zoomResetStartDistance?: number;
 	private _zoomResetScrollDistance = 0;
 	private _wheelZoomTargetDistance?: number;
+	private _wheelZoomOut = false;
 	private readonly _initialCameraPosition = new THREE.Vector3();
 	private readonly _initialControlsTarget = new THREE.Vector3();
 	private _initialCameraFov = 45;
@@ -565,9 +566,10 @@ export class SpatialElementInteractionController {
 		const separateArea = this.fullscreen || this.ports.readGeometry().detail?.split;
 		if (separateArea) this.wheelGesture.reset();
 		const owner = separateArea ? (hit ? 'zoom' : 'scroll') :
-			this.wheelGesture.resolve(performance.now(), hit, event.deltaY > 0, atOverview, pinch);
+			this.wheelGesture.resolve(performance.now(), hit, event.deltaY > 0, atOverview, pinch,
+				Boolean(this.ports.readGeometry().detail?.paneHidden));
 		if (owner === 'scroll') {
-			this.zoomAnchor = undefined;
+			this.clearWheelZoom();
 			// Let the browser scroll, but never let OrbitControls consume this burst.
 			this._controls.enabled = false;
 			this.requestRender();
@@ -597,6 +599,14 @@ export class SpatialElementInteractionController {
 		this._wheelZoomTargetDistance =
 			Math.abs(targetDistance - currentDistance) > 0.0001 ? targetDistance : undefined;
 
+		this._wheelZoomOut = deltaY > 0;
+		if (this._wheelZoomOut) {
+			// Outward dolly converges on the authored centre, regardless of cursor
+			// movement since zoom-in. Do not anchor it to another off-centre point.
+			this.zoomAnchor = undefined;
+			this.requestRender();
+			return;
+		}
 		// A different pointer position chooses a new world point. Moving the old
 		// point to a new screen position would pan the model along with the mouse.
 		if (!this.zoomAnchor || performance.now() >= this.zoomAnchor.until ||
@@ -781,12 +791,18 @@ export class SpatialElementInteractionController {
 			0.001
 		);
 		const radiusDelta = currentDistance - nextDistance;
-		this.camera.position.addScaledVector(this._wheelZoomDirection, radiusDelta);
-		this.camera.updateMatrixWorld(true);
-		this.camera.getWorldDirection(this._wheelZoomForward);
-		this._controls.target
-			.copy(this.camera.position)
-			.addScaledVector(this._wheelZoomForward, nextDistance);
+		if (this._wheelZoomOut) {
+			const direction = this._wheelZoomForward.copy(this.camera.position).sub(this._controls.target).normalize();
+			const remaining = this._controls.maxDistance - currentDistance;
+			const progress = remaining > 0.0001 ? THREE.MathUtils.clamp((nextDistance - currentDistance) / remaining, 0, 1) : 1;
+			this._controls.target.lerp(this._initialControlsTarget, progress);
+			this.camera.position.copy(this._controls.target).addScaledVector(direction, nextDistance);
+		} else {
+			this.camera.position.addScaledVector(this._wheelZoomDirection, radiusDelta);
+			this.camera.updateMatrixWorld(true);
+			this.camera.getWorldDirection(this._wheelZoomForward);
+			this._controls.target.copy(this.camera.position).addScaledVector(this._wheelZoomForward, nextDistance);
+		}
 		this._controls.update();
 
 		if (nextDistance === targetDistance) this._wheelZoomTargetDistance = undefined;

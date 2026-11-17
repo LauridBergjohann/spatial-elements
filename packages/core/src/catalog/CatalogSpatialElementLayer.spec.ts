@@ -382,6 +382,8 @@ describe('catalog preview lifetime', () => {
 		});
 		vi.stubGlobal('CSS', { escape: (value: string) => value });
 		vi.stubGlobal('document', {
+			querySelectorAll: () => [],
+			documentElement: { scrollHeight: 1200 },
 			querySelector: () => ({ querySelectorAll: () => [], querySelector: () => slot })
 		});
 		const scene = new THREE.Group();
@@ -444,17 +446,17 @@ describe('catalog preview lifetime', () => {
 			resized();
 			layer.update(renderer, null, 148);
 			layer.draw(renderer, 'front');
-			expect(renderer.setScissor).toHaveBeenCalledWith(120, 80, 1200, 640);
-			expect(layer.getDestinationProjection('cube')?.viewportClip).toEqual(sectionSurface);
+			expect(renderer.setScissor).toHaveBeenCalledWith(0, 0, 1440, 900);
+			expect(layer.getDestinationProjection('cube')?.viewportClip).toEqual({ left: 0, top: 0, width: 1440, height: 1200 });
 			const measured = measureSurface.mock.calls.length;
 			window.scrollY = 30;
 			layer.update(renderer, null, 164);
-			expect(layer.getDestinationProjection('cube')?.viewportClip).toEqual({ ...sectionSurface, top: 50 });
+			expect(layer.getDestinationProjection('cube')?.viewportClip).toEqual({ left: 0, top: -30, width: 1440, height: 1200 });
 			expect(measureSurface).toHaveBeenCalledTimes(measured);
 			sectionSurface = { left: 0, top: 50, width: 1440, height: 640 };
 			resized();
 			layer.update(renderer, null, 180);
-			expect(layer.getDestinationProjection('cube')?.viewportClip).toEqual(sectionSurface);
+			expect(layer.getDestinationProjection('cube')?.viewportClip).toEqual({ left: 0, top: -30, width: 1440, height: 1200 });
 		} finally {
 			layer.dispose();
 			manager.dispose();

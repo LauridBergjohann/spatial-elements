@@ -388,6 +388,21 @@ test('changing the wheel focus captures a new point instead of dragging the old 
 	owner.dispose();
 });
 
+test('outward wheel zoom converges on the fitted centre regardless of cursor position', () => {
+	const { owner, camera } = detailFixture();
+	owner.controls!.target.set(2, -1, 0);
+	camera.position.set(2, -1, 5);
+	owner.handleWheel(wheel(10, 100));
+	owner.applyWheelZoom(0.05);
+	expect(owner.controls!.target.x).toBeLessThan(2);
+	expect(owner.controls!.target.x).toBeGreaterThan(0);
+	owner.handleWheel(wheel(55, 5000));
+	for (let i = 0; i < 200; i++) { owner.applyWheelZoom(0.016); owner.compensateZoomAnchor(); }
+	expect(owner.controls!.target.toArray()).toEqual([0, 0, 0]);
+	expect(camera.position.toArray()).toEqual([0, 0, 10]);
+	owner.dispose();
+});
+
 test.each(['mouse', 'touch'])('a %s tap enlarges to UI clearance and returns any zoom to the centered initial view', type => {
 	const { owner, camera } = detailFixture();
 	const tap = () => {

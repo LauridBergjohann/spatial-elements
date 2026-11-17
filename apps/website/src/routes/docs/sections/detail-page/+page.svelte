@@ -263,10 +263,12 @@
 				Outside 3XL, wheel gestures retain their owner for 500ms after the last event. A gesture
 				that starts scrolling the document continues scrolling even if the model moves under the
 				pointer. At the fitted overview, scrolling down over the model also scrolls the document,
-				unless the same gesture was still zooming out, including over empty canvas as the interface
-				returns. Pause briefly to switch between those actions. In 3XL, the viewer and reading pane
-				are independent: the wheel immediately controls the area under the pointer, and reading
-				never resets zoom.
+				unless the same gesture was still zooming out. After immersive zoom has hidden the
+				interface, that gesture also keeps zooming over empty canvas as the interface returns. A
+				shallow zoom yields to scrolling immediately when the pointer leaves the model. Outward
+				wheel zoom returns the model to the fitted center, independently of pointer position. In
+				3XL, the viewer and reading pane are independent: the wheel immediately controls the area
+				under the pointer, and reading never resets zoom.
 			</p>
 			<p>
 				Touch and trackpad pinch above the content sections zoom the model, including gestures over

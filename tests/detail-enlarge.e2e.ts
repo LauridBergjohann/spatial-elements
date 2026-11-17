@@ -14,6 +14,33 @@ async function modelPoint(page: Page) {
 }
 const state = (page: Page) => page.evaluate(() => window.__stageVisualTest!.getState());
 
+test('shallow zoom releases the wheel immediately outside the geometry', async ({ page }) => {
+	await open(page);
+	const point = await modelPoint(page);
+	const ownership = await page.evaluate(({ x, y }) => {
+		const canvas = document.querySelector('.stage-webgpu-background')!;
+		const send = (clientX: number, clientY: number, deltaY: number) => {
+			const event = new WheelEvent('wheel', { bubbles: true, cancelable: true, clientX, clientY, deltaY });
+			canvas.dispatchEvent(event); return event.defaultPrevented;
+		};
+		return [send(x, y, -12), send(2, 700, 50)];
+	}, point);
+	expect(ownership).toEqual([true, false]);
+});
+
+test('wheel zoom-out recenters the model even when the pointer changes sides', async ({ page }) => {
+	await open(page);
+	const initial = await modelPoint(page);
+	await page.mouse.move(initial.x + 30, initial.y);
+	await page.mouse.wheel(0, -700);
+	await expect.poll(async () => (await state(page)).focus).toBeGreaterThan(0.01);
+	const zoomed = await modelPoint(page);
+	await page.mouse.move(zoomed.x - 30, zoomed.y);
+	await page.mouse.wheel(0, 5000);
+	await expect.poll(async () => (await state(page)).focus).toBeLessThan(0.001);
+	await expect.poll(async () => Math.hypot((await modelPoint(page)).x - initial.x, (await modelPoint(page)).y - initial.y)).toBeLessThan(2);
+});
+
 for (const width of [430, 1700, 2400]) {
 	test(`click enlarges and recenters the detail at ${width}px`, async ({ page }) => {
 		await page.setViewportSize({ width, height: 900 });
