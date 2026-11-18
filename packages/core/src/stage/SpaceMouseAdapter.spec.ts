@@ -38,6 +38,18 @@ describe('SpaceMouseUpdateBuffer', () => {
 		expect(commit).toHaveBeenCalledOnce();
 		expect(commit).toHaveBeenCalledWith({ target: [4, 5, 6] });
 	});
+
+	it('keeps independent transaction snapshots when the driver reuses input arrays', () => {
+		const commit = vi.fn(), updates = new SpaceMouseUpdateBuffer(commit);
+		const target = [1, 2, 3];
+		updates.setTransaction(1);
+		updates.setTarget(target);
+		target[0] = 9;
+		updates.setTransaction(0);
+		updates.setTarget(target);
+		updates.setTransaction(0);
+		expect(commit.mock.calls).toEqual([[{ target: [1, 2, 3] }], [{ target: [9, 2, 3] }]]);
+	});
 });
 
 describe('SpaceMouseAdapter', () => {

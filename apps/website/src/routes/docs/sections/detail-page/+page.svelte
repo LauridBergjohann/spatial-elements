@@ -253,15 +253,22 @@
 		><div class="prose">
 			<p>
 				Zoom expands the media interaction area and removes page chrome from interaction. The detail
-				button returns to the fitted pose. Fullscreen uses the browser API when available and a
-				viewport presentation otherwise; Escape returns without discarding the page's scroll
-				position.
+				button returns to the fitted pose. Click or tap the model to enlarge it until the interface
+				clears and the minimap reaches its close-up position. Click or tap again to return any zoom
+				to the centered initial view. Drags and multi-touch gestures do not trigger this shortcut.
+				Fullscreen uses the browser API when available and a viewport presentation otherwise; Escape
+				returns without discarding the page's scroll position.
 			</p>
 			<p>
-				Wheel gestures retain their owner for 800ms after the last event. A gesture that starts
-				scrolling the document continues scrolling even if the model moves under the pointer. At the
-				fitted overview, scrolling down over the model also scrolls the document, unless the same
-				gesture was still zooming out. Pause briefly to switch between those actions.
+				Outside 3XL, wheel gestures retain their owner for 500ms after the last event. A gesture
+				that starts scrolling the document continues scrolling even if the model moves under the
+				pointer. At the fitted overview, scrolling down over the model also scrolls the document,
+				unless the same gesture was still zooming out. After immersive zoom has hidden the
+				interface, that gesture also keeps zooming over empty canvas as the interface returns. A
+				shallow zoom yields to scrolling immediately when the pointer leaves the model. Outward
+				wheel zoom returns the model to the fitted center, independently of pointer position. In
+				3XL, the viewer and reading pane are independent: the wheel immediately controls the area
+				under the pointer, and reading never resets zoom.
 			</p>
 			<p>
 				Touch and trackpad pinch above the content sections zoom the model, including gestures over
@@ -271,6 +278,11 @@
 				interface together on one reversible timeline. The model point under the cursor or pinch
 				midpoint stays anchored while the stage moves, so scrolling does not add a second zoom or
 				pan gesture.
+			</p>
+			<p>
+				In stacked layouts, sections move down with zoom while nearby sections and breadcrumbs gain
+				a subtle blur. Offscreen section culling stays enabled; the full document is never filtered
+				as a single large surface.
 			</p>
 			<p>
 				Once the surrounding interface has faded, hidden content cannot intercept pointers or

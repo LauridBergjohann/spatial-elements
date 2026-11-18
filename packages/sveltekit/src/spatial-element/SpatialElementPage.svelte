@@ -35,6 +35,7 @@
 	import { resolveSpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 	import { registerSpatialPage } from './spatialPageContext.js';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
+	import { getPanelFocusProgress } from '@spatial-elements/core/stage/panelFocusMath';
 
 	const SPATIAL_ELEMENT_OVERVIEW_SECTION = {
 		id: 'overview',
@@ -75,6 +76,7 @@
 	let mainElement: HTMLElement;
 	let tabList = $state<HTMLElement>();
 	let splitPane = $state(false);
+	const contentFocus = $derived(splitPane ? 0 : getPanelFocusProgress(stageContext?.getZoomUiFocus?.() ?? 0));
 	let paneController = $state.raw<SpatialElementPaneController>();
 	const paneTint = $derived(typeof brand.panelTheme.tint === 'number'
 		? `#${brand.panelTheme.tint.toString(16).padStart(6, '0')}`
@@ -204,9 +206,12 @@
 	data-spatial-element-id={spatialElement.id}
 	data-brand-id={spatialElement.brandId}
 	data-spatial-selected-media={selectedMedia.kind}
+	data-spatial-content-zooming={contentFocus > 0 || undefined}
 	style:--spatial-pane-tint={paneTint}
 	style:--spatial-pane-tint-opacity={`${Math.min(1, Math.max(0.8, brand.panelTheme.tintOpacity ?? 0.28)) * 100}%`}
 	style:--spatial-pane-blur={`${Math.min(100, Math.max(0, brand.panelTheme.backdropBlur ?? 5))}px`}
+	style:--spatial-detail-content-fallback-travel={`${contentFocus * 60}svh`}
+	style:--spatial-detail-content-blur={contentFocus > 0 ? `blur(${contentFocus * 4}px)` : 'none'}
 >
 	<div class="spatial-element-pane-heading" data-spatial-detail-pane-header data-spatial-detail-fixed data-spatial-element-handoff-header>
 		<SpatialElementBreadcrumbs items={spatialElement.breadcrumbs} focusReactive={!splitPane} />
@@ -265,8 +270,10 @@
 	<div class="spatial-element-pane-body" data-spatial-detail-pane-body data-stage-scroll-viewport>
 		{#key spatialElement.id}<SpatialElementSummaryPanel {spatialElement} nativeContent={splitPane} />{/key}
 	<div class="spatial-element-content">
+		<div class="spatial-element-section-viewport">
 		<div class="spatial-element-section-list spatial-content-width spatial-content-container" data-catalog-transition-dom="enter">
 			<SectionSurfaceGroup>{@render children?.()}</SectionSurfaceGroup>
+		</div>
 		</div>
 		<!-- Read after the section snippet has registered its metadata during SSR. -->
 		<SpatialElementTabs bind:tabList {activeSectionId} sections={[SPATIAL_ELEMENT_OVERVIEW_SECTION, ...sections]} />
@@ -306,6 +313,15 @@
 	.spatial-element-section-list {
 		order: 2;
 		margin-top: var(--spatial-detail-submenu-after-gap, 0px);
+		translate: 0 var(--spatial-detail-content-travel, var(--spatial-detail-content-fallback-travel, 0px));
+	}
+	.spatial-element-section-viewport { order: 2; display: flow-root; }
+	/* Keep translated sections from extending the document's scroll range. */
+	[data-spatial-content-zooming] .spatial-element-section-viewport { overflow: clip; }
+	/* Filter only nearby sections, not the full document-sized layer. Offscreen
+	 * sections retain content-visibility culling; text is crisp at rest. */
+	.spatial-element-section-list :global(.content-section[data-spatial-element-section-near-viewport]) {
+		filter: var(--spatial-detail-content-blur, none);
 	}
 
 	.spatial-element-content :global(.spatial-element-tabs-anchor) {
@@ -337,6 +353,8 @@
 	}
 	@media (min-width: 1600px) {
 		.spatial-element-content { padding-top: 12px; }
-		.spatial-element-content :global(.spatial-element-tabs-anchor) { margin-left: calc((100% - var(--spatial-detail-content-width)) / 2); max-width: var(--spatial-detail-content-width); }
+	}
+	@media (min-width: 1537px) {
+		.spatial-element-content :global(.spatial-element-tabs-anchor) { margin-left: max(12px, calc((100% - var(--spatial-detail-content-width)) / 2)); max-width: min(var(--spatial-detail-content-width), calc(100% - 24px)); }
 	}
 </style>

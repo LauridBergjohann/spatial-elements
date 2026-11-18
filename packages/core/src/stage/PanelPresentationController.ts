@@ -35,6 +35,10 @@ const PANEL_NATIVE_REST_FRAMES = 2;
 const PANEL_NATIVE_ROTATION_EPSILON = 0.000001;
 const PANEL_NATIVE_DEPTH_EPSILON = 0.0001;
 
+function setStyle(element: HTMLElement, name: string, value: string) {
+	if (element.style.getPropertyValue(name) !== value) element.style.setProperty(name, value);
+}
+
 function getFlatCss3DTransform(matrix: THREE.Matrix4) {
 	const elements = matrix.elements;
 	const epsilon = (value: number) => (Math.abs(value) < 1e-10 ? 0 : value);
@@ -87,6 +91,15 @@ export interface PanelPresentationPorts {
 }
 /** Owns panel surfaces, hover and focus-safe DOM presentation independently of element loading. */
 export class PanelPresentationController {
+	/** Frame-local only: registrations, metrics and transition state may change next frame. */
+	private pointerFrame?: {
+		state: ReturnType<PanelPresentationPorts['frame']>;
+		targets: readonly StagePanelTarget[];
+		minimaps: ReadonlyMap<number, StageMinimapState>;
+		zoomResolved: boolean;
+		zoom?: ReturnType<NonNullable<PanelPresentationPorts['zoomLayout']>>;
+		controlBounds?: { left: number; right: number };
+	};
 	private readonly fixedMinimapSize =
 		parseRenderMeasurement(typeof window === 'undefined' ? '' : (window.location?.search ?? '')) ===
 		'fixed-minimap-size';
@@ -159,22 +172,34 @@ export class PanelPresentationController {
 		return this.ports.nativeLayer;
 	}
 	private get panelTargets() {
-		return this.ports.registrations();
+		return this.pointerFrame?.targets ?? this.ports.registrations();
 	}
 	private get minimaps() {
-		return this.ports.minimaps();
+		return this.pointerFrame?.minimaps ?? this.ports.minimaps();
+	}
+	private get presentationFrame() {
+		return this.pointerFrame?.state ?? this.ports.frame();
+	}
+	private getZoomLayout() {
+		const frame = this.pointerFrame;
+		if (!frame) return this.ports.zoomLayout?.();
+		if (!frame.zoomResolved) {
+			frame.zoom = this.ports.zoomLayout?.();
+			frame.zoomResolved = true;
+		}
+		return frame.zoom;
 	}
 	private get catalogPresentation() {
-		return this.ports.frame().presentation;
+		return this.presentationFrame.presentation;
 	}
 	private get minimapFocus() {
-		return this.ports.frame().minimapFocus;
+		return this.presentationFrame.minimapFocus;
 	}
 	private get panelUiFocus() {
-		return this.ports.frame().uiFocus;
+		return this.presentationFrame.uiFocus;
 	}
 	private get pointer() {
-		return this.ports.frame().pointer;
+		return this.presentationFrame.pointer;
 	}
 	private requestRender() {
 		this.ports.requestRender();
@@ -354,21 +379,25 @@ export class PanelPresentationController {
 		const progress = getPanelFocusProgress(uiFocus);
 		// At rest the offset is exactly zero: no DOM measurement is needed.
 		if (progress === 0) return { x: 0, y: 0, z: 0 };
-		const zoom = this.ports.zoomLayout?.();
+		const zoom = this.getZoomLayout();
 		const inset = zoom
 			? zoom.base.layoutWidth - zoom.controls.viewSelector.x - zoom.controls.viewSelector.width
 			: MINIMAP_FOCUSED_VIEWPORT_INSET;
 		// The render camera spans innerWidth, but classic scrollbars consume part
 		// of it. Express the usable viewport edge in that same camera coordinate system.
 		const usableWidth = zoom?.base.layoutWidth ?? (typeof document === 'undefined' ? width : document.documentElement.clientWidth);
-		const rightEdge = Math.max(...this.panelRuntimes
-			.filter((control) => control.focusReactive === 'top-right')
-			.map((control) => control.options.position.x + control.options.width / 2));
+		const bounds = this.pointerFrame?.controlBounds ?? { left: Infinity, right: -Infinity };
+		if (!this.pointerFrame?.controlBounds) {
+			for (const control of this.panelRuntimes) if (control.focusReactive === 'top-right') {
+				bounds.right = Math.max(bounds.right, control.options.position.x + control.options.width / 2);
+				bounds.left = Math.min(bounds.left, control.options.position.x - control.options.width / 2);
+			}
+			if (this.pointerFrame) this.pointerFrame.controlBounds = bounds;
+		}
+		const rightEdge = bounds.right;
 		const groupOffset = rightEdge - (panel.options.position.x + panel.options.width / 2);
 		const endX = usableWidth - width / 2 - inset - panel.options.width / 2 - groupOffset;
-		const leftEdge = Math.min(...this.panelRuntimes
-			.filter((control) => control.focusReactive === 'top-right')
-			.map((control) => control.options.position.x - control.options.width / 2));
+		const leftEdge = bounds.left;
 		const groupLeft = usableWidth - inset - (rightEdge - leftEdge);
 		let topInset = zoom?.controls.viewSelector.y ?? inset;
 		// On narrow phones retain the full close-up minimap size and place the
@@ -418,7 +447,7 @@ export class PanelPresentationController {
 		const baseWidth = minimap ? minimap.baseWidth : panel.options.width;
 		const baseHeight = minimap ? minimap.baseHeight : panel.options.height;
 		const minimapFocus = minimap ? this.minimapFocus : 0;
-		const zoom = minimap ? this.ports.zoomLayout?.() : undefined;
+		const zoom = minimap ? this.getZoomLayout() : undefined;
 		const expansion =
 			minimap && !this.fixedMinimapSize
 				? THREE.MathUtils.lerp(1, (zoom?.minimap.height ?? minimap.options.expandedHeight) / minimap.baseHeight, minimapFocus)
@@ -538,16 +567,25 @@ export class PanelPresentationController {
 		const lift = panel.pointerReactive === 'lift' ? 0 : panel.pointerLift;
 		const hover = panel.pointerReactive
 			? ` perspective(${this.panelCamera.position.z}px) translateZ(${lift}px) rotateX(${-panel.group.rotation.x}rad) rotateY(${panel.group.rotation.y}rad)` : '';
-		surface.style.transformOrigin = '50% 50%';
-		surface.style.transform = `translate(${focusOffset.x}px, ${-focusOffset.y - (panel.pointerReactive === 'lift' ? panel.pointerLift : 0)}px) scale(${scale})${hover}`;
-		surface.style.visibility = viewportVisible && opacity >= 0.01 ? '' : 'hidden';
+		setStyle(surface, 'transform-origin', '50% 50%');
+		setStyle(surface, 'transform', `translate(${focusOffset.x}px, ${-focusOffset.y - (panel.pointerReactive === 'lift' ? panel.pointerLift : 0)}px) scale(${scale})${hover}`);
+		setStyle(surface, 'visibility', viewportVisible && opacity >= 0.01 ? '' : 'hidden');
 		const interactive = viewportVisible && !transitionBlocked && opacity >= 0.12;
 		setInertLease(surface, this, !interactive);
-		surface.style.pointerEvents = interactive ? '' : 'none';
-		target.content.style.setProperty('--stage-panel-content-opacity', String(opacity));
-		target.content.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : '';
+		setStyle(surface, 'pointer-events', interactive ? '' : 'none');
+		setStyle(target.content, '--stage-panel-content-opacity', String(opacity));
+		setStyle(target.content, 'filter', blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : '');
 	}
 	updatePanelPointerInteraction(delta: number) {
+		this.pointerFrame = { state: this.ports.frame(), targets: this.ports.registrations(),
+			minimaps: this.ports.minimaps(), zoomResolved: false };
+		try {
+			return this.advancePanelPointerInteraction(delta);
+		} finally {
+			this.pointerFrame = undefined;
+		}
+	}
+	private advancePanelPointerInteraction(delta: number) {
 		const viewportWidth = window.innerWidth;
 		const viewportHeight = window.innerHeight;
 		const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -574,6 +612,15 @@ export class PanelPresentationController {
 				visualWidth,
 				viewportVisible
 			} = layouts[index];
+			const tabsAnchor = this.panelTargets[index]?.frame?.closest?.('[data-spatial-element-tabs-panel-anchor]');
+			const detailRoot = tabsAnchor?.closest<HTMLElement>('[data-spatial-element-root]');
+			if (detailRoot && viewportWidth >= 840 && !detailRoot.hasAttribute('data-spatial-detail-pane')) {
+				// Attach the section stack to the projected bottom edge of its submenu.
+				// Its layout anchor stays unchanged, so scrolling never feeds back into measurement.
+				const scale = this.panelCamera.position.z / Math.max(this.panelCamera.position.z - focusOffset.z, 1);
+				const travel = -focusOffset.y + visualHeight * (scale - 1) / 2;
+				setStyle(detailRoot, '--spatial-detail-content-travel', `${travel}px`);
+			} else detailRoot?.style.removeProperty('--spatial-detail-content-travel');
 			const transitionOpacity = this.getPanelTransitionOpacity(panel);
 			const transitionBlocked = this.catalogPresentation.active && Boolean(panel.transitionGroup);
 			if (viewportVisible) this.visiblePanelCount += 1;
@@ -657,8 +704,7 @@ export class PanelPresentationController {
 
 				if (panel.pointerReactive === 'lift') {
 					// Compact controls use the same surface with a small, non-tilting hover response.
-					targetPointerLift = Math.abs(pointerX) <= halfWidth && Math.abs(pointerY) <= halfHeight &&
-						!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 2 : 0;
+					targetPointerLift = Math.abs(pointerX) <= halfWidth && Math.abs(pointerY) <= halfHeight ? 2 : 0;
 				} else {
 					targetX = rotation.x;
 					targetY = rotation.y;
@@ -680,7 +726,7 @@ export class PanelPresentationController {
 			);
 			const panelOpacity = minimap ? 1 : focusOpacity;
 			const surfaceOpacity = THREE.MathUtils.clamp(
-				minimap && this.ports.frame().fullscreen ? 1 : (this.panelTargets[index]?.getSurfaceOpacity?.() ?? 1),
+				minimap && this.presentationFrame.fullscreen ? 1 : (this.panelTargets[index]?.getSurfaceOpacity?.() ?? 1),
 				0,
 				1
 			);
@@ -754,7 +800,7 @@ export class PanelPresentationController {
 				// Glass content is portaled independently of its surface. Decorations
 				// such as the 3D indicator still follow the dock-controlled surface fade.
 				if (panel.surface === 'glass') {
-					interactiveContent.style.setProperty('--stage-panel-surface-opacity', surfaceOpacity.toFixed(4));
+					setStyle(interactiveContent, '--stage-panel-surface-opacity', surfaceOpacity.toFixed(4));
 				}
 				const pointerProximityValue = pointerProximity.toFixed(4);
 				if (
@@ -769,21 +815,17 @@ export class PanelPresentationController {
 				// Shared destinations must remain measurable while their transition alpha is zero.
 				// CSS visibility/opacity gate their paint; CSS3D visibility would set display:none.
 				contentObject.visible = viewportVisible && contentOpacity >= 0.01;
-				contentObject.element.style.setProperty(
-					'--stage-panel-content-opacity',
-					`${contentOpacity}`
-				);
+				setStyle(contentObject.element, '--stage-panel-content-opacity', `${contentOpacity}`);
 				if (panel.surface !== 'glass') {
 					// Keep filter off the shell that owns backdrop-filter. Applying it
 					// there turns the shell into a Backdrop Root in Chromium.
-					contentObject.element.style.filter = '';
+					setStyle(contentObject.element, 'filter', '');
 				}
-				interactiveContent.style.filter =
-					contentBlur > 0.05 ? `blur(${contentBlur.toFixed(2)}px)` : '';
+				setStyle(interactiveContent, 'filter', contentBlur > 0.05 ? `blur(${contentBlur.toFixed(2)}px)` : '');
 				const pointerEvents =
 					transitionBlocked || contentOpacity * transitionOpacity < 0.12 ? 'none' : 'auto';
-				contentObject.element.style.pointerEvents = pointerEvents;
-				interactiveContent.style.pointerEvents = pointerEvents;
+				setStyle(contentObject.element, 'pointer-events', pointerEvents);
+				setStyle(interactiveContent, 'pointer-events', pointerEvents);
 				this.nativeShellInteractivity.add(interactiveContent);
 				setInertLease(interactiveContent, this, pointerEvents === 'none' || !viewportVisible);
 				animationActive =

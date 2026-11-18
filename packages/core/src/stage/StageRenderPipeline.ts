@@ -7,6 +7,7 @@ import { gaussianTargets } from './renderTargetInventory.js';
 import { clearFullTarget, withRendererState, withVisibility } from './rendererState.js';
 import { BackgroundLayerOutput } from './BackgroundLayerOutput.js';
 import { CatalogWarmOutputContext } from '../catalog/CatalogWarmOutputContext.js';
+import { HeldSceneCapture } from './HeldSceneCapture.js';
 
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
 
@@ -104,7 +105,8 @@ export interface StageRenderPorts {
 
 /** Owns GPU output bands, passes and target lifetimes; never schedules frames or navigation. */
 export class StageRenderPipeline {
-	private heldSceneCaptures = new WeakMap<THREE.RenderTarget, string>();
+	private heldSceneCaptures = new WeakMap<THREE.RenderTarget, HeldSceneCapture>();
+	private holdingSceneCapture = false;
 	private readonly measurementMode = getMinimapMeasurementMode();
 	private readonly renderMeasurement = parseRenderMeasurement(
 		typeof window === 'undefined' ? '' : (window.location?.search ?? '')
@@ -1400,14 +1402,20 @@ export class StageRenderPipeline {
 				// The camera clamps at the viewport edge while content passes over the model.
 				// Keep those pixels (also used by frosted panels), rather than clearing the model.
 				// Re-capture on resize, quality, camera, pose, asset or appearance changes.
-				const key = canHold ? [this.warmConfiguration, target.width, target.height,
-					this.ports.scene.environment?.uuid, frame.backgroundReveal,
-					...this.ports.camera.projectionMatrix.elements, ...this.ports.camera.matrixWorld.elements,
-					...this.ports.scene.children.flatMap(child => [child.uuid, ...child.matrixWorld.elements])].join(',') : '';
-				if (!canHold) this.heldSceneCaptures = new WeakMap();
-				if (!canHold || this.heldSceneCaptures.get(target) !== key) {
+				if (!canHold && this.holdingSceneCapture) this.heldSceneCaptures = new WeakMap();
+				this.holdingSceneCapture = canHold;
+				const capture = canHold ? this.heldSceneCaptures.get(target) : undefined;
+				const current = capture?.matches(this.ports.scene, this.ports.camera,
+					this.warmConfiguration, target.width, target.height, frame.backgroundReveal);
+				if (!canHold || !current) {
+					// Snapshot before rendering: rendering may update scene matrices, which
+					// must still invalidate the next held frame as before.
+					const next = canHold ? capture ?? new HeldSceneCapture() : undefined;
+					if (capture) this.heldSceneCaptures.delete(target);
+					next?.capture(this.ports.scene, this.ports.camera,
+						this.warmConfiguration, target.width, target.height, frame.backgroundReveal);
 					this.ports.renderStage();
-					if (canHold) this.heldSceneCaptures.set(target, key);
+					if (next) this.heldSceneCaptures.set(target, next);
 				}
 				this.renderPanelBlurCaptures(this._activeRenderTargets);
 				if (outline && this.ports.frame().detailMediaActive !== false) this.renderModelOutline(this._activeRenderTargets.sceneCapture, 1);

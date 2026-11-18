@@ -1,7 +1,50 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { missingPackages, releaseTag } from './release-lib.mjs';
+import { waitForRegistryVersion } from './registry-visibility.mjs';
 const packages = [{ name: '@spatial-elements/core', version: '0.1.0-beta.2' }, { name: '@spatial-elements/sveltekit', version: '0.1.0-beta.2' }];
+
+function registryClock(fetchVersion) {
+  let time = 0;
+  const messages = [];
+  return { fetchVersion: (...args) => fetchVersion(time, ...args), now: () => time,
+    sleep: async ms => { time += ms; }, log: message => messages.push(message), messages };
+}
+
+test('registry verification tolerates visibility delayed beyond five minutes', async () => {
+  const clock = registryClock(async (time, url) => {
+    assert.equal(url, 'https://registry.npmjs.org/%40spatial-elements%2Fcore/0.1.0-beta.2');
+    return time < 375000 ? { status: 404 } : { ok: true, json: async () => ({ version: packages[0].version }) };
+  });
+  await waitForRegistryVersion(packages[0], clock);
+  assert.equal(clock.now(), 375000);
+  assert.match(clock.messages[0], /Waiting for registry/);
+  assert.match(clock.messages.at(-1), /Registry available/);
+});
+
+test('registry verification stops after fifteen minutes with retry guidance', async () => {
+  const clock = registryClock(async () => ({ status: 404 }));
+  await assert.rejects(waitForRegistryVersion(packages[0], clock), /timed out after 900s.*rerun Release/);
+  assert.equal(clock.now(), 900000);
+});
+
+test('temporary registry and network failures retry without hiding invalid metadata or authorization errors', async () => {
+  const results = [new TypeError('offline'), new DOMException('timeout', 'TimeoutError'),
+    ...[429, 500, 502, 503, 504].map(status => ({ status })),
+    { ok: true, json: async () => ({ version: packages[0].version }) }];
+  await waitForRegistryVersion(packages[0], registryClock(async () => {
+    const result = results.shift();
+    if (result instanceof Error) throw result;
+    return result;
+  }));
+  for (const status of [400, 401, 403]) {
+    const clock = registryClock(async () => ({ status }));
+    await assert.rejects(waitForRegistryVersion(packages[0], clock), /Registry verification failed/);
+    assert.equal(clock.now(), 0);
+  }
+  await assert.rejects(waitForRegistryVersion(packages[0], registryClock(async () =>
+    ({ ok: true, json: async () => ({ version: 'wrong' }) }))), /Unexpected registry version/);
+});
 test('beta defaults to beta; stable versions target latest', () => {
   assert.equal(releaseTag('0.1.0-beta.0'), 'beta');
   assert.equal(releaseTag('1.2.3'), 'latest');

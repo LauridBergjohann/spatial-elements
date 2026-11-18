@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, realpathSync, cpSy
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { join, resolve } from 'node:path';
+import { waitForRegistryVersion } from './registry-visibility.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const directory = join(root, '.artifacts', 'packages');mkdirSync(directory, {recursive:true});
 const npmCli = process.env.npm_execpath;assert(npmCli, 'Use npm run verify:packages');
@@ -13,12 +14,7 @@ const published = process.argv.includes('--published');
 for(const name of ['core','sveltekit']) {
  const pkgDir=join(root,'packages',name),pkg=JSON.parse(readFileSync(join(pkgDir,'package.json'),'utf8'));
  if (published) {
-  for (let attempt=0; ; attempt++) {
-   const response=await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg.name)}/${pkg.version}`, { signal: AbortSignal.timeout(15000), cache: 'no-store' });
-   if(response.ok) { assert.equal((await response.json()).version,pkg.version); break; }
-   if(![404,429,500,502,503,504].includes(response.status)||attempt>=20) throw Error(`Registry verification failed: ${pkg.name}@${pkg.version} (${response.status})`);
-   await new Promise(resolve=>setTimeout(resolve,15000));
-  }
+  await waitForRegistryVersion(pkg);
   tarballs[pkg.name]=pkg.version;
   continue;
  }

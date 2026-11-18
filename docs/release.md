@@ -2,7 +2,7 @@
 
 ## Prepared correction release
 
-Both public packages are prepared as `1.0.0-beta.11`, including visible SpaceMouse activation, reconnection with existing loopback permission and corrected carousel/navigation panel materials. The website also restores detail device orientation and uses a Watches glass theme throughout `/showcase/exclusive/`. Commit and merge the prepared branch without running `changeset` or `release:version` again. The release workflow publishes this version under **beta**; it does not move **latest**. Consumers can explicitly install it with:
+Both public packages are prepared as `1.0.0-beta.14`, including independent 3XL viewer navigation, stable cursor-focused zoom, a 500 ms wheel gesture handoff and animated click/tap enlargement. Detail content and breadcrumbs follow the immersive zoom transition. Registry verification also tolerates delayed npm visibility after publication. Commit and merge the prepared branch without running `changeset` or `release:version` again. The release workflow publishes this version under **beta**; it does not move **latest**. Consumers can explicitly install it with:
 
 ```sh
 npm install @spatial-elements/core@beta @spatial-elements/sveltekit@beta
@@ -31,7 +31,7 @@ npm run test:apps
 
 Commit the implementation, generated package versions, changelogs, exact internal/app dependencies, prerelease state and lockfile in the same PR. Both public packages form a fixed version group. Package README changes need a release to update npm; website-only changes do not.
 
-Merging to main runs release.yml: verification, builds, browser checks, publication of missing exact versions with provenance, then independent registry consumer verification. It creates no second PR and does not bump versions. Already published versions are skipped, so retries after partial publication are safe. Registry visibility is retried before the consumer installation.
+Merging to main runs release.yml: verification, builds, browser checks, publication of missing exact versions with provenance, then independent registry consumer verification. It creates no second PR and does not bump versions. Already published versions are skipped, so retries after partial publication are safe. Registry visibility is retried every 15 seconds for up to 15 minutes per package before the consumer installation, with progress logged. npm can acknowledge an upload several minutes before the version becomes readable. If only `verify:published` fails, check the exact versions on npm and rerun the Release job once they are available; do not bump versions just to repeat verification.
 
 The repository remains in Changesets beta mode. New prereleases use the beta npm tag unless explicitly promoted in release-channels.json. Historical latest promotions remain untouched. To leave prerelease mode, run npm exec changeset pre exit and npm run release:version in a reviewed PR; do not manually edit pre.json.
 

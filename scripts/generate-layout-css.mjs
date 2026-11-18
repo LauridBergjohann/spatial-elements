@@ -23,6 +23,17 @@ const css = [
 	'/* Generated from @page-sections/core plus spatial-only layoutTokens.json. Run npm run layout:generate. */',
 	`.spatial-content-width { width: min(100%, ${tokens.contentMax}px); margin-inline: auto; }`,
 	`.spatial-content-container { container: ps-content / inline-size; min-width: 0; }`,
+	`@media (min-width: ${tokens.contentMax + 1}px) and (max-width: ${tokens.layoutMinWidths.xl - 1}px) {
+	.stage .content-section { width: min(var(--ps-section-width, 100%), 100%, ${tokens.contentMax}px); }
+	/* The shared registry exposes joined/outer edges through its shadow clips
+	 * below XL too. Reuse those markers for the newly inset L surfaces. */
+	.stage .content-section[data-section-background-size='standard'] > .ps-section-surface {
+		border-top-left-radius: clamp(0px, calc(var(--ps-shadow-top-clip, 0px) * -100), var(--ps-radius));
+		border-top-right-radius: clamp(0px, calc(var(--ps-shadow-top-clip, 0px) * -100), var(--ps-radius));
+		border-bottom-left-radius: clamp(0px, calc(var(--ps-shadow-bottom-clip, 0px) * -100), var(--ps-radius));
+		border-bottom-right-radius: clamp(0px, calc(var(--ps-shadow-bottom-clip, 0px) * -100), var(--ps-radius));
+	}
+}`,
 	`@media (min-width: ${tokens.layoutMinWidths.xl}px) {\n\t.spatial-content-width { width: min(${tokens.contentMax}px, max(0px, calc(100% - ${tokens.xlContentInset * 2}px))); }\n}`,
 	`@media (min-width: ${tokens.layoutMinWidths['2xl']}px) {\n\t.spatial-content-width { width: min(100%, ${tokens.contentMax}px); }\n}`,
 	...dockRules(),

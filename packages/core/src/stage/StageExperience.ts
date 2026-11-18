@@ -3036,8 +3036,11 @@ export class StageExperience {
 
 		const viewportCenterX = this.viewportFrame.x + this.viewportFrame.z * 0.5;
 		const viewportCenterY = this.viewportFrame.y + this.viewportFrame.w * 0.5;
-		const offsetX = width * 0.5 - viewportCenterX;
-		const offsetY = height * 0.5 - viewportCenterY;
+		// Click enlargement clears the surrounding UI and eases the authored stage
+		// projection into the whole viewport without panning the model's orbit target.
+		const stageAlignment = 1 - this.interaction.viewportCentering;
+		const offsetX = (width * 0.5 - viewportCenterX) * stageAlignment;
+		const offsetY = (height * 0.5 - viewportCenterY) * stageAlignment;
 
 		this.camera.aspect = width / height;
 		if (Math.abs(offsetX) > 0.25 || Math.abs(offsetY) > 0.25) {

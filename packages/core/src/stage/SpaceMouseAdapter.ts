@@ -84,7 +84,7 @@ export class SpaceMouseUpdateBuffer {
 	}
 
 	private flush() {
-		if (!Object.keys(this.pending).length) return;
+		if (this.pending.viewMatrix === undefined && this.pending.target === undefined && this.pending.fov === undefined) return;
 
 		const update = this.pending;
 		this.pending = {};
@@ -266,11 +266,9 @@ export class SpaceMouseAdapter {
 }
 
 function isFiniteNumberArray(value: unknown, minimumLength: number): value is number[] {
-	return (
-		Array.isArray(value) &&
-		value.length >= minimumLength &&
-		value
-			.slice(0, minimumLength)
-			.every((entry) => typeof entry === 'number' && Number.isFinite(entry))
-	);
+	if (!Array.isArray(value) || value.length < minimumLength) return false;
+	for (let index = 0; index < minimumLength; index++) {
+		if (typeof value[index] !== 'number' || !Number.isFinite(value[index])) return false;
+	}
+	return true;
 }

@@ -21,7 +21,7 @@ import { getInteractionGuidance, MODEL_INPUT_EVENT, type ModelInputState } from 
 import { ModelPointerPreview } from './ModelPointerPreview.js';
 import { resolveDetailGestureOwner } from '../spatial-element/spatialElementMedia.js';
 import type { SpatialElementMediaItem } from '../spatial-element/types.js';
-import { DetailWheelGesture } from './DetailWheelGesture.js';
+import { DetailWheelGesture, DETAIL_WHEEL_IDLE_MS } from './DetailWheelGesture.js';
 import { getPanelFocusOpacity, getPanelFocusProgress, getPanelFocusFromProgress } from './panelFocusMath.js';
 export interface SpatialElementInteractionPorts {
 	onSpaceMouseStateChange?: (state: import("./spaceMousePlatform.js").SpaceMouseState) => void;
@@ -43,13 +43,23 @@ export interface SpatialElementInteractionPorts {
 export class SpatialElementInteractionController {
 	private disposed = false;
 	private readonly wheelGesture = new DetailWheelGesture();
+	private lastWheelTime = -Infinity;
+	private lastWheelCtrlKey = false;
+	private cancelledWheelUntil = -Infinity;
+	private cancelledWheelCtrlKey = false;
 	private pinch?: { distance: number; zoom: boolean; pan: boolean };
 	private zoomAnchor?: { point: THREE.Vector3; client: THREE.Vector2; until: number };
+	private tap?: { id: number; x: number; y: number; time: number };
 	private zoomScroll?: { focus: number; scrollY: number; uiProgress: number };
 	private previousZoomFocus = 0;
 	private fullscreen = false;
+	private _viewportCentering = 0;
+	private _viewStartCentering = 0;
+	private _viewEndCentering = 0;
+	get viewportCentering() { return this._viewportCentering; }
 	setFullscreen(fullscreen: boolean) {
 		this.fullscreen = fullscreen;
+		this.cancelledWheelUntil = -Infinity;
 		this.wheelGesture.reset();
 		this.clearWheelZoom();
 		this._viewResetActive = false;
@@ -99,6 +109,9 @@ export class SpatialElementInteractionController {
 		});
 	}
 	releasePage() {
+		this.lastWheelTime = this.cancelledWheelUntil = -Infinity;
+		this._viewportCentering = 0;
+		this.tap = undefined;
 		this.wheelGesture.reset();
 		this.endPinch();
 		this.zoomScroll = undefined;
@@ -147,6 +160,10 @@ export class SpatialElementInteractionController {
 	private readonly _pointerNdc = new THREE.Vector2();
 	private readonly _wheelZoomDirection = new THREE.Vector3();
 	private readonly _wheelZoomForward = new THREE.Vector3();
+	private readonly zoomAnchorPlane = new THREE.Plane();
+	private readonly zoomAnchorNormal = new THREE.Vector3();
+	private readonly zoomAnchorIntersection = new THREE.Vector3();
+	private readonly zoomAnchorShift = new THREE.Vector3();
 	private readonly _controlsChange = () => this.requestRender();
 	private readonly _pointer = { x: 0, y: 0, active: false };
 	private readonly _modelPickTargets: Mesh[] = [];
@@ -180,6 +197,7 @@ export class SpatialElementInteractionController {
 	private _zoomResetStartDistance?: number;
 	private _zoomResetScrollDistance = 0;
 	private _wheelZoomTargetDistance?: number;
+	private _wheelZoomOut = false;
 	private readonly _initialCameraPosition = new THREE.Vector3();
 	private readonly _initialControlsTarget = new THREE.Vector3();
 	private _initialCameraFov = 45;
@@ -190,19 +208,66 @@ export class SpatialElementInteractionController {
 	private _viewResetStartFov = 45;
 	private _viewResetElapsed = 0;
 	private _viewResetDuration = 0;
+	private readonly _viewEndPosition = new THREE.Vector3();
+	private readonly _viewEndTarget = new THREE.Vector3();
+	private _viewEndFov = 45;
 	resetView() {
 		if (!this._controls || !this._initialViewCaptured) return;
+		this._viewEndCentering = 0;
+		this._viewEndPosition.copy(this._initialCameraPosition);
+		this._viewEndTarget.copy(this._initialControlsTarget);
+		this._viewEndFov = this._initialCameraFov;
+		this.startViewAnimation();
+	}
+	private startViewAnimation() {
+		if (!this._controls) return;
 		this.guidance.interact();
+		// A click supersedes the previous wheel burst, including hardware/trackpad
+		// inertia delivered after pointerup. A fresh burst still interrupts normally.
+		if (performance.now() - this.lastWheelTime < DETAIL_WHEEL_IDLE_MS) {
+			this.cancelledWheelUntil = this.lastWheelTime + DETAIL_WHEEL_IDLE_MS;
+			this.cancelledWheelCtrlKey = this.lastWheelCtrlKey;
+		}
+		this.wheelGesture.reset();
 
 		this.clearWheelZoom();
 		this.clearZoomReset();
 		this._viewResetStartCameraPosition.copy(this.camera.position);
 		this._viewResetStartControlsTarget.copy(this._controls.target);
 		this._viewResetStartFov = this.camera.fov;
+		this._viewStartCentering = this._viewportCentering;
 		this._viewResetElapsed = 0;
 		this._viewResetDuration = getViewResetDuration(this.getZoomFocusFactor());
 		this._viewResetActive = true;
 		this.requestRender();
+	}
+	/** A tap reaches the shared UI/minimap endpoint; another tap restores the fitted view. */
+	private toggleEnlargedView() {
+		if (!this._controls || !this._initialViewCaptured) return;
+		if (this.getEffectiveCameraDistance() < this._controls.maxDistance - 0.001) {
+			this.resetView();
+			return;
+		}
+		this.normalizeCameraFovForOrbitControls();
+		// The camera focus is eased; solve its clearance endpoint rather than
+		// zooming all the way to the minimum distance or starting a second UI clock.
+		if (!this.ports.readGeometry().detail?.split && window.scrollY > 0 && !this.zoomScroll) {
+			this.zoomScroll = { focus: this.getRevealFocus(), scrollY: window.scrollY,
+				uiProgress: getPanelFocusProgress(this.getUiFocus(this.getZoomFocusFactor())) };
+		}
+		let near = this._controls.minDistance, far = this._controls.maxDistance;
+		for (let i = 0; i < 32; i++) {
+			const distance = (near + far) / 2;
+			const focus = getCameraZoomFocus(distance, this._initialCameraFov, this._initialCameraFov,
+				this._focusCloseDistance, this._focusRestDistance);
+			if (this.getUiFocus(focus, distance) >= 0.96) near = distance;
+			else far = distance;
+		}
+		this._viewEndTarget.copy(this._initialControlsTarget);
+		this._viewEndPosition.copy(this.camera.position).sub(this._controls.target).setLength(near).add(this._viewEndTarget);
+		this._viewEndFov = this._initialCameraFov;
+		this._viewEndCentering = 1;
+		this.startViewAnimation();
 	}
 	createControls() {
 		const controls = new OrbitControls(this.camera, this.backgroundCanvas);
@@ -380,8 +445,13 @@ export class SpatialElementInteractionController {
 		);
 	}
 	handlePointerMove(event: PointerEvent) {
+		// A remaining finger resumes Orbit rotation. Do not keep pulling its old
+		// two-finger anchor back into place while that rotation is being applied.
+		if (event.pointerType === 'touch' && !this.pinch && this._interactionPointers.size === 1) this.clearWheelZoom();
+		if (this.tap?.id === event.pointerId && Math.hypot(event.clientX - this.tap.x, event.clientY - this.tap.y) >= 6) this.tap = undefined;
 		const start = this._interactionPointers.get(event.pointerId);
 		if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) >= 6) {
+			this.cancelledWheelUntil = -Infinity;
 			this.guidance.interact();
 		}
 		if (event.pointerType !== 'mouse') {
@@ -406,6 +476,12 @@ export class SpatialElementInteractionController {
 		}
 	}
 	handlePointerDown(event: PointerEvent) {
+		this.tap = undefined;
+		if (!this.fullscreen && this.ports.readGeometry().detail?.media === 'minimap' &&
+			this._interactionPointers.size === 0 && (event.button === 0 || event.pointerType === 'touch') &&
+			this.hitTestModel(event.clientX, event.clientY, event.target, true)) {
+			this.tap = { id: event.pointerId, x: event.clientX, y: event.clientY, time: performance.now() };
+		}
 		if (event.pointerType !== 'mouse') this.clearPointerHover();
 		// Once a model gesture owns contact, a second finger may land outside its
 		// silhouette. Keep both fingers in the same orbit/pinch gesture.
@@ -427,6 +503,8 @@ export class SpatialElementInteractionController {
 		this.requestRender();
 	}
 	handlePointerUp(event: PointerEvent) {
+		const tap = this.tap;
+		this.tap = undefined;
 		this._interactionPointers.delete(event.pointerId);
 		this._modelInteractionActive = this._interactionPointers.size > 0;
 		if (event.pointerType !== 'mouse') this.clearPointerHover();
@@ -437,11 +515,17 @@ export class SpatialElementInteractionController {
 		);
 		this.notifyModelInput();
 		this.updateControlsAvailability();
+		// The down event already picked the geometry. A moving/damped camera can
+		// move that surface away before release; that does not cancel a stationary tap.
+		if (tap?.id === event.pointerId && event.type === 'pointerup' && performance.now() - tap.time < 500 &&
+			Math.hypot(event.clientX - tap.x, event.clientY - tap.y) < 6) this.toggleEnlargedView();
 		this.requestRender();
 	}
 	handleTouchStart(event: TouchEvent) {
 		if (event.touches?.length >= 2 && !this.pinch) {
-			const [a, b] = Array.from(event.touches);
+			this.cancelledWheelUntil = -Infinity;
+			this.tap = undefined;
+			const a = event.touches[0], b = event.touches[1];
 			const x = (a.clientX + b.clientX) / 2, y = (a.clientY + b.clientY) / 2;
 			if (this.isPinchArea(x, y)) {
 				// Orbit keeps pointer bookkeeping for seamless one-finger rotation,
@@ -449,8 +533,11 @@ export class SpatialElementInteractionController {
 				this.pinch = { distance: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
 					zoom: this._controls!.enableZoom, pan: this._controls!.enablePan };
 				this._controls!.enableZoom = this._controls!.enablePan = false;
+				this.wheelGesture.reset();
 				this.clearWheelZoom();
-				this.captureZoomAnchor(x, y);
+				// Match Orbit's screen-space pan plane through its target. Surface
+				// picking is reserved for mouse zoom, which has no moving touch anchor.
+				this.captureZoomAnchor(x, y, false);
 				event.preventDefault();
 				event.stopImmediatePropagation();
 				return;
@@ -463,18 +550,27 @@ export class SpatialElementInteractionController {
 		}
 	}
 	handleTouchMove(event: TouchEvent) {
-		if (!this.pinch || event.touches.length < 2) return;
-		const [a, b] = Array.from(event.touches);
+		if (!this.pinch || event.touches.length < 2 || !this.canInteract) return;
+		const a = event.touches[0], b = event.touches[1];
+		const x = (a.clientX + b.clientX) / 2, y = (a.clientY + b.clientY) / 2;
 		const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 		event.preventDefault();
 		event.stopImmediatePropagation();
-		// Convert the distance ratio once into the wheel curve (including ctrl's
-		// factor ten): doubling finger distance halves camera distance.
-		const delta = Math.log(Math.max(distance, 1) / Math.max(this.pinch.distance, 1)) * 10 / Math.log(0.95);
-		this.handleWheel({ clientX: (a.clientX + b.clientX) / 2, clientY: (a.clientY + b.clientY) / 2, deltaY: delta,
-			deltaMode: 0, ctrlKey: true, target: this.backgroundCanvas,
-			preventDefault() {}, stopImmediatePropagation() {} } as unknown as WheelEvent);
+		this.guidance.interact();
+		this.clearZoomReset();
+		this._viewResetActive = false;
+		if (!this.zoomAnchor) this.captureZoomAnchor(x, y, false);
+		// Keep the same world point under the moving midpoint. Compensation runs
+		// after scroll/projection updates, so even pan without dolly stays stable.
+		if (this.pinch.pan) this.zoomAnchor!.client.set(x, y);
+		this.zoomAnchor!.until = performance.now() + DETAIL_WHEEL_IDLE_MS;
+		if (this.pinch.zoom && distance !== this.pinch.distance) {
+			// Normalized wheel curve: doubling finger distance halves camera distance.
+			const delta = Math.log(Math.max(distance, 1) / Math.max(this.pinch.distance, 1)) * 100 / Math.log(0.95);
+			this.queueDolly(delta, x, y, true);
+		}
 		this.pinch.distance = distance;
+		this.requestRender();
 	}
 	handleTouchEnd(event: TouchEvent) {
 		if (event.touches.length < 2) this.endPinch();
@@ -504,15 +600,42 @@ export class SpatialElementInteractionController {
 		if (changed) this.requestRender();
 	}
 	handleWheel(event: WheelEvent) {
-		const pinch = event.ctrlKey && this.isPinchArea(event.clientX, event.clientY);
-		const hit = pinch || this.hitTestModel(event.clientX, event.clientY, event.target);
-		this.setModelHover(hit);
-		this.updateControlsAvailability();
 		if (!this._controls || !this.canInteract || event.deltaY === 0) return;
+		const now = performance.now();
+		const detail = this.ports.readGeometry().detail;
+		let modelHit: boolean | undefined;
+		// Only swallow the cancelled spatial gesture. The separate 3XL content
+		// region and a changed pinch modifier represent independent new input.
+		if (now < this.cancelledWheelUntil && Boolean(event.ctrlKey) === this.cancelledWheelCtrlKey &&
+			(!detail?.split || (modelHit = this.hitTestModel(event.clientX, event.clientY, event.target)))) {
+			this.cancelledWheelUntil = now + DETAIL_WHEEL_IDLE_MS;
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			return;
+		}
+		this.cancelledWheelUntil = -Infinity;
+		this.lastWheelTime = now;
+		this.lastWheelCtrlKey = Boolean(event.ctrlKey);
+		const pinch = event.ctrlKey && this.isPinchArea(event.clientX, event.clientY);
+		const model = pinch || (modelHit ?? this.hitTestModel(event.clientX, event.clientY, event.target));
+		this.setModelHover(model);
+		this.updateControlsAvailability();
+		const clearingUi = detail?.media === 'minimap' &&
+			getPanelFocusProgress(detail.uiFocus ?? this.getUiFocus(this.getZoomFocusFactor())) > 0;
+		// Once panels start clearing, wheel navigation also owns the empty stage.
+		// Keep visible HTML and the separate 3XL content region independently usable.
+		const hit = model || (clearingUi && !detail?.split && this.stageViewportVisible &&
+			event.target === this.backgroundCanvas && this.isPinchArea(event.clientX, event.clientY) &&
+			!this.isPointerOccludedByHtml(event.clientX, event.clientY));
 		const atOverview = !this.fullscreen && this.getEffectiveCameraDistance() >= this._controls.maxDistance - 0.001;
-		const owner = this.wheelGesture.resolve(performance.now(), hit, event.deltaY > 0, atOverview, pinch);
+		const separateArea = this.fullscreen || detail?.split;
+		if (separateArea) this.wheelGesture.reset();
+		const owner = separateArea ? (hit ? 'zoom' : 'scroll') :
+			this.wheelGesture.resolve(performance.now(), hit, event.deltaY > 0, atOverview, pinch,
+				clearingUi);
 		if (owner === 'scroll') {
-			this.zoomAnchor = undefined;
+			if (!separateArea) this._viewResetActive = false;
+			this.clearWheelZoom();
 			// Let the browser scroll, but never let OrbitControls consume this burst.
 			this._controls.enabled = false;
 			this.requestRender();
@@ -525,11 +648,14 @@ export class SpatialElementInteractionController {
 		// advance from one shared damped camera distance instead.
 		event.preventDefault();
 		event.stopImmediatePropagation();
+		this.queueDolly(normalizeWheelZoomDelta(event.deltaY, event.deltaMode, event.ctrlKey), event.clientX, event.clientY);
+	}
+	private queueDolly(deltaY: number, x: number, y: number, touch = false) {
+		if (!this._controls) return;
 		this.normalizeCameraFovForOrbitControls();
 		this.clearZoomReset();
 		this._viewResetActive = false;
 
-		const deltaY = normalizeWheelZoomDelta(event.deltaY, event.deltaMode, event.ctrlKey);
 		const currentDistance = this.camera.position.distanceTo(this._controls.target);
 		const previousTargetDistance = this._wheelZoomTargetDistance ?? currentDistance;
 		const targetDistance = getWheelZoomTargetDistance(
@@ -542,11 +668,23 @@ export class SpatialElementInteractionController {
 		this._wheelZoomTargetDistance =
 			Math.abs(targetDistance - currentDistance) > 0.0001 ? targetDistance : undefined;
 
-		if (!this.zoomAnchor || performance.now() >= this.zoomAnchor.until)
-			this.captureZoomAnchor(event.clientX, event.clientY);
-		this.zoomAnchor!.client.set(event.clientX, event.clientY);
-		this.zoomAnchor!.until = performance.now() + 800;
-		this.setPointerNdc(event.clientX, event.clientY);
+		// Mouse zoom-out returns to the fitted centre; a touch gesture keeps its
+		// freely movable anchor in either direction, including the damped tail.
+		this._wheelZoomOut = deltaY > 0 && !touch;
+		if (this._wheelZoomOut) {
+			// Outward dolly converges on the authored centre, regardless of cursor
+			// movement since zoom-in. Do not anchor it to another off-centre point.
+			this.zoomAnchor = undefined;
+			this.requestRender();
+			return;
+		}
+		// A different pointer position chooses a new world point. Moving the old
+		// point to a new screen position would pan the model along with the mouse.
+		if (!this.zoomAnchor || (!touch && (performance.now() >= this.zoomAnchor.until ||
+			Math.hypot(this.zoomAnchor.client.x - x, this.zoomAnchor.client.y - y) > 0.5)))
+			this.captureZoomAnchor(x, y, !touch);
+		this.zoomAnchor!.until = performance.now() + DETAIL_WHEEL_IDLE_MS;
+		this.setPointerNdc(x, y);
 		this._wheelZoomDirection
 			.set(this._pointerNdc.x, this._pointerNdc.y, 1)
 			.unproject(this.camera)
@@ -558,18 +696,18 @@ export class SpatialElementInteractionController {
 		this._pointerNdc.set(x / Math.max(window.innerWidth, 1) * 2 - 1,
 			1 - y / Math.max(window.innerHeight, 1) * 2);
 	}
-	private captureZoomAnchor(x: number, y: number) {
+	private captureZoomAnchor(x: number, y: number, pickSurface = true) {
 		this.updateStageCameraProjection();
 		this.camera.updateMatrixWorld(true);
 		this.setPointerNdc(x, y);
 		this._raycaster.setFromCamera(this._pointerNdc, this.camera);
 		const point = new THREE.Vector3();
-		const hits = this._raycaster.intersectObjects(this._modelPickTargets, false);
-		const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-			this.camera.getWorldDirection(new THREE.Vector3()), this._controls!.target);
-		if (hits.length) point.copy(hits[0].point);
+		const hits = pickSurface ? this._raycaster.intersectObjects(this._modelPickTargets, false) : undefined;
+		const plane = this.zoomAnchorPlane.setFromNormalAndCoplanarPoint(
+			this.camera.getWorldDirection(this.zoomAnchorNormal), this._controls!.target);
+		if (hits?.length) point.copy(hits[0].point);
 		else if (!this._raycaster.ray.intersectPlane(plane, point)) point.copy(this._controls!.target);
-		this.zoomAnchor = { point, client: new THREE.Vector2(x, y), until: performance.now() + 800 };
+		this.zoomAnchor = { point, client: new THREE.Vector2(x, y), until: performance.now() + DETAIL_WHEEL_IDLE_MS };
 	}
 	/** Run after the scroll-dependent projection has changed, before rendering. */
 	compensateZoomAnchor() {
@@ -582,17 +720,18 @@ export class SpatialElementInteractionController {
 		this.camera.updateMatrixWorld(true);
 		this.setPointerNdc(anchor.client.x, anchor.client.y);
 		this._raycaster.setFromCamera(this._pointerNdc, this.camera);
-		const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-			this.camera.getWorldDirection(new THREE.Vector3()), anchor.point);
-		const intersection = this._raycaster.ray.intersectPlane(plane, new THREE.Vector3());
+		const plane = this.zoomAnchorPlane.setFromNormalAndCoplanarPoint(
+			this.camera.getWorldDirection(this.zoomAnchorNormal), anchor.point);
+		const intersection = this._raycaster.ray.intersectPlane(plane, this.zoomAnchorIntersection);
 		if (!intersection) return;
-		const shift = anchor.point.clone().sub(intersection);
+		const shift = this.zoomAnchorShift.copy(anchor.point).sub(intersection);
 		this.camera.position.add(shift);
 		this._controls.target.add(shift);
 		this.camera.updateMatrixWorld(true);
+		if (!this.pinch && this._wheelZoomTargetDistance === undefined) this.zoomAnchor = undefined;
 	}
 	requestScrollZoomReset(scrollDelta: number) {
-		if (!this._controls || this.fullscreen) return;
+		if (!this._controls || this.fullscreen || this._viewResetActive || this.ports.readGeometry().detail?.split) return;
 		if (this.pinch || this._interactionPointers.size > 1 ||
 			(this._wheelZoomTargetDistance !== undefined && this.wheelGesture.zooming(performance.now()))) return;
 		this.clearWheelZoom();
@@ -640,6 +779,7 @@ export class SpatialElementInteractionController {
 			ZOOM_RESET_DAMPING,
 			delta
 		);
+		this.restoreStageAlignment(currentDistance, nextDistance);
 		this.setCameraDistance(nextDistance);
 		this.camera.fov = THREE.MathUtils.damp(
 			this.camera.fov,
@@ -657,6 +797,7 @@ export class SpatialElementInteractionController {
 			this.camera.fov = this._initialCameraFov;
 			this.camera.updateProjectionMatrix();
 			if (targetDistance >= this._controls.maxDistance - 0.001) {
+				this._viewportCentering = 0;
 				this.clearZoomReset();
 			} else {
 				this._zoomResetTargetDistance = undefined;
@@ -668,28 +809,29 @@ export class SpatialElementInteractionController {
 	applyViewReset(delta: number) {
 		if (!this._controls || !this._viewResetActive || !this._initialViewCaptured) return;
 
-		this._viewResetElapsed += Math.max(delta, 0);
+		this._viewResetElapsed += this.reducedMotion?.matches ? this._viewResetDuration : Math.max(delta, 0);
 		const interpolation = getViewResetInterpolation(
 			this._viewResetElapsed,
 			this._viewResetDuration
 		);
+		this._viewportCentering = THREE.MathUtils.lerp(this._viewStartCentering, this._viewEndCentering, interpolation);
 		this.camera.position
 			.copy(this._viewResetStartCameraPosition)
-			.lerp(this._initialCameraPosition, interpolation);
+			.lerp(this._viewEndPosition, interpolation);
 		this._controls.target
 			.copy(this._viewResetStartControlsTarget)
-			.lerp(this._initialControlsTarget, interpolation);
+			.lerp(this._viewEndTarget, interpolation);
 		this.camera.fov = THREE.MathUtils.lerp(
 			this._viewResetStartFov,
-			this._initialCameraFov,
+			this._viewEndFov,
 			interpolation
 		);
 		this.camera.updateProjectionMatrix();
 
 		if (interpolation >= 1) {
-			this.camera.position.copy(this._initialCameraPosition);
-			this._controls.target.copy(this._initialControlsTarget);
-			this.camera.fov = this._initialCameraFov;
+			this.camera.position.copy(this._viewEndPosition);
+			this._controls.target.copy(this._viewEndTarget);
+			this.camera.fov = this._viewEndFov;
 			this.camera.updateProjectionMatrix();
 			this._viewResetActive = false;
 		}
@@ -723,16 +865,29 @@ export class SpatialElementInteractionController {
 			0.001
 		);
 		const radiusDelta = currentDistance - nextDistance;
-		this.camera.position.addScaledVector(this._wheelZoomDirection, radiusDelta);
-		this.camera.updateMatrixWorld(true);
-		this.camera.getWorldDirection(this._wheelZoomForward);
-		this._controls.target
-			.copy(this.camera.position)
-			.addScaledVector(this._wheelZoomForward, nextDistance);
+		if (this._wheelZoomOut) {
+			this.restoreStageAlignment(currentDistance, nextDistance);
+			const direction = this._wheelZoomForward.copy(this.camera.position).sub(this._controls.target).normalize();
+			const remaining = this._controls.maxDistance - currentDistance;
+			const progress = remaining > 0.0001 ? THREE.MathUtils.clamp((nextDistance - currentDistance) / remaining, 0, 1) : 1;
+			this._controls.target.lerp(this._initialControlsTarget, progress);
+			this.camera.position.copy(this._controls.target).addScaledVector(direction, nextDistance);
+		} else {
+			this.camera.position.addScaledVector(this._wheelZoomDirection, radiusDelta);
+			this.camera.updateMatrixWorld(true);
+			this.camera.getWorldDirection(this._wheelZoomForward);
+			this._controls.target.copy(this.camera.position).addScaledVector(this._wheelZoomForward, nextDistance);
+		}
 		this._controls.update();
 
 		if (nextDistance === targetDistance) this._wheelZoomTargetDistance = undefined;
 		return this._wheelZoomTargetDistance !== undefined;
+	}
+	private restoreStageAlignment(current: number, next: number) {
+		if (!this._controls || next < current) return;
+		const remaining = this._controls.maxDistance - current;
+		this._viewportCentering *= remaining > 0.0001
+			? THREE.MathUtils.clamp((this._controls.maxDistance - next) / remaining, 0, 1) : 0;
 	}
 	setCameraDistance(distance: number) {
 		if (!this._controls) return;
@@ -784,6 +939,7 @@ export class SpatialElementInteractionController {
 		this.camera.updateProjectionMatrix();
 	}
 	handlePointerLeave() {
+		this.tap = undefined;
 		this.endPinch();
 		this.zoomAnchor = undefined;
 		this.preview.clear();
@@ -799,12 +955,12 @@ export class SpatialElementInteractionController {
 		this.updateControlsAvailability();
 		this.requestRender();
 	}
-	hitTestModel(clientX: number, clientY: number, target: EventTarget | null) {
+	hitTestModel(clientX: number, clientY: number, target: EventTarget | null, exact = false) {
 		// Fullscreen owns the canvas, including its empty background. UI events
 		// never reach this gate as canvas input; no geometry or DOM picking is needed.
-		if (this.fullscreen) return this.canInteract && this.stageViewportVisible && target === this.backgroundCanvas;
+		if (this.fullscreen && !exact) return this.canInteract && this.stageViewportVisible && target === this.backgroundCanvas;
 		const detail = this.ports.readGeometry().detail;
-		if (detail && (detail.split || detail.paneHidden)) {
+		if (!exact && detail && (detail.split || detail.paneHidden)) {
 			if (!this.canInteract || !this.stageViewportVisible) return false;
 			return resolveDetailGestureOwner({ ...detail, clientX, modelHit: false,
 				uiTarget: target !== this.backgroundCanvas || isStageUiTarget(target) || this.isPointerOccludedByHtml(clientX, clientY)
@@ -813,10 +969,10 @@ export class SpatialElementInteractionController {
 		if (
 			!this.canInteract ||
 			!this.stageViewportVisible ||
-			clientX < this.viewportFrame.x ||
+			(!exact && (clientX < this.viewportFrame.x ||
 			clientX > this.viewportFrame.x + this.viewportFrame.z ||
 			clientY < this.viewportFrame.y ||
-			clientY > this.viewportFrame.y + this.viewportFrame.w ||
+			clientY > this.viewportFrame.y + this.viewportFrame.w)) ||
 			!this._modelPickTargets.length ||
 			isStageUiTarget(target) ||
 			this.isPointerOccludedByHtml(clientX, clientY)
@@ -825,6 +981,7 @@ export class SpatialElementInteractionController {
 		}
 
 		this.updateStageCameraProjection();
+		this.camera.updateMatrixWorld();
 		this._pointerNdc.set(
 			(clientX / window.innerWidth) * 2 - 1,
 			-(clientY / window.innerHeight) * 2 + 1
@@ -924,11 +1081,11 @@ export class SpatialElementInteractionController {
 			this.preview.advance(this.camera, delta, this.reducedMotion?.matches);
 		return { controls: controls || preview, wheel };
 	}
-	private getRevealFocus() {
+	private getRevealFocus(distance = this.getEffectiveCameraDistance()) {
 		// Start at the fitted distance, before the later UI-clearance phase. The
 		// first 35% of inward dolly reveals the whole stage without a second clock.
 		const maxDistance = this._controls!.maxDistance;
-		return THREE.MathUtils.clamp((maxDistance - this.getEffectiveCameraDistance()) /
+		return THREE.MathUtils.clamp((maxDistance - distance) /
 			Math.max(maxDistance * 0.35, 0.001), 0, 1);
 	}
 	/** Couple document reveal and UI clearance to one camera-driven timeline. */
@@ -953,10 +1110,10 @@ export class SpatialElementInteractionController {
 		if (this.zoomScroll && focus <= this.zoomScroll.focus) this.zoomScroll = undefined;
 		this.previousZoomFocus = focus;
 	}
-	getUiFocus(cameraFocus: number) {
+	getUiFocus(cameraFocus: number, distance = this.getEffectiveCameraDistance()) {
 		const normal = getStageUiFocus(cameraFocus);
 		if (!this.zoomScroll || this.ports.readGeometry().detail?.split) return normal;
-		const progress = THREE.MathUtils.clamp((this.getRevealFocus() - this.zoomScroll.focus) /
+		const progress = THREE.MathUtils.clamp((this.getRevealFocus(distance) - this.zoomScroll.focus) /
 			Math.max(1 - this.zoomScroll.focus, 0.001), 0, 1);
 		return Math.max(normal, getPanelFocusFromProgress(
 			THREE.MathUtils.lerp(this.zoomScroll.uiProgress, 1, progress)));

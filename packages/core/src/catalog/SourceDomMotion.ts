@@ -1,12 +1,11 @@
 import { Matrix4 } from 'three';
-import { getProjectiveCssMatrix3d, type CssProjectionQuad } from '../stage/cssProjection.js';
+import { getProjectiveCssMatrixElements, type CssProjectionQuad } from '../stage/cssProjection.js';
 
 export interface SourceDomProjection { width: number; height: number; corners: CssProjectionQuad }
 export interface SourceDomTarget { left: number; top: number; width: number; height?: number }
 
 export function sourceDomProjectiveMatrix(corners: CssProjectionQuad, width: number, height: number): number[] | undefined {
-	const css = getProjectiveCssMatrix3d(corners, width, height);
-	return css ? css.slice(9, -1).split(',').map(Number) : undefined;
+	return getProjectiveCssMatrixElements(corners, width, height) ?? undefined;
 }
 
 function projectiveMatrix(corners: CssProjectionQuad, width: number, height: number) {

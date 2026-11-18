@@ -297,6 +297,61 @@ test('pinch owns zoom once and preserves its world point across scrolling projec
 	owner.dispose();
 });
 
+test.each([1, 1.2, 0.8])('two-finger pan follows its midpoint during a %sx pinch and its damped tail', spread => {
+	vi.stubGlobal('window', { innerWidth: 100, innerHeight: 100, scrollY: 0 });
+	const { owner, ports, camera } = fixture();
+	const geometry = ports.readGeometry();
+	ports.readGeometry = () => ({ ...geometry, detail: { media: 'minimap', split: false, paneHidden: false, paneLeft: 60, contentTop: 100 } });
+	owner.setCameraDistance(6);
+	const event = (x: number, y: number, radius: number) => ({
+		touches: [{ clientX: x - radius, clientY: y }, { clientX: x + radius, clientY: y }],
+		preventDefault: vi.fn(), stopImmediatePropagation: vi.fn()
+	} as unknown as TouchEvent);
+	owner.handleTouchStart(event(50, 50, 10));
+	const orientation = camera.quaternion.clone();
+	owner.handleTouchMove(event(65, 60, 10 * spread));
+	if (spread === 1) expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	else expect(owner.wheelZoomTargetDistance).toBeCloseTo(6 / spread, 8);
+	for (let step = 1; step <= 80; step++) {
+		owner.advance(step * 16, 0.016);
+		// Scroll reveal also moves the stage projection during the first frames.
+		camera.setViewOffset(100, 100, 0, -Math.min(step, 12) * 2, 100, 100);
+		owner.compensateZoomAnchor();
+		const projected = new THREE.Vector3().project(camera);
+		expect(projected.x).toBeCloseTo(0.3, 7);
+		expect(projected.y).toBeCloseTo(-0.2, 7);
+		expect(camera.quaternion.angleTo(orientation)).toBeCloseTo(0, 7);
+		if (step === 12) owner.handleTouchEnd({ touches: [] } as unknown as TouchEvent);
+	}
+	expect(camera.position.distanceTo(owner.controls!.target)).toBeCloseTo(6 / spread, 3);
+	expect(owner.controls!.enablePan).toBe(true);
+	expect(owner.controls!.enableZoom).toBe(true);
+	owner.dispose();
+});
+
+test('a remaining touch resumes rotation without the preceding pinch anchor or dolly', () => {
+	vi.stubGlobal('window', { innerWidth: 100, innerHeight: 100, scrollY: 0 });
+	const { owner, ports, camera } = fixture();
+	owner.setFullscreen(true);
+	const pointer = { pointerId: 1, pointerType: 'touch', clientX: 50, clientY: 50, target: ports.canvas } as unknown as PointerEvent;
+	owner.handlePointerDown(pointer);
+	const event = (radius: number) => ({
+		touches: [{ clientX: 50 - radius, clientY: 50 }, { clientX: 50 + radius, clientY: 50 }],
+		preventDefault: vi.fn(), stopImmediatePropagation: vi.fn()
+	} as unknown as TouchEvent);
+	owner.handleTouchStart(event(10));
+	owner.handleTouchMove(event(12));
+	expect(owner.wheelZoomTargetDistance).toBeDefined();
+	owner.handleTouchEnd({ touches: [event(12).touches[0]] } as unknown as TouchEvent);
+	owner.handlePointerMove({ ...pointer, clientX: 70 });
+	expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	const position = camera.position.clone();
+	camera.setViewOffset(100, 100, 0, -20, 100, 100);
+	owner.compensateZoomAnchor();
+	expect(camera.position.equals(position)).toBe(true);
+	owner.dispose();
+});
+
 test('transition ownership prevents SpaceMouse and ordinary frame damping from writing the camera', () => {
 	const { owner, camera, ports, setOwner } = fixture();
 	setOwner('transition');
@@ -332,6 +387,270 @@ test('reset starts at the current non-default FOV and ends at the fitted FOV', (
 function pointer(pointerId: number, pointerType = 'touch', type = 'pointerdown') {
 	return { pointerId, pointerType, type, clientX: 50, clientY: 50, target: null } as PointerEvent;
 }
+
+function detailFixture(split = false) {
+	vi.stubGlobal('window', { innerWidth: 100, innerHeight: 100, scrollY: 0 });
+	const f = fixture();
+	const geometry = f.ports.readGeometry();
+	f.ports.readGeometry = () => ({ ...geometry, detail: { media: 'minimap', split, paneHidden: false, paneLeft: 60 } });
+	f.owner.setFocusRange(8.4, 1);
+	vi.spyOn(f.owner, 'hitTestModel').mockImplementation(x => x < 60);
+	return f;
+}
+function wheel(x: number, deltaY: number) {
+	return { clientX: x, clientY: 50, deltaY, deltaMode: 0, ctrlKey: false, target: null,
+		preventDefault: vi.fn(), stopImmediatePropagation: vi.fn() } as unknown as WheelEvent;
+}
+
+test.each([0, 0.08, 0.0801, 0.5])('empty-stage wheel ownership starts with panel clearance at UI focus %s', uiFocus => {
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const { owner, ports } = detailFixture();
+	const geometry = ports.readGeometry();
+	const detail = { ...geometry.detail!, uiFocus };
+	ports.readGeometry = () => ({ ...geometry, detail });
+	vi.spyOn(owner, 'isPointerOccludedByHtml').mockReturnValue(false);
+	owner.setCameraDistance(7);
+	const send = () => {
+		const event = { ...wheel(80, 100), target: ports.canvas } as WheelEvent;
+		owner.handleWheel(event);
+		return vi.mocked(event.preventDefault).mock.calls.length > 0;
+	};
+	const clearing = uiFocus > 0.08;
+	expect(send()).toBe(clearing);
+	// A retained outward gesture survives the return to fully visible panels.
+	detail.uiFocus = 0;
+	owner.setCameraDistance(10);
+	time.mockReturnValue(379);
+	expect(send()).toBe(clearing);
+	time.mockReturnValue(759);
+	expect(send()).toBe(false);
+	owner.dispose();
+});
+
+test('partially faded panels do not steal wheel input from visible HTML or the 3XL pane', () => {
+	for (const split of [false, true]) {
+		const { owner, ports } = detailFixture(split);
+		const geometry = ports.readGeometry();
+		ports.readGeometry = () => ({ ...geometry, detail: { ...geometry.detail!, uiFocus: 0.5 } });
+		vi.spyOn(owner, 'isPointerOccludedByHtml').mockReturnValue(true);
+		owner.setCameraDistance(7);
+		const event = { ...wheel(80, 100), target: ports.canvas } as WheelEvent;
+		owner.handleWheel(event);
+		expect(event.preventDefault).not.toHaveBeenCalled();
+		owner.dispose();
+	}
+});
+
+test('3XL changes wheel owner immediately by area and never resets zoom from document scrolling', () => {
+	const { owner, camera } = detailFixture(true);
+	const pageWheel = wheel(80, 100);
+	owner.handleWheel(pageWheel);
+	expect(pageWheel.preventDefault).not.toHaveBeenCalled();
+	const modelWheel = wheel(50, -100);
+	owner.handleWheel(modelWheel);
+	expect(modelWheel.preventDefault).toHaveBeenCalledOnce();
+	owner.advance(100, 0.1);
+	expect(camera.position.z).toBeLessThan(10);
+	const target = owner.wheelZoomTargetDistance;
+	owner.requestScrollZoomReset(600);
+	expect(owner.zoomResetTargetDistance).toBeUndefined();
+	expect(owner.wheelZoomTargetDistance).toBe(target);
+	owner.clearWheelZoom();
+	owner.setCameraDistance(10);
+	const atOverview = wheel(50, 100);
+	owner.handleWheel(atOverview);
+	expect(atOverview.preventDefault).toHaveBeenCalledOnce();
+	owner.dispose();
+});
+
+test('changing the wheel focus captures a new point instead of dragging the old point to the cursor', () => {
+	const { owner, camera } = detailFixture();
+	owner.handleWheel(wheel(40, -50));
+	owner.advance(100, 0.016);
+	owner.compensateZoomAnchor();
+	const position = camera.position.clone();
+	owner.handleWheel(wheel(55, -50));
+	owner.compensateZoomAnchor();
+	expect(camera.position.distanceTo(position)).toBeLessThan(1e-8);
+	for (let i = 0; i < 200; i++) { owner.advance(116 + i * 16, 0.016); owner.compensateZoomAnchor(); }
+	expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	// Once dolly has settled, an unrelated projection update must not retain an anchor.
+	const settled = camera.position.clone();
+	camera.setViewOffset(100, 100, 10, 0, 100, 100);
+	owner.compensateZoomAnchor();
+	expect(camera.position.distanceTo(settled)).toBeLessThan(1e-8);
+	owner.dispose();
+});
+
+test('outward wheel zoom converges on the fitted centre regardless of cursor position', () => {
+	const { owner, camera } = detailFixture();
+	owner.controls!.target.set(2, -1, 0);
+	camera.position.set(2, -1, 5);
+	owner.handleWheel(wheel(10, 100));
+	owner.applyWheelZoom(0.05);
+	expect(owner.controls!.target.x).toBeLessThan(2);
+	expect(owner.controls!.target.x).toBeGreaterThan(0);
+	owner.handleWheel(wheel(55, 5000));
+	for (let i = 0; i < 200; i++) { owner.applyWheelZoom(0.016); owner.compensateZoomAnchor(); }
+	expect(owner.controls!.target.toArray()).toEqual([0, 0, 0]);
+	expect(camera.position.toArray()).toEqual([0, 0, 10]);
+	owner.dispose();
+});
+
+test.each(['mouse', 'touch'])('a %s tap enlarges to UI clearance and returns any zoom to the centered initial view', type => {
+	const { owner, camera } = detailFixture();
+	const tap = () => {
+		owner.handlePointerDown({ ...pointer(1, type), button: 0 } as PointerEvent);
+		owner.handlePointerUp({ ...pointer(1, type, 'pointerup'), button: 0 } as PointerEvent);
+	};
+	tap();
+	expect(owner.viewResetActive).toBe(true);
+	owner.advance(100, 0.05);
+	expect(camera.position.z).toBeLessThan(10);
+	owner.advance(200, 2);
+	expect(getPanelFocusOpacity(owner.getUiFocus(owner.getZoomFocusFactor()))).toBe(0);
+	expect(owner.getUiFocus(owner.getZoomFocusFactor())).toBeCloseTo(0.96, 5);
+	expect(owner.viewportCentering).toBe(1);
+	owner.controls!.target.x = 2;
+	camera.position.set(2, 0, 1);
+	tap();
+	owner.advance(300, 2);
+	expect(camera.position.toArray()).toEqual([0, 0, 10]);
+	expect(owner.controls!.target.toArray()).toEqual([0, 0, 0]);
+	expect(owner.viewportCentering).toBe(0);
+	owner.dispose();
+});
+
+test('a click interrupts damped wheel zoom immediately even if the picked surface moves before release', () => {
+	const { owner, camera } = detailFixture();
+	owner.handleWheel(wheel(50, -700));
+	owner.advance(1, 0.016);
+	expect(owner.wheelZoomTargetDistance).toBeDefined();
+	owner.handlePointerDown({ ...pointer(1, 'mouse'), button: 0 } as PointerEvent);
+	vi.mocked(owner.hitTestModel).mockReturnValue(false);
+	owner.handlePointerUp({ ...pointer(1, 'mouse', 'pointerup'), button: 0 } as PointerEvent);
+	expect(owner.viewResetActive).toBe(true);
+	expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	owner.advance(2, 2);
+	expect(camera.position.toArray()).toEqual([0, 0, 10]);
+	owner.dispose();
+});
+
+test('a click reset owns its animation despite delayed document scroll notification', () => {
+	const { owner, camera } = detailFixture();
+	owner.handleWheel(wheel(50, -700));
+	owner.advance(1, 0.1);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	owner.advance(2, 0.016);
+	owner.requestScrollZoomReset(2);
+	expect(owner.viewResetActive).toBe(true);
+	owner.advance(3, 2);
+	expect(camera.position.toArray()).toEqual([0, 0, 10]);
+	owner.dispose();
+});
+
+test('a click reset ignores the old inertial wheel tail but accepts a new burst after 380ms', () => {
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const { owner, camera } = detailFixture();
+	owner.handleWheel(wheel(50, -700));
+	owner.advance(1, 0.1);
+	time.mockReturnValue(30);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	owner.advance(2, 0.016);
+	for (const now of [40, 90, 180]) {
+		time.mockReturnValue(now);
+		const tail = wheel(50, -30);
+		owner.handleWheel(tail);
+		expect(tail.preventDefault).toHaveBeenCalled();
+		expect(owner.viewResetActive).toBe(true);
+	}
+	owner.advance(3, 2);
+	expect(camera.position.toArray()).toEqual([0, 0, 10]);
+	time.mockReturnValue(560);
+	owner.handleWheel(wheel(50, -30));
+	expect(owner.wheelZoomTargetDistance).toBeDefined();
+	owner.dispose();
+});
+
+test('3XL content scrolling stays available while the spatial wheel tail is cancelled', () => {
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const { owner, camera } = detailFixture(true);
+	owner.handleWheel(wheel(50, -700));
+	owner.advance(1, 0.1);
+	time.mockReturnValue(30);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	time.mockReturnValue(40);
+	const tail = wheel(50, -30);
+	owner.handleWheel(tail);
+	expect(tail.preventDefault).toHaveBeenCalled();
+	const content = wheel(80, 100);
+	owner.handleWheel(content);
+	expect(content.preventDefault).not.toHaveBeenCalled();
+	expect(content.stopImmediatePropagation).not.toHaveBeenCalled();
+	expect(owner.viewResetActive).toBe(true);
+	owner.requestScrollZoomReset(100);
+	owner.advance(2, 2);
+	expect(camera.position.toArray()).toEqual([0, 0, 10]);
+	owner.dispose();
+});
+
+test.each([false, true])('a changed ctrl modifier starts a fresh wheel gesture after click reset (previous ctrl=%s)', ctrlKey => {
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const { owner } = detailFixture();
+	owner.handleWheel({ ...wheel(50, -100), ctrlKey } as WheelEvent);
+	owner.advance(1, 0.1);
+	time.mockReturnValue(30);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	expect(owner.viewResetActive).toBe(true);
+	time.mockReturnValue(40);
+	const fresh = { ...wheel(50, -30), ctrlKey: !ctrlKey } as WheelEvent;
+	owner.handleWheel(fresh);
+	expect(fresh.preventDefault).toHaveBeenCalled();
+	expect(owner.viewResetActive).toBe(false);
+	expect(owner.wheelZoomTargetDistance).toBeDefined();
+	owner.dispose();
+});
+
+test('wheel zoom-out returns viewport-centered enlargement to the original stage alignment', () => {
+	const { owner } = detailFixture(true);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	owner.advance(1, 2);
+	expect(owner.viewportCentering).toBe(1);
+	owner.handleWheel(wheel(50, 5000));
+	owner.advance(2, 0.016);
+	expect(owner.viewportCentering).toBeGreaterThan(0);
+	expect(owner.viewportCentering).toBeLessThan(1);
+	for (let i = 0; i < 200; i++) owner.advance(3 + i, 0.016);
+	expect(owner.viewportCentering).toBe(0);
+	owner.dispose();
+});
+
+test('drag, long press, cancelled contacts and multiple fingers never trigger tap zoom', () => {
+	const { owner } = detailFixture();
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerMove({ ...pointer(1), clientX: 40 } as PointerEvent);
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	expect(owner.viewResetActive).toBe(false);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerDown(pointer(2));
+	owner.handlePointerUp(pointer(2, 'touch', 'pointerup'));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	expect(owner.viewResetActive).toBe(false);
+	owner.handlePointerDown(pointer(1));
+	owner.handlePointerUp(pointer(1, 'touch', 'pointercancel'));
+	expect(owner.viewResetActive).toBe(false);
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	owner.handlePointerDown(pointer(1));
+	time.mockReturnValue(501);
+	owner.handlePointerUp(pointer(1, 'touch', 'pointerup'));
+	expect(owner.viewResetActive).toBe(false);
+	owner.dispose();
+});
 
 test('touch claims geometry on the first contact and leaves the next background gesture native', () => {
 	const { owner, ports } = fixture();

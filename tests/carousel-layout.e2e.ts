@@ -1,5 +1,28 @@
 import { expect, test } from '@playwright/test';
 import { resolveCarouselLayout } from '../packages/core/src/spatial-element/responsiveLayout';
+import type {} from '@spatial-elements/core/stage/stageVisualTest';
+
+test('carousel rendering crosses inset section edges but respects full backgrounds', async ({ page }, info) => {
+	await page.setViewportSize({ width: 2800, height: 1100 });
+	for (const background of ['standard', 'full']) {
+		await page.goto(`/proof/carousel-layout?stage-test=1&background=${background}`);
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
+		await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getCarouselStats()?.actors.length ?? 0)).toBeGreaterThan(0);
+		await page.evaluate(() => window.__stageVisualTest!.settle(30));
+		const rect = (await page.locator('#layout-carousel > .ps-section-surface').boundingBox())!;
+		const clips = await page.evaluate(() => window.__stageVisualTest!.getCarouselStats()!.actors.map(actor => actor.clip!));
+		for (const clip of clips) {
+			if (background === 'full') {
+				expect(clip.top).toBeCloseTo(rect.y, 0);
+				expect(clip.height).toBeCloseTo(rect.height, 0);
+			} else {
+				expect(clip.top).toBeLessThan(rect.y);
+				expect(clip.top + clip.height).toBeGreaterThan(rect.y + rect.height);
+			}
+		}
+		await page.screenshot({ path: info.outputPath(`carousel-${background}.png`) });
+	}
+});
 
 for (const javaScriptEnabled of [false, true]) {
 	test(`carousel native frame follows the resolver ${javaScriptEnabled ? 'with hydration' : 'without JavaScript'}`, async ({ browser, baseURL }) => {

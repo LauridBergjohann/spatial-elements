@@ -1,5 +1,26 @@
 # @spatial-elements/sveltekit
 
+## 1.0.0-beta.14
+
+### Patch Changes
+
+- Retain empty-stage wheel zoom from the start of panel fading and use a 380ms pause to switch between zooming and scrolling through the updated core.
+
+- Restore simultaneous two-finger pan and pinch navigation on detail pages through the updated core, while preserving scroll reveal and mouse navigation.
+
+- Complete immediate click-to-reset after wheel zoom and use the optimized detail, transition and render paths from core while preserving presentation and interaction behavior.
+
+- Synchronize section movement with the submenu, preserve its 12px viewport inset, and anchor the 3XL pane to the corner controls. Center click enlargement in the entire viewport and let a new click interrupt wheel zoom immediately.
+
+- Cap inset L sections at 1536px with rounded outer corners and aligned submenus. Improve carousel overflow and detail wheel navigation through the updated core.
+
+- Decouple 3XL viewer zoom from document scrolling and switch wheel ownership immediately between its separate regions. In stacked layouts, retain scroll/zoom gestures for 380ms, including zoom-out over empty canvas. Correct cursor anchoring so moving the wheel focus no longer drags the model or leaves a stale anchor.
+
+  Add animated click/tap enlargement to the UI-clearance endpoint and a centered return from any zoom. Exclude drags, long presses and multi-touch gestures. Move stacked content sections down during zoom, with lightweight blur on nearby sections and breadcrumbs.
+
+- Updated dependencies
+  - @spatial-elements/core@1.0.0-beta.14
+
 ## 1.0.0-beta.13
 
 ### Patch Changes

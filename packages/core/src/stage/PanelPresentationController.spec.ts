@@ -9,6 +9,41 @@ import { resolveZoomLayout } from '../spatial-element/responsiveLayout.js';
 
 afterEach(() => vi.unstubAllGlobals());
 
+test('a panel animation frame resolves responsive zoom geometry once and refreshes it next frame', () => {
+	let width = 1700;
+	const browser = { innerWidth: width, innerHeight: 900, location: { search: '' } };
+	vi.stubGlobal('window', browser);
+	let focus = 0.5;
+	const camera = new THREE.PerspectiveCamera(); camera.position.z = 1400;
+	const frame = vi.fn(() => ({ pointer: { active: false }, uiFocus: focus, minimapFocus: 0, presentation: { active: false } }));
+	const zoomLayout = vi.fn(() => resolveZoomLayout({ width, height: 900 }));
+	const registrations = vi.fn(() => []);
+	const minimaps = vi.fn(() => new Map());
+	const owner = new PanelPresentationController({ camera, frame, zoomLayout, registrations, minimaps,
+		visible: () => true, transitionOpacity: () => 1 } as unknown as PanelPresentationPorts);
+	const controls = Array.from({ length: 3 }, (_, i) => ({
+		group: new THREE.Group(), pointerLift: 0, pointerReactive: false, focusReactive: 'top-right',
+		options: resolveLiquidGlassPanelOptions({ width: 40, height: 40, position: { x: 100 + i * 48, y: 300 } }),
+		surface: 'glass', glass: { setVisibilityAlpha: vi.fn() }
+	} as unknown as StagePanelRuntime));
+	for (const control of controls) owner.add(control);
+	owner.updatePanelPointerInteraction(1 / 60);
+	expect(frame).toHaveBeenCalledTimes(1);
+	expect(zoomLayout).toHaveBeenCalledTimes(1);
+	expect(registrations).toHaveBeenCalledTimes(1);
+	expect(minimaps).toHaveBeenCalledTimes(1);
+
+	width = 2400; browser.innerWidth = width; focus = 1;
+	owner.updatePanelPointerInteraction(1 / 60);
+	expect(frame).toHaveBeenCalledTimes(2);
+	expect(zoomLayout).toHaveBeenCalledTimes(2);
+	const zoom = resolveZoomLayout({ width, height: 900 });
+	const right = controls[2].group.position.x + width / 2 + 20;
+	expect(right).toBe(zoom.controls.viewSelector.x + zoom.controls.viewSelector.width);
+	expect(controls[1].group.position.x - controls[0].group.position.x).toBe(48);
+	expect(900 / 2 - controls[2].group.position.y - 20).toBe(zoom.controls.viewSelector.y);
+});
+
 test.each([390, 700])('stacked minimap travels with the media row until its destination at %ipx', width => {
 	vi.stubGlobal('window', { innerWidth: width, innerHeight: 900, location: { search: '' } });
 	const camera = new THREE.PerspectiveCamera(); camera.position.z = 1400;
