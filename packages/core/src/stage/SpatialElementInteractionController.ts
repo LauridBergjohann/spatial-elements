@@ -1081,10 +1081,6 @@ export class SpatialElementInteractionController {
 			(this.fullscreen || this.ports.readGeometry().detail?.paneHidden || this._modelHover || this._modelInteractionActive);
 		if (this._controls) {
 			this._controls.enabled = enabled;
-			// Constant angular speed magnifies tiny drags at close range. Screen-space
-			// pan already scales with distance in OrbitControls and our pinch anchor.
-			this._controls.rotateSpeed = THREE.MathUtils.clamp(this.getEffectiveCameraDistance() /
-				Math.max(this._controls.maxDistance, 0.001), 0.08, 1);
 		}
 
 		this.backgroundCanvas.style.cursor = this._modelInteractionActive

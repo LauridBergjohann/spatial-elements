@@ -154,6 +154,8 @@ vi.mock('three/addons/controls/OrbitControls.js', () => ({
 		minDistance = 1;
 		maxDistance = 10;
 		zoomSpeed = 1;
+		rotateSpeed = 1;
+		panSpeed = 1;
 		enableZoom = true;
 		enablePan = true;
 		update = vi.fn(() => false);
@@ -652,17 +654,13 @@ test('viewport refitting preserves pending dolly but never starts scroll reveal'
 	owner.dispose();
 });
 
-test('close-up rotation slows continuously while screen-space pan retains its own scale', () => {
+test.each([10, 7, 2, 1])('rotation and pan retain native sensitivity at camera distance %s', distance => {
 	const { owner } = fixture();
 	owner.controls!.maxDistance = 10;
-	owner.setCameraDistance(10);
+	owner.setCameraDistance(distance);
 	owner.updateControlsAvailability();
 	expect(owner.controls!.rotateSpeed).toBe(1);
-	const panSpeed = owner.controls!.panSpeed;
-	owner.setCameraDistance(2);
-	owner.updateControlsAvailability();
-	expect(owner.controls!.rotateSpeed).toBeCloseTo(0.2);
-	expect(owner.controls!.panSpeed).toBe(panSpeed);
+	expect(owner.controls!.panSpeed).toBe(1);
 	owner.dispose();
 });
 
