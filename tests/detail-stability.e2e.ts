@@ -24,33 +24,53 @@ test('GPU unavailable: section changes preserve document height and requested sc
 	}
 });
 
-test('trackpad two-finger movement pans a pinched detail in both screen axes', async ({ page }) => {
+for (const mode of ['immersive', 'fullscreen', '3XL'] as const) test(`trackpad pans the ${mode} stage in both screen axes`, async ({ page }) => {
+	if (mode === '3XL') await page.setViewportSize({ width: 2400, height: 900 });
 	await page.goto('/demo/elements/cube?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
+	if (mode === 'fullscreen') {
+		await page.getByRole('button', { name: 'Fullscreen', exact: true }).click();
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-fullscreen', '');
+	}
+	if (mode === 'immersive') {
+		const rect = await page.evaluate(() => window.__stageVisualTest!.getModelRect()!);
+		await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
+		await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getState().uiOpacity)).toBeLessThan(0.001);
+		await page.mouse.move(2, 450);
+	}
 	const result = await page.evaluate(async () => {
 		const api = window.__stageVisualTest!;
-		await api.setView({ zoom: 0.3 }, 30);
-		const rect = api.getModelRect()!;
+		await api.settle(120);
 		const canvas = document.querySelector('.stage-webgpu-background')!;
 		const send = (deltaX: number, deltaY: number, ctrlKey = false) => canvas.dispatchEvent(new WheelEvent('wheel', {
-			clientX: rect.x + rect.width / 2, clientY: rect.y + rect.height / 2,
+			clientX: 2, clientY: innerHeight / 2,
 			deltaX, deltaY, ctrlKey, bubbles: true, cancelable: true
 		}));
-		send(0, -1, true);
-		await api.settle(40);
 		const before = api.getModelRect()!;
+		const focusBefore = api.getState().focus;
 		send(24, 18);
 		await api.settle(8);
 		const after = api.getModelRect()!;
-		return { before, after };
+		return { before, after, focusBefore, focusAfter: api.getState().focus };
 	});
 	// The pan plane passes through Orbit's target; nearer corners of a 3D box
 	// travel farther on screen. Both axes must move without another dolly.
 	expect(result.before.x - result.after.x).toBeGreaterThan(15);
-	expect(result.before.x - result.after.x).toBeLessThan(45);
+	expect(result.before.x - result.after.x).toBeLessThan(100);
 	expect(result.before.y - result.after.y).toBeGreaterThan(10);
-	expect(result.before.y - result.after.y).toBeLessThan(35);
-	expect(result.after.width / result.before.width).toBeCloseTo(1, 2);
+	expect(result.before.y - result.after.y).toBeLessThan(100);
+	expect(result.focusAfter).toBeCloseTo(result.focusBefore, 5);
+	expect(Math.abs(result.after.width / result.before.width - 1)).toBeLessThan(0.03);
+});
+
+test('trackpad scroll beside a shallow model scrolls the page without panning', async ({ page }) => {
+	await page.goto('/demo/elements/cube?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
+	await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.1 }, 30));
+	expect(await page.evaluate(() => window.__stageVisualTest!.getState().uiOpacity)).toBeGreaterThan(0.9);
+	await page.mouse.move(2, 450);
+	await page.mouse.wheel(12, 80);
+	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
 });
 
 for (const native of [true, false]) test(`fresh wheel input replaces document inertia without waiting (${native ? 'native momentum' : 'fallback'})`, async ({ page }) => {

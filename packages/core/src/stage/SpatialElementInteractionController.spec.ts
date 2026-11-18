@@ -626,9 +626,8 @@ test.each([false, true])('a changed ctrl modifier starts a fresh wheel gesture a
 	owner.handleWheel(fresh);
 	expect(fresh.preventDefault).toHaveBeenCalled();
 	expect(owner.viewResetActive).toBe(false);
-	// A trackpad switches from pinch to two-finger pan; the reverse starts dolly.
-	if (ctrlKey) expect(owner.wheelZoomTargetDistance).toBeUndefined();
-	else expect(owner.wheelZoomTargetDistance).toBeDefined();
+	// With panels still visible, both modifiers use dolly rather than panning.
+	expect(owner.wheelZoomTargetDistance).toBeDefined();
 	owner.dispose();
 });
 
@@ -667,9 +666,11 @@ test('close-up rotation slows continuously while screen-space pan retains its ow
 	owner.dispose();
 });
 
-test('trackpad pans both axes after pinch without dolly, while a later mouse notch still zooms', () => {
+test('immersive trackpad pans both axes after pinch without dolly, while a later mouse notch still zooms', () => {
 	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
-	const { owner, camera } = detailFixture();
+	const { owner, camera, ports } = detailFixture();
+	const geometry = ports.readGeometry();
+	ports.readGeometry = () => ({ ...geometry, detail: { ...geometry.detail!, uiFocus: 1, paneHidden: true } });
 	owner.handleWheel({ ...wheel(50, -50), deltaX: 0, ctrlKey: true } as WheelEvent);
 	owner.advance(16, 0.1);
 	const distance = owner.getEffectiveCameraDistance();
@@ -705,7 +706,49 @@ test('trackpad panning cannot steal an ongoing page-scroll gesture', () => {
 	const fresh = { ...wheel(50, 12), deltaX: 4 } as WheelEvent;
 	owner.handleWheel(fresh);
 	expect(fresh.preventDefault).toHaveBeenCalled();
+	expect(owner.controls!.target.equals(before)).toBe(true);
+	expect(owner.wheelZoomTargetDistance).toBeGreaterThan(7);
+	owner.dispose();
+});
+
+test.each([0, 0.5, 0.95])('visible or fading panels prevent trackpad panning at UI focus %s', uiFocus => {
+	const { owner, ports } = detailFixture();
+	const geometry = ports.readGeometry();
+	ports.readGeometry = () => ({ ...geometry, detail: { ...geometry.detail!, uiFocus } });
+	owner.setCameraDistance(7);
+	const before = owner.controls!.target.clone();
+	owner.handleWheel({ ...wheel(50, 0), deltaX: 12 } as WheelEvent);
+	expect(owner.controls!.target.equals(before)).toBe(true);
+	const scroll = { ...wheel(80, 12), deltaX: 4 } as WheelEvent;
+	owner.handleWheel(scroll);
+	expect(scroll.preventDefault).not.toHaveBeenCalled();
+	expect(owner.controls!.target.equals(before)).toBe(true);
+	owner.dispose();
+});
+
+test.each(['immersive', 'fullscreen', 'split'] as const)('%s trackpad pans empty canvas, including overview in 3XL', mode => {
+	const { owner, ports } = detailFixture(mode === 'split');
+	vi.mocked(owner.hitTestModel).mockRestore();
+	vi.stubGlobal('HTMLElement', class {}); vi.stubGlobal('Element', class {});
+	vi.spyOn(owner, 'isPointerOccludedByHtml').mockReturnValue(false);
+	const geometry = ports.readGeometry();
+	ports.readGeometry = () => ({ ...geometry, detail: { ...geometry.detail!,
+		uiFocus: mode === 'immersive' ? 1 : 0, paneHidden: mode === 'immersive' } });
+	owner.setFullscreen(mode === 'fullscreen');
+	if (mode === 'immersive') owner.setCameraDistance(7);
+	const distance = owner.getEffectiveCameraDistance();
+	const before = owner.controls!.target.clone();
+	const event = { ...wheel(mode === 'split' ? 20 : 80, 8), deltaX: 12, target: ports.canvas } as WheelEvent;
+	owner.handleWheel(event);
+	expect(event.preventDefault).toHaveBeenCalled();
 	expect(owner.controls!.target.distanceTo(before)).toBeGreaterThan(0.01);
+	expect(owner.getEffectiveCameraDistance()).toBeCloseTo(distance, 8);
+	expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	const after = owner.controls!.target.clone();
+	const ui = { ...wheel(80, 8), deltaX: 12, target: mode === 'split' ? ports.canvas : ports.cssRoot } as WheelEvent;
+	owner.handleWheel(ui);
+	if (mode !== 'immersive') expect(ui.preventDefault).not.toHaveBeenCalled();
+	expect(owner.controls!.target.equals(after)).toBe(true);
 	owner.dispose();
 });
 

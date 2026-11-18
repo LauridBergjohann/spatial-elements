@@ -633,8 +633,9 @@ export class SpatialElementInteractionController {
 		const model = pinch || (modelHit ?? this.hitTestModel(event.clientX, event.clientY, event.target));
 		this.setModelHover(model);
 		this.updateControlsAvailability();
-		const clearingUi = detail?.media === 'minimap' &&
-			getPanelFocusProgress(detail.uiFocus ?? this.getUiFocus(this.getZoomFocusFactor())) > 0;
+		const panelProgress = detail?.media === 'minimap' ?
+			getPanelFocusProgress(detail.uiFocus ?? this.getUiFocus(this.getZoomFocusFactor())) : 0;
+		const clearingUi = panelProgress > 0;
 		// Once panels start clearing, wheel navigation also owns the empty stage.
 		// Keep visible HTML and the separate 3XL content region independently usable.
 		const hit = model || (clearingUi && !detail?.split && this.stageViewportVisible &&
@@ -647,7 +648,11 @@ export class SpatialElementInteractionController {
 		if (event.deltaMode === 0 && (pinch || (dx !== 0 && !event.shiftKey))) this.precisionTrackpad = true;
 		const precisionPan = event.deltaMode === 0 && (dx !== 0 ||
 			(this.precisionTrackpad && (Math.abs(event.deltaY) < 50 || now < this.trackpadPanUntil)));
-		const wantsPan = !pinch && !event.ctrlKey && !event.shiftKey && precisionPan && hit && !atOverview && this._controls.enablePan;
+		// Two-finger scrolling only becomes panning once the content has fully
+		// cleared. Fullscreen and the separate 3XL stage own their empty background
+		// too, even at the overview distance; visible HTML remains independently usable.
+		const panMode = this.fullscreen || detail?.split || panelProgress >= 1;
+		const wantsPan = !pinch && !event.ctrlKey && !event.shiftKey && precisionPan && hit && panMode && this._controls.enablePan;
 		if (event.deltaY === 0 && !wantsPan) return;
 		const separateArea = this.fullscreen || detail?.split;
 		if (separateArea) this.wheelGesture.reset();
