@@ -402,6 +402,45 @@ function wheel(x: number, deltaY: number) {
 		preventDefault: vi.fn(), stopImmediatePropagation: vi.fn() } as unknown as WheelEvent;
 }
 
+test.each([0, 0.08, 0.0801, 0.5])('empty-stage wheel ownership starts with panel clearance at UI focus %s', uiFocus => {
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const { owner, ports } = detailFixture();
+	const geometry = ports.readGeometry();
+	const detail = { ...geometry.detail!, uiFocus };
+	ports.readGeometry = () => ({ ...geometry, detail });
+	vi.spyOn(owner, 'isPointerOccludedByHtml').mockReturnValue(false);
+	owner.setCameraDistance(7);
+	const send = () => {
+		const event = { ...wheel(80, 100), target: ports.canvas } as WheelEvent;
+		owner.handleWheel(event);
+		return vi.mocked(event.preventDefault).mock.calls.length > 0;
+	};
+	const clearing = uiFocus > 0.08;
+	expect(send()).toBe(clearing);
+	// A retained outward gesture survives the return to fully visible panels.
+	detail.uiFocus = 0;
+	owner.setCameraDistance(10);
+	time.mockReturnValue(379);
+	expect(send()).toBe(clearing);
+	time.mockReturnValue(759);
+	expect(send()).toBe(false);
+	owner.dispose();
+});
+
+test('partially faded panels do not steal wheel input from visible HTML or the 3XL pane', () => {
+	for (const split of [false, true]) {
+		const { owner, ports } = detailFixture(split);
+		const geometry = ports.readGeometry();
+		ports.readGeometry = () => ({ ...geometry, detail: { ...geometry.detail!, uiFocus: 0.5 } });
+		vi.spyOn(owner, 'isPointerOccludedByHtml').mockReturnValue(true);
+		owner.setCameraDistance(7);
+		const event = { ...wheel(80, 100), target: ports.canvas } as WheelEvent;
+		owner.handleWheel(event);
+		expect(event.preventDefault).not.toHaveBeenCalled();
+		owner.dispose();
+	}
+});
+
 test('3XL changes wheel owner immediately by area and never resets zoom from document scrolling', () => {
 	const { owner, camera } = detailFixture(true);
 	const pageWheel = wheel(80, 100);
@@ -511,7 +550,7 @@ test('a click reset owns its animation despite delayed document scroll notificat
 	owner.dispose();
 });
 
-test('a click reset ignores the old inertial wheel tail but accepts a new burst after 320ms', () => {
+test('a click reset ignores the old inertial wheel tail but accepts a new burst after 380ms', () => {
 	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
 	const { owner, camera } = detailFixture();
 	owner.handleWheel(wheel(50, -700));
@@ -529,7 +568,7 @@ test('a click reset ignores the old inertial wheel tail but accepts a new burst 
 	}
 	owner.advance(3, 2);
 	expect(camera.position.toArray()).toEqual([0, 0, 10]);
-	time.mockReturnValue(500);
+	time.mockReturnValue(560);
 	owner.handleWheel(wheel(50, -30));
 	expect(owner.wheelZoomTargetDistance).toBeDefined();
 	owner.dispose();

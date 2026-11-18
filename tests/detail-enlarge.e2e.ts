@@ -148,23 +148,39 @@ test('3XL pane corner keeps its distance to the projected control row', async ({
 	}
 });
 
-test('zoom-out keeps the empty-background gesture until the 320ms idle boundary', async ({ page }) => {
-	await open(page);
-	await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.9 }));
-	const prevented = await page.evaluate(() => {
-		const canvas = document.querySelector('.stage-webgpu-background')!;
-		// At close-up the whole canvas owns navigation. Continue the same burst
-		// while the real damped zoom brings content and geometry-only picking back.
-		const event = new WheelEvent('wheel', { bubbles: true, cancelable: true, clientX: 5, clientY: 600, deltaY: 5000 });
-		canvas.dispatchEvent(event); return event.defaultPrevented;
+for (const phase of ['partial', 'complete']) {
+	test(`zoom-out during ${phase} panel clearance keeps the empty-background gesture until the 380ms idle boundary`, async ({ page }) => {
+		await open(page);
+		await page.evaluate(async phase => {
+			const stage = window.__stageVisualTest!;
+			if (phase === 'complete') await stage.setView({ zoom: 0.9 });
+			else {
+				// Find the beginning of the actual fade, independent of the fixture's
+				// fitted camera range. A small dolly may still leave panels unchanged.
+				for (let step = 1; step <= 18; step++) {
+					await stage.setView({ zoom: step * 0.05 }, 2);
+					if (stage.getState().uiOpacity < 0.98) break;
+				}
+				await stage.settle(30);
+			}
+		}, phase);
+		const before = await state(page);
+		expect(before.uiOpacity).toBeLessThan(1);
+		if (phase === 'partial') expect(before.uiOpacity).toBeGreaterThan(0.5);
+		const prevented = await page.evaluate(() => {
+			const canvas = document.querySelector('.stage-webgpu-background')!;
+			// Even a fresh burst on the empty stage zooms from the start of fading.
+			const event = new WheelEvent('wheel', { bubbles: true, cancelable: true, clientX: 5, clientY: 600, deltaY: 5000 });
+			canvas.dispatchEvent(event); return event.defaultPrevented;
+		});
+		expect(prevented).toBe(true);
+		await expect.poll(async () => (await state(page)).focus).toBeLessThan(0.001);
+		await page.waitForTimeout(390);
+		await page.mouse.move(5, 600);
+		await page.mouse.wheel(0, 120);
+		await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
 	});
-	expect(prevented).toBe(true);
-	await expect.poll(async () => (await state(page)).focus).toBeLessThan(0.001);
-	await page.waitForTimeout(330);
-	await page.mouse.move(5, 600);
-	await page.mouse.wheel(0, 120);
-	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
-});
+}
 
 test.describe('touch enlargement', () => {
 	test.use({ hasTouch: true, isMobile: true, viewport: { width: 430, height: 900 } });

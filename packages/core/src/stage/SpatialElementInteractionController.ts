@@ -617,15 +617,22 @@ export class SpatialElementInteractionController {
 		this.lastWheelTime = now;
 		this.lastWheelCtrlKey = Boolean(event.ctrlKey);
 		const pinch = event.ctrlKey && this.isPinchArea(event.clientX, event.clientY);
-		const hit = pinch || (modelHit ?? this.hitTestModel(event.clientX, event.clientY, event.target));
-		this.setModelHover(hit);
+		const model = pinch || (modelHit ?? this.hitTestModel(event.clientX, event.clientY, event.target));
+		this.setModelHover(model);
 		this.updateControlsAvailability();
+		const clearingUi = detail?.media === 'minimap' &&
+			getPanelFocusProgress(detail.uiFocus ?? this.getUiFocus(this.getZoomFocusFactor())) > 0;
+		// Once panels start clearing, wheel navigation also owns the empty stage.
+		// Keep visible HTML and the separate 3XL content region independently usable.
+		const hit = model || (clearingUi && !detail?.split && this.stageViewportVisible &&
+			event.target === this.backgroundCanvas && this.isPinchArea(event.clientX, event.clientY) &&
+			!this.isPointerOccludedByHtml(event.clientX, event.clientY));
 		const atOverview = !this.fullscreen && this.getEffectiveCameraDistance() >= this._controls.maxDistance - 0.001;
 		const separateArea = this.fullscreen || detail?.split;
 		if (separateArea) this.wheelGesture.reset();
 		const owner = separateArea ? (hit ? 'zoom' : 'scroll') :
 			this.wheelGesture.resolve(performance.now(), hit, event.deltaY > 0, atOverview, pinch,
-				Boolean(detail?.paneHidden));
+				clearingUi);
 		if (owner === 'scroll') {
 			if (!separateArea) this._viewResetActive = false;
 			this.clearWheelZoom();

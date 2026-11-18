@@ -5,18 +5,18 @@ test('a document wheel burst keeps scrolling when geometry moves underneath the 
 	const gesture = new DetailWheelGesture();
 	expect(gesture.resolve(0, false, true, true)).toBe('scroll');
 	expect(gesture.resolve(200, true, true, true)).toBe('scroll');
-	expect(gesture.resolve(519, true, false, true)).toBe('scroll');
-	expect(gesture.resolve(839, true, false, true)).toBe('zoom');
+	expect(gesture.resolve(579, true, false, true)).toBe('scroll');
+	expect(gesture.resolve(959, true, false, true)).toBe('zoom');
 });
 
 test('overview scrolls down unless the same burst was zooming out', () => {
 	const gesture = new DetailWheelGesture();
 	expect(gesture.resolve(0, true, true, true)).toBe('scroll');
-	expect(gesture.resolve(320, true, false, true)).toBe('zoom');
-	expect(gesture.resolve(420, true, true, false, false, true)).toBe('zoom');
-	expect(gesture.resolve(720, true, true, true)).toBe('zoom');
-	expect(gesture.resolve(1039, false, true, true)).toBe('zoom');
-	expect(gesture.resolve(1359, false, true, true)).toBe('scroll');
+	expect(gesture.resolve(380, true, false, true)).toBe('zoom');
+	expect(gesture.resolve(480, true, true, false, false, true)).toBe('zoom');
+	expect(gesture.resolve(780, true, true, true)).toBe('zoom');
+	expect(gesture.resolve(1159, false, true, true)).toBe('zoom');
+	expect(gesture.resolve(1539, false, true, true)).toBe('scroll');
 });
 
 test('a shallow zoom yields immediately on leaving the silhouette', () => {
@@ -24,7 +24,7 @@ test('a shallow zoom yields immediately on leaving the silhouette', () => {
 	expect(gesture.resolve(0, true, false, true)).toBe('zoom');
 	expect(gesture.resolve(20, false, true, false)).toBe('scroll');
 	expect(gesture.resolve(40, true, true, false)).toBe('scroll');
-	expect(gesture.resolve(360, true, false, false)).toBe('zoom');
+	expect(gesture.resolve(420, true, false, false)).toBe('zoom');
 });
 
 test('pinch explicitly claims zoom even during a document scroll burst', () => {
