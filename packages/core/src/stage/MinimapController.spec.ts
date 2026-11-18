@@ -3,8 +3,34 @@ import * as THREE from 'three/webgpu';
 import { MinimapController } from './MinimapController.js';
 import { resolveLiquidGlassPanelOptions } from './LiquidGlassPanel.js';
 import type { StagePanelRuntime } from './StagePanelRuntime.js';
+import type { StageMinimapState } from './minimap/MinimapState.js';
+import type { StagePanelTarget } from './stageTypes.js';
+import type { MinimapPorts } from './MinimapController.js';
 
 afterEach(() => vi.unstubAllGlobals());
+
+test('a tall minimap reaches the viewport edge continuously before the header starts revealing', () => {
+	vi.stubGlobal('window', { innerWidth: 900, innerHeight: 900 });
+	let opacity = 1;
+	const layer = new THREE.Group(), displayModel = new THREE.Group();
+	layer.add(displayModel);
+	const screenCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+	screenCamera.position.z = 10;
+	const modelBoundsPoints = [-1, 1].flatMap(x => [-1, 1].flatMap(y => [-1, 1].map(z => new THREE.Vector3(x, y, z))));
+	const view = { layer, displayModel, screenCamera, modelBoundsPoints, panelIndex: 0 } as StageMinimapState;
+	const owner = new MinimapController({
+		frame: () => ({ hovering: false, interacting: false, scrolling: true }),
+		target: () => ({ getSurfaceOpacity: () => opacity, getMinimapModelTop: () => 0,
+			getMinimapModelCenterY: () => 40, getMinimapDockProgress: () => 0.5 }) as StagePanelTarget
+	} as MinimapPorts);
+	for (const surfaceOpacity of [1, 0.999, 0.99, 1]) {
+		opacity = surfaceOpacity;
+		displayModel.position.set(0, 5, 0);
+		expect(owner.getProjectedMinimapModelRect(view)!.y).toBeLessThan(-10);
+		owner.alignMinimapModelToDockTop(view);
+		expect(owner.getProjectedMinimapModelRect(view)!.y).toBeCloseTo(0, 4);
+	}
+});
 
 test('minimap uses the independent Low representation and disposes local targets once', () => {
 	vi.stubGlobal('window', { devicePixelRatio: 1, innerWidth: 1440, innerHeight: 900 });

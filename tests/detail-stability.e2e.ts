@@ -53,6 +53,32 @@ test('trackpad two-finger movement pans a pinched detail in both screen axes', a
 	expect(result.after.width / result.before.width).toBeCloseTo(1, 2);
 });
 
+for (const native of [true, false]) test(`fresh wheel input replaces document inertia without waiting (${native ? 'native momentum' : 'fallback'})`, async ({ page }) => {
+	await page.goto('/demo/elements/cube?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
+	const result = await page.evaluate(async native => {
+		const api = window.__stageVisualTest!;
+		await api.settle(30);
+		const model = api.getModelRect()!;
+		const canvas = document.querySelector('.stage-webgpu-background')!;
+		const send = (inside: boolean, deltaY: number, momentum: boolean) => {
+			const event = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY,
+				clientX: inside ? model.x + model.width / 2 : 1,
+				clientY: inside ? model.y + model.height / 2 : 400 });
+			Object.defineProperty(event, 'momentum', { value: native ? momentum : undefined });
+			canvas.dispatchEvent(event);
+			return event.defaultPrevented;
+		};
+		const first = send(false, -50, false);
+		const tail = [40, 30, 20, 12, 8, 4, 2, 1].map(value => send(true, -value, true));
+		const fresh = send(true, -35, false);
+		return { first, tail, fresh };
+	}, native);
+	expect(result.first).toBe(false);
+	expect(result.tail.every(prevented => !prevented)).toBe(true);
+	expect(result.fresh).toBe(true);
+});
+
 for (const width of [390, 1200, 1920]) test(`minimap docks continuously in both directions at ${width}px`, async ({ page }) => {
 	await page.setViewportSize({ width, height: 900 });
 	await page.goto('/demo/layout-docking?stage-test=1');

@@ -38,11 +38,10 @@ interface ContentPresentation {
 	element: HTMLElement;
 	frame?: HTMLElement;
 	sticky?: { documentTop: number; height: number; boundaryBottom: number; inset: number; contentInset: number };
-	clipPath: string;
-	webkitClipPath: string;
+	maskImage: string;
 	documentTop: number;
 	height: number;
-	appliedClipPath?: string;
+	appliedMask?: string;
 }
 
 /**
@@ -148,8 +147,7 @@ export class SpatialElementDockController {
 		).map((element) => ({
 			element,
 			frame: element.closest<HTMLElement>(PANEL_FRAME) ?? undefined,
-			clipPath: element.style.clipPath,
-			webkitClipPath: element.style.getPropertyValue('-webkit-clip-path'),
+			maskImage: element.style.maskImage,
 			documentTop: 0,
 			height: 0
 		}));
@@ -217,7 +215,7 @@ export class SpatialElementDockController {
 		this.setTabsActive(false);
 		this.restoreStickyTabs();
 		this.restoreStickyHeader();
-		this.restoreDepartingContentClipping();
+		this.restoreDepartingContentMasks();
 		this.root.removeAttribute('data-spatial-element-dock-active');
 		this.root.removeAttribute('data-spatial-element-tabs-dock-active');
 		this.root.style.removeProperty('--spatial-element-section-scroll-offset');
@@ -408,8 +406,8 @@ export class SpatialElementDockController {
 		// including its hover and sensor pose, instead of being clipped by it.
 		this.setMinimapModelTop(this.minimapDockProgress > 0 ? this.minimapViewportTop : undefined);
 		this.minimapFrame.setAttribute('data-stage-minimap-model-left', this.minimapViewportLeft.toFixed(3));
-		if (docked) this.updateDepartingContentClipping();
-		else if (changed) this.restoreDepartingContentClipping();
+		if (docked) this.updateDepartingContentMask();
+		else if (changed) this.restoreDepartingContentMasks();
 		if (changed || dockLayoutChanged) {
 			window.dispatchEvent(new CustomEvent(STAGE_PANEL_LAYOUT_EVENT, { detail: { source: 'spatial-element-dock' } }));
 		}
@@ -748,34 +746,29 @@ export class SpatialElementDockController {
 			: state.documentTop - this.scrollY;
 	}
 
-	private updateDepartingContentClipping() {
+	private updateDepartingContentMask() {
 		for (const state of this.departingContent) {
 			const viewportTop = this.contentViewportTop(state);
-			// Reveal the occlusion with the header instead of hiding a title/media
-			// row in one step while the header is still almost transparent.
-			const coveredBottom = this.minimapViewportTop +
-				(this.stickyHeaderBottom - this.minimapViewportTop) * this.presentationProgress;
-			const inset = Math.min(Math.max(coveredBottom - viewportTop, 0), state.height);
-			const clipPath = `inset(${inset.toFixed(2)}px 0 0 0)`;
-			if (state.appliedClipPath === clipPath) continue;
-			state.appliedClipPath = clipPath;
-			state.element.style.clipPath = clipPath;
-			state.element.style.setProperty('-webkit-clip-path', clipPath);
+			// A translucent header cannot conceal a hard clip edge. Fade only the
+			// overlapping copy/media with the header, with a feather at its edge.
+			// The rest of the summary remains fully visible and interactive.
+			const edge = this.stickyHeaderBottom - viewportTop;
+			const alpha = (1 - this.presentationProgress).toFixed(6);
+			const mask = edge <= 0 || this.presentationProgress === 0 ? state.maskImage :
+				`linear-gradient(to bottom, rgb(0 0 0 / ${alpha}) ${Math.max(0, edge - 12).toFixed(2)}px, #000 ${Math.max(0, edge).toFixed(2)}px)`;
+			if (state.appliedMask === mask) continue;
+			state.appliedMask = mask;
+			state.element.style.maskImage = mask;
 		}
 	}
 
-	private restoreDepartingContentClipping() {
-		for (const state of this.departingContent) this.restoreContentClipping(state);
+	private restoreDepartingContentMasks() {
+		for (const state of this.departingContent) this.restoreContentMask(state);
 	}
 
-	private restoreContentClipping(state: ContentPresentation) {
-		state.appliedClipPath = undefined;
-		state.element.style.clipPath = state.clipPath;
-		if (state.webkitClipPath) {
-			state.element.style.setProperty('-webkit-clip-path', state.webkitClipPath);
-		} else {
-			state.element.style.removeProperty('-webkit-clip-path');
-		}
+	private restoreContentMask(state: ContentPresentation) {
+		state.appliedMask = undefined;
+		state.element.style.maskImage = state.maskImage;
 	}
 
 	private restoreMinimap() {

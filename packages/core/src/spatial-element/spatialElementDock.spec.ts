@@ -147,11 +147,11 @@ describe('spatialElement dock geometry', () => {
 		}
 	});
 
-	it('holds the dock across a small release hysteresis', () => {
+	it('uses the same boundary when arriving and leaving the dock', () => {
 		expect(getSpatialElementDockTarget(99, 100, false)).toBe(false);
 		expect(getSpatialElementDockTarget(100, 100, false)).toBe(true);
-		expect(getSpatialElementDockTarget(84, 100, true)).toBe(true);
-		expect(getSpatialElementDockTarget(83, 100, true)).toBe(false);
+		expect(getSpatialElementDockTarget(100, 100, true)).toBe(true);
+		expect(getSpatialElementDockTarget(99, 100, true)).toBe(false);
 	});
 
 	it('docks tabs at the header edge while preserving their source alignment', () => {

@@ -653,7 +653,10 @@ export class SpatialElementInteractionController {
 		if (separateArea) this.wheelGesture.reset();
 		const owner = separateArea ? (hit ? 'zoom' : 'scroll') :
 			this.wheelGesture.resolve(performance.now(), hit, event.deltaY > 0, atOverview, pinch,
-				clearingUi);
+				clearingUi, {
+					deltaX: dx, deltaY: event.deltaY, deltaMode: event.deltaMode,
+					momentum: (event as WheelEvent & { momentum?: boolean }).momentum
+				});
 		if (owner === 'scroll') {
 			if (!separateArea) this._viewResetActive = false;
 			this.clearWheelZoom();

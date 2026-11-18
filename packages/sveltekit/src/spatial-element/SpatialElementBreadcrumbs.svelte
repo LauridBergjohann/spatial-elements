@@ -4,6 +4,7 @@
  import { getContext, onMount } from 'svelte';
  import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
  import { getPanelFocusProgress } from '@spatial-elements/core/stage/panelFocusMath';
+ import { subscribeStageScrollFrame, STAGE_SCROLL_PRIORITY } from '@spatial-elements/core/stage/scrollFrame';
  import type { SpatialElementBreadcrumb } from '@spatial-elements/core/spatial-element/types';
  let { items, transition = 'enter', focusReactive = true }: { items: SpatialElementBreadcrumb[]; transition?: 'enter' | 'exit'; focusReactive?: boolean } = $props();
  const stage = getContext<StageContext | undefined>(STAGE_CONTEXT_KEY);
@@ -15,9 +16,20 @@
   menu = element.closest('.stage')?.querySelector<HTMLElement>('[data-spatial-shell-menu]') ?? undefined;
   if (!menu) return;
   const measure = () => { menuSize = { width: menu!.offsetWidth, height: menu!.offsetHeight }; };
+  const occlude = () => {
+   const rect = element.getBoundingClientRect(), header = menu!.getBoundingClientRect();
+   const overlap = header.bottom - rect.top;
+   // The breadcrumb stays in its own document/zoom path. Hide its overlap
+   // with the glass surface rather than making that surface opaque.
+   const mask = overlap > 0 && rect.left < header.right && rect.right > header.left
+    ? `linear-gradient(to bottom, transparent ${overlap}px, #000 ${overlap + Math.min(overlap, 12)}px)` : '';
+   if (element.style.maskImage !== mask) element.style.maskImage = mask;
+  };
   measure();
-  const observer = new ResizeObserver(measure); observer.observe(menu);
-  return () => observer.disconnect();
+  occlude();
+  const stopScroll = subscribeStageScrollFrame(occlude, STAGE_SCROLL_PRIORITY.stage + 1);
+  const observer = new ResizeObserver(() => { measure(); occlude(); }); observer.observe(menu);
+  return () => { observer.disconnect(); stopScroll(); };
  });
  const travel = $derived.by(() => {
   if (!focus) return '0px 0px';

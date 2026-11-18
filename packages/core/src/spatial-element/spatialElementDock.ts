@@ -209,12 +209,12 @@ export function getSpatialElementDockPresentationProgress(
 	return Math.min(Math.max((scrollY - start) / (end - start), 0), 1);
 }
 
-/** Adds a small release hysteresis so trackpad momentum cannot flicker the header. */
+/** Geometry follows one reversible threshold; header opacity already prevents flicker. */
 export function getSpatialElementDockTarget(
 	scrollY: number,
 	breakpoint: number,
 	currentlyDocked: boolean,
-	releaseOffset = 16
+	releaseOffset = 0
 ) {
 	return currentlyDocked
 		? scrollY >= Math.max(breakpoint - releaseOffset, 0)

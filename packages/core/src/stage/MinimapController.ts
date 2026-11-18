@@ -776,11 +776,12 @@ export class MinimapController {
 		const targetTop = this.ports.target(minimap.panelIndex)?.getMinimapModelTop?.();
 		if (targetTop === undefined || !Number.isFinite(targetTop)) return;
 		const target = this.ports.target(minimap.panelIndex);
-		// Pose starts morphing before docking. Position must stay in the rail until
-		// its surface starts handing over to the header, then align continuously.
+		// Centering follows the header reveal. Viewport containment must already
+		// apply during the preceding pose morph: a tall model can reach the edge
+		// before its fit square docks. Enabling that clamp only at reveal > 0
+		// would pull an already clipped model down in one frame.
 		const progress = THREE.MathUtils.clamp(target?.getSurfaceOpacity
 			? 1 - target.getSurfaceOpacity() : target?.getMinimapDockProgress?.() ?? 1, 0, 1);
-		if (progress === 0) return;
 		const projected = this.getProjectedMinimapModelRect(minimap);
 		if (!projected) return;
 		// Blend from the ordinary rail pose throughout the existing scroll morph.

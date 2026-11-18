@@ -402,6 +402,21 @@ function wheel(x: number, deltaY: number) {
 		preventDefault: vi.fn(), stopImmediatePropagation: vi.fn() } as unknown as WheelEvent;
 }
 
+test('a fresh physical wheel gesture can zoom immediately after document inertia', () => {
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const { owner } = detailFixture();
+	owner.handleWheel({ ...wheel(80, 30), momentum: false } as WheelEvent);
+	time.mockReturnValue(1000);
+	const inertia = { ...wheel(50, -10), momentum: true } as WheelEvent;
+	owner.handleWheel(inertia);
+	expect(inertia.preventDefault).not.toHaveBeenCalled();
+	time.mockReturnValue(1010);
+	const fresh = { ...wheel(50, -10), momentum: false } as WheelEvent;
+	owner.handleWheel(fresh);
+	expect(fresh.preventDefault).toHaveBeenCalledOnce();
+	owner.dispose();
+});
+
 test.each([0, 0.08, 0.0801, 0.5])('empty-stage wheel ownership starts with panel clearance at UI focus %s', uiFocus => {
 	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
 	const { owner, ports } = detailFixture();
