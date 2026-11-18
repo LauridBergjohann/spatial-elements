@@ -111,6 +111,14 @@ if (process.env.SPATIAL_GPU)
 				);
 			expect(distance(tilted.live, neutral.live)).toBeGreaterThan(0.015);
 			expect(distance(tilted.display, neutral.display)).toBeGreaterThan(0.015);
+			await page.locator('.thumb-image').first().click();
+			await expect(page.locator('.thumb-image').first()).toHaveAttribute('aria-pressed', 'true');
+			await page.mouse.move(1800, 50);
+			await emit(0);
+			const imageNeutral = await page.evaluate(() => window.__stageVisualTest!.getMinimapOrientation()!.display);
+			await emit(20);
+			const imageTilted = await page.evaluate(() => window.__stageVisualTest!.getMinimapOrientation()!.display);
+			expect(distance(imageNeutral, imageTilted)).toBeGreaterThan(0.015);
 		}
 	});
 

@@ -611,7 +611,86 @@ test.each([false, true])('a changed ctrl modifier starts a fresh wheel gesture a
 	owner.handleWheel(fresh);
 	expect(fresh.preventDefault).toHaveBeenCalled();
 	expect(owner.viewResetActive).toBe(false);
-	expect(owner.wheelZoomTargetDistance).toBeDefined();
+	// A trackpad switches from pinch to two-finger pan; the reverse starts dolly.
+	if (ctrlKey) expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	else expect(owner.wheelZoomTargetDistance).toBeDefined();
+	owner.dispose();
+});
+
+test('viewport refitting preserves pending dolly but never starts scroll reveal', () => {
+	const viewport = { scrollY: 450, innerWidth: 100, innerHeight: 100, scrollTo: vi.fn() };
+	vi.stubGlobal('window', viewport);
+	const { owner } = fixture();
+	owner.controls!.minDistance = 1;
+	owner.controls!.maxDistance = 10;
+	owner.setCameraDistance(9);
+	owner.rebaseViewportZoom(1, 10);
+	owner.advance(100, 0.016);
+	expect(viewport.scrollTo).not.toHaveBeenCalled();
+	owner.controls!.maxDistance = 12;
+	owner.setCameraDistance(10.8);
+	owner.rebaseViewportZoom(1, 10);
+	owner.advance(116, 0.016);
+	expect(viewport.scrollTo).not.toHaveBeenCalled();
+	owner.setCameraDistance(10.5);
+	owner.advance(132, 0.016);
+	expect(viewport.scrollTo).toHaveBeenCalled();
+	owner.dispose();
+});
+
+test('close-up rotation slows continuously while screen-space pan retains its own scale', () => {
+	const { owner } = fixture();
+	owner.controls!.maxDistance = 10;
+	owner.setCameraDistance(10);
+	owner.updateControlsAvailability();
+	expect(owner.controls!.rotateSpeed).toBe(1);
+	const panSpeed = owner.controls!.panSpeed;
+	owner.setCameraDistance(2);
+	owner.updateControlsAvailability();
+	expect(owner.controls!.rotateSpeed).toBeCloseTo(0.2);
+	expect(owner.controls!.panSpeed).toBe(panSpeed);
+	owner.dispose();
+});
+
+test('trackpad pans both axes after pinch without dolly, while a later mouse notch still zooms', () => {
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const { owner, camera } = detailFixture();
+	owner.handleWheel({ ...wheel(50, -50), deltaX: 0, ctrlKey: true } as WheelEvent);
+	owner.advance(16, 0.1);
+	const distance = owner.getEffectiveCameraDistance();
+	const target = owner.controls!.target.clone();
+	const direction = camera.getWorldDirection(new THREE.Vector3());
+	for (const [deltaX, deltaY] of [[12, 8], [0, 9], [8, 0]]) {
+		const event = { ...wheel(50, deltaY), deltaX } as WheelEvent;
+		owner.handleWheel(event);
+		expect(event.preventDefault).toHaveBeenCalled();
+		expect(owner.getEffectiveCameraDistance()).toBeCloseTo(distance, 8);
+		expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	}
+	expect(owner.controls!.target.distanceTo(target)).toBeGreaterThan(0.1);
+	expect(camera.getWorldDirection(new THREE.Vector3()).distanceTo(direction)).toBeLessThan(1e-8);
+	time.mockReturnValue(500);
+	owner.handleWheel({ ...wheel(50, -120), deltaX: 0 } as WheelEvent);
+	expect(owner.wheelZoomTargetDistance).toBeLessThan(distance);
+	owner.dispose();
+});
+
+test('trackpad panning cannot steal an ongoing page-scroll gesture', () => {
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const { owner } = detailFixture();
+	owner.setCameraDistance(7);
+	owner.handleWheel({ ...wheel(80, 12), deltaX: 4 } as WheelEvent);
+	const before = owner.controls!.target.clone();
+	time.mockReturnValue(30);
+	const crossing = { ...wheel(50, 12), deltaX: 4 } as WheelEvent;
+	owner.handleWheel(crossing);
+	expect(crossing.preventDefault).not.toHaveBeenCalled();
+	expect(owner.controls!.target.equals(before)).toBe(true);
+	time.mockReturnValue(420);
+	const fresh = { ...wheel(50, 12), deltaX: 4 } as WheelEvent;
+	owner.handleWheel(fresh);
+	expect(fresh.preventDefault).toHaveBeenCalled();
+	expect(owner.controls!.target.distanceTo(before)).toBeGreaterThan(0.01);
 	owner.dispose();
 });
 

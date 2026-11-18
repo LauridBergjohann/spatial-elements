@@ -52,6 +52,8 @@ export class SpatialElementInteractionController {
 	private tap?: { id: number; x: number; y: number; time: number };
 	private zoomScroll?: { focus: number; scrollY: number; uiProgress: number };
 	private previousZoomFocus = 0;
+	private precisionTrackpad = false;
+	private trackpadPanUntil = -Infinity;
 	private fullscreen = false;
 	private _viewportCentering = 0;
 	private _viewStartCentering = 0;
@@ -145,6 +147,17 @@ export class SpatialElementInteractionController {
 	setFocusRange(rest: number, close: number) {
 		this._focusRestDistance = rest;
 		this._focusCloseDistance = close;
+	}
+	/** Keep pending navigation in the new fitted range without initiating page reveal. */
+	rebaseViewportZoom(previousMin: number, previousMax: number) {
+		if (!this._controls) return;
+		const remap = (distance: number) => THREE.MathUtils.lerp(this._controls!.maxDistance,
+			this._controls!.minDistance, THREE.MathUtils.clamp((previousMax - distance) /
+				Math.max(previousMax - previousMin, 0.001), 0, 1));
+		if (this._wheelZoomTargetDistance !== undefined) this._wheelZoomTargetDistance = remap(this._wheelZoomTargetDistance);
+		if (this._zoomResetTargetDistance !== undefined) this._zoomResetTargetDistance = remap(this._zoomResetTargetDistance);
+		if (this._zoomResetStartDistance !== undefined) this._zoomResetStartDistance = remap(this._zoomResetStartDistance);
+		this.previousZoomFocus = this.getRevealFocus();
 	}
 	stopViewReset() {
 		this._viewResetActive = false;
@@ -600,7 +613,7 @@ export class SpatialElementInteractionController {
 		if (changed) this.requestRender();
 	}
 	handleWheel(event: WheelEvent) {
-		if (!this._controls || !this.canInteract || event.deltaY === 0) return;
+		if (!this._controls || !this.canInteract || (event.deltaY === 0 && event.deltaX === 0)) return;
 		const now = performance.now();
 		const detail = this.ports.readGeometry().detail;
 		let modelHit: boolean | undefined;
@@ -628,6 +641,14 @@ export class SpatialElementInteractionController {
 			event.target === this.backgroundCanvas && this.isPinchArea(event.clientX, event.clientY) &&
 			!this.isPointerOccludedByHtml(event.clientX, event.clientY));
 		const atOverview = !this.fullscreen && this.getEffectiveCameraDistance() >= this._controls.maxDistance - 0.001;
+		// WheelEvent has no device identity. Pinch and two-axis pixel input provide
+		// positive trackpad evidence; an ordinary vertical mouse wheel stays dolly.
+		const dx = event.deltaX || 0;
+		if (event.deltaMode === 0 && (pinch || (dx !== 0 && !event.shiftKey))) this.precisionTrackpad = true;
+		const precisionPan = event.deltaMode === 0 && (dx !== 0 ||
+			(this.precisionTrackpad && (Math.abs(event.deltaY) < 50 || now < this.trackpadPanUntil)));
+		const wantsPan = !pinch && !event.ctrlKey && !event.shiftKey && precisionPan && hit && !atOverview && this._controls.enablePan;
+		if (event.deltaY === 0 && !wantsPan) return;
 		const separateArea = this.fullscreen || detail?.split;
 		if (separateArea) this.wheelGesture.reset();
 		const owner = separateArea ? (hit ? 'zoom' : 'scroll') :
@@ -641,6 +662,22 @@ export class SpatialElementInteractionController {
 			this.requestRender();
 			return;
 		}
+		if (wantsPan) {
+			this.trackpadPanUntil = now + DETAIL_WHEEL_IDLE_MS;
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			this.guidance.interact();
+			this.clearWheelZoom();
+			this.clearZoomReset();
+			this._viewResetActive = false;
+			this.captureZoomAnchor(event.clientX, event.clientY, false);
+			this.zoomAnchor!.client.set(event.clientX - dx, event.clientY - event.deltaY);
+			this.compensateZoomAnchor();
+			this.zoomAnchor = undefined;
+			this.requestRender();
+			return;
+		}
+		this.trackpadPanUntil = -Infinity;
 		if (event.deltaY !== 0) this.guidance.interact();
 
 		// OrbitControls applies wheel dolly immediately even when rotation damping is
@@ -1036,6 +1073,10 @@ export class SpatialElementInteractionController {
 			(this.fullscreen || this.ports.readGeometry().detail?.paneHidden || this._modelHover || this._modelInteractionActive);
 		if (this._controls) {
 			this._controls.enabled = enabled;
+			// Constant angular speed magnifies tiny drags at close range. Screen-space
+			// pan already scales with distance in OrbitControls and our pinch anchor.
+			this._controls.rotateSpeed = THREE.MathUtils.clamp(this.getEffectiveCameraDistance() /
+				Math.max(this._controls.maxDistance, 0.001), 0.08, 1);
 		}
 
 		this.backgroundCanvas.style.cursor = this._modelInteractionActive

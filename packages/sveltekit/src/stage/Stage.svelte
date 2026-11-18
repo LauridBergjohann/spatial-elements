@@ -1023,6 +1023,11 @@
 	.stage:global(.stage-virtual-scroll-active) .stage-virtual-scroll-spacer {
 		display: block;
 	}
+	.stage:global(.stage-virtual-scroll-active) {
+		/* The shared scroll frame owns visual positioning. Native anchoring must
+		 * not counteract moving/portaled panels or scrollspy typography changes. */
+		overflow-anchor: none;
+	}
 
 	.stage:global(.stage-virtual-scroll-active) .stage-virtual-viewport {
 		position: fixed;

@@ -90,6 +90,21 @@ test('minimap uses the independent Low representation and disposes local targets
 	expect(view.spatialElementRoot.getObjectByName('low-housing')).toBeDefined();
 	const disposed = vi.fn();
 	view.contextTarget.addEventListener('dispose', disposed);
+	// Mobile browser chrome and responsive docking must resize the live model,
+	// never dispose/recompile it or reset its hover and capture presentation.
+	view.pointerReveal = 0.6;
+	view.layer.visible = true;
+	panel.options.width = 80;
+	panel.options.height = 90;
+	panel.options.radius = 8;
+	owner.resizeMinimap(0, {});
+	expect(owner.views.get(0)).toBe(view);
+	expect(view.baseWidth).toBe(80);
+	expect(view.baseHeight).toBe(90);
+	expect(view.baseRadius).toBe(8);
+	expect(view.pointerReveal).toBe(0.6);
+	expect(view.layer.visible).toBe(true);
+	expect(disposed).not.toHaveBeenCalled();
 	const sourceDisposed = vi.spyOn(lowMesh.geometry, 'dispose');
 	const retainedScene = new THREE.Scene();
 	retainedScene.add(view.spatialElementRoot);

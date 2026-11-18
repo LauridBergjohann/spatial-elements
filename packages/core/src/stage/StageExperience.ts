@@ -2737,16 +2737,12 @@ export class StageExperience {
 
 		const options = this.getMeasuredPanelOptions(target, measurePanels);
 		const geometryChanged = hasPanelGeometryChanged(runtime.options, options);
-		if (geometryChanged && runtime.glass && target.minimap) {
-			this.replacePanel(index, options);
-		} else {
-			if (geometryChanged) {
-				const radius = options.radius ?? runtime.options.radius;
-				runtime.glass?.setVisualSize(options.width, options.height, radius);
-				runtime.options.width = options.width;
-				runtime.options.height = options.height;
-				runtime.options.radius = radius;
-			}
+		if (geometryChanged) {
+			const radius = options.radius ?? runtime.options.radius;
+			runtime.glass?.setVisualSize(options.width, options.height, radius);
+			runtime.options.width = options.width;
+			runtime.options.height = options.height;
+			runtime.options.radius = radius;
 		}
 
 		const currentRuntime = this.panelRuntimes[index];
@@ -2798,7 +2794,7 @@ export class StageExperience {
 			}
 		}
 
-		if (geometryChanged && target.minimap) this.createMinimap(index, target.minimap);
+		if (geometryChanged && target.minimap) this.minimapController.resizeMinimap(index, target.minimap);
 	}
 
 	/** Commit anchor DOM positions and dependent native surfaces in one render transaction. */
@@ -3026,6 +3022,8 @@ export class StageExperience {
 		this.camera.updateProjectionMatrix();
 		this.camera.updateMatrixWorld(true);
 		this.controls.update();
+		// Browser chrome/viewport changes are layout, not a new inward gesture.
+		this.interaction.rebaseViewportZoom(previousMinDistance, previousMaxDistance);
 		this.rememberFittedViewportMetrics();
 	}
 
@@ -3180,9 +3178,9 @@ export class StageExperience {
 			this.resizeRenderer(false);
 		const renderTargets = this.pipeline.activeRenderTargets;
 		const listOnly = this.catalog && !this.viewportTarget;
-		if (this.deviceOrientationEnabled && this.detailMediaActive && !listOnly && this.model && !this.releaseDeviceOrientation)
+		if (this.deviceOrientationEnabled && !listOnly && this.model && !this.releaseDeviceOrientation)
 			this.releaseDeviceOrientation = retainListDeviceOrientation(this.container, () => {});
-		else if ((listOnly || !this.detailMediaActive) && this.releaseDeviceOrientation) {
+		else if (listOnly && this.releaseDeviceOrientation) {
 			this.releaseDeviceOrientation();
 			this.releaseDeviceOrientation = undefined;
 		}
@@ -3224,7 +3222,7 @@ export class StageExperience {
 			delta
 		);
 		let deviceAnimating = false;
-		if (this.deviceOrientationEnabled && this.detailMediaActive && this.model?.parent === this.scene && !this.catalogHandoff && !this.spatialCapture) {
+		if (this.deviceOrientationEnabled && this.model?.parent === this.scene && !this.catalogHandoff && !this.spatialCapture) {
 			if (!isDeviceOrientationPaused()) deviceAnimating = this.deviceMotion.update(getListDeviceYaw(), getListDevicePitch(), getListDeviceRoll(), delta);
 			this.deviceMotion.apply(this.model, this.camera, this.initialControlsTarget);
 		}
