@@ -22,6 +22,7 @@ import { ModelPointerPreview } from './ModelPointerPreview.js';
 import { resolveDetailGestureOwner } from '../spatial-element/spatialElementMedia.js';
 import type { SpatialElementMediaItem } from '../spatial-element/types.js';
 import { DetailWheelGesture, DETAIL_WHEEL_IDLE_MS } from './DetailWheelGesture.js';
+import { TrackpadGesture } from './TrackpadGesture.js';
 import { getPanelFocusOpacity, getPanelFocusProgress, getPanelFocusFromProgress } from './panelFocusMath.js';
 export interface SpatialElementInteractionPorts {
 	onSpaceMouseStateChange?: (state: import("./spaceMousePlatform.js").SpaceMouseState) => void;
@@ -52,8 +53,7 @@ export class SpatialElementInteractionController {
 	private tap?: { id: number; x: number; y: number; time: number };
 	private zoomScroll?: { focus: number; scrollY: number; uiProgress: number };
 	private previousZoomFocus = 0;
-	private precisionTrackpad = false;
-	private trackpadPanUntil = -Infinity;
+	private readonly trackpadGesture = new TrackpadGesture();
 	private fullscreen = false;
 	private _viewportCentering = 0;
 	private _viewStartCentering = 0;
@@ -111,6 +111,7 @@ export class SpatialElementInteractionController {
 		});
 	}
 	releasePage() {
+		this.trackpadGesture.reset();
 		this.lastWheelTime = this.cancelledWheelUntil = -Infinity;
 		this._viewportCentering = 0;
 		this.tap = undefined;
@@ -642,21 +643,18 @@ export class SpatialElementInteractionController {
 			event.target === this.backgroundCanvas && this.isPinchArea(event.clientX, event.clientY) &&
 			!this.isPointerOccludedByHtml(event.clientX, event.clientY));
 		const atOverview = !this.fullscreen && this.getEffectiveCameraDistance() >= this._controls.maxDistance - 0.001;
-		// WheelEvent has no device identity. Pinch and two-axis pixel input provide
-		// positive trackpad evidence; an ordinary vertical mouse wheel stays dolly.
 		const dx = event.deltaX || 0;
-		if (event.deltaMode === 0 && (pinch || (dx !== 0 && !event.shiftKey))) this.precisionTrackpad = true;
-		const precisionPan = event.deltaMode === 0 && (dx !== 0 ||
-			(this.precisionTrackpad && (Math.abs(event.deltaY) < 50 || now < this.trackpadPanUntil)));
 		// Two-finger scrolling only becomes panning once the content has fully
 		// cleared. Fullscreen and the separate 3XL stage own their empty background
 		// too, even at the overview distance; visible HTML remains independently usable.
 		const panMode = this.fullscreen || detail?.split || panelProgress >= 1;
-		const wantsPan = !pinch && !event.ctrlKey && !event.shiftKey && precisionPan && hit && panMode && this._controls.enablePan;
-		if (event.deltaY === 0 && !wantsPan) return;
+		const trackpad = this.trackpadGesture.resolve(now, event, Boolean(panMode));
+		const trackpadMove = trackpad === 'scroll' || trackpad === 'pan';
+		const wantsPan = trackpad === 'pan' && hit && this._controls.enablePan;
+		if (event.deltaY === 0 && !wantsPan && !trackpadMove) return;
 		const separateArea = this.fullscreen || detail?.split;
-		if (separateArea) this.wheelGesture.reset();
-		const owner = separateArea ? (hit ? 'zoom' : 'scroll') :
+		if (separateArea || trackpadMove) this.wheelGesture.reset();
+		const owner = trackpadMove ? (wantsPan ? 'zoom' : 'scroll') : separateArea ? (hit ? 'zoom' : 'scroll') :
 			this.wheelGesture.resolve(performance.now(), hit, event.deltaY > 0, atOverview, pinch,
 				clearingUi, {
 					deltaX: dx, deltaY: event.deltaY, deltaMode: event.deltaMode,
@@ -671,7 +669,6 @@ export class SpatialElementInteractionController {
 			return;
 		}
 		if (wantsPan) {
-			this.trackpadPanUntil = now + DETAIL_WHEEL_IDLE_MS;
 			event.preventDefault();
 			event.stopImmediatePropagation();
 			this.guidance.interact();
@@ -685,7 +682,6 @@ export class SpatialElementInteractionController {
 			this.requestRender();
 			return;
 		}
-		this.trackpadPanUntil = -Infinity;
 		if (event.deltaY !== 0) this.guidance.interact();
 
 		// OrbitControls applies wheel dolly immediately even when rotation damping is
