@@ -38,6 +38,9 @@ jobs:
       - run: npm run build:apps
       - run: npm run check:docs
       - run: npm run test:e2e -- --grep "without JavaScript|GPU unavailable"
+        env:
+          # Firefox requires HOME to belong to the container's current user (root).
+          HOME: /root
       - run: npm run test:apps
       - run: npm run release:publish
       - run: npm run verify:published
