@@ -319,7 +319,7 @@
 	/* Keep translated sections from extending the document's scroll range. */
 	[data-spatial-content-zooming] .spatial-element-section-viewport { overflow: clip; }
 	/* Filter only nearby sections, not the full document-sized layer. Offscreen
-	 * sections retain content-visibility culling; text is crisp at rest. */
+	 * sections retain backdrop culling; text is crisp at rest. */
 	.spatial-element-section-list :global(.content-section[data-spatial-element-section-near-viewport]) {
 		filter: var(--spatial-detail-content-blur, none);
 	}

@@ -530,6 +530,21 @@ export class MinimapController {
 			options: resolved
 		});
 	}
+	/** Resize the existing live model; rebuilding it introduces a blank GPU frame. */
+	resizeMinimap(index: number, options: StageMinimapOptions) {
+		const minimap = this.minimaps.get(index);
+		const panel = this.ports.panel(index);
+		if (!minimap || !panel) return;
+		minimap.baseWidth = Math.max(panel.options.width, 1);
+		minimap.baseHeight = Math.max(panel.options.height, 1);
+		minimap.baseRadius = panel.options.radius;
+		minimap.options.expandedHeight = this.resolveMinimapOptions(options, panel).expandedHeight;
+		const scale = Math.max(minimap.options.expandedHeight / minimap.baseHeight, 1);
+		minimap.captureExtentWidth = minimap.baseWidth * scale + minimap.blurGuard * 2;
+		minimap.captureExtentHeight = minimap.baseHeight * scale + minimap.blurGuard * 2;
+		minimap.overlayGeometryDirty = true;
+		minimap.overlayCaptureDirty = minimap.panelCaptureDirty = true;
+	}
 	resolveMinimapOptions(options: StageMinimapOptions, panel: StagePanelRuntime) {
 		return {
 			expandedHeight: Math.max(
@@ -760,8 +775,13 @@ export class MinimapController {
 		if (this.ports.frame().fullscreen || (this.ports.frame().minimapFocus ?? 0) > 0) return;
 		const targetTop = this.ports.target(minimap.panelIndex)?.getMinimapModelTop?.();
 		if (targetTop === undefined || !Number.isFinite(targetTop)) return;
-		const progress = THREE.MathUtils.clamp(this.ports.target(minimap.panelIndex)?.getMinimapDockProgress?.() ?? 1, 0, 1);
-		if (progress === 0) return;
+		const target = this.ports.target(minimap.panelIndex);
+		// Centering follows the header reveal. Viewport containment must already
+		// apply during the preceding pose morph: a tall model can reach the edge
+		// before its fit square docks. Enabling that clamp only at reveal > 0
+		// would pull an already clipped model down in one frame.
+		const progress = THREE.MathUtils.clamp(target?.getSurfaceOpacity
+			? 1 - target.getSurfaceOpacity() : target?.getMinimapDockProgress?.() ?? 1, 0, 1);
 		const projected = this.getProjectedMinimapModelRect(minimap);
 		if (!projected) return;
 		// Blend from the ordinary rail pose throughout the existing scroll morph.

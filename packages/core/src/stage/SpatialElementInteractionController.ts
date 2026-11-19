@@ -22,6 +22,7 @@ import { ModelPointerPreview } from './ModelPointerPreview.js';
 import { resolveDetailGestureOwner } from '../spatial-element/spatialElementMedia.js';
 import type { SpatialElementMediaItem } from '../spatial-element/types.js';
 import { DetailWheelGesture, DETAIL_WHEEL_IDLE_MS } from './DetailWheelGesture.js';
+import { TrackpadGesture } from './TrackpadGesture.js';
 import { getPanelFocusOpacity, getPanelFocusProgress, getPanelFocusFromProgress } from './panelFocusMath.js';
 export interface SpatialElementInteractionPorts {
 	onSpaceMouseStateChange?: (state: import("./spaceMousePlatform.js").SpaceMouseState) => void;
@@ -52,6 +53,7 @@ export class SpatialElementInteractionController {
 	private tap?: { id: number; x: number; y: number; time: number };
 	private zoomScroll?: { focus: number; scrollY: number; uiProgress: number };
 	private previousZoomFocus = 0;
+	private readonly trackpadGesture = new TrackpadGesture();
 	private fullscreen = false;
 	private _viewportCentering = 0;
 	private _viewStartCentering = 0;
@@ -109,6 +111,7 @@ export class SpatialElementInteractionController {
 		});
 	}
 	releasePage() {
+		this.trackpadGesture.reset();
 		this.lastWheelTime = this.cancelledWheelUntil = -Infinity;
 		this._viewportCentering = 0;
 		this.tap = undefined;
@@ -145,6 +148,17 @@ export class SpatialElementInteractionController {
 	setFocusRange(rest: number, close: number) {
 		this._focusRestDistance = rest;
 		this._focusCloseDistance = close;
+	}
+	/** Keep pending navigation in the new fitted range without initiating page reveal. */
+	rebaseViewportZoom(previousMin: number, previousMax: number) {
+		if (!this._controls) return;
+		const remap = (distance: number) => THREE.MathUtils.lerp(this._controls!.maxDistance,
+			this._controls!.minDistance, THREE.MathUtils.clamp((previousMax - distance) /
+				Math.max(previousMax - previousMin, 0.001), 0, 1));
+		if (this._wheelZoomTargetDistance !== undefined) this._wheelZoomTargetDistance = remap(this._wheelZoomTargetDistance);
+		if (this._zoomResetTargetDistance !== undefined) this._zoomResetTargetDistance = remap(this._zoomResetTargetDistance);
+		if (this._zoomResetStartDistance !== undefined) this._zoomResetStartDistance = remap(this._zoomResetStartDistance);
+		this.previousZoomFocus = this.getRevealFocus();
 	}
 	stopViewReset() {
 		this._viewResetActive = false;
@@ -600,7 +614,7 @@ export class SpatialElementInteractionController {
 		if (changed) this.requestRender();
 	}
 	handleWheel(event: WheelEvent) {
-		if (!this._controls || !this.canInteract || event.deltaY === 0) return;
+		if (!this._controls || !this.canInteract || (event.deltaY === 0 && event.deltaX === 0)) return;
 		const now = performance.now();
 		const detail = this.ports.readGeometry().detail;
 		let modelHit: boolean | undefined;
@@ -620,24 +634,52 @@ export class SpatialElementInteractionController {
 		const model = pinch || (modelHit ?? this.hitTestModel(event.clientX, event.clientY, event.target));
 		this.setModelHover(model);
 		this.updateControlsAvailability();
-		const clearingUi = detail?.media === 'minimap' &&
-			getPanelFocusProgress(detail.uiFocus ?? this.getUiFocus(this.getZoomFocusFactor())) > 0;
+		const panelProgress = detail?.media === 'minimap' ?
+			getPanelFocusProgress(detail.uiFocus ?? this.getUiFocus(this.getZoomFocusFactor())) : 0;
+		const clearingUi = panelProgress > 0;
 		// Once panels start clearing, wheel navigation also owns the empty stage.
 		// Keep visible HTML and the separate 3XL content region independently usable.
 		const hit = model || (clearingUi && !detail?.split && this.stageViewportVisible &&
 			event.target === this.backgroundCanvas && this.isPinchArea(event.clientX, event.clientY) &&
 			!this.isPointerOccludedByHtml(event.clientX, event.clientY));
 		const atOverview = !this.fullscreen && this.getEffectiveCameraDistance() >= this._controls.maxDistance - 0.001;
+		const dx = event.deltaX || 0;
+		// A horizontally started gesture can pan once the content has fully
+		// cleared. Fullscreen and the separate 3XL stage own their empty background
+		// too, even at the overview distance; visible HTML remains independently usable.
+		const panMode = this.fullscreen || detail?.split || panelProgress >= 1;
+		const canPan = Boolean(panMode && hit && this._controls.enablePan);
+		const trackpad = this.trackpadGesture.resolve(now, event, canPan);
+		const panGesture = trackpad === 'pan';
+		const wantsPan = panGesture && canPan;
+		if (event.deltaY === 0 && !wantsPan) return;
 		const separateArea = this.fullscreen || detail?.split;
-		if (separateArea) this.wheelGesture.reset();
-		const owner = separateArea ? (hit ? 'zoom' : 'scroll') :
+		if (separateArea || panGesture) this.wheelGesture.reset();
+		const owner = panGesture ? (wantsPan ? 'zoom' : 'scroll') : separateArea ? (hit ? 'zoom' : 'scroll') :
 			this.wheelGesture.resolve(performance.now(), hit, event.deltaY > 0, atOverview, pinch,
-				clearingUi);
+				clearingUi, {
+					deltaX: dx, deltaY: event.deltaY, deltaMode: event.deltaMode,
+					momentum: (event as WheelEvent & { momentum?: boolean }).momentum
+				});
 		if (owner === 'scroll') {
 			if (!separateArea) this._viewResetActive = false;
 			this.clearWheelZoom();
 			// Let the browser scroll, but never let OrbitControls consume this burst.
 			this._controls.enabled = false;
+			this.requestRender();
+			return;
+		}
+		if (wantsPan) {
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			this.guidance.interact();
+			this.clearWheelZoom();
+			this.clearZoomReset();
+			this._viewResetActive = false;
+			this.captureZoomAnchor(event.clientX, event.clientY, false);
+			this.zoomAnchor!.client.set(event.clientX - dx, event.clientY - event.deltaY);
+			this.compensateZoomAnchor();
+			this.zoomAnchor = undefined;
 			this.requestRender();
 			return;
 		}

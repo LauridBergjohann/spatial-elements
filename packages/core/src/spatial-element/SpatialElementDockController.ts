@@ -38,11 +38,10 @@ interface ContentPresentation {
 	element: HTMLElement;
 	frame?: HTMLElement;
 	sticky?: { documentTop: number; height: number; boundaryBottom: number; inset: number; contentInset: number };
-	clipPath: string;
-	webkitClipPath: string;
+	maskImage: string;
 	documentTop: number;
 	height: number;
-	appliedClipPath?: string;
+	appliedMask?: string;
 }
 
 /**
@@ -77,6 +76,7 @@ export class SpatialElementDockController {
 	private minimapOriginalModelTop: string | null = null;
 	private minimapOriginalModelLeft: string | null = null;
 	private minimapDock?: SpatialElementDockRect;
+	private minimapSource?: SpatialElementDockRect;
 	private minimapViewportTop = 0;
 	private minimapViewportLeft = 0;
 	private tabsDock?: SpatialElementDockRect;
@@ -97,6 +97,7 @@ export class SpatialElementDockController {
 	private minimapModelScale = 1;
 	private scrollY = 0;
 	private minimapDockApplied = false;
+	private appliedMinimapProgress = -1;
 	private started = false;
 	private docked = false;
 	private presentationProgress = 0;
@@ -146,8 +147,7 @@ export class SpatialElementDockController {
 		).map((element) => ({
 			element,
 			frame: element.closest<HTMLElement>(PANEL_FRAME) ?? undefined,
-			clipPath: element.style.clipPath,
-			webkitClipPath: element.style.getPropertyValue('-webkit-clip-path'),
+			maskImage: element.style.maskImage,
 			documentTop: 0,
 			height: 0
 		}));
@@ -215,7 +215,7 @@ export class SpatialElementDockController {
 		this.setTabsActive(false);
 		this.restoreStickyTabs();
 		this.restoreStickyHeader();
-		this.restoreDepartingContentClipping();
+		this.restoreDepartingContentMasks();
 		this.root.removeAttribute('data-spatial-element-dock-active');
 		this.root.removeAttribute('data-spatial-element-tabs-dock-active');
 		this.root.style.removeProperty('--spatial-element-section-scroll-offset');
@@ -241,7 +241,9 @@ export class SpatialElementDockController {
 
 	private readonly handleResize = () => {
 		this.scrollY = getStageVisualScrollPosition().scrollY;
-		this.measure();
+		// Restore, measure and reapply the dock in one frame. Never expose the
+		// offscreen source frame to rendering between ResizeObserver and RAF.
+		this.layoutDirty = true;
 		this.schedule();
 	};
 
@@ -263,6 +265,7 @@ export class SpatialElementDockController {
 		// Thumbnail scrolling must not move the page's docking threshold. Measure
 		// the first thumbnail in its unscrolled rail while preserving outer/page scroll.
 		const minimapPageTop = minimapRect.top + (this.mediaRail?.scrollTop ?? 0) + this.scrollY;
+		this.minimapSource = { ...minimapRect, top: minimapPageTop };
 		const tabsWidth = this.sourceTabsList?.querySelector<HTMLElement>(TABS_LINKS)?.scrollWidth ?? 0;
 		const metrics = this.readLayoutMetrics?.() ?? {
 			width: window.innerWidth, height: window.innerHeight,
@@ -356,6 +359,7 @@ export class SpatialElementDockController {
 		const minimapProgress = getSpatialElementDockPresentationProgress(this.scrollY, this.presentationEndScrollY, this.minimapAnimationStart);
 		this.applyMinimapPresentation(minimapProgress, presentationProgress);
 		this.applyHeaderPresentation(presentationProgress);
+		this.presentationProgress = presentationProgress;
 		this.applyState(docked);
 		this.applyTabsPresentation(tabsDocked);
 		this.applyTabsState(tabsDocked);
@@ -366,14 +370,22 @@ export class SpatialElementDockController {
 	private applyState(docked: boolean) {
 		if (!this.minimapFrame || !this.minimapDock) return;
 		const changed = docked !== this.docked;
-		const dockLayoutChanged = docked && !this.minimapDockApplied;
+		const dockLayoutChanged = docked && (!this.minimapDockApplied || this.appliedMinimapProgress !== this.presentationProgress);
+		this.appliedMinimapProgress = this.presentationProgress;
 		this.docked = docked;
 
 		if (docked) {
-			if (!this.minimapDockApplied) {
-				applyFixedRect(this.minimapFrame, this.minimapDock);
-				this.minimapDockApplied = true;
-			}
+			// The source and dock can have different sizes and horizontal positions.
+			// Interpolate them instead of replacing the fit square at the threshold.
+			const source = this.minimapSource ?? this.minimapDock;
+			const p = this.presentationProgress;
+			applyFixedRect(this.minimapFrame, {
+				left: source.left + (this.minimapDock.left - source.left) * p,
+				top: this.minimapDock.top,
+				width: source.width + (this.minimapDock.width - source.width) * p,
+				height: source.height + (this.minimapDock.height - source.height) * p
+			});
+			this.minimapDockApplied = true;
 			// The virtual document is a transformed containing block. Counter only
 			// this dock's scroll offset instead of invalidating inherited styles
 			// across the complete page with a per-frame CSS custom property.
@@ -392,10 +404,10 @@ export class SpatialElementDockController {
 		// The fit square can extend above the viewport for large layouts. The live
 		// model follows this top edge through the same continuous dock morph,
 		// including its hover and sensor pose, instead of being clipped by it.
-		this.setMinimapModelTop(docked ? this.minimapViewportTop : undefined);
+		this.setMinimapModelTop(this.minimapDockProgress > 0 ? this.minimapViewportTop : undefined);
 		this.minimapFrame.setAttribute('data-stage-minimap-model-left', this.minimapViewportLeft.toFixed(3));
-		if (docked) this.updateDepartingContentClipping();
-		else if (changed) this.restoreDepartingContentClipping();
+		if (docked) this.updateDepartingContentMask();
+		else if (changed) this.restoreDepartingContentMasks();
 		if (changed || dockLayoutChanged) {
 			window.dispatchEvent(new CustomEvent(STAGE_PANEL_LAYOUT_EVENT, { detail: { source: 'spatial-element-dock' } }));
 		}
@@ -734,30 +746,29 @@ export class SpatialElementDockController {
 			: state.documentTop - this.scrollY;
 	}
 
-	private updateDepartingContentClipping() {
+	private updateDepartingContentMask() {
 		for (const state of this.departingContent) {
 			const viewportTop = this.contentViewportTop(state);
-			const inset = Math.min(Math.max(this.stickyHeaderBottom - viewportTop, 0), state.height);
-			const clipPath = `inset(${inset.toFixed(2)}px 0 0 0)`;
-			if (state.appliedClipPath === clipPath) continue;
-			state.appliedClipPath = clipPath;
-			state.element.style.clipPath = clipPath;
-			state.element.style.setProperty('-webkit-clip-path', clipPath);
+			// A translucent header cannot conceal a hard clip edge. Fade only the
+			// overlapping copy/media with the header, with a feather at its edge.
+			// The rest of the summary remains fully visible and interactive.
+			const edge = this.stickyHeaderBottom - viewportTop;
+			const alpha = (1 - this.presentationProgress).toFixed(6);
+			const mask = edge <= 0 || this.presentationProgress === 0 ? state.maskImage :
+				`linear-gradient(to bottom, rgb(0 0 0 / ${alpha}) ${Math.max(0, edge - 12).toFixed(2)}px, #000 ${Math.max(0, edge).toFixed(2)}px)`;
+			if (state.appliedMask === mask) continue;
+			state.appliedMask = mask;
+			state.element.style.maskImage = mask;
 		}
 	}
 
-	private restoreDepartingContentClipping() {
-		for (const state of this.departingContent) this.restoreContentClipping(state);
+	private restoreDepartingContentMasks() {
+		for (const state of this.departingContent) this.restoreContentMask(state);
 	}
 
-	private restoreContentClipping(state: ContentPresentation) {
-		state.appliedClipPath = undefined;
-		state.element.style.clipPath = state.clipPath;
-		if (state.webkitClipPath) {
-			state.element.style.setProperty('-webkit-clip-path', state.webkitClipPath);
-		} else {
-			state.element.style.removeProperty('-webkit-clip-path');
-		}
+	private restoreContentMask(state: ContentPresentation) {
+		state.appliedMask = undefined;
+		state.element.style.maskImage = state.maskImage;
 	}
 
 	private restoreMinimap() {

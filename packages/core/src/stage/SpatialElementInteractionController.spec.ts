@@ -154,6 +154,8 @@ vi.mock('three/addons/controls/OrbitControls.js', () => ({
 		minDistance = 1;
 		maxDistance = 10;
 		zoomSpeed = 1;
+		rotateSpeed = 1;
+		panSpeed = 1;
 		enableZoom = true;
 		enablePan = true;
 		update = vi.fn(() => false);
@@ -402,6 +404,21 @@ function wheel(x: number, deltaY: number) {
 		preventDefault: vi.fn(), stopImmediatePropagation: vi.fn() } as unknown as WheelEvent;
 }
 
+test('a fresh physical wheel gesture can zoom immediately after document inertia', () => {
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const { owner } = detailFixture();
+	owner.handleWheel({ ...wheel(80, 30), momentum: false } as WheelEvent);
+	time.mockReturnValue(1000);
+	const inertia = { ...wheel(50, -10), momentum: true } as WheelEvent;
+	owner.handleWheel(inertia);
+	expect(inertia.preventDefault).not.toHaveBeenCalled();
+	time.mockReturnValue(1010);
+	const fresh = { ...wheel(50, -10), momentum: false } as WheelEvent;
+	owner.handleWheel(fresh);
+	expect(fresh.preventDefault).toHaveBeenCalledOnce();
+	owner.dispose();
+});
+
 test.each([0, 0.08, 0.0801, 0.5])('empty-stage wheel ownership starts with panel clearance at UI focus %s', uiFocus => {
 	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
 	const { owner, ports } = detailFixture();
@@ -611,7 +628,143 @@ test.each([false, true])('a changed ctrl modifier starts a fresh wheel gesture a
 	owner.handleWheel(fresh);
 	expect(fresh.preventDefault).toHaveBeenCalled();
 	expect(owner.viewResetActive).toBe(false);
+	// With panels still visible, both modifiers use dolly rather than panning.
 	expect(owner.wheelZoomTargetDistance).toBeDefined();
+	owner.dispose();
+});
+
+test('viewport refitting preserves pending dolly but never starts scroll reveal', () => {
+	const viewport = { scrollY: 450, innerWidth: 100, innerHeight: 100, scrollTo: vi.fn() };
+	vi.stubGlobal('window', viewport);
+	const { owner } = fixture();
+	owner.controls!.minDistance = 1;
+	owner.controls!.maxDistance = 10;
+	owner.setCameraDistance(9);
+	owner.rebaseViewportZoom(1, 10);
+	owner.advance(100, 0.016);
+	expect(viewport.scrollTo).not.toHaveBeenCalled();
+	owner.controls!.maxDistance = 12;
+	owner.setCameraDistance(10.8);
+	owner.rebaseViewportZoom(1, 10);
+	owner.advance(116, 0.016);
+	expect(viewport.scrollTo).not.toHaveBeenCalled();
+	owner.setCameraDistance(10.5);
+	owner.advance(132, 0.016);
+	expect(viewport.scrollTo).toHaveBeenCalled();
+	owner.dispose();
+});
+
+test.each([10, 7, 2, 1])('rotation and pan retain native sensitivity at camera distance %s', distance => {
+	const { owner } = fixture();
+	owner.controls!.maxDistance = 10;
+	owner.setCameraDistance(distance);
+	owner.updateControlsAvailability();
+	expect(owner.controls!.rotateSpeed).toBe(1);
+	expect(owner.controls!.panSpeed).toBe(1);
+	owner.dispose();
+});
+
+test('immersive trackpad pans both axes after pinch without dolly, while a later mouse notch still zooms', () => {
+	const { owner, camera, ports } = detailFixture();
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const geometry = ports.readGeometry();
+	ports.readGeometry = () => ({ ...geometry, detail: { ...geometry.detail!, uiFocus: 1, paneHidden: true } });
+	owner.handleWheel({ ...wheel(50, -50), deltaX: 0, ctrlKey: true } as WheelEvent);
+	owner.advance(16, 0.1);
+	const distance = owner.getEffectiveCameraDistance();
+	const target = owner.controls!.target.clone();
+	const direction = camera.getWorldDirection(new THREE.Vector3());
+	for (const [deltaX, deltaY] of [[24, 8], [0, 9], [8, 0]]) {
+		const event = { ...wheel(50, deltaY), deltaX } as WheelEvent;
+		owner.handleWheel(event);
+		expect(event.preventDefault).toHaveBeenCalled();
+		expect(owner.getEffectiveCameraDistance()).toBeCloseTo(distance, 8);
+		expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	}
+	expect(owner.controls!.target.distanceTo(target)).toBeGreaterThan(0.1);
+	expect(camera.getWorldDirection(new THREE.Vector3()).distanceTo(direction)).toBeLessThan(1e-8);
+	time.mockReturnValue(1000);
+	owner.handleWheel({ ...wheel(50, -120), deltaX: 0 } as WheelEvent);
+	expect(owner.wheelZoomTargetDistance).toBeLessThan(distance);
+	owner.dispose();
+});
+
+test('vertical input scrolls across the model, then zooms when a new gesture starts over it', () => {
+	const { owner } = detailFixture();
+	const time = vi.spyOn(performance, 'now').mockReturnValue(500);
+	owner.setCameraDistance(7);
+	owner.handleWheel({ ...wheel(80, 12), deltaX: 4 } as WheelEvent);
+	const before = owner.controls!.target.clone();
+	time.mockReturnValue(530);
+	const crossing = { ...wheel(50, 12), deltaX: 4 } as WheelEvent;
+	owner.handleWheel(crossing);
+	expect(crossing.preventDefault).not.toHaveBeenCalled();
+	expect(owner.controls!.target.equals(before)).toBe(true);
+	time.mockReturnValue(920);
+	const fresh = { ...wheel(50, 12), deltaX: 4 } as WheelEvent;
+	owner.handleWheel(fresh);
+	expect(fresh.preventDefault).toHaveBeenCalled();
+	expect(owner.controls!.target.equals(before)).toBe(true);
+	expect(owner.wheelZoomTargetDistance).toBeGreaterThan(7);
+	owner.dispose();
+});
+
+test.each([0, 0.5, 0.95])('visible or fading panels prevent trackpad panning at UI focus %s', uiFocus => {
+	const { owner, ports } = detailFixture();
+	const geometry = ports.readGeometry();
+	ports.readGeometry = () => ({ ...geometry, detail: { ...geometry.detail!, uiFocus } });
+	owner.setCameraDistance(7);
+	const before = owner.controls!.target.clone();
+	owner.handleWheel({ ...wheel(50, 0), deltaX: 12 } as WheelEvent);
+	expect(owner.controls!.target.equals(before)).toBe(true);
+	const scroll = { ...wheel(80, 12), deltaX: 4 } as WheelEvent;
+	owner.handleWheel(scroll);
+	expect(scroll.preventDefault).not.toHaveBeenCalled();
+	expect(owner.controls!.target.equals(before)).toBe(true);
+	owner.dispose();
+});
+
+test('vertically started input keeps zoom-out available after panels fully clear', () => {
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
+	const { owner, ports } = detailFixture();
+	const geometry = ports.readGeometry();
+	const detail = { ...geometry.detail!, uiFocus: 0.5 };
+	ports.readGeometry = () => ({ ...geometry, detail });
+	owner.setCameraDistance(7);
+	const target = owner.controls!.target.clone();
+	owner.handleWheel({ ...wheel(50, -12), deltaX: 2 } as WheelEvent);
+	expect(owner.wheelZoomTargetDistance).toBeLessThan(7);
+	detail.uiFocus = 1;
+	time.mockReturnValue(16);
+	owner.handleWheel({ ...wheel(50, 30), deltaX: 3 } as WheelEvent);
+	expect(owner.wheelZoomTargetDistance).toBeGreaterThan(7);
+	expect(owner.controls!.target.equals(target)).toBe(true);
+	owner.dispose();
+});
+
+test.each(['immersive', 'fullscreen', 'split'] as const)('%s trackpad pans empty canvas, including overview in 3XL', mode => {
+	const { owner, ports } = detailFixture(mode === 'split');
+	vi.mocked(owner.hitTestModel).mockRestore();
+	vi.stubGlobal('HTMLElement', class {}); vi.stubGlobal('Element', class {});
+	vi.spyOn(owner, 'isPointerOccludedByHtml').mockReturnValue(false);
+	const geometry = ports.readGeometry();
+	ports.readGeometry = () => ({ ...geometry, detail: { ...geometry.detail!,
+		uiFocus: mode === 'immersive' ? 1 : 0, paneHidden: mode === 'immersive' } });
+	owner.setFullscreen(mode === 'fullscreen');
+	if (mode === 'immersive') owner.setCameraDistance(7);
+	const distance = owner.getEffectiveCameraDistance();
+	const before = owner.controls!.target.clone();
+	const event = { ...wheel(mode === 'split' ? 20 : 80, 8), deltaX: 24, target: ports.canvas } as WheelEvent;
+	owner.handleWheel(event);
+	expect(event.preventDefault).toHaveBeenCalled();
+	expect(owner.controls!.target.distanceTo(before)).toBeGreaterThan(0.01);
+	expect(owner.getEffectiveCameraDistance()).toBeCloseTo(distance, 8);
+	expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	const after = owner.controls!.target.clone();
+	const ui = { ...wheel(80, 8), deltaX: 12, target: mode === 'split' ? ports.canvas : ports.cssRoot } as WheelEvent;
+	owner.handleWheel(ui);
+	if (mode !== 'immersive') expect(ui.preventDefault).not.toHaveBeenCalled();
+	expect(owner.controls!.target.equals(after)).toBe(true);
 	owner.dispose();
 });
 
