@@ -3,78 +3,80 @@ import { TrackpadGesture } from './TrackpadGesture.js';
 
 const sample = (deltaY: number, deltaX = 0, ctrlKey = false) =>
 	({ deltaX, deltaY, ctrlKey, shiftKey: false, deltaMode: 0 });
-function pinch(detector: TrackpadGesture) {
-	for (const [i, y] of [-1.2, -2.4, -3.1, -2.6].entries())
-		expect(detector.resolve(i * 16, sample(y, 0, true), false)).toBe('pinch');
-}
 
-test.each([false, true])('ambiguous input never starts panning (immersive=%s)', immersive => {
-	const detector = new TrackpadGesture();
-	for (const [i, y] of [12, 12, 12, 12, 12].entries())
-		expect(detector.resolve(i * 16, sample(y), immersive)).toBe('wheel');
-	expect(detector.resolve(600, sample(12, 8), immersive)).toBe('wheel');
-});
-
-test('a single small Ctrl-wheel event does not classify the next gesture', () => {
-	const detector = new TrackpadGesture();
-	expect(detector.resolve(0, sample(-1, 0, true), false)).toBe('pinch');
-	expect(detector.resolve(16, sample(8, 4), true)).toBe('wheel');
-});
-
-test('confirmed trackpad scrolls before immersion and pans after, while pinch always zooms', () => {
-	const detector = new TrackpadGesture();
-	pinch(detector);
-	expect(detector.resolve(64, sample(8), false)).toBe('scroll');
-	expect(detector.resolve(80, sample(9, 3), true)).toBe('scroll');
-	expect(detector.resolve(500, sample(8), true)).toBe('pan');
-	expect(detector.resolve(516, sample(9), false)).toBe('pan');
-	expect(detector.resolve(532, sample(2.1, 0, true), true)).toBe('pinch');
-	expect(detector.resolve(548, sample(9), false)).toBe('scroll');
-});
-
-test('evidence never changes a running wheel zoom into panning, even when panels clear', () => {
-	const detector = new TrackpadGesture();
-	for (const [i, y] of [8.2, 9.4, 10.8, 11.6, 9.5].entries())
-		expect(detector.resolve(i * 16, sample(y, y / 2), i > 1)).toBe('wheel');
-	expect(detector.resolve(700, sample(9.5, 4.2), true)).toBe('pan');
-});
-
-test('vertical fractional scroll can establish confidence without horizontal drift', () => {
-	const detector = new TrackpadGesture();
-	for (const [i, y] of [8.2, 9.4, 10.8, 11.6].entries()) detector.resolve(i * 16, sample(y), false);
-	expect(detector.resolve(500, sample(8.5), false)).toBe('scroll');
-});
-
-test.each([{ deltaMode: 1 }, { deltaMode: 2 }, { deltaY: 120 }, { shiftKey: true }])(
-	'mouse evidence overrides recent trackpad use: %j', override => {
-		const detector = new TrackpadGesture();
-		pinch(detector);
-		expect(detector.resolve(64, sample(8), true)).toBe('pan');
-		expect(detector.resolve(80, { ...sample(8), ...override }, true)).toBe('wheel');
-		expect(detector.resolve(500, sample(8), true)).toBe('wheel');
-	});
-
-test('slow or regular mouse notches do not confirm a trackpad', () => {
-	for (const gap of [16, 120]) {
-		const detector = new TrackpadGesture();
-		for (let i = 0; i < 8; i++) detector.resolve(i * gap, sample(gap === 16 ? 12 : 8.2 + i), false);
-		expect(detector.resolve(2000, sample(8), true)).toBe('wheel');
+test.each([false, true])('vertical gestures retain wheel navigation without learning a device (pan eligible=%s)', eligible => {
+	const gesture = new TrackpadGesture();
+	for (let burst = 0; burst < 4; burst++) {
+		for (const [i, y] of [8.2, 9.4, 10.8, 11.6, -12].entries())
+			expect(gesture.resolve(burst * 500 + i * 16, sample(y, y / 2), eligible)).toBe('wheel');
 	}
 });
 
-test('native inertia keeps its original action even across a long event gap', () => {
-	const detector = new TrackpadGesture();
-	pinch(detector);
-	expect(detector.resolve(64, sample(8), false)).toBe('scroll');
-	expect(detector.resolve(800, { ...sample(2), momentum: true }, true)).toBe('scroll');
-	expect(detector.resolve(816, { ...sample(8), momentum: false }, true)).toBe('pan');
+test.each([1, -1])('a horizontal start pans both axes for the entire gesture (direction=%s)', sign => {
+	const gesture = new TrackpadGesture();
+	expect(gesture.resolve(0, sample(4, 16 * sign), true)).toBe('pan');
+	expect(gesture.resolve(16, sample(20, 0), true)).toBe('pan');
+	expect(gesture.resolve(32, sample(-20, -10), true)).toBe('pan');
+	expect(gesture.resolve(48, sample(0, -8), true)).toBe('pan');
+	// A new vertical gesture restores wheel zoom, including zoom-out.
+	expect(gesture.resolve(428, sample(12), true)).toBe('wheel');
 });
 
-test('old confidence and released page state do not permanently classify a device', () => {
-	const detector = new TrackpadGesture();
-	pinch(detector);
-	expect(detector.resolve(31_000, sample(8), true)).toBe('wheel');
-	pinch(detector);
-	detector.reset();
-	expect(detector.resolve(64, sample(8), true)).toBe('wheel');
+test.each([[1, 0.2], [8, 12], [8, 16], [12, 2]])('vertical or ambiguous starts never turn into pan later (%j)', (y, x) => {
+	const gesture = new TrackpadGesture();
+	expect(gesture.resolve(0, sample(y, x), true)).toBe('wheel');
+	expect(gesture.resolve(16, sample(2, 20), true)).toBe('wheel');
+});
+
+test('a slowly starting horizontal gesture chooses pan without a device-dependent pixel threshold', () => {
+	const gesture = new TrackpadGesture();
+	expect(gesture.resolve(0, sample(0.1, 0.4), true)).toBe('pan');
+	expect(gesture.resolve(16, sample(8), true)).toBe('pan');
+});
+
+test('a gesture starting with visible panels or outside the stage cannot acquire pan on entering it', () => {
+	const gesture = new TrackpadGesture();
+	expect(gesture.resolve(0, sample(2, 20), false)).toBe('wheel');
+	expect(gesture.resolve(16, sample(2, 20), true)).toBe('wheel');
+	expect(gesture.resolve(396, sample(2, 20), true)).toBe('pan');
+});
+
+test('pinch always interrupts pan or wheel, without affecting later vertical gestures', () => {
+	const gesture = new TrackpadGesture();
+	expect(gesture.resolve(0, sample(2, 20), true)).toBe('pan');
+	expect(gesture.resolve(16, sample(-2, 0, true), true)).toBe('pinch');
+	expect(gesture.resolve(32, sample(2, 0, true), false)).toBe('pinch');
+	expect(gesture.resolve(48, sample(-8), true)).toBe('wheel');
+	expect(gesture.resolve(64, sample(2, 0, true), true)).toBe('pinch');
+	expect(gesture.resolve(80, sample(2, 20), true)).toBe('pan');
+});
+
+test.each([{ deltaMode: 1 }, { deltaMode: 2 }, { shiftKey: true }])(
+	'line/page and shifted wheel starts retain normal navigation: %j', override => {
+		const gesture = new TrackpadGesture();
+		expect(gesture.resolve(0, { ...sample(2, 20), ...override }, true)).toBe('wheel');
+	});
+
+test('native inertia keeps its action across a long gap, fresh physical input chooses again', () => {
+	const gesture = new TrackpadGesture();
+	expect(gesture.resolve(0, sample(2, 20), true)).toBe('pan');
+	expect(gesture.resolve(800, { ...sample(2), momentum: true }, true)).toBe('pan');
+	expect(gesture.resolve(816, { ...sample(8), momentum: false }, true)).toBe('wheel');
+	expect(gesture.resolve(1600, { ...sample(1, 4), momentum: true }, true)).toBe('wheel');
+	expect(gesture.resolve(1616, { ...sample(2, 20), momentum: false }, true)).toBe('pan');
+});
+
+test('empty samples neither choose a direction nor prolong the current gesture', () => {
+	const gesture = new TrackpadGesture();
+	gesture.resolve(0, sample(0), true);
+	expect(gesture.resolve(16, sample(2, 20), true)).toBe('pan');
+	gesture.resolve(300, sample(0), true);
+	expect(gesture.resolve(396, sample(8), true)).toBe('wheel');
+});
+
+test('releasing the page clears the pan gesture', () => {
+	const gesture = new TrackpadGesture();
+	expect(gesture.resolve(0, sample(2, 20), true)).toBe('pan');
+	gesture.reset();
+	expect(gesture.resolve(16, sample(8), true)).toBe('wheel');
 });

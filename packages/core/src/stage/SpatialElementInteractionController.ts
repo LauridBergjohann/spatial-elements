@@ -644,17 +644,18 @@ export class SpatialElementInteractionController {
 			!this.isPointerOccludedByHtml(event.clientX, event.clientY));
 		const atOverview = !this.fullscreen && this.getEffectiveCameraDistance() >= this._controls.maxDistance - 0.001;
 		const dx = event.deltaX || 0;
-		// Two-finger scrolling only becomes panning once the content has fully
+		// A horizontally started gesture can pan once the content has fully
 		// cleared. Fullscreen and the separate 3XL stage own their empty background
 		// too, even at the overview distance; visible HTML remains independently usable.
 		const panMode = this.fullscreen || detail?.split || panelProgress >= 1;
-		const trackpad = this.trackpadGesture.resolve(now, event, Boolean(panMode));
-		const trackpadMove = trackpad === 'scroll' || trackpad === 'pan';
-		const wantsPan = trackpad === 'pan' && hit && this._controls.enablePan;
-		if (event.deltaY === 0 && !wantsPan && !trackpadMove) return;
+		const canPan = Boolean(panMode && hit && this._controls.enablePan);
+		const trackpad = this.trackpadGesture.resolve(now, event, canPan);
+		const panGesture = trackpad === 'pan';
+		const wantsPan = panGesture && canPan;
+		if (event.deltaY === 0 && !wantsPan) return;
 		const separateArea = this.fullscreen || detail?.split;
-		if (separateArea || trackpadMove) this.wheelGesture.reset();
-		const owner = trackpadMove ? (wantsPan ? 'zoom' : 'scroll') : separateArea ? (hit ? 'zoom' : 'scroll') :
+		if (separateArea || panGesture) this.wheelGesture.reset();
+		const owner = panGesture ? (wantsPan ? 'zoom' : 'scroll') : separateArea ? (hit ? 'zoom' : 'scroll') :
 			this.wheelGesture.resolve(performance.now(), hit, event.deltaY > 0, atOverview, pinch,
 				clearingUi, {
 					deltaX: dx, deltaY: event.deltaY, deltaMode: event.deltaMode,

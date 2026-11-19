@@ -1,18 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
 import { resolveSpatialElementDockLayout } from '../packages/core/src/spatial-element/spatialElementDock';
-
-async function confirmTrackpad(page: Page) {
-	await page.evaluate(async () => {
-		const canvas = document.querySelector('.stage-webgpu-background')!;
-		for (const deltaY of [8.2, 9.4, 10.8, 11.6]) {
-			canvas.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true,
-				clientX: 2, clientY: 450, deltaX: deltaY / 2, deltaY }));
-			await new Promise(resolve => setTimeout(resolve, 16));
-		}
-		await new Promise(resolve => setTimeout(resolve, 400));
-	});
-}
 
 test('GPU unavailable: section changes preserve document height and requested scroll position', async ({ page }) => {
 	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
@@ -40,7 +28,6 @@ for (const mode of ['immersive', 'fullscreen', '3XL'] as const) test(`trackpad p
 	if (mode === '3XL') await page.setViewportSize({ width: 2400, height: 900 });
 	await page.goto('/demo/elements/cube?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
-	await confirmTrackpad(page);
 	if (mode === 'fullscreen') {
 		await page.getByRole('button', { name: 'Fullscreen', exact: true }).click();
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-fullscreen', '');
@@ -61,7 +48,7 @@ for (const mode of ['immersive', 'fullscreen', '3XL'] as const) test(`trackpad p
 		}));
 		const before = api.getModelRect()!;
 		const focusBefore = api.getState().focus;
-		send(24, 18);
+		send(32, 12);
 		await api.settle(8);
 		const after = api.getModelRect()!;
 		return { before, after, focusBefore, focusAfter: api.getState().focus };
@@ -76,19 +63,17 @@ for (const mode of ['immersive', 'fullscreen', '3XL'] as const) test(`trackpad p
 	expect(Math.abs(result.after.width / result.before.width - 1)).toBeLessThan(0.03);
 });
 
-test('confirmed trackpad scrolls the page even over a shallow model', async ({ page }) => {
+test('vertical trackpad input scrolls immediately outside a shallow model', async ({ page }) => {
 	await page.goto('/demo/elements/cube?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
-	await confirmTrackpad(page);
 	await page.evaluate(() => window.__stageVisualTest!.setView({ zoom: 0.1 }, 30));
 	expect(await page.evaluate(() => window.__stageVisualTest!.getState().uiOpacity)).toBeGreaterThan(0.9);
-	const rect = await page.evaluate(() => window.__stageVisualTest!.getModelRect()!);
-	await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2);
+	await page.mouse.move(2, 450);
 	await page.mouse.wheel(12, 32);
 	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
 });
 
-test('trackpad enters and leaves immersion with pinch, using two fingers only for pan or page scroll', async ({ page }) => {
+test('trackpad pinch and horizontal pan never disable subsequent vertical wheel zoom', async ({ page }) => {
 	await page.goto('/demo/elements/cube?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
 	const result = await page.evaluate(async () => {
@@ -108,7 +93,7 @@ test('trackpad enters and leaves immersion with pinch, using two fingers only fo
 		await api.settle(100);
 		const zoomed = api.getState();
 		const beforePan = api.getModelRect()!;
-		const panned = send(18, false, 24);
+		const panned = send(12, false, 32);
 		await api.settle(8);
 		const afterPan = api.getModelRect()!;
 		const panFocus = api.getState().focus;
@@ -118,9 +103,13 @@ test('trackpad enters and leaves immersion with pinch, using two fingers only fo
 		}
 		await api.settle(100);
 		const overview = api.getState();
-		const scrollPrevented = send(-20, false);
+		const rect = api.getModelRect()!;
+		const wheel = new WheelEvent('wheel', { bubbles: true, cancelable: true,
+			clientX: rect.x + rect.width / 2, clientY: rect.y + rect.height / 2, deltaY: -20 });
+		canvas.dispatchEvent(wheel);
 		await api.settle(8);
-		return { zoomed, panned, beforePan, afterPan, panFocus, overview, scrollPrevented, final: api.getState() };
+		return { zoomed, panned, beforePan, afterPan, panFocus, overview, wheelPrevented: wheel.defaultPrevented,
+			beforeWheel: rect, afterWheel: api.getModelRect()! };
 	});
 	expect(result.zoomed.uiOpacity).toBeLessThan(0.001);
 	expect(result.panned).toBe(true);
@@ -128,8 +117,10 @@ test('trackpad enters and leaves immersion with pinch, using two fingers only fo
 	expect(result.panFocus).toBeCloseTo(result.zoomed.focus, 5);
 	expect(result.overview.focus).toBeLessThan(0.001);
 	expect(result.overview.uiOpacity).toBeGreaterThan(0.999);
-	expect(result.scrollPrevented).toBe(false);
-	expect(result.final.focus).toBeLessThan(0.001);
+	expect(result.wheelPrevented).toBe(true);
+	// A small wheel step already enlarges the model, but remains below the
+	// intentional rest-distance threshold where the UI's focus starts changing.
+	expect(result.afterWheel.width).toBeGreaterThan(result.beforeWheel.width * 1.001);
 });
 
 for (const native of [true, false]) test(`fresh wheel input replaces document inertia without waiting (${native ? 'native momentum' : 'fallback'})`, async ({ page }) => {

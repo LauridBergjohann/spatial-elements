@@ -404,15 +404,6 @@ function wheel(x: number, deltaY: number) {
 		preventDefault: vi.fn(), stopImmediatePropagation: vi.fn() } as unknown as WheelEvent;
 }
 
-function confirmTrackpad(owner: SpatialElementInteractionController) {
-	const time = vi.spyOn(performance, 'now');
-	for (const [i, y] of [8.2, 9.4, 10.8, 11.6].entries()) {
-		time.mockReturnValue(i * 16);
-		owner.handleWheel({ ...wheel(80, y), deltaX: y / 2 } as WheelEvent);
-	}
-	return time.mockReturnValue(500);
-}
-
 test('a fresh physical wheel gesture can zoom immediately after document inertia', () => {
 	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
 	const { owner } = detailFixture();
@@ -675,7 +666,7 @@ test.each([10, 7, 2, 1])('rotation and pan retain native sensitivity at camera d
 
 test('immersive trackpad pans both axes after pinch without dolly, while a later mouse notch still zooms', () => {
 	const { owner, camera, ports } = detailFixture();
-	const time = confirmTrackpad(owner);
+	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
 	const geometry = ports.readGeometry();
 	ports.readGeometry = () => ({ ...geometry, detail: { ...geometry.detail!, uiFocus: 1, paneHidden: true } });
 	owner.handleWheel({ ...wheel(50, -50), deltaX: 0, ctrlKey: true } as WheelEvent);
@@ -683,7 +674,7 @@ test('immersive trackpad pans both axes after pinch without dolly, while a later
 	const distance = owner.getEffectiveCameraDistance();
 	const target = owner.controls!.target.clone();
 	const direction = camera.getWorldDirection(new THREE.Vector3());
-	for (const [deltaX, deltaY] of [[12, 8], [0, 9], [8, 0]]) {
+	for (const [deltaX, deltaY] of [[24, 8], [0, 9], [8, 0]]) {
 		const event = { ...wheel(50, deltaY), deltaX } as WheelEvent;
 		owner.handleWheel(event);
 		expect(event.preventDefault).toHaveBeenCalled();
@@ -698,9 +689,9 @@ test('immersive trackpad pans both axes after pinch without dolly, while a later
 	owner.dispose();
 });
 
-test('confirmed trackpad scrolls the page even when crossing the model or starting over it', () => {
+test('vertical input scrolls across the model, then zooms when a new gesture starts over it', () => {
 	const { owner } = detailFixture();
-	const time = confirmTrackpad(owner);
+	const time = vi.spyOn(performance, 'now').mockReturnValue(500);
 	owner.setCameraDistance(7);
 	owner.handleWheel({ ...wheel(80, 12), deltaX: 4 } as WheelEvent);
 	const before = owner.controls!.target.clone();
@@ -712,9 +703,9 @@ test('confirmed trackpad scrolls the page even when crossing the model or starti
 	time.mockReturnValue(920);
 	const fresh = { ...wheel(50, 12), deltaX: 4 } as WheelEvent;
 	owner.handleWheel(fresh);
-	expect(fresh.preventDefault).not.toHaveBeenCalled();
+	expect(fresh.preventDefault).toHaveBeenCalled();
 	expect(owner.controls!.target.equals(before)).toBe(true);
-	expect(owner.wheelZoomTargetDistance).toBeUndefined();
+	expect(owner.wheelZoomTargetDistance).toBeGreaterThan(7);
 	owner.dispose();
 });
 
@@ -733,7 +724,7 @@ test.each([0, 0.5, 0.95])('visible or fading panels prevent trackpad panning at 
 	owner.dispose();
 });
 
-test('uncertain two-axis input keeps zoom-out available after panels fully clear', () => {
+test('vertically started input keeps zoom-out available after panels fully clear', () => {
 	const time = vi.spyOn(performance, 'now').mockReturnValue(0);
 	const { owner, ports } = detailFixture();
 	const geometry = ports.readGeometry();
@@ -753,7 +744,6 @@ test('uncertain two-axis input keeps zoom-out available after panels fully clear
 
 test.each(['immersive', 'fullscreen', 'split'] as const)('%s trackpad pans empty canvas, including overview in 3XL', mode => {
 	const { owner, ports } = detailFixture(mode === 'split');
-	confirmTrackpad(owner);
 	vi.mocked(owner.hitTestModel).mockRestore();
 	vi.stubGlobal('HTMLElement', class {}); vi.stubGlobal('Element', class {});
 	vi.spyOn(owner, 'isPointerOccludedByHtml').mockReturnValue(false);
@@ -764,7 +754,7 @@ test.each(['immersive', 'fullscreen', 'split'] as const)('%s trackpad pans empty
 	if (mode === 'immersive') owner.setCameraDistance(7);
 	const distance = owner.getEffectiveCameraDistance();
 	const before = owner.controls!.target.clone();
-	const event = { ...wheel(mode === 'split' ? 20 : 80, 8), deltaX: 12, target: ports.canvas } as WheelEvent;
+	const event = { ...wheel(mode === 'split' ? 20 : 80, 8), deltaX: 24, target: ports.canvas } as WheelEvent;
 	owner.handleWheel(event);
 	expect(event.preventDefault).toHaveBeenCalled();
 	expect(owner.controls!.target.distanceTo(before)).toBeGreaterThan(0.01);
