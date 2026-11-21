@@ -5,8 +5,8 @@
 
 <ContentPage hdr="/assets/demo/studio.hdr" page={{ title: 'Reading' }}>
 	<HeadingSection section={{ id: 'heading', title: 'Reading', headingLevel: 1 }} />
-	<Section section={{ id: 'text', title: 'Ordinary content' }}
-		><p>No spatial elements on this page.</p>
-		<a href="/curated">Collection</a></Section
-	>
+	<Section section={{ id: 'text', title: 'Ordinary content' }}>
+		<p>No spatial elements on this page.</p>
+		<a href="/curated">Collection</a>
+	</Section>
 </ContentPage>

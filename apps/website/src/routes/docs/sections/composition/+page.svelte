@@ -18,7 +18,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -39,11 +39,12 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
-				Start with the executable <a href="/docs/foundations/first-experience/"
-					>getting-started guide</a
-				>
+				Start with the executable <a href="/docs/foundations/first-experience/">
+					getting-started guide
+				</a>
 				and the <a href="/docs/reference/api/">API reference</a>.
 			</p>
 			<p>
@@ -64,9 +65,9 @@
 				On a detail route use SpatialElementPage with a SpatialElementData document and Section
 				children. Resolve required content in the route load function before navigation completes.
 				Optional models and backgrounds are prepared separately. Keep ordinary anchors for history,
-				keyboard and no-JS behavior. Current navigation recipes use <code
-					>/brand/categories/&#123;list,carousel,mixed&#125;</code
-				>
+				keyboard and no-JS behavior. Current navigation recipes use <code>
+					/brand/categories/&#123;list,carousel,mixed&#125;
+				</code>
 				and
 				<code>/brand/elements/id</code> routes. The host-specific <code>/brand/products/id</code> spelling
 				also remains supported; arbitrary route structures are not yet configurable. The demo uses /demo/...
@@ -89,8 +90,8 @@
 				responsibilities. Inspect apps/tests/src/lib/catalog.ts and its routes for a complete
 				working example.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'layout-headings-and-section-backgrounds',
@@ -98,7 +99,8 @@
 			headline: 'Layout, headings and section backgrounds',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Keep <code>section.title</code> as the short navigation and accessibility label. Set
 				<code>section.headline</code>
@@ -109,9 +111,9 @@
 				and <code>title</code>.
 			</p>
 			<p>
-				Sections are transparent by default. Choose <code
-					>background: &#123; color: 'standard' &#125;</code
-				>
+				Sections are transparent by default. Choose <code>
+					background: &#123; color: 'standard' &#125;
+				</code>
 				or
 				<code>&#123; color: 'muted' &#125;</code> for a solid section surface. The theme supplies
 				those two colors through
@@ -308,8 +310,9 @@
 				collection starts with the 3D view again. See
 				<a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/design/layout/media-and-input.md"
-					>media fields, examples and input boundaries</a
-				>.
+				>
+					media fields, examples and input boundaries
+				</a>.
 			</p>
 			<p>
 				Panel, minimap and model hover effects require a mouse pointer. Touch and stylus contact
@@ -325,12 +328,12 @@
 				placement and lifecycle behavior.
 			</p>
 			<p>
-				Keep native scrolling enabled on the page and avoid overriding the components' <code
-					>touch-action</code
-				> styles or cancelling their touch events in application-level handlers.
+				Keep native scrolling enabled on the page and avoid overriding the components' <code>
+					touch-action
+				</code> styles or cancelling their touch events in application-level handlers.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'navigation-and-live-summaries',
@@ -338,11 +341,12 @@
 			headline: 'Navigation and live summaries',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
-				The source-first transition described here currently requires <code
-					>?stagedNavigation=1</code
-				> on the source page. It is an experimental opt-in pending production performance acceptance;
+				The source-first transition described here currently requires <code>
+					?stagedNavigation=1
+				</code> on the source page. It is an experimental opt-in pending production performance acceptance;
 				ordinary transitions continue to handle navigation without that flag.
 			</p>
 			<p>
@@ -369,8 +373,8 @@
 				so card-to-detail navigation does not promise to transfer arbitrary card component state into
 				the detail summary.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'rendering-budget',
@@ -378,7 +382,8 @@
 			headline: 'Rendering budget',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				<code>BrandStageShell</code>, <code>Stage</code>, and the core <code>StageExperience</code>
 				accept <code>renderSettings</code>. WebGPU output defaults to a maximum pixel ratio of 1 and
@@ -392,6 +397,6 @@
 				These settings belong on the persistent stage; pass them at creation or when binding a new
 				page. Invalid or nonpositive values use the defaults.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

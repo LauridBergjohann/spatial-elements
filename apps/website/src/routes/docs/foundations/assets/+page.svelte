@@ -10,7 +10,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -31,20 +31,24 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Sources of truth: <a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/catalog/spatialElementAssets.ts"
-					>element assets</a
-				>,
+				>
+					element assets
+				</a>,
 				<a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/catalog/spatialElementLodPair.ts"
-					>LOD pairs</a
-				>,
+				>
+					LOD pairs
+				</a>,
 				<a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/catalog/assets/SpatialElementAssetManager.ts"
-					>asset manager</a
-				>.
+				>
+					asset manager
+				</a>.
 			</p>
 			<p>
 				Logical element identity is independent of its URL, LOD or number of visible occurrences. An
@@ -84,8 +88,8 @@
 				license. See <a href="/docs/sections/composition/">authoring</a> for consumer configuration
 				and the <a href="/assets/ATTRIBUTION.md">asset attribution</a> for the website's media.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'showcase-pipeline',
@@ -125,8 +129,9 @@
 				rendering also needs a browser with WebGPU. The committed outputs are sufficient to build
 				the website. The <a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/tooling/asset-pipeline/README.md"
-					>asset pipeline instructions</a
-				> describe the inputs, commands and quality checks. Inspect silhouettes, materials and Low/High
+				>
+					asset pipeline instructions
+				</a> describe the inputs, commands and quality checks. Inspect silhouettes, materials and Low/High
 				alignment alongside the generated resource reports before publishing a new model.
 			</p>
 		</div>

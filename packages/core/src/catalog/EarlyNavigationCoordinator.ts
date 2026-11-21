@@ -10,6 +10,7 @@ export type EarlyNavigationCancelReason =
 
 export type EarlyNavigationData =
 	| { type: 'loaded'; status: number }
+	| { type: 'error'; status: number }
 	| { type: 'redirect'; location: string };
 
 export interface EarlyNavigationAdapter {
@@ -79,7 +80,7 @@ export class EarlyNavigationCoordinator {
 				stopped
 			]);
 			if (data === CANCELLED || this.current !== owner) return;
-			if (!data || (data.type === 'loaded' && data.status >= 400)) {
+			if (!data || data.type === 'error' || (data.type === 'loaded' && data.status >= 400)) {
 				this.cancelVisual(owner, 'error');
 				await this.commit(owner, destination);
 				return;

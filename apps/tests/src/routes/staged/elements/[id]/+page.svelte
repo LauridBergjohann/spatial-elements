@@ -19,12 +19,12 @@
 				mounts.
 			</p>{/each}
 	</Section>
-	<Section section={{ id: 'more', title: 'More' }}
-		><div style="min-height:120vh">
+	<Section section={{ id: 'more', title: 'More' }}>
+		<div style="min-height:120vh">
 			<p>
 				Further document content keeps the reading anchor reachable without artificial navigation
 				offsets.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </SpatialElementPage>

@@ -20,8 +20,8 @@ function fixture() {
 		render: vi.fn()
 	};
 	const nodes = new NodeManager(renderer, renderer.backend), released = vi.fn();
-	const owners = new RenderObjects(renderer, nodes, {}, { delete: vi.fn() }, { deleteForRender: released }, {});
-	const context = { id: 1 }, lights = {};
+	const owners = new RenderObjects(renderer, nodes, { deleteVertexState: vi.fn() }, { delete: vi.fn() }, { deleteForRender: released }, {});
+	const context = { id: 1 }, lights = new THREE.EventDispatcher();
 	const seen: { model: THREE.Mesh; camera: THREE.Camera; fog: THREE.Fog | THREE.FogExp2 | null; owner: object }[] = [];
 	renderer.render.mockImplementation((input: THREE.Scene, view: THREE.Camera) => {
 		renderer.info.calls++;

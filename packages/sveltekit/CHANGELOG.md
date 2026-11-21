@@ -1,5 +1,164 @@
 # @spatial-elements/sveltekit
 
+## 1.0.0-beta.16
+
+### Major Changes
+
+- Require geometry.low and geometry.high on element data instead of glb and optional lodPair. Normalize identical URLs to shared cached resources and support URL-only geometry without generated bounds. Require ContentPage.hdr and SpatialListPage.hdr explicitly instead of inferring category lighting from the first element. Update examples, tests and migration documentation.
+- Simplify authoring around flat SpatialElementData and shared SpatialTheme. Remove SpatialStageConfig and BrandStageShell stage/catalog props, register page-owned data automatically, project list assets without includeStage, and provide createSpatialTheme plus optional content defaults. See docs/configuration-migration.md and docs/getting-started.md before upgrading.
+
+### Minor Changes
+
+- Add a themed detail/fullscreen view switch beside 3D help, with localized tooltips and a viewport fallback when the Fullscreen API is unavailable or denied. Fullscreen preserves camera navigation and SpaceMouse, keeps the expanded live minimap and help, and accepts mouse/touch input across the canvas without model picking or hover glow.
+
+  Match the controls' corner radii, restore the fitted view from the detail button and fade its selection with zoom. Project and clip the minimap viewport at its actual size around the shared model center, keeping it stable during orbit. Align the demo header with the brand layouts and keep breadcrumbs visible.
+
+- Add subtle, screen-orientation-aware device motion to list cards, detail geometry, minimaps and the carousel. ListSection and CarouselSection enable the effect automatically without a configuration prop; detail geometry and minimaps can opt in at the stage. Activate supported sensors automatically, request permission on navigation when required, and respect reduced motion. Keep carousel controls stationary, preserve mouse proximity rotation, and give the selected geometry stronger rotation than the shared background perspective.
+
+  Pause sensor processing and animation throughout touch gestures and scrolling, then recalibrate to the new device pose and ease back in without jumps. Stabilize mobile rendering when the browser address bar resizes the viewport and keep visible headers continuous during category-to-detail transitions.
+
+- Adopt Page Sections 0.4.1 with composable page headings and shared sidebar navigation. Support nested collection/detail route namespaces. Allow a complete navigation snippet inside BrandStageShell, preserve native input on ordinary Page Sections, and align carousel heading measurements with the shared heading markup. Add a public documentation and showcase website, separate minimal demo and test applications, and a single-PR release workflow. Documentation and package READMEs now point to spatial-elements.bergjohann.com.
+- Improve progressive enhancement with a native horizontal scroll-snap carousel fallback. Add a shared spatial turntable with geometry-shaped shadows, pointer response, navigation arrows and contextual cursor hints. Coordinate mouse, touch and trackpad momentum with smooth product selection while preserving text selection and vertical page scrolling.
+
+  Unify carousel and detail summaries and stabilize their transitions, including panel backgrounds, moving hover effects and zoomed model handoff. Keep visible headers continuous across navigation and prevent duplicate fallback geometry when returning from a zoomed detail view.
+
+- Add unobtrusive, session-aware 3D interaction guidance with a 40px themed icon button, anchored help, a touch hint and a finite introductory mouse orbit. Add host-supplied interface messages with per-string English fallbacks and document translation/accessibility behavior. Panels support a lift-only hover response and controls that remain available during model close-up.
+- Refine interaction help with recurring hover prompts until actual model interaction, delayed hover dismissal, a synchronized close-up corner position and submenu-style button highlighting. Render native help popovers with the actual themed panel surface, including WebGPU glass, and reduce the panel pointer approach range.
+- Introduce a shared responsive layout contract for content grids, square S/M/L cards,
+  carousel summaries, detail media, docking and the document-scrolled 3XL detail pane.
+  The same numeric layout resolves DOM and 3D targets. Add explicit ContentGrid and
+  ContentBlock authoring, section background roles, separate control/panel radii, a
+  persistent navigation shell, media selection and persistent custom summary content.
+
+  Prepared catalog sources can begin their forward transition using numeric destination
+  anchors before the detail route mounts. The original model and live panel remain visible
+  through loading and binding; custom summary state survives the handoff. Known compact
+  destinations can declare `targetPresentation: 'dock'`. Unsupported or unprepared links
+  retain the ordinary navigation path, including native history and focus policies.
+  The source-first path currently requires `?stagedNavigation=1` while its production
+  performance acceptance is evaluated.
+
+  Layout migration is required for applications that rely on the former automatic
+  section headlines, default translucent section backgrounds, auto-fill card widths,
+  fixed summary heights or private component selectors. Supply `headline` separately
+  from the navigation `title`, select section backgrounds explicitly and replace
+  structural overrides with grid spans. Existing explicitly authored legacy section
+  styles and theme radii keep their documented compatibility behavior.
+
+  Detail media selection always starts with the 3D item, including an empty authored
+  `media` array. Selecting an image or video hides the 3D background; history return
+  starts with 3D again. Legacy `drawing` entries remain type-compatible but display the
+  documented unavailable state until replaced with a supported image or video source.
+  Custom exhaustive media handlers must also cover the new `video` and `youtube` variants.
+
+  See `docs/layout-migration.md` and the illustrated Markdown guides in `docs/wiki/`
+  for the layout rules, design reasons, accessibility behavior and migration examples.
+
+- Support reactive runtime themes, optional HDR backdrop overrides and resolved color schemes without resetting element interaction. Export a reusable controlled ButtonGroup and use it for the detail/fullscreen switch. Add shell-owned light, dark and system examples with session preference persistence.
+- Adopt Page Sections 0.3.0 for common layout, section backgrounds and registries, page composition, cards and responsive navigation. Spatial adapters retain GPU endpoints, persistent card roots, carousel interaction, docking and virtual scrolling.
+
+  Cards use configurable media frames with independent equal-height text areas. SpatialCardGridSection (formerly ListSection) and SpatialListPage accept cardSize, cardVariant, cardTone, mediaAspect, mediaFit, textAlign and editorial itemSpan. SpatialCarouselSection (formerly CarouselSection) keeps rear models above opaque section backgrounds and clips rendering and interaction to the configured surface. The old component names remain deprecated aliases. BrandStageShell accepts brand, items and tools; small layouts expose satellites through Settings. See docs/page-sections-migration.md for changed geometry and private selectors.
+
+- Update the supported Three.js peer to ^0.186.1. Applications must upgrade their shared
+  Three.js installation; TypeScript consumers should use @types/three 0.186.0.
+- Adopt Page Sections 0.5.0, Three.js 0.187, SvelteKit 3 and current compatible tooling. Use the maintained @lucide/svelte package. SvelteKit consumers require Node.js 22.17 or newer; repository tooling uses Node.js 24.
+
+  Unify spatial cards with Page Sections: replace cardVariant with cardShadow, display supplied descriptions, and preserve responsive card-size allocation unless itemSpan is explicitly supplied. Stretch card placements to equal heights and register the native inner link for keyboard focus, full-card navigation and focus restoration. Keep text and media endpoints separate for 3D transitions. Handle SvelteKit 3 preload errors and shallow navigation hooks without starting spatial route transitions.
+
+  Preserve back/forward transitions for history entries carrying shallow metadata. Keep catalog fade captures in the linear working color space and serialize hidden minimap shader preparation for Three.js 0.187.
+
+### Patch Changes
+
+- Fit carousel visibility and preparation to the actual viewport instead of a fixed five-seat window. Space neighbouring models using their display envelope, maintain ordering on wide screens, and share visibility between GPU models, posters and hit targets. Scope detail framing styles to the hero so preloading a detail route cannot enlarge carousel geometry.
+
+  Keep compact side previews in the model area as they recede, clear of the summary below.
+
+  Give transition playback its own bounded safety window after route and shader preparation, preventing slow preparation from cancelling the first animation frames.
+
+- Keep the detail help button beside the projected summary edge during zoom, with the same final viewport inset as the minimap. Restore the authored refractive glass edge when an initially hidden popup opens. Display compact, theme-accented mouse/touch diagrams beside localized action labels while preserving complete screen-reader instructions.
+- Clarify automatic Three.js peer installation and automate coordinated npm releases through GitHub Flow.
+- Reuse the detail silhouette glow for hovered carousel models, allow the selected model to open its detail with drag-safe native navigation, and strengthen card hover depth and accent outlines. Share a bounded outline target and cache stationary masks to retain demand-driven rendering.
+- Keep catalog cards equally tall with a single-line eyebrow and a reserved two-line title, both ellipsized when necessary. Preserve clipping and the hovered perspective while crossfading into full detail text and back. Add mouse and keyboard text depth to cards and remove pointer-driven motion from detail summary panels.
+- Show cancellable SpaceMouse search feedback and remember explicit disconnection across visits. Fade header actions and matched custom fields in only when their summary counterparts are fully covered, using projected screen bounds in both scrolling and 3XL layouts.
+- Decouple 3XL viewer zoom from document scrolling and switch wheel ownership immediately between its separate regions. In stacked layouts, retain scroll/zoom gestures for 380ms, including zoom-out over empty canvas. Correct cursor anchoring so moving the wheel focus no longer drags the model or leaves a stale anchor.
+
+  Add animated click/tap enlargement to the UI-clearance endpoint and a centered return from any zoom. Exclude drags, long presses and multi-touch gestures. Move stacked content sections down during zoom, with lightweight blur on nearby sections and breadcrumbs.
+
+  Let carousel models overflow inset and transparent section boundaries while respecting full-width backgrounds. Cap inset L sections at 1536px with rounded outer corners and aligned submenus. Zoom retains wheel ownership outside the model from the start of panel clearance; shallow zoom releases it immediately. Outward wheel zoom returns to the fitted stage center independently of pointer position.
+
+  Synchronize section movement with the submenu, preserve its 12px viewport inset, and anchor the 3XL pane to the corner controls. Center click enlargement in the entire viewport and let a new click interrupt wheel zoom immediately.
+
+  Keep click-to-reset authoritative over residual wheel events and delayed scroll notifications. Reduce repeated responsive-layout calculations and DOM writes in detail and catalog animation frames, reuse render/zoom scratch state, and compare held scene captures numerically without changing rendering quality, motion curves or SpaceMouse connection behavior.
+
+  Restore two-finger touch panning at a fixed zoom and while pinching in or out. Keep the grabbed point under the moving touch midpoint through scroll reveal and zoom damping, and release it when returning to one-finger rotation. Preserve mouse zoom-out recentering.
+
+  Let empty-stage wheel zoom start as soon as panels begin fading, retaining the gesture through the return to the overview until a 380ms pause. Keep shallow zoom, visible HTML controls and the separate 3XL content region independently scrollable.
+
+- Fix responsive catalog return transitions, preserve live summary panel state and typography, and allow native touch scrolling over detail panels and media rails. Keep docked geometry visible at the viewport edge, contain wide models within the stage focus area, and ease the 3XL content pane away during zoom. Align detail controls and breadcrumbs with the shared layout contract.
+
+  Load individual icons instead of the icon barrel to reduce development startup work. The repository now provides separate Basics and Showcase applications, with independent development, build and preview commands and a persistent light/dark Showcase navigation shell.
+
+  Place help before SpaceMouse in the detail controls, refine the detail/fullscreen icon strokes, and round only the inward-facing corners of media rail and submenu scroll buttons. Use consistent 8px Industrial theme radii and refresh the logo across the website, demo and package documentation.
+
+- Unify 3XL reading-pane surfaces with theme blur and at least 80% opacity. Join compact summaries to their sections with square lower corners, including glass panels. Release hidden content from interaction during zoom and fade geometry outlines with the interface.
+
+  Keep wheel scrolling and model zoom in separate 800ms gestures, route pinch across detail media and summary content to the model, and progressively reveal the page top while zooming. Suppress browser pinch magnification throughout the shell while retaining keyboard/browser-menu zoom.
+
+  Hover outlines follow the live device-orientation transform. Zoom reveals the page from the first inward movement and preserves the cursor or pinch anchor across scroll-dependent projection changes. Touch pinch uses one damped dolly path without duplicate OrbitControls pan or zoom.
+
+  Keep High-resolution outline sources attached to the live sensor-driven model after refinement, handoff and theme changes. Couple page reveal and interface clearance to one reversible timeline when zoom starts from a scrolled position.
+
+  Render the 3XL reading-pane backdrop blur outside the scrolling clip so it actually softens the 3D stage behind all content surfaces. Preserve section colors and at least 80% background opacity without stacking translucent backgrounds.
+
+- Keep detail docking and minimap rendering continuous across scrolling and viewport changes. Preserve device tilt when photographs are selected, retain native rotation and screen-space panning sensitivity at every zoom level, and support two-axis trackpad panning only after panels fully clear, in fullscreen, or over the separate 3XL stage, including its empty background. Use gesture direction instead of learned device classification: a clearly horizontal start enables two-axis panning for that gesture in an eligible stage, vertical starts retain ordinary scroll/zoom, and pinch always zooms. Keep gesture ownership stable and preserve mouse and touch navigation. Prevent viewport refits from triggering page reveal and keep section layout stable during scrollspy updates. Use a reversible minimap dock boundary, feather departing content beneath the scroll header, conceal breadcrumbs beneath glass navigation, and distinguish wheel inertia from fresh input when handing off between scroll and zoom.
+- Connect to the local SpaceMouse driver only after explicit activation in the 3D controls help. Cancel pending connections when disabled or disposed, avoiding local-device permission prompts during ordinary detail navigation. Restore keyboard focus after the help panel becomes visible. Enable device orientation for both detail geometry and minimaps on the website.
+
+  Restore carousel backdrop blur by clipping overflow without creating a backdrop root. Respect the theme's full tint opacity range and solid surface setting, and keep summary fades from isolating the backdrop. Add browser regressions for sensor motion, explicit driver access and the rendered frosted surface.
+
+- Keep stable event targets when cleaning up detail help, carousel and minimap listeners on client-side navigation. This lets cleanup finish even when Svelte has already cleared child element bindings. Skip deferred help focus when its component has already closed or unmounted.
+- Show native full-title tooltips only on truncated cards. Fit models to the rectangular card area and increase text and model depth on hover. Update carousel indicators during dragging, animate distant dot selections, and soften models by distance and panels as they fade. Reuse bounded defocus buffers and a single rear capture for glass compositing while retaining on-demand rendering.
+- Render carousels as native horizontal scroll-snap rails before WebGPU is ready, keeping their intrinsic dimensions and selected summary position during enhancement. Preserve fallback selections and native detail links, fade posters into prepared GPU output, and align initial document and theme styles. Carousel hover and keyboard focus now smoothly remove model defocus and expose the complete element identity through a tooltip.
+- Start catalog navigation sooner by deferring future scroll-quality and close-up shader warmups until after the transition. Avoid unnecessary layout reads for resting corner controls and batch computed-style snapshots without dropping authored styles.
+
+  Show immediate, persistent navigation feedback before transition preparation. Keep it visible across route binding, remove it when motion begins, and clean it up on cancellation, superseding navigation or device loss. Preserve transition timing, reduced-motion behavior and semantic fallback navigation.
+
+- Keep detail summary panels sticky only within their hero section, synchronizing their surface and content clipping during scroll. Size summaries from their content so long titles, wrapped features and late font changes remain inside the panel. Prevent fullscreen corner controls from pinning summary panels during ordinary page scrolling.
+- Keep native help content and its glass surface aligned in every zoom frame. Move the help control closer to the summary and keep its corner inset clear of classic scrollbars.
+- Improve touch interaction across collection and detail pages. Carousel model areas coordinate horizontal rotation and vertical page scrolling in the same gesture, with direction changes and damped momentum on both axes. Scrolling outside model areas and two-finger page zoom remain native. Model rotation and pinch gestures release ownership correctly so the next gesture works immediately and background scrolling remains available. Restrict hover effects to mouse input, avoid touch hover raycasts, and coalesce animated rendering with shared scroll updates.
+- Synchronize the summary panel and help control along a shared close-up path, completing control travel and minimap expansion when the panels finish fading. Add a host-localizable mouse navigation hint with a SpaceMouse link beneath the gesture diagrams.
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @spatial-elements/core@1.0.0-beta.16
+
 ## 1.0.0-beta.15
 
 ### Patch Changes

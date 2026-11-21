@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { BrandStageShell, type SpatialSummaryContext } from '@spatial-elements/sveltekit';
-	import { theme } from '$lib/catalog';
-	import Harness from '$lib/presentation-transfer-proof/Harness.svelte';
-	import LiveSummary from '$lib/presentation-transfer-proof/LiveSummary.svelte';
+	import { theme } from '#lib/catalog.ts';
+	import Harness from '#lib/presentation-transfer-proof/Harness.svelte';
+	import LiveSummary from '#lib/presentation-transfer-proof/LiveSummary.svelte';
 	import type { LayoutProps } from './$types';
 	let { children }: LayoutProps = $props();
 </script>

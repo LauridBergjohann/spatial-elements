@@ -6,7 +6,7 @@ async function readySource(page: import('@playwright/test').Page, view = 'carous
 	await page.goto(`/staged/categories/${view}?stage-test=1&stagedNavigation=1`);
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
 	await expect.poll(() => page.evaluate(() => window.__stageVisualTest?.getCarouselStats()?.actors.some(actor => actor.spatialElementId === 'column' && actor.stagedReady) ?? false)).toBe(true);
-	return view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first()
+	return view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first().locator('a.primary-link')
 		: page.locator('[data-carousel-item="column"] .spatial-element-target');
 }
 
@@ -87,7 +87,7 @@ for (const width of [430, 1440, 2456]) for (const view of ['list', 'carousel'] a
 		});
 		await page.goto(`/demo/categories/${view}?stage-test=1&stagedNavigation=1`);
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
-		const link = view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first()
+		const link = view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first().locator('a.primary-link')
 			: page.locator('[data-carousel-item="column"] .spatial-element-target');
 		await expect(page.locator('[data-catalog-model-ready]').first()).toBeAttached();
 		await link.hover();
@@ -304,7 +304,7 @@ for (const width of [430, 1440, 2456]) for (const view of ['list', 'carousel'] a
 		page.on('pageerror', error => errors.push(error.message));
 		await page.goto(`/staged/categories/${view}?stage-test=1&stagedNavigation=1`);
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
-		const link = view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first()
+		const link = view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first().locator('a.primary-link')
 			: page.locator('[data-carousel-item="column"] .spatial-element-target');
 		if (view === 'carousel') {
 			const field = page.locator('[data-carousel-item="column"] textarea');

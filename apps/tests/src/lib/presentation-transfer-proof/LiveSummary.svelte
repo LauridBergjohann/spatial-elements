@@ -18,8 +18,10 @@
 	<div data-transfer-fields>
 		<label>Retained note<input bind:value={note} /></label><button
 			type="button"
-			onclick={() => count++}>Add retained quantity</button
+			onclick={() => count++}
 		>
+			Add retained quantity
+		</button>
 	</div>
 	<output data-transfer-state>{note || 'Empty'}: {count}</output>
 </section>

@@ -58,6 +58,8 @@ export interface SpatialListItem extends Partial<
 	eyebrow: string;
 	/** Visible card title. */
 	title: string;
+	/** Optional description shown below the card title. */
+	description?: string;
 	/** Plain-text feature labels for compact card presentation. */
 	features: string[];
 }
@@ -218,6 +220,8 @@ export interface SpatialElementData {
 	eyebrow?: string;
 	/** Visible element name. */
 	title: string;
+	/** Optional description used by the category card. */
+	description?: string;
 	/** Summary bullets. Defaults to an empty list. */
 	features?: SpatialElementFeature[];
 	/** Optional primary action; omitted actions render no button. */

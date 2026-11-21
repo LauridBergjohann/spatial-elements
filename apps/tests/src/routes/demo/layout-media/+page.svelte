@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Section, SpatialElementPage } from '@spatial-elements/sveltekit';
-	import { spatialElements } from '$lib/catalog';
+	import { spatialElements } from '#lib/catalog.ts';
 	const element = {
 		...spatialElements[0],
 		media: [

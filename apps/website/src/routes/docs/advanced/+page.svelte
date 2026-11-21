@@ -1,5 +1,5 @@
 <script lang="ts">
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -19,6 +19,8 @@
 			title: 'In this chapter',
 			headline: 'In this chapter',
 			background: { color: 'standard', size: 'standard' }
-		}}><p>Follow the topics below in order, or choose the part you need.</p></Section
+		}}
 	>
+		<p>Follow the topics below in order, or choose the part you need.</p>
+	</Section>
 </WebsitePage>

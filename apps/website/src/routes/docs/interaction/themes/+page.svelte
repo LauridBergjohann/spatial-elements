@@ -14,7 +14,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -35,14 +35,15 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				The host application owns theme preference, system detection, persistence and the switch UI.
 				Spatial Elements accepts a resolved theme and updates its DOM, panels, minimap, hover
 				outline and HDR backdrop without resetting the model, camera, zoom or fullscreen state.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'define-two-palettes',
@@ -50,7 +51,8 @@
 			headline: 'Define two palettes',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Create a complete <code>SpatialTheme</code> for each palette, keeping the same
 				<code>id</code>
@@ -89,8 +91,8 @@
 				building custom controls; it supports older themes with no <code>radii</code> group. Content insets
 				remain separate from radius values.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'supply-the-resolved-theme',
@@ -98,7 +100,8 @@
 			headline: 'Supply the resolved theme',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<CodeBlock
 				code={examples[1].code}
 				language={examples[1].language}
@@ -115,8 +118,9 @@
 			<p>
 				The <a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/apps/website/README.md"
-					>Showcase</a
 				>
+					Showcase
+				</a>
 				provides <strong>Light / Dark</strong> in its right satellite (inside the menu on small
 				screens). It renders a light fallback and restores an explicit choice from local storage
 				after hydration. Blocked storage remains usable. The three-state theme demo remains an
@@ -130,8 +134,8 @@
 				the theme by route while keeping its namespace ID, menu content and breadcrumb hierarchy. Leaving
 				Exclusive restores the standard theme.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'reuse-buttongroup',
@@ -139,7 +143,8 @@
 			headline: 'Reuse ButtonGroup',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				<code>ButtonGroup</code> is a controlled, theme-independent choice component inside a
 				<code>Stage</code>
@@ -157,11 +162,11 @@
 				<tbody>
 					<tr>
 						<td><code>items</code></td>
-						<td
-							>Readonly array of <code
-								>&#123; value, label, tooltip?, disabled?, selection? &#125;</code
-							>. Values must be unique.</td
-						>
+						<td>
+							Readonly array of <code>
+								&#123; value, label, tooltip?, disabled?, selection? &#125;
+							</code>. Values must be unique.
+						</td>
 					</tr>
 					<tr>
 						<td><code>value</code></td>
@@ -177,10 +182,10 @@
 					</tr>
 					<tr>
 						<td><code>content</code></td>
-						<td
-							>Optional <code>Snippet&lt;[ButtonGroupItem]&gt;</code> for icons or custom content. Otherwise
-							displays the label.</td
-						>
+						<td>
+							Optional <code>Snippet&lt;[ButtonGroupItem]&gt;</code> for icons or custom content. Otherwise
+							displays the label.
+						</td>
 					</tr>
 					<tr>
 						<td><code>iconOnly</code></td>
@@ -188,43 +193,43 @@
 					</tr>
 					<tr>
 						<td><code>shape</code>, <code>theme</code></td>
-						<td
-							>Same appearance contract as Panel. Finite radius values are clamped only at zero;
+						<td>
+							Same appearance contract as Panel. Finite radius values are clamped only at zero;
 							nonfinite values use 12px. Content inset is zero. Pass the resolved theme control
-							radius for theme-aware controls.</td
-						>
+							radius for theme-aware controls.
+						</td>
 					</tr>
 					<tr>
 						<td><code>disabled</code>, <code>visible</code></td>
 						<td>Disable the group or temporarily hide its contents.</td>
 					</tr>
 					<tr>
-						<td
-							><code>focusReactive</code>, <code>focusAnchor</code>,
-							<code>transitionGroup</code></td
-						>
+						<td>
+							<code>focusReactive</code>, <code>focusAnchor</code>,
+							<code>transitionGroup</code>
+						</td>
 						<td>Optional integration with stage focus and transitions.</td>
 					</tr>
 				</tbody>
 			</table>
 			<p>
-				Each label also provides its default tooltip; the host supplies the language. Buttons expose <code
-					>aria-pressed</code
-				>, native keyboard activation and focus outlines. The optional <code>selection</code> strength
+				Each label also provides its default tooltip; the host supplies the language. Buttons expose <code>
+					aria-pressed
+				</code>, native keyboard activation and focus outlines. The optional <code>selection</code> strength
 				fades the selected background and icon/text color independently of semantic selection, as used
 				by the detail button while zooming. The component does not store state or know about themes or
 				languages.
 			</p>
 			<p>
-				Custom core integrations can call <code
-					>StageExperience.updateAppearance(&#123; pageBackground, background, interactionTheme,
-					panels &#125;)</code
-				>
+				Custom core integrations can call <code>
+					StageExperience.updateAppearance(&#123; pageBackground, background, interactionTheme,
+					panels &#125;)
+				</code>
 				with the complete current appearance snapshot. <code>panels</code> matches existing registrations
 				by frame element; navigation still owns registration and page binding. Ordinary color changes
 				preserve the scene captures; changed panel materials or blur settings replace only their affected
 				presentation resources.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

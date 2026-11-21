@@ -10,7 +10,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -31,7 +31,8 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Every detail page starts with one 3D entry. Add image, native video or YouTube entries with
 				unique IDs:
@@ -68,8 +69,8 @@
 				Video previews gently zoom and enlarge their play symbol. These movements respect
 				reduced-motion preferences.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'a-shared-fit-separate-media-lifetimes',
@@ -77,7 +78,8 @@
 			headline: 'A shared fit, separate media lifetimes',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Images and videos preserve proportions in the model's same fit rectangle. Selecting them
 				hides the main scene and releases its interaction/sensor participation. Loaded model
@@ -94,8 +96,8 @@
 				model asset identity or route history. The rail reveals the selected item by adjusting its
 				own local scroll position, without scrolling the document.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'gesture-ownership',
@@ -103,13 +105,13 @@
 			headline: 'Gesture ownership',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p><img src="/documentation/images/input-zones.png" alt="" loading="lazy" /></p>
 			<p>
-				<em
-					>White UI controls retain their own input. A gesture keeps its initial owner until
-					release.</em
-				>
+				<em>
+					White UI controls retain their own input. A gesture keeps its initial owner until release.
+				</em>
 			</p>
 			<table>
 				<thead>
@@ -146,8 +148,8 @@
 				boundary. Menu, rail, pane and real player controls always take priority over model
 				interaction.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'device-orientation',
@@ -155,7 +157,8 @@
 			headline: 'Device orientation',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				SpatialCardGridSection and SpatialCarouselSection enable device orientation automatically;
 				they have no <code>deviceOrientation</code> prop. Set <code>deviceOrientation</code> on BrandStageShell
@@ -180,6 +183,6 @@
 				teardown, failure states and hidden-scene rendering. Its YouTube test uses a controlled iframe
 				fixture; it does not claim validation of the remote service.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

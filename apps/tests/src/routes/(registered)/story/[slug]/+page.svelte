@@ -5,8 +5,8 @@
 </script>
 
 <SpatialElementPage spatialElement={data.element}>
-	<Section section={{ id: 'features', title: 'Features', headline: 'Details' }}
-		><p>Route-independent detail.</p>
-		<a href="/curated">Collection</a></Section
-	>
+	<Section section={{ id: 'features', title: 'Features', headline: 'Details' }}>
+		<p>Route-independent detail.</p>
+		<a href="/curated">Collection</a>
+	</Section>
 </SpatialElementPage>

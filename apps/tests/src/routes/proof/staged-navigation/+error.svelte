@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
-	import { trace } from '$lib/staged-navigation-proof/telemetry';
+	import { trace } from '#lib/staged-navigation-proof/telemetry.ts';
 	trace('page-constructor', { slug: 'failure' });
 	onMount(() => trace('page-mounted', { slug: 'failure', href: location.href }));
 </script>

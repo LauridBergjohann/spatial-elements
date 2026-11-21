@@ -3,7 +3,7 @@
 	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import { getPanelFocusOpacity } from '@spatial-elements/core/stage/panelFocusMath';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
-	import Play from 'lucide-svelte/icons/play';
+	import Play from '@lucide/svelte/icons/play';
 	import OverflowControls from './OverflowControls.svelte';
 	import SpatialMediaIndicator from './SpatialMediaIndicator.svelte';
 	import { STAGE_PANEL_LAYOUT_EVENT, STAGE_PANEL_VISUAL_EVENT } from '@spatial-elements/core/stage/panelContext';

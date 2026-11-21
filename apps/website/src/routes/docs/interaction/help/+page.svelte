@@ -2,7 +2,7 @@
 	export const examples: Array<{ language: string; code: string }> = [
 		{
 			language: 'svelte',
-			code: "\u003cscript lang=\"ts\">\n  import { BrandStageShell, type SpatialMessagesInput } from '@spatial-elements/sveltekit';\n  import { theme } from '$lib/theme';\n\n  let { children } = $props();\n  const messages = {\n    controls: {\n      help: '3D-Steuerung',\n      closeHelp: 'Hilfe schließen',\n      detailView: 'Detailansicht',\n      fullscreen: 'Vollbild'\n    },\n    interactionHelp: {\n      title: 'In 3D erkunden',\n      rotate: 'Drehen',\n      zoom: 'Zoomen',\n      pan: 'Verschieben',\n      mouseRotate: 'Mit gedrückter linker Maustaste ziehen',\n      mouseZoom: 'Mausrad bewegen',\n      mousePan: 'Mit gedrückter rechter Maustaste ziehen',\n      mouseNavigationHint: 'Nutzen Sie alternativ eine {spacemouse} zur Navigation.',\n      touchRotate: 'Mit einem Finger ziehen',\n      touchZoom: 'Zwei Finger auseinander- oder zusammenziehen',\n      touchPan: 'Zwei Finger gemeinsam bewegen',\n      touchHint: '3D · Mit einem Finger drehen',\n      touchScrollHint: 'Außerhalb des Modells berühren, um die Seite zu scrollen.'\n    }\n  } satisfies SpatialMessagesInput;\n\u003c/script>\n\n\u003cBrandStageShell {theme} {messages}>\n  {@render children?.()}\n\u003c/BrandStageShell>\n"
+			code: "\u003cscript lang=\"ts\">\n  import { BrandStageShell, type SpatialMessagesInput } from '@spatial-elements/sveltekit';\n  import { theme } from '#lib/theme.ts';\n\n  let { children } = $props();\n  const messages = {\n    controls: {\n      help: '3D-Steuerung',\n      closeHelp: 'Hilfe schließen',\n      detailView: 'Detailansicht',\n      fullscreen: 'Vollbild'\n    },\n    interactionHelp: {\n      title: 'In 3D erkunden',\n      rotate: 'Drehen',\n      zoom: 'Zoomen',\n      pan: 'Verschieben',\n      mouseRotate: 'Mit gedrückter linker Maustaste ziehen',\n      mouseZoom: 'Mausrad bewegen',\n      mousePan: 'Mit gedrückter rechter Maustaste ziehen',\n      mouseNavigationHint: 'Nutzen Sie alternativ eine {spacemouse} zur Navigation.',\n      touchRotate: 'Mit einem Finger ziehen',\n      touchZoom: 'Zwei Finger auseinander- oder zusammenziehen',\n      touchPan: 'Zwei Finger gemeinsam bewegen',\n      touchHint: '3D · Mit einem Finger drehen',\n      touchScrollHint: 'Außerhalb des Modells berühren, um die Seite zu scrollen.'\n    }\n  } satisfies SpatialMessagesInput;\n\u003c/script>\n\n\u003cBrandStageShell {theme} {messages}>\n  {@render children?.()}\n\u003c/BrandStageShell>\n"
 		}
 	];
 </script>
@@ -10,7 +10,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -31,7 +31,8 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Spatial Elements supplies English interface copy. The host application owns the locale,
 				translations and language switching. Pass a <code>messages</code> object to the persistent
@@ -65,8 +66,8 @@
 				added keys. <code>resolveSpatialMessages(input)</code> returns an independent, complete dictionary.
 				Defaults are immutable.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'available-strings',
@@ -74,7 +75,8 @@
 			headline: 'Available strings',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -182,9 +184,9 @@
 				Android tablets can report that identity in desktop mode. Windows touch devices remain
 				supported. This is a platform hint, not hardware detection. Click it to connect immediately;
 				Chrome may ask for access to apps and services on this device. A successful connection
-				highlights the icon, changes its tooltip to <strong
-					>spacemouse is connected, click to disconnect</strong
-				>
+				highlights the icon, changes its tooltip to <strong>
+					spacemouse is connected, click to disconnect
+				</strong>
 				and briefly shows a confirmation. Click again to disconnect, or once more to reconnect. While
 				searching, the icon pulses and its tooltip offers cancellation. Click again to cancel the pending
 				search; a brief toast confirms it. Reduced motion uses a static busy indicator.
@@ -225,8 +227,8 @@
 				position because the model remains visible beside the content. Leaving the detail viewer
 				releases the driver connection.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'detail-page-view-switch',
@@ -234,7 +236,8 @@
 			headline: 'Detail-page view switch',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Enhanced detail pages start in <strong>Detail view</strong>. A two-button group switches
 				between the page and <strong>Fullscreen</strong>; the help button sits 8px to its left. The
@@ -262,8 +265,8 @@
 				is active. These controls require the enhanced 3D renderer; missing fullscreen support alone never
 				hides the switch.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'detail-page-interaction-help',
@@ -271,7 +274,8 @@
 			headline: 'Detail-page interaction help',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Enhanced detail pages include a 40 × 40 CSS-pixel help button and an 80 × 40 view switch at
 				the upper right of the model area, next to the summary panel on desktop. The switch's gap to
@@ -286,9 +290,9 @@
 				the controls travel directly from the model column to the corner while the summary below
 				follows its ordinary exit path. They use the theme's panel surface, tint, blur, shadow and
 				ink color. Mouse hover uses the same 8% body-color highlight as the section submenu, without
-				movement or tilt. The help button's accessible name and native tooltip come from <code
-					>controls.help</code
-				>; the button contains no visible text.
+				movement or tilt. The help button's accessible name and native tooltip come from <code>
+					controls.help
+				</code>; the button contains no visible text.
 			</p>
 			<p>
 				The non-modal help opens next to this button, stays within the viewport and adapts the
@@ -326,8 +330,8 @@
 				motion and the button's color transition. Touch uses direct manipulation; no orientation
 				sensor permission or idle animation is required.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'related-panel-options',
@@ -335,7 +339,8 @@
 			headline: 'Related panel options',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				<code>Panel</code> accepts <code>pointerReactive=&#123;true&#125;</code> for proximity lift
 				and tilt, <code>&quot;lift&quot;</code> for a 2px mouse-only lift, or <code>false</code> for
@@ -364,6 +369,6 @@
 				Visibility changes and resize observation update its surface automatically. The built-in help
 				uses this internally; hosts do not need to construct either control.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

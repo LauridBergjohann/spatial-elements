@@ -1,21 +1,21 @@
 <script lang="ts">
 	import { onMount, type Snippet } from 'svelte';
 	import { page } from '$app/state';
-	import { base } from '$app/paths';
+	import { resolve, asset } from '$app/paths';
 	import { BrandStageShell } from '@spatial-elements/sveltekit';
-	import ShowcaseSummary from '$lib/showcase/ShowcaseSummary.svelte';
-	import { provideShowcaseOrders } from '$lib/showcase/showcaseOrders.svelte';
+	import ShowcaseSummary from '#lib/showcase/ShowcaseSummary.svelte';
+	import { provideShowcaseOrders } from '#lib/showcase/showcaseOrders.svelte.ts';
 	const orders = provideShowcaseOrders();
-	import { websiteTheme } from '$lib/theme';
-	import { Navigation, PageShell } from '@page-sections/svelte';
-	import Menu from 'lucide-svelte/icons/menu';
-	import Settings from 'lucide-svelte/icons/settings';
-	import Sun from 'lucide-svelte/icons/sun';
-	import Moon from 'lucide-svelte/icons/moon';
-	import Github from '$lib/GitHubMark.svelte';
-	import SiteSearch from '$lib/SiteSearch.svelte';
-	import NavigationIcon from '$lib/NavigationIcon.svelte';
-	import { navigationTree } from '$lib/navigation';
+	import { websiteTheme } from '#lib/theme.ts';
+	import { Header, PageShell } from '@page-sections/svelte';
+	import Menu from '@lucide/svelte/icons/menu';
+	import Settings from '@lucide/svelte/icons/settings';
+	import Sun from '@lucide/svelte/icons/sun';
+	import Moon from '@lucide/svelte/icons/moon';
+	import Github from '#lib/GitHubMark.svelte';
+	import SiteSearch from '#lib/SiteSearch.svelte';
+	import NavigationIcon from '#lib/NavigationIcon.svelte';
+	import { getNavigationTree } from '#lib/navigation.ts';
 	import { resolveNavigation } from '@page-sections/core';
 	import { version } from '../../../../packages/sveltekit/package.json';
 	import '../app.css';
@@ -53,7 +53,9 @@
 	);
 	// Both Exclusive palettes have dark surfaces, including its brighter variant.
 	const surfaceScheme = $derived(exclusive ? 'dark' : mode);
-	const items = $derived(resolveNavigation(navigationTree, { pathname: page.url.pathname }).items);
+	const items = $derived(
+		resolveNavigation(getNavigationTree(page.url), { pathname: page.url.pathname }).items
+	);
 </script>
 
 <svelte:head>
@@ -63,13 +65,13 @@
 </svelte:head>
 
 {#snippet siteNavigation()}
-	<header class="website-header">
-		<Navigation {items} closeKey={page.url.pathname}>
+	<div class="website-header">
+		<Header {items} closeKey={page.url.pathname}>
 			{#snippet itemIcon(item)}<NavigationIcon name={item.icon} />{/snippet}
 			{#snippet brand()}
 				<a class="skip-link" href="#main-content">Skip to content</a>
-				<a class="site-brand" href={base + '/'} aria-label="Spatial Elements home">
-					<img src={base + '/spatial-elements-logo.svg'} width="32" height="32" alt="" />
+				<a class="site-brand" href={resolve('/')} aria-label="Spatial Elements home">
+					<img src={asset('spatial-elements-logo.svg')} width="32" height="32" alt="" />
 					<span>Spatial Elements</span>
 				</a>
 			{/snippet}
@@ -82,8 +84,10 @@
 						class="github-link"
 						href="https://github.com/LauridBergjohann/spatial-elements"
 						aria-label="Spatial Elements on GitHub"
-						title="Source on GitHub"><Github /></a
+						title="Source on GitHub"
 					>
+						<Github />
+					</a>
 				</div>
 			{/snippet}
 			{#snippet right()}
@@ -94,20 +98,24 @@
 						title="Light"
 						aria-pressed={mode === 'light'}
 						disabled={!ready}
-						onclick={() => setMode('light')}><Sun size={18} aria-hidden="true" /></button
+						onclick={() => setMode('light')}
 					>
+						<Sun size={18} aria-hidden="true" />
+					</button>
 					<button
 						type="button"
 						aria-label="Dark"
 						title="Dark"
 						aria-pressed={mode === 'dark'}
 						disabled={!ready}
-						onclick={() => setMode('dark')}><Moon size={18} aria-hidden="true" /></button
+						onclick={() => setMode('dark')}
 					>
+						<Moon size={18} aria-hidden="true" />
+					</button>
 				</div>
 			{/snippet}
-		</Navigation>
-	</header>
+		</Header>
+	</div>
 {/snippet}
 <PageShell
 	mode={surfaceScheme}
@@ -136,14 +144,13 @@
 		<div id="main-content" tabindex="-1">{@render children()}</div>
 	</BrandStageShell>
 	<footer class="site-footer">
-		<a class="site-brand" href={base + '/'}
-			><img src={base + '/spatial-elements-logo.svg'} alt="" width="24" height="24" />Spatial
-			Elements
-			<span class="version">v{version}</span></a
-		>
+		<a class="site-brand" href={resolve('/')}>
+			<img src={asset('spatial-elements-logo.svg')} alt="" width="24" height="24" />Spatial Elements
+			<span class="version">v{version}</span>
+		</a>
 		<span>Made with Spatial Elements.</span>
-		<a href={base + '/about/#impressum'}>Imprint</a>
-		<a href={base + '/about/#datenschutz'}>Privacy</a>
+		<a href={resolve('about/#impressum')}>Imprint</a>
+		<a href={resolve('about/#datenschutz')}>Privacy</a>
 		<a href="https://github.com/LauridBergjohann/spatial-elements">Source on GitHub ↗</a>
 	</footer>
 </PageShell>

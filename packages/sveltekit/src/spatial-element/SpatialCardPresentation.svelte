@@ -1,12 +1,7 @@
 ﻿<script lang="ts">
 	import { getContext } from 'svelte';
 	import { Card, type CardElements } from '@page-sections/svelte';
-	import type {
-		CardMediaAspect,
-		CardMediaFit,
-		CardVariant,
-		SurfaceTone
-	} from '@page-sections/core';
+	import type { CardMediaAspect, CardMediaFit, SurfaceTone } from '@page-sections/core';
 	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import { catalogViewLink } from '@spatial-elements/core/catalog/catalogViewLink';
 	import {
@@ -34,7 +29,7 @@
 		mediaFit = 'contain',
 		reserveEyebrow = false,
 		cardTone = 'standard',
-		cardVariant = 'catalog'
+		cardShadow = false
 	}: {
 		spatialElement: SpatialListItem;
 		occurrence: string;
@@ -46,7 +41,7 @@
 		mediaFit?: CardMediaFit;
 		reserveEyebrow?: boolean;
 		cardTone?: SurfaceTone;
-		cardVariant?: CardVariant;
+		cardShadow?: boolean;
 	} = $props();
 	const readTheme = useSpatialTheme();
 	const brand = $derived(readTheme());
@@ -73,7 +68,6 @@
 	const ready = $derived.by(() => {
 		void reserveEyebrow;
 		void cardSize;
-		void cardVariant;
 		const enabled = active,
 			themeId = brand.id,
 			current = spatialElement,
@@ -102,7 +96,9 @@
 			bind(parts.root, 'container');
 			bind(parts.surface, 'summary-surface', 'spatial-element-card-surface');
 			bind(parts.media, 'geometry', 'spatial-element-card-geometry');
-			bind(parts.title, 'title');
+			// Register the actual clipped label as the spatial text endpoint.
+			const titleLabel = parts.title.querySelector<HTMLElement>('.title-label') ?? parts.title;
+			bind(titleLabel, 'title');
 			bind(
 				parts.copy.querySelector('[data-ps-card-part="eyebrow"]'),
 				'eyebrow',
@@ -113,10 +109,34 @@
 			parts.media.dataset.catalogOccurrence = key;
 			parts.media.dataset.catalogSlot = 'catalog.card';
 			cleanups.push(mouseHover(parts.root).destroy);
-			const link = parts.root.matches('a')
-				? (parts.root as HTMLAnchorElement)
-				: parts.title.querySelector('a');
+			const link = parts.title.querySelector('a');
 			if (link) {
+				// preserve-3d creates containing blocks. Size the stretched hit area from
+				// untransformed layout offsets so it still covers the complete card.
+				parts.root.dataset.spatialCardLinkReady = '';
+				const sizeLink = () => {
+					let left = 0,
+						top = 0;
+					for (
+						let node: HTMLElement | null = link;
+						node && node !== parts.root;
+						node = node.offsetParent as HTMLElement | null
+					) {
+						left += node.offsetLeft;
+						top += node.offsetTop;
+					}
+					link.style.setProperty('--spatial-card-link-left', -left + 'px');
+					link.style.setProperty('--spatial-card-link-top', -top + 'px');
+					link.style.setProperty('--spatial-card-link-width', parts.root.offsetWidth + 'px');
+					link.style.setProperty('--spatial-card-link-height', parts.root.offsetHeight + 'px');
+				};
+				const observer = new ResizeObserver(sizeLink);
+				for (const node of [parts.root, parts.copy, parts.title, link]) observer.observe(node);
+				sizeLink();
+				cleanups.push(() => {
+					observer.disconnect();
+					delete parts.root.dataset.spatialCardLinkReady;
+				});
 				link.dataset.catalogFocusKey = 'catalog:' + JSON.stringify([themeId, current.id, key]);
 				cleanups.push(
 					catalogViewLink(link, {
@@ -126,7 +146,7 @@
 				);
 			}
 			parts.title.removeAttribute('title');
-			cleanups.push(truncatedTitle(parts.title, current.title).destroy);
+			cleanups.push(truncatedTitle(titleLabel, current.title).destroy);
 			return () => cleanups.reverse().forEach((stop) => stop());
 		};
 	});
@@ -134,6 +154,40 @@
 		if (!active) {
 			event.preventDefault();
 			return;
+		}
+
+		const target = event.target as HTMLElement;
+		if (
+			!event.defaultPrevented &&
+			event.button === 0 &&
+			!target.closest('a, button, input, select, textarea')
+		) {
+			// A tilted card can move its hit plane between pointerdown and pointerup.
+			// The browser then targets their common article instead of its stretched
+			// anchor. Replay through the native link, preserving modifier-key behavior.
+			const link = (event.currentTarget as HTMLElement).querySelector<HTMLAnchorElement>(
+				'a.primary-link'
+			);
+			if (link) {
+				event.preventDefault();
+				event.stopPropagation();
+				link.dispatchEvent(
+					new MouseEvent('click', {
+						bubbles: true,
+						cancelable: true,
+						button: event.button,
+						detail: event.detail,
+						ctrlKey: event.ctrlKey,
+						metaKey: event.metaKey,
+						shiftKey: event.shiftKey,
+						altKey: event.altKey,
+						clientX: event.clientX,
+						clientY: event.clientY,
+						view: event.view
+					})
+				);
+				return;
+			}
 		}
 		endpoints?.prefer(brand.id, spatialElement.id, occurrence);
 		sections?.activate({
@@ -155,7 +209,7 @@
 	{mediaFit}
 	{reserveEyebrow}
 	tone={cardTone}
-	variant={cardVariant}
+	shadow={cardShadow}
 	headingLevel={3}
 	class="spatial-element-card"
 	onready={ready}
@@ -164,9 +218,6 @@
 	data-catalog-order={order}
 	data-catalog-occurrence={occurrence}
 	data-spatial-element-id={spatialElement.id}
-	data-catalog-focus-key={cardVariant === 'catalog'
-		? `catalog:${JSON.stringify([brand.id, spatialElement.id, occurrence])}`
-		: undefined}
 	aria-busy={busy || undefined}
 	onclick={activate}
 	onpointerenter={() => {
@@ -175,11 +226,8 @@
 	onpointerdown={() => {
 		if (active) prepare(spatialElement);
 	}}
-	onfocus={(event) => {
-		if (
-			active &&
-			!(event.currentTarget as HTMLElement).hasAttribute('data-catalog-restoring-focus')
-		)
+	onfocusin={(event) => {
+		if (active && !(event.target as HTMLElement).hasAttribute('data-catalog-restoring-focus'))
 			prepare(spatialElement);
 	}}
 >
@@ -198,6 +246,42 @@
 <span class="catalog-status" role="status">{busy ? 'Opening spatial element…' : ''}</span>
 
 <style>
+	:global(
+		.ps-card.spatial-element-card[data-catalog-card][data-spatial-card-link-ready]
+			[data-ps-card-part='copy']
+	),
+	:global(
+		.ps-card.spatial-element-card[data-catalog-card][data-spatial-card-link-ready]
+			[data-ps-card-part='title']
+	),
+	:global(
+		.ps-card.spatial-element-card[data-catalog-card][data-spatial-card-link-ready] .primary-link
+	) {
+		transform-style: preserve-3d;
+	}
+	:global(
+		.ps-card.spatial-element-card[data-catalog-card][data-spatial-card-link-ready] .primary-link
+	) {
+		display: block;
+	}
+	:global(
+		.ps-card.spatial-element-card[data-catalog-card][data-spatial-card-link-ready]
+			.primary-link::after
+	) {
+		inset: auto;
+		left: var(--spatial-card-link-left);
+		top: var(--spatial-card-link-top);
+		width: var(--spatial-card-link-width);
+		height: var(--spatial-card-link-height);
+	}
+
+	:global(.ps-card.spatial-element-card[data-catalog-card]:has(.primary-link:focus-visible)) {
+		outline: 3px solid var(--ps-accent);
+		outline-offset: 4px;
+	}
+	:global(.ps-card.spatial-element-card[data-catalog-card] .primary-link:focus-visible::after) {
+		outline: none;
+	}
 	:global(.ps-card.spatial-element-card[data-catalog-card]) {
 		isolation: auto;
 		--ps-radius: var(--spatial-element-control-radius);
@@ -208,18 +292,14 @@
 			rotateX(var(--catalog-rotate-x, 0deg)) rotateY(var(--catalog-rotate-y, 0deg));
 	}
 	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='media-frame']) {
+		pointer-events: none;
 		overflow: visible;
 	}
-	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='media']),
-	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='copy']) {
+	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='media']) {
 		transform-style: preserve-3d;
 	}
-	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='surface']) {
-		box-shadow: 0 12px 32px rgb(0 0 0 / 6%);
-		transition: border-color 180ms ease;
-	}
 	:global(
-		.ps-card.spatial-element-card[data-catalog-card]:is([data-mouse-hover], :focus-visible)
+		.ps-card.spatial-element-card[data-catalog-card]:is([data-mouse-hover], :has(:focus-visible))
 			[data-ps-card-part='surface']
 	) {
 		border-color: var(--ps-accent);
@@ -236,7 +316,7 @@
 		transition: opacity 180ms ease;
 	}
 	:global(
-		.ps-card.spatial-element-card[data-catalog-card]:is([data-mouse-hover], :focus-visible)
+		.ps-card.spatial-element-card[data-catalog-card]:is([data-mouse-hover], :has(:focus-visible))
 			[data-ps-card-part='surface']::after
 	) {
 		opacity: 1;
@@ -245,7 +325,9 @@
 		opacity: var(--spatial-card-frozen-after-opacity) !important;
 		transition-property: none !important;
 	}
-	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='title']) {
+	:global(
+		.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='title'] .title-label
+	) {
 		transform: translateZ(var(--card-title-depth, 0px));
 	}
 	:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='eyebrow']) {
@@ -258,7 +340,9 @@
 			transform 260ms ease,
 			text-shadow 260ms ease;
 	}
-	:global(.ps-card.spatial-element-card[data-catalog-card]:is([data-mouse-hover], :focus-visible)) {
+	:global(
+		.ps-card.spatial-element-card[data-catalog-card]:is([data-mouse-hover], :has(:focus-visible))
+	) {
 		--card-eyebrow-depth: 40px;
 		--card-title-depth: 64px;
 		--card-model-depth: 96px;
@@ -302,6 +386,7 @@
 	@media (prefers-reduced-motion: reduce) {
 		:global(.ps-card.spatial-element-card[data-catalog-card]),
 		:global(.ps-card.spatial-element-card[data-catalog-card] [data-shared-role]),
+		:global(.ps-card.spatial-element-card[data-catalog-card] [data-ps-card-part='title'] .title-label),
 		.catalog-poster {
 			transform: none;
 			transition: none;

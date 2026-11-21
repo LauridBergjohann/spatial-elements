@@ -97,7 +97,7 @@ for (const view of ['list', 'carousel'] as const) for (const temperature of temp
 				});
 				await page.goto(`/staged/categories/${view}?stage-test=1&stagedNavigation=1${backgroundOutputEnabled ? '&stage-background-output=1' : ''}`);
 				await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
-				const link = view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first()
+				const link = view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first().locator('a.primary-link')
 					: page.locator('[data-carousel-item="column"] .spatial-element-target');
 				if (endpoint === 'hero') await link.evaluate((node: HTMLAnchorElement) => { const url = new URL(node.href); url.hash = ''; node.href = url.href; });
 				await expect.poll(() => page.evaluate(() => window.__stageVisualTest?.getCarouselStats()?.actors.some(actor => actor.spatialElementId === 'column' && actor.stagedReady) ?? false)).toBe(true);

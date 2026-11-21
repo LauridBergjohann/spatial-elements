@@ -2,9 +2,9 @@
 	import { afterNavigate, beforeNavigate, goto, onNavigate, preloadData } from '$app/navigation';
 	import { navigating, page } from '$app/state';
 	import { onDestroy, onMount, untrack } from 'svelte';
-	import type { NavigationBase } from '@sveltejs/kit';
+	import type { Navigation } from '$app/navigation';
 	import type { LayoutProps } from './$types';
-	import { proofState, trace } from '$lib/staged-navigation-proof/telemetry';
+	import { proofState, trace } from '#lib/staged-navigation-proof/telemetry.ts';
 
 	let { children }: LayoutProps = $props();
 	const strategy = untrack(() =>
@@ -71,7 +71,7 @@
 		permit = undefined;
 		setPhase('idle');
 	}
-	function begin(navigation: Pick<NavigationBase, 'to' | 'complete'>) {
+	function begin(navigation: Pick<Navigation, 'to' | 'complete'>) {
 		stop('superseded');
 		let release!: Owner['release'];
 		const motion = new Promise<boolean>((resolve) => {

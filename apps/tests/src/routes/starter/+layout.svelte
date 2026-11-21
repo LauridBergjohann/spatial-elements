@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { BrandStageShell } from '@spatial-elements/sveltekit';
-	import { starterTheme } from '$lib/starter';
+	import { starterTheme } from '#lib/starter.ts';
 	let { children }: { children: Snippet } = $props();
 </script>
 

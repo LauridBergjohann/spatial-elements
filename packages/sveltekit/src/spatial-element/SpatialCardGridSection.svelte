@@ -18,16 +18,15 @@
 		section,
 		list,
 		cardSize = 'm',
-		cardVariant = 'catalog',
-		itemSpan = { xs: 4, s: 3, m: 4, l: 4 },
+		cardShadow = false,
+		itemSpan,
 		textAlign = 'start',
 		mediaAspect = '1/1',
-		mediaFit = cardVariant === 'catalog' ? 'contain' : 'cover',
+		mediaFit = 'contain',
 		cardTone = 'standard'
 	}: Props = $props();
 	const reserveEyebrow = $derived(
-		(cardVariant !== 'catalog' || cardSize !== 's') &&
-			list.some((item) => Boolean(item.eyebrow?.trim()))
+		cardSize !== 's' && list.some((item) => Boolean(item.eyebrow?.trim()))
 	);
 	let catalog: HTMLDivElement;
 	$effect(() => {
@@ -48,7 +47,7 @@
 				{#snippet card()}<SpatialElementCard
 						{spatialElement}
 						{cardSize}
-						{cardVariant}
+						{cardShadow}
 						{textAlign}
 						{mediaAspect}
 						{mediaFit}
@@ -57,9 +56,7 @@
 						order={index}
 						occurrence={JSON.stringify([section.id, spatialElement.itemKey ?? spatialElement.id])}
 					/>{/snippet}
-				{#if cardVariant === 'editorial'}<ContentBlock span={itemSpan}
-						>{@render card()}</ContentBlock
-					>
+				{#if itemSpan !== undefined}<ContentBlock span={itemSpan}>{@render card()}</ContentBlock>
 				{:else}{@render card()}{/if}
 			{/each}
 		</ContentGrid>

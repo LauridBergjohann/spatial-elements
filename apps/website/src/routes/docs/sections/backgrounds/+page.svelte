@@ -14,7 +14,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -35,7 +35,8 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				A Section owns its anchor, optional visible headline, grid padding and background. A
 				navigation label and a displayed heading are different authoring choices.
@@ -52,8 +53,8 @@
 				<code>headline</code> to omit both the heading and its gap; padding remains. A section without
 				a visible heading still has an accessible name.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'background-roles',
@@ -61,13 +62,14 @@
 			headline: 'Background roles',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p><img src="/documentation/images/background-matrix.png" alt="" loading="lazy" /></p>
 			<p>
-				<em
-					>An illustrative light palette. Only effective full-width backgrounds support the six
-					gradients; the theme supplies the actual standard and muted colors.</em
-				>
+				<em>
+					An illustrative light palette. Only effective full-width backgrounds support the six
+					gradients; the theme supplies the actual standard and muted colors.
+				</em>
 			</p>
 			<table>
 				<thead>
@@ -117,12 +119,12 @@
 			</p>
 			<p><img src="/documentation/images/section-groups.png" alt="" loading="lazy" /></p>
 			<p>
-				<em
-					>Changing opaque color does not split a group. Transparency and full-width backgrounds do.</em
-				>
+				<em>
+					Changing opaque color does not split a group. Transparency and full-width backgrounds do.
+				</em>
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'corners-and-spacing',
@@ -130,7 +132,8 @@
 			headline: 'Corners and spacing',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				At XL, 2XL and ordinary ContentPage 3XL, contiguous opaque standard-width sections share
 				outer panel corners. Only the first top corners and last bottom corners are rounded. Each
@@ -141,8 +144,8 @@
 				corners. Transparent and effectively full-width sections also do not acquire these corners.
 				Grouping follows registered section order, not arbitrary helper elements in the DOM.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'theme-roles-and-compatibility',
@@ -150,7 +153,8 @@
 			headline: 'Theme roles and compatibility',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<CodeBlock
 				code={examples[1].code}
 				language={examples[1].language}
@@ -170,9 +174,10 @@
 				specifically for unsupported gradients. See
 				<a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/wiki/Migration-and-Reference.md"
-					>Migration and Reference</a
-				>.
+				>
+					Migration and Reference
+				</a>.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

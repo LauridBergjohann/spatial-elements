@@ -1,5 +1,5 @@
 <script lang="ts">
-	import NativeIslandSlot from '$lib/persistence-island-proof/NativeIslandSlot.svelte';
+	import NativeIslandSlot from '#lib/persistence-island-proof/NativeIslandSlot.svelte';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
 </script>

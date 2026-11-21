@@ -11,8 +11,10 @@
 		<label>Inscription <input bind:value={inscription} /></label>
 		<div>
 			<button type="button" onclick={() => quantity++}>Add quantity</button><output
-				data-detail-quantity>{quantity}</output
+				data-detail-quantity
 			>
+				{quantity}
+			</output>
 		</div>
 		<p data-detail-reactive>{inscription || 'Custom summary'}, quantity {quantity}</p>
 	</div>

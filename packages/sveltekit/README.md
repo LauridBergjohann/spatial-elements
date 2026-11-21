@@ -13,7 +13,7 @@ SvelteKit components for interactive 3D collections and detail pages, built on t
 ## Installation
 
 ```sh
-npm install @spatial-elements/sveltekit@beta three@^0.186.1
+npm install @spatial-elements/sveltekit@beta three@^0.187.0
 ```
 
 Requires Node >=22.12 for tooling, Svelte ^5.56.4 and SvelteKit ^2.70.3. This is a beta package. Models and environments belong to your application and are not bundled.

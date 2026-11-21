@@ -35,11 +35,12 @@
 			headline: 'Objects with room to explore',
 			background: { color: 'standard' }
 		}}
-		><p>
+	>
+		<p>
 			A collection of original geometric forms. Move between the list, carousel and detail views.
 		</p>
-		<a href="/demo/elements/orb#features">Explore the orb features</a></Section
-	>
+		<a href="/demo/elements/orb#features">Explore the orb features</a>
+	</Section>
 	<SpatialCardGridSection
 		section={{ id: 'elements', title: 'Collection', headline: 'Collection' }}
 		list={data.spatialElements}
@@ -51,11 +52,10 @@
 			headline: 'Shape, light and movement',
 			background: { color: 'standard' }
 		}}
-		><img src="/assets/demo/ring.svg" alt="Green ring study" width="320" height="280" />
-		<p>
-			Compose your own text, images and interactive collections in a single content page.
-		</p></Section
-	><SpatialCarouselSection
+	>
+		<img src="/assets/demo/ring.svg" alt="Green ring study" width="320" height="280" />
+		<p>Compose your own text, images and interactive collections in a single content page.</p>
+	</Section><SpatialCarouselSection
 		section={{ id: 'featured', title: 'Forms in space', headline: 'Forms in space' }}
 		list={data.spatialElements}
 	/>

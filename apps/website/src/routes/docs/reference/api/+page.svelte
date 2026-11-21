@@ -10,7 +10,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -31,14 +31,17 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				For a runnable category/detail setup, begin with <a
-					href="/docs/foundations/first-experience/">Getting started</a
-				>. This reference describes the current public API.
+					href="/docs/foundations/first-experience/"
+				>
+					Getting started
+				</a>. This reference describes the current public API.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'ownership-which-setting-belongs-where',
@@ -46,7 +49,8 @@
 			headline: 'Ownership: which setting belongs where?',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -68,8 +72,9 @@
 					</tr>
 					<tr>
 						<td>BrandStageShell</td>
-						<td>Renderer lifetime, interface translations, GPU budget and decoder infrastructure</td
-						>
+						<td>
+							Renderer lifetime, interface translations, GPU budget and decoder infrastructure
+						</td>
 						<td>Persistent +layout.svelte</td>
 					</tr>
 					<tr>
@@ -84,10 +89,9 @@
 					</tr>
 					<tr>
 						<td>Section definition</td>
-						<td
-							>Anchor/navigation label, optional visible headline, background and local CSS
-							overrides</td
-						>
+						<td>
+							Anchor/navigation label, optional visible headline, background and local CSS overrides
+						</td>
 						<td>Content/detail page</td>
 					</tr>
 				</tbody>
@@ -97,8 +101,8 @@
 				scene from the active page. You do not need a layout-level catalog, an active element ID, or
 				a duplicate list of models.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'element-data',
@@ -106,12 +110,14 @@
 			headline: 'Element data',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				All fields are flat. See <a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/spatial-element/types.ts"
-					>SpatialElementData TSDoc</a
-				>.
+				>
+					SpatialElementData TSDoc
+				</a>.
 			</p>
 			<table>
 				<thead>
@@ -135,19 +141,19 @@
 					<tr>
 						<td>geometry</td>
 						<td>Required</td>
-						<td
-							>Both low and high: model URL strings, or versioned resource descriptors from an asset
+						<td>
+							Both low and high: model URL strings, or versioned resource descriptors from an asset
 							pipeline. Low for categories/transitions; High for detail. Same URLs share a cached
-							fetch/decode.</td
-						>
+							fetch/decode.
+						</td>
 					</tr>
 					<tr>
 						<td>hdr</td>
 						<td>Required</td>
-						<td
-							>Detail lighting and background HDR. Category lighting is set independently on
-							ContentPage.hdr.</td
-						>
+						<td>
+							Detail lighting and background HDR. Category lighting is set independently on
+							ContentPage.hdr.
+						</td>
 					</tr>
 					<tr>
 						<td>brandId</td>
@@ -172,37 +178,37 @@
 					<tr>
 						<td>action</td>
 						<td>Absent</td>
-						<td
-							>&#123; label, href?, ariaLabel?, semanticId? &#125;. With href renders a link;
-							without it renders a button. The host owns business behavior.</td
-						>
+						<td>
+							&#123; label, href?, ariaLabel?, semanticId? &#125;. With href renders a link; without
+							it renders a button. The host owns business behavior.
+						</td>
 					</tr>
 					<tr>
 						<td>background</td>
 						<td>&#123; blurriness: 0.2, tint: '#b6deff', tintIntensity: 0.3 &#125;</td>
-						<td
-							>HDR background presentation; independent of model lighting and theme.background.
-							Supply the full settings object when overriding.</td
-						>
+						<td>
+							HDR background presentation; independent of model lighting and theme.background.
+							Supply the full settings object when overriding.
+						</td>
 					</tr>
 					<tr>
 						<td>model</td>
 						<td>Imported pose/materials</td>
-						<td
-							>Optional rotation &#123;x,y,z&#125; in radians, excludeMeshes (exact mesh names),
+						<td>
+							Optional rotation &#123;x,y,z&#125; in radians, excludeMeshes (exact mesh names),
 							materialOverrides (physical material settings keyed by mesh name). Excluded context
 							meshes remain visible on the main stage but do not determine fit, picking, outlines or
-							minimaps.</td
-						>
+							minimaps.
+						</td>
 					</tr>
 					<tr>
 						<td>camera</td>
 						<td>Automatic fit</td>
-						<td
-							>azimuth/elevation in degrees, fitPadding in CSS pixels, fitScale as a multiplier. On
+						<td>
+							azimuth/elevation in degrees, fitPadding in CSS pixels, fitScale as a multiplier. On
 							detail pages, enlargement may consume padding but stays inside the media fit rectangle
-							so the media rail and summary remain clear.</td
-						>
+							so the media rail and summary remain clear.
+						</td>
 					</tr>
 					<tr>
 						<td>fallbackImage</td>
@@ -222,27 +228,28 @@
 					<tr>
 						<td>media</td>
 						<td>One minimap</td>
-						<td
-							>Entries with <code>id</code>, <code>kind</code> and <code>label</code>; kinds
+						<td>
+							Entries with <code>id</code>, <code>kind</code> and <code>label</code>; kinds
 							<code>minimap</code>, <code>image</code>, <code>video</code>, <code>youtube</code>.
 							Detail pages always place one 3D/minimap entry first, including when
 							<code>media: []</code>
 							is supplied. See
 							<a
 								href="https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/design/layout/media-and-input.md"
-								>media and input</a
 							>
+								media and input
+							</a>
 							for fields and lifecycle. The old source-less <code>drawing</code> entry is deprecated;
-							replace it with an image.</td
-						>
+							replace it with an image.
+						</td>
 					</tr>
 					<tr>
 						<td>minimap</td>
 						<td>Runtime fit defaults</td>
-						<td
-							>Per-element inset, modelScale, hoverModelScale, expandedHoverModelScale and
-							dockedView. Shared colors belong in the theme.</td
-						>
+						<td>
+							Per-element inset, modelScale, hoverModelScale, expandedHoverModelScale and
+							dockedView. Shared colors belong in the theme.
+						</td>
 					</tr>
 					<tr>
 						<td>assetManifest</td>
@@ -264,14 +271,15 @@
 			<p>
 				<a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/stage/stageTypes.ts"
-					>Model/camera/minimap types</a
 				>
+					Model/camera/minimap types
+				</a>
 				document units and supported material properties.
 				<a href="/docs/foundations/assets/">LOD and resource ownership</a> explain the advanced asset
 				contract.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'geometry-details',
@@ -279,7 +287,8 @@
 			headline: 'Geometry details',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<CodeBlock
 				code={examples[0].code}
 				language={examples[0].language}
@@ -299,11 +308,12 @@
 				revision. geometryFromLodPair converts existing generated pair metadata without carrying its
 				redundant sourceUrl into authored element data. See <a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/spatial-element/spatialElementGeometry.ts"
-					>geometry TSDoc</a
-				>.
+				>
+					geometry TSDoc
+				</a>.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'shared-theme',
@@ -311,7 +321,8 @@
 			headline: 'Shared theme',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Themes can change at runtime. Pass the selected <code>theme</code> and optional resolved
 				<code>colorScheme=&quot;light&quot;</code>
@@ -337,9 +348,9 @@
 				<tbody>
 					<tr>
 						<td>id / name</td>
-						<td
-							>Stable collection identity, independent of URL structure / accessible brand name.</td
-						>
+						<td>
+							Stable collection identity, independent of URL structure / accessible brand name.
+						</td>
 					</tr>
 					<tr>
 						<td>background</td>
@@ -347,16 +358,16 @@
 					</tr>
 					<tr>
 						<td>sceneBackground</td>
-						<td
-							>Optional partial overrides for the element's HDR backdrop: blurriness, tint,
-							tintIntensity. Leaves model lighting unchanged.</td
-						>
+						<td>
+							Optional partial overrides for the element's HDR backdrop: blurriness, tint,
+							tintIntensity. Leaves model lighting unchanged.
+						</td>
 					</tr>
 					<tr>
 						<td>colors</td>
-						<td
-							>ink #173047, body #263c4d, accent #285c89, onAccent #ffffff, tabBackground #e4ebf1.</td
-						>
+						<td>
+							ink #173047, body #263c4d, accent #285c89, onAccent #ffffff, tabBackground #e4ebf1.
+						</td>
 					</tr>
 					<tr>
 						<td>panelShape</td>
@@ -364,46 +375,46 @@
 					</tr>
 					<tr>
 						<td>radii</td>
-						<td
-							>control 12px for cards/small controls; panel 16px for panels/detached section groups.
+						<td>
+							control 12px for cards/small controls; panel 16px for panels/detached section groups.
 							An explicitly authored panelShape.radius is the compatibility fallback for both roles;
-							explicit radii fields win.</td
-						>
+							explicit radii fields win.
+						</td>
 					</tr>
 					<tr>
 						<td>sectionBackgrounds</td>
-						<td
-							>standard #ffffff and muted #f5f7f9, independent of glass/frosted panel material
-							colors.</td
-						>
+						<td>
+							standard #ffffff and muted #f5f7f9, independent of glass/frosted panel material
+							colors.
+						</td>
 					</tr>
 					<tr>
 						<td>panelTheme</td>
-						<td
-							>surface frosted, tint #ffffff, tintOpacity 0.65, backdropBlur 8px, shadowIntensity
-							0.2, opacity 1. Further glass controls use runtime defaults.</td
-						>
+						<td>
+							surface frosted, tint #ffffff, tintOpacity 0.65, backdropBlur 8px, shadowIntensity
+							0.2, opacity 1. Further glass controls use runtime defaults.
+						</td>
 					</tr>
 					<tr>
 						<td>dockedPanelTheme</td>
-						<td
-							>Compact header/tabs: tint #ffffff, tintOpacity 0.92, backdropBlur 5px,
-							shadowIntensity 0.2.</td
-						>
+						<td>
+							Compact header/tabs: tint #ffffff, tintOpacity 0.92, backdropBlur 5px, shadowIntensity
+							0.2.
+						</td>
 					</tr>
 					<tr>
 						<td>sectionTheme</td>
-						<td
-							>Legacy section material: tint #ffffff, tintOpacity 0.8, backdropBlur 8px. New
-							section.background roles use sectionBackgrounds instead.</td
-						>
+						<td>
+							Legacy section material: tint #ffffff, tintOpacity 0.8, backdropBlur 8px. New
+							section.background roles use sectionBackgrounds instead.
+						</td>
 					</tr>
 					<tr>
 						<td>minimapTheme</td>
-						<td
-							>expandedHeight 240px, overlayColor #000000, overlayOpacity 0.35, overlayBlur 5px,
-							contextOpacity 0, viewportColor from accent.</td
-						>
+						<td>
+							expandedHeight 240px, overlayColor #000000, overlayOpacity 0.35, overlayBlur 5px,
+							contextOpacity 0, viewportColor from accent.
+						</td>
 					</tr>
 					<tr>
 						<td>interactionTheme</td>
@@ -425,33 +436,37 @@
 			<p>
 				See <a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/spatial-element/spatialTheme.ts"
-					>createSpatialTheme</a
-				>,
+				>
+					createSpatialTheme
+				</a>,
 				<a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/spatial-element/types.ts"
-					>theme types</a
-				>,
+				>
+					theme types
+				</a>,
 				<a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/stage/panelContext.ts"
-					>panel controls</a
 				>
+					panel controls
+				</a>
 				and
 				<a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/stage/stageTypes.ts"
-					>renderer controls</a
-				> for all fields.
+				>
+					renderer controls
+				</a> for all fields.
 			</p>
 			<p>
-				Interface language is independent of the theme. Pass <code
-					>messages: SpatialMessagesInput</code
-				>
+				Interface language is independent of the theme. Pass <code>
+					messages: SpatialMessagesInput
+				</code>
 				to <code>BrandStageShell</code> to override control labels, accessible names, tooltips and
 				3D-help instructions. Missing keys use English defaults. See
 				<a href="/docs/interaction/help/">interface texts and help</a> for all keys and a complete translation
 				example.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'svelte-components',
@@ -459,7 +474,8 @@
 			headline: 'Svelte components',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -470,88 +486,88 @@
 				<tbody>
 					<tr>
 						<td>BrandStageShell</td>
-						<td
-							>Required reactive theme; optional colorScheme (light/dark), messages, renderSettings,
+						<td>
+							Required reactive theme; optional colorScheme (light/dark), messages, renderSettings,
 							dracoDecoderPath, deviceOrientation (default false, for detail geometry/minimap),
 							items: MenuItem[], brand/tools/menu snippets, left/right satellite snippets (Settings
 							below XL), summary: SpatialSummarySnippet, and children. Persistent layout and
-							renderer owner. No stage/catalog props.</td
-						>
+							renderer owner. No stage/catalog props.
+						</td>
 					</tr>
 					<tr>
 						<td>ButtonGroup</td>
-						<td
-							>Required items, label and shape; controlled value/onchange, optional theme, iconOnly
-							and content snippet. Generic panel-backed choices owned by the host.</td
-						>
+						<td>
+							Required items, label and shape; controlled value/onchange, optional theme, iconOnly
+							and content snippet. Generic panel-backed choices owned by the host.
+						</td>
 					</tr>
 					<tr>
 						<td>ContentPage</td>
-						<td
-							>Required hdr: environment URL and page: ContentPageData; optional background: CSS
+						<td>
+							Required hdr: environment URL and page: ContentPageData; optional background: CSS
 							color and children. background overrides the flat page color for this page in DOM and
 							enhanced rendering, without changing HDR lighting or the shared theme. page.title is
 							required; pageTitle defaults to title. Place visible headings and introductory text in
-							child sections. Use leftSidebar, footer and showContentMenu for navigation.</td
-						>
+							child sections. Use leftSidebar, footer and showContentMenu for navigation.
+						</td>
 					</tr>
 					<tr>
 						<td>SpatialCardGridSection</td>
-						<td
-							>Required section: &#123;id,title,headline?,background?,style?&#125;, list:
-							SpatialListItem[]. Optional cardSize, cardVariant, cardTone, mediaAspect, mediaFit,
-							textAlign and itemSpan; see Cards below. Registers its own element occurrences.</td
-						>
+						<td>
+							Required section: &#123;id,title,headline?,background?,style?&#125;, list:
+							SpatialListItem[]. Optional cardSize, cardShadow, cardTone, mediaAspect, mediaFit,
+							textAlign and itemSpan; see Cards below. Registers its own element occurrences.
+						</td>
 					</tr>
 					<tr>
 						<td>SpatialCarouselSection</td>
-						<td
-							>Same section/list; optional presentation: &#123;radius?,depth?&#125;, initialItemKey,
+						<td>
+							Same section/list; optional presentation: &#123;radius?,depth?&#125;, initialItemKey,
 							onselectionchange(&#123;itemKey,spatialElementId&#125;). Radius controls model
 							spacing, normalized around 0.48 (clamped 0.2..0.7); depth defaults to 700 CSS-world
 							pixels (clamped 0..1200). The selected media fit and summary placement follow the
 							shared responsive layout. Models, shadows and hit areas are clipped to the section
-							surface: standard stays within the section; full extends horizontally to the viewport.</td
-						>
+							surface: standard stays within the section; full extends horizontally to the viewport.
+						</td>
 					</tr>
 					<tr>
 						<td>SpatialListPage</td>
-						<td
-							>Convenience wrapper: ContentPageData fields directly as props, required hdr and
+						<td>
+							Convenience wrapper: ContentPageData fields directly as props, required hdr and
 							spatialElements, optional sectionLink: &#123;href,label&#125;. For new composable
-							pages prefer ContentPage with sections.</td
-						>
+							pages prefer ContentPage with sections.
+						</td>
 					</tr>
 					<tr>
 						<td>SpatialElementPage</td>
-						<td
-							>Required spatialElement: SpatialElementData; optional children, headerDetails and
+						<td>
+							Required spatialElement: SpatialElementData; optional children, headerDetails and
 							actionIcon snippets. headerDetails supplies compact controls to scroll and 3XL pane
 							headers; actionIcon customizes their CTA. Owns detail content, model selection and
-							generated section navigation.</td
-						>
+							generated section navigation.
+						</td>
 					</tr>
 					<tr>
 						<td>Section</td>
-						<td
-							>Required section: &#123;id,title,headline?,background?,style?&#125;; optional
-							children and HTML attributes/class. The presentation prop is used by spatial
-							list/carousel wrappers. Detail sections automatically populate tabs.</td
-						>
+						<td>
+							Required section: &#123;id,title,headline?,background?,style?&#125;; optional children
+							and HTML attributes/class. The presentation prop is used by spatial list/carousel
+							wrappers. Detail sections automatically populate tabs.
+						</td>
 					</tr>
 					<tr>
 						<td>ContentGrid</td>
-						<td
-							>Optional children and HTML attributes/class. Places explicit ContentBlock children on
-							the enclosing section's content grid; adds no outer padding.</td
-						>
+						<td>
+							Optional children and HTML attributes/class. Places explicit ContentBlock children on
+							the enclosing section's content grid; adds no outer padding.
+						</td>
 					</tr>
 					<tr>
 						<td>ContentBlock</td>
-						<td
-							>Optional span: number or &#123;xs?,s?,m?,l?&#125;, children and HTML
-							attributes/class. Fills the row by default; responsive spans inherit mobile-first.</td
-						>
+						<td>
+							Optional span: number or &#123;xs?,s?,m?,l?&#125;, children and HTML attributes/class.
+							Fills the row by default; responsive spans inherit mobile-first.
+						</td>
 					</tr>
 				</tbody>
 			</table>
@@ -590,8 +606,9 @@
 				adopt another occurrence. See
 				<a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/design/layout/summary-snippets.md"
-					>summary rendering and ownership</a
-				> for the precise lifecycle and SSR boundaries.
+				>
+					summary rendering and ownership
+				</a> for the precise lifecycle and SSR boundaries.
 			</p>
 			<h3>Section headings and surfaces</h3>
 			<p>
@@ -689,7 +706,7 @@
 				ContentGrid/ContentBlock.
 			</p>
 			<p>
-				Cards use Page Sections 0.4.1. The media frame has its own configurable aspect ratio; the
+				Cards use Page Sections 0.5.0. The media frame has its own configurable aspect ratio; the
 				text area adds independent height. All cards in a collection have equal heights across rows.
 			</p>
 			<ul>
@@ -708,9 +725,10 @@
 				<code>textAlign=&quot;start|center&quot;</code>,
 				<code>mediaAspect=&quot;1/1|3/2|4/3&quot;</code>
 				and <code>mediaFit=&quot;contain|cover&quot;</code>. <code>SpatialListPage</code> forwards
-				all of them. <code>cardVariant=&quot;catalog&quot;</code> (default) uses responsive
-				size-based spans; <code>cardVariant=&quot;editorial&quot;</code> uses <code>itemSpan</code>
-				(default <code>&#123; xs: 4, s: 3, m: 4, l: 4 &#125;</code>) and a title link. Spatial media
+				all of them. Cards use responsive size-based spans by default. Set <code>itemSpan</code>
+				to choose explicit column spans. <code>cardShadow</code> adds a resting shadow; hovering or
+				keyboard focus highlights the card. The whole card is a native link, including its media.
+				Descriptions appear when supplied and never use larger text than the title. Spatial media
 				defaults to <code>1/1</code>; Page Sections defaults to <code>3/2</code>. Keep
 				<code>itemKey</code> stable for repeated items and reordering.
 			</p>
@@ -730,8 +748,10 @@
 			<p>
 				Keep ordinary anchor links and supply all required data through route load functions.
 				Transition matching and deployment requirements are documented in <a
-					href="/docs/foundations/first-experience/">Getting started</a
-				>.
+					href="/docs/foundations/first-experience/"
+				>
+					Getting started
+				</a>.
 			</p>
 			<p>
 				<code>SpatialListItem.targetPresentation: 'dock'</code> and
@@ -742,8 +762,9 @@
 				on the fixed left stage and the pane header is the corresponding endpoint. See
 				<a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/design/layout/staged-detail-endpoints.md"
-					>known detail endpoints</a
-				>.
+				>
+					known detail endpoints
+				</a>.
 			</p>
 			<p>
 				The source-first transition currently requires <code>?stagedNavigation=1</code> on the source
@@ -762,8 +783,8 @@
 				by a parent above BrandStageShell. See the complete
 				<a href="/docs/sections/summaries/">live summary example</a>.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'renderer-infrastructure',
@@ -771,7 +792,8 @@
 			headline: 'Renderer infrastructure',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				BrandStageShell.renderSettings accepts maxPixelRatio (default 1) and maxPixels (default
 				2,073,600). The tighter budget wins. maxPixels: null disables the area limit;
@@ -793,6 +815,6 @@
 				components. Internal SpatialElementScene is a renderer projection, not a third authoring
 				document.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

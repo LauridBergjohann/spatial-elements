@@ -47,6 +47,7 @@ describe('spatialElement detail helpers', () => {
 				id: 'alpha',
 				eyebrow: 'Series A',
 				title: 'Alpha',
+				description: 'A compact connected element',
 				features: [{ label: 'Compact' }, { label: 'Connected' }],
 				geometry: { low: '/model.glb', high: '/model.glb' },
 				hdr: '/studio.hdr'
@@ -57,6 +58,7 @@ describe('spatialElement detail helpers', () => {
 			{
 				id: 'alpha',
 				href: '/elements/alpha',
+				description: 'A compact connected element',
 				eyebrow: 'Series A',
 				title: 'Alpha',
 				features: ['Compact', 'Connected'],

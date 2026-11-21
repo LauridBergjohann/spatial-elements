@@ -10,7 +10,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -31,7 +31,8 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				A known destination should not require a complete destination page just to begin moving. The
 				same layout resolver that positions the detail page supplies its model fit and panel anchor
@@ -44,8 +45,8 @@
 				ordinary transitions continue to work. The endpoint declaration below does not enable this experimental
 				path by itself.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'movement-holding-and-content',
@@ -53,13 +54,14 @@
 			headline: 'Movement, holding and content',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p><img src="/documentation/images/transition-phases.png" alt="" loading="lazy" /></p>
 			<p>
-				<em
-					>The phase widths are illustrative. Loading can extend the hold; it does not require a
-					second source movement or an empty intermediate page.</em
-				>
+				<em>
+					The phase widths are illustrative. Loading can extend the hold; it does not require a
+					second source movement or an empty intermediate page.
+				</em>
 			</p>
 			<p>
 				Forward navigation from a prepared card or the selected carousel element has three stages:
@@ -87,8 +89,8 @@
 				those functions small, preload likely destinations and measure cold routes separately from warm
 				ones. A resolved Promise alone does not prove that work ran outside animation frames.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'hero-and-compact-destinations',
@@ -96,7 +98,8 @@
 			headline: 'Hero and compact destinations',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				An ordinary detail URL, or <code>#overview</code>, opens the overview. At smaller widths the
 				panel and model follow the flow composition; in the 3XL split layout the left stage remains
@@ -127,8 +130,8 @@
 				and the live summary is adopted after the new header is visible. Custom summaries register
 				their text roles as shown in <a href="/docs/sections/summaries/">Summary Panels</a>.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'interaction-and-fallback',
@@ -136,7 +139,8 @@
 			headline: 'Interaction and fallback',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				The moving source is temporarily inert. Pointer and sensor effects stop competing with the
 				transition; sensor motion resumes from a recalibrated neutral pose. Resizing, scrolling,
@@ -157,8 +161,8 @@
 				Reduced motion skips the artificial animation interval. No JavaScript and unavailable WebGPU
 				continue to use ordinary links and poster-based layout.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'what-timing-measurements-mean',
@@ -166,7 +170,8 @@
 			headline: 'What timing measurements mean',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				First source movement, GPU submission and total content readiness are different
 				measurements. The production tests record all three phases, DOM ownership, resource creation
@@ -175,6 +180,6 @@
 				The layout removes destination measurement from the early path, while the production
 				performance report records what the implementation achieves on the tested environment.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

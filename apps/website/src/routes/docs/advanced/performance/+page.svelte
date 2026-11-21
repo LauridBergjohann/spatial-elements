@@ -14,7 +14,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -59,7 +59,8 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Analysis date: 2026-10-01. Baseline: commit <code>2f1196f</code>, including the five
 				procedural demo geometries.
@@ -68,9 +69,10 @@
 				The later layout redesign uses a different source-only navigation path. Its separate
 				<a
 					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/docs/design/layout/staged-performance.md"
-					>production measurement protocol</a
-				> describes cold/warm route validation and exact movement/holding boundaries. The historical numbers
-				below are not measurements of that new path.
+				>
+					production measurement protocol
+				</a> describes cold/warm route validation and exact movement/holding boundaries. The historical
+				numbers below are not measurements of that new path.
 			</p>
 			<p>
 				The demo's main costs are repeated full-screen rendering, preparation of render targets and
@@ -80,8 +82,8 @@
 				before interaction. Cold navigation still needs separate attention; a smooth steady
 				interaction does not establish that the first navigation is free of long frames.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'measurement-conditions',
@@ -89,7 +91,8 @@
 			headline: 'Measurement conditions',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				The reported machine is a Surface Book with an i7-1065G7 and GTX 1650, a 3000 by 2000
 				display, 200% zoom and an approximately 1098 by 831 CSS-pixel browser viewport. Measurements
@@ -110,9 +113,9 @@
 				<code>animating</code> phase.
 			</p>
 			<p>
-				Frame percentiles cover the interaction and a short settling tail. They are <strong
-					>not GPU timings</strong
-				>
+				Frame percentiles cover the interaction and a short settling tail. They are <strong>
+					not GPU timings
+				</strong>
 				or an average of continuously rendered FPS. Idle frames can lower the median. Cold compilation,
 				browser scheduling, thermal state and other applications introduce variation; results are single-run
 				diagnostics, not a statistically controlled benchmark. Main-thread <code>TaskDuration</code>
@@ -124,8 +127,8 @@
 				phase/gesture validation; the later matching wheel sequence confirms the mild zoom enlarges the
 				model by approximately 22% without entering the close-up UI. Full close-up is measured separately.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'measured-results',
@@ -133,7 +136,8 @@
 			headline: 'Measured results',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				The final run keeps native DPR 2 and uses the new <strong>render</strong> ratio 1. It includes
 				all listed optimizations and prewarming on detail binding. Values below are browser RAF intervals
@@ -221,8 +225,8 @@
 				about 1557 to 1018 ms, with style recalculation from 140 to 80 ms. These totals cover the
 				whole gesture and settling period, not individual frame times.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'findings-and-implemented-changes',
@@ -230,7 +234,8 @@
 			headline: 'Findings and implemented changes',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -242,132 +247,132 @@
 				<tbody>
 					<tr>
 						<td>Output resolution</td>
-						<td
-							>The old cap was DPR 2 with no pixel-area budget. At 1098 by 831, that is 3,649,752
+						<td>
+							The old cap was DPR 2 with no pixel-area budget. At 1098 by 831, that is 3,649,752
 							pixels per full-size image. The default is now DPR 1, or 912,438 pixels: 75% fewer
-							pixels per such pass.</td
-						>
-						<td
-							>Configurable on <code>Stage</code>, <code>BrandStageShell</code> and
+							pixels per such pass.
+						</td>
+						<td>
+							Configurable on <code>Stage</code>, <code>BrandStageShell</code> and
 							<code>StageExperience</code>. HTML text remains at native resolution. 3D edges are
-							less densely sampled on high-DPI screens.</td
-						>
+							less densely sampled on high-DPI screens.
+						</td>
 					</tr>
 					<tr>
 						<td>Temporary catalog fades</td>
-						<td
-							>A prepared approximately 524k-pixel capture grew to full drawing-buffer size on the
+						<td>
+							A prepared approximately 524k-pixel capture grew to full drawing-buffer size on the
 							first moving frame. The fade now retains the same 524,288-pixel budget as Low/High
-							refinement.</td
-						>
-						<td
-							>Prevents a large allocation during motion. Temporary fades are less detailed; settled
-							geometry follows the configured stage resolution.</td
-						>
+							refinement.
+						</td>
+						<td>
+							Prevents a large allocation during motion. Temporary fades are less detailed; settled
+							geometry follows the configured stage resolution.
+						</td>
 					</tr>
 					<tr>
 						<td>Empty catalog submissions</td>
-						<td
-							>Empty rear/front scenes and an empty unclipped carousel scene were still submitted.
+						<td>
+							Empty rear/front scenes and an empty unclipped carousel scene were still submitted.
 							Three's canvas render path also applies a full-screen output conversion for each such
-							submission.</td
-						>
+							submission.
+						</td>
 						<td>Empty bands now skip rendering while retained handoff geometry remains visible.</td>
 					</tr>
 					<tr>
 						<td>Backdrop resolve</td>
-						<td
-							>A Gaussian image calculated at half CSS density was copied back to full output
-							density.</td
-						>
-						<td
-							>Resolve textures now retain the Gaussian density and normalized UV mapping. At old
-							DPR 2, this removes 15 of every 16 resolved pixels for blur values of at least 4.
-							Zero-blur textures retain sharp resolution.</td
-						>
+						<td>
+							A Gaussian image calculated at half CSS density was copied back to full output
+							density.
+						</td>
+						<td>
+							Resolve textures now retain the Gaussian density and normalized UV mapping. At old DPR
+							2, this removes 15 of every 16 resolved pixels for blur values of at least 4.
+							Zero-blur textures retain sharp resolution.
+						</td>
 					</tr>
 					<tr>
 						<td>Minimap DOM projection</td>
-						<td
-							>CPU sampling attributed about 346.5 ms to <code>offsetLeft</code> in
+						<td>
+							CPU sampling attributed about 346.5 ms to <code>offsetLeft</code> in
 							<code>renderFlatMinimapSurface</code> during one baseline navigation. It followed style/CSS3D
-							writes and forced synchronization.</td
-						>
-						<td
-							>Projected surfaces explicitly own a zero-margin origin; the transform now uses that
+							writes and forced synchronization.
+						</td>
+						<td>
+							Projected surfaces explicitly own a zero-margin origin; the transform now uses that
 							origin without reading DOM offsets. Corner-projection tests cover rest, tilt and
-							resize.</td
-						>
+							resize.
+						</td>
 					</tr>
 					<tr>
 						<td>Carousel layout</td>
-						<td
-							>Every actor wrote hit-target styles before reading the next summary's <code
-								>offsetWidth</code
-							>/<code>offsetHeight</code>.</td
-						>
-						<td
-							>Summary dimensions are cached in the measurement phase and invalidated by <code
-								>ResizeObserver</code
-							>, including changes to summary content.</td
-						>
+						<td>
+							Every actor wrote hit-target styles before reading the next summary's <code>
+								offsetWidth
+							</code>/<code>offsetHeight</code>.
+						</td>
+						<td>
+							Summary dimensions are cached in the measurement phase and invalidated by <code>
+								ResizeObserver
+							</code>, including changes to summary content.
+						</td>
 					</tr>
 					<tr>
 						<td>Scroll styles</td>
-						<td
-							>Every virtual-scroll frame changed an inherited custom property on the whole document
-							subtree, with only one docked-minimap consumer.</td
-						>
-						<td
-							>Only the docked minimap now receives its compensated position. Fractional/reverse
-							scroll, desktop/compact docking and teardown are tested.</td
-						>
+						<td>
+							Every virtual-scroll frame changed an inherited custom property on the whole document
+							subtree, with only one docked-minimap consumer.
+						</td>
+						<td>
+							Only the docked minimap now receives its compensated position. Fractional/reverse
+							scroll, desktop/compact docking and teardown are tested.
+						</td>
 					</tr>
 					<tr>
 						<td>Zoom clock</td>
-						<td
-							>Wheel and SpaceMouse events overwrote the timestamp used to calculate the next
-							rendered-frame delta. Input immediately before RAF shortened damping time.</td
-						>
-						<td
-							>Only rendering advances the frame clock. Burst-input tests exercise the actual
-							stage/input wiring.</td
-						>
+						<td>
+							Wheel and SpaceMouse events overwrote the timestamp used to calculate the next
+							rendered-frame delta. Input immediately before RAF shortened damping time.
+						</td>
+						<td>
+							Only rendering advances the frame clock. Burst-input tests exercise the actual
+							stage/input wiring.
+						</td>
 					</tr>
 					<tr>
 						<td>Transition DOM snapshots</td>
-						<td
-							>Appending/hiding one snapshot before measuring the next repeatedly dirtied connected
-							DOM.</td
-						>
-						<td
-							>Outgoing and incoming clones are collected while detached and appended after
+						<td>
+							Appending/hiding one snapshot before measuring the next repeatedly dirtied connected
+							DOM.
+						</td>
+						<td>
+							Outgoing and incoming clones are collected while detached and appended after
 							measurement. Complete computed styles and cleanup behavior are retained. Unchanged
-							transition opacity values are not rewritten.</td
-						>
+							transition opacity values are not rewritten.
+						</td>
 					</tr>
 					<tr>
 						<td>Minimap ring</td>
-						<td
-							>Identical viewport geometry rebuilt contour vectors, bounds and GPU buffers on every
-							update.</td
-						>
-						<td
-							>Exact input caching skips unchanged updates; changed radii/dimensions still
-							invalidate it.</td
-						>
+						<td>
+							Identical viewport geometry rebuilt contour vectors, bounds and GPU buffers on every
+							update.
+						</td>
+						<td>
+							Exact input caching skips unchanged updates; changed radii/dimensions still invalidate
+							it.
+						</td>
 					</tr>
 					<tr>
 						<td>First interaction after navigation</td>
-						<td
-							>Initial stage creation warmed both quality target sets, but page rebinding did not.
-							Hidden frosted minimap blur therefore remained cold until zoom.</td
-						>
-						<td
-							>Rebinding now warms full and scroll sets before motion, followed by existing zoom
+						<td>
+							Initial stage creation warmed both quality target sets, but page rebinding did not.
+							Hidden frosted minimap blur therefore remained cold until zoom.
+						</td>
+						<td>
+							Rebinding now warms full and scroll sets before motion, followed by existing zoom
 							preparation and GPU completion synchronization. This deliberately spends work during
-							binding instead of the first gesture.</td
-						>
+							binding instead of the first gesture.
+						</td>
 					</tr>
 				</tbody>
 			</table>
@@ -376,56 +381,66 @@
 				<li>
 					<a
 						href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/stage/renderSettings.ts"
-						>Render resolution policy</a
 					>
+						Render resolution policy
+					</a>
 					and
 					<a
 						href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/stage/StageRenderPipeline.ts"
-						>render pipeline</a
-					>.
+					>
+						render pipeline
+					</a>.
 				</li>
 				<li>
 					<a
 						href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/catalog/CatalogSpatialElementLayer.ts"
-						>Catalog rendering and measurement</a
-					>,
+					>
+						Catalog rendering and measurement
+					</a>,
 					<a
 						href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/catalog/CatalogGeometryFade.ts"
-						>fade capture</a
-					>, and
+					>
+						fade capture
+					</a>, and
 					<a
 						href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/catalog/CatalogTransition.ts"
-						>transition snapshots</a
-					>.
+					>
+						transition snapshots
+					</a>.
 				</li>
 				<li>
 					<a
 						href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/stage/StageExperience.ts"
-						>Frame lifecycle</a
-					>,
+					>
+						Frame lifecycle
+					</a>,
 					<a
 						href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/stage/PanelPresentationController.ts"
-						>DOM projection</a
-					>, and
+					>
+						DOM projection
+					</a>, and
 					<a
 						href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/stage/VirtualScrollController.ts"
-						>virtual scrolling</a
-					>.
+					>
+						virtual scrolling
+					</a>.
 				</li>
 				<li>
 					<a
 						href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/spatial-element/SpatialElementDockController.ts"
-						>Dock positioning</a
 					>
+						Dock positioning
+					</a>
 					and
 					<a
 						href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/stage/minimap/MinimapGeometry.ts"
-						>minimap geometry</a
-					>.
+					>
+						minimap geometry
+					</a>.
 				</li>
 			</ul>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'repository-areas-examined',
@@ -433,7 +448,8 @@
 			headline: 'Repository areas examined',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				The review covered core stage scheduling, interaction/picking, render/output bands, blur and
 				outline passes, panel geometry and projection, minimap rendering, virtual scroll/docking,
@@ -455,8 +471,8 @@
 				mechanisms were preserved. More aggressive mesh compression, a new worker pipeline, or
 				replacing the framework are not supported as priorities by the measurements collected here.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'remaining-priorities',
@@ -464,7 +480,8 @@
 			headline: 'Remaining priorities',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<ol>
 				<li>
 					<strong>Cold navigation and shader variants.</strong> Preparation still causes a visible delay
@@ -507,8 +524,8 @@
 				should be recorded for every comparison instead of assuming that a laptop's installed GTX is
 				active.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'reproduce-and-tune',
@@ -516,7 +533,8 @@
 			headline: 'Reproduce and tune',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>Run from the repository root in PowerShell:</p>
 
 			<CodeBlock
@@ -557,6 +575,6 @@
 				close-up and docked layout; functional tests deliberately do not impose unstable
 				machine-dependent FPS thresholds.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

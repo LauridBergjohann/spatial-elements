@@ -16,7 +16,7 @@ export function freezeCardAppearance(card: HTMLElement): () => void {
 		targets.push({ element, properties: ['transform', 'text-shadow'] });
 	}
 	if (surface) targets.push({ element: surface,
-		properties: ['border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color'] });
+		properties: ['box-shadow', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color'] });
 	const poster = card.querySelector<HTMLElement>('[data-catalog-poster]');
 	if (poster) targets.push({ element: poster, properties: ['transform', 'opacity'] });
 	const writes: { element: HTMLElement; name: string; frozen?: string; original: string; priority: string }[] = [];

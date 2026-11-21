@@ -10,7 +10,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -31,7 +31,8 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Viewport layout controls the overall page. Container width controls its content grid.
 				Keeping these separate lets a wide screen contain a narrower detail pane without forcing
@@ -39,13 +40,13 @@
 			</p>
 			<p><img src="/documentation/images/layout-and-grid.png" alt="" loading="lazy" /></p>
 			<p>
-				<em
-					>The grid measures its unpadded container. Section padding is the grid's single outer
-					gutter; it is not added a second time.</em
-				>
+				<em>
+					The grid measures its unpadded container. Section padding is the grid's single outer
+					gutter; it is not added a second time.
+				</em>
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'viewport-composition',
@@ -53,7 +54,8 @@
 			headline: 'Viewport composition',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>All dimensions are CSS pixels. Device pixel ratio does not choose a breakpoint.</p>
 			<table>
 				<thead>
@@ -103,12 +105,12 @@
 			</table>
 			<p>
 				Scrollbar and safe-area insets reduce usable space. A 3XL viewport shorter than 512 usable
-				pixels uses the 2XL detail flow composition. The <a href="/docs/advanced/reading-pane/"
-					>ultra-wide guide</a
-				> gives pane geometry.
+				pixels uses the 2XL detail flow composition. The <a href="/docs/advanced/reading-pane/">
+					ultra-wide guide
+				</a> gives pane geometry.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'four-container-grids',
@@ -116,7 +118,8 @@
 			headline: 'Four container grids',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>&lt;!-- layout-grid-table:start --&gt;</p>
 			<table>
 				<thead>
@@ -189,8 +192,8 @@
 				<code>s * columnWidth + (s - 1)g</code>. Fractional pixels are retained. This matters when
 				GPU text must align with native text on the first enhanced frame.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'explicit-blocks',
@@ -198,7 +201,8 @@
 			headline: 'Explicit blocks',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				<code>ContentGrid</code> adds no second section padding. Put <code>ContentBlock</code>
 				components inside it. <code>span</code> accepts a number or an object keyed by
@@ -220,8 +224,8 @@
 				Arbitrary Section children remain ordinary HTML. Opt into blocks deliberately; the framework
 				does not distribute paragraphs into columns automatically.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'inspect-it',
@@ -229,13 +233,14 @@
 			headline: 'Inspect it',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Open <code>/docs/examples/grid/</code> and resize the container independently of the window. Boundary
 				tests cover fractional widths around 600, 840 and 1200, classic scrollbars, embedded containers
 				and the 1536px cap. The tokens are the source of truth; generated CSS and the reference tables
 				must be regenerated together when they change.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { BrandStageShell } from '@spatial-elements/sveltekit';
-	import { theme } from '$lib/staged-production-proof/catalog';
-	import LiveSummary from '$lib/staged-production-proof/LiveSummary.svelte';
+	import { theme } from '#lib/staged-production-proof/catalog.ts';
+	import LiveSummary from '#lib/staged-production-proof/LiveSummary.svelte';
 	let { children } = $props();
 </script>
 

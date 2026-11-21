@@ -79,7 +79,7 @@ async function readySource(page: Page, evidence: Evidence, view: 'list' | 'carou
 		observer.observe(root, { attributes: true, attributeFilter: ['data-catalog-staged-phase'] });
 		probe.stop = () => observer.disconnect();
 	});
-	const link = view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first()
+	const link = view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first().locator('a.primary-link')
 		: page.locator('[data-carousel-item="column"] .spatial-element-target');
 	return { link, id: stats.backgroundOutput.targetTextureId!, stats };
 }

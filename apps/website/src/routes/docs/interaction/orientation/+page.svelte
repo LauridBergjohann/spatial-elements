@@ -5,7 +5,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -26,7 +26,8 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				<code>SpatialCardGridSection</code> and <code>SpatialCarouselSection</code> enable device
 				orientation automatically; neither component exposes a <code>deviceOrientation</code>
@@ -97,8 +98,8 @@
 				devices. The axis mapping and filtering have deterministic tests; physical device testing
 				remains necessary.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'hardware-acceptance-pass',
@@ -106,7 +107,8 @@
 			headline: 'Hardware acceptance pass',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Serve over HTTPS (a phone's LAN HTTP address is not a secure origin). Check iOS Safari,
 				Android Chrome and a sensor-equipped Windows tablet, both portrait and landscape, including
@@ -138,8 +140,8 @@
 				testing real sensor timing and calibration on hardware.
 			</p>
 			<p>Reference: https://www.w3.org/TR/orientation-event/</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'automatic-access',
@@ -147,11 +149,12 @@
 			headline: 'Automatic access',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
-				Lists and carousels acquire sensor access automatically. Enable <code
-					>deviceOrientation</code
-				>
+				Lists and carousels acquire sensor access automatically. Enable <code>
+					deviceOrientation
+				</code>
 				on BrandStageShell for detail geometry and minimaps as well. The shell silently attempts to reuse
 				existing permission. If user activation is required, it requests permission synchronously on a
 				trusted, unmodified internal link click. It does not prevent or delay client-side navigation.
@@ -160,8 +163,8 @@
 				motion suppresses requests. Actual browser prompts remain browser-controlled. Full-document navigation
 				may interrupt a pending prompt; client-side routing retains the request and its result.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'scroll-and-viewport-changes',
@@ -169,7 +172,8 @@
 			headline: 'Scroll and viewport changes',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Native/virtual scrolling and touch contact pause sensor evaluation and application. This
 				includes horizontal carousel drags, held fingers and multi-touch. Pointer cancellation
@@ -190,8 +194,8 @@
 				aspect ratios across height changes. Actual Android address-bar animation and physical-device
 				scroll performance still require a hardware acceptance pass.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'carousel-camera',
@@ -199,7 +203,8 @@
 			headline: 'Carousel camera',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				<code>SpatialCarouselSection</code> automatically uses the same permission, calibration, scroll
 				suspension and sensor filtering as lists/details. The geometry camera orbits the selected model
@@ -221,8 +226,8 @@
 				quiet background. Extra model rotation eases out when selection changes; reduced motion
 				clears it. Sensor scroll suspension still applies.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'mouse-proximity',
@@ -230,7 +235,8 @@
 			headline: 'Mouse proximity',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Mouse movement no longer changes the carousel camera. Each visible model leans toward a
 				nearby mouse independently, using the original 4 degree bound, 150 px smooth falloff outside
@@ -239,6 +245,6 @@
 				are unaffected by mouse movement. The focus model can combine this local mouse tilt with its
 				independent sensor rotation. Shadows and hit regions follow the geometry.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

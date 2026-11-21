@@ -5,7 +5,7 @@
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { getStageVisualScrollPosition, STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
 	import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
-	import { Navigation } from '@page-sections/svelte';
+	import { Header } from '@page-sections/svelte';
 	import { layoutTokens, type MenuItem } from '@page-sections/core';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
 	import { useSpatialTheme } from './brandContext.js';
@@ -47,7 +47,7 @@
 		for (const details of rack?.querySelectorAll<HTMLDetailsElement>('details[open]') ?? []) details.open = false;
 	}
 	afterNavigate(() => { void tick().then(updateMode); });
-	beforeNavigate(closePopovers);
+	beforeNavigate((navigation) => { if (!navigation.shallow || navigation.type === 'popstate') closePopovers(); });
 
 	onMount(() => {
 		stage = rack.closest<HTMLElement>('.stage') ?? undefined;
@@ -117,7 +117,7 @@
 
 <div class="spatial-shell-track" style:--ps-sticky-range={`${spatialLayoutTokens.menu.scrollThreshold}px`} data-spatial-navigation-shell>
  <div bind:this={rack} class="spatial-shell-rack" data-stage-scroll-shell data-catalog-shell data-spatial-navigation-glass={theme.panelTheme.surface === 'glass' ? '' : undefined}>
-  {#if navigation}{@render navigation()}{:else}<Navigation {menu} {items} {brand} {tools} {left} {right} />{/if}
+  {#if navigation}{@render navigation()}{:else}<Header {menu} {items} {brand} {tools} {left} {right} />{/if}
  </div>
 </div>
 <style>

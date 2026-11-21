@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import { base } from '$app/paths';
+	import { resolve } from '$app/paths';
 	import { afterNavigate } from '$app/navigation';
-	import Search from 'lucide-svelte/icons/search';
+	import Search from '@lucide/svelte/icons/search';
 	import { showcaseSegments } from './showcase/segments';
 	import { showcaseProducts } from './showcase/products';
 	import { documents } from './catalog';
@@ -182,7 +182,7 @@
 						<li role="presentation">
 							<a
 								id={`site-search-result-${index}`}
-								href={base + item.href}
+								href={resolve('/') + item.href.slice(1)}
 								role="option"
 								aria-selected={active === index}
 								tabindex="-1"
@@ -201,9 +201,9 @@
 			</div>
 		{/if}
 	{:else}
-		<a class="search-fallback" href={base + '/docs/'} aria-label="Browse documentation"
-			><Search size={18} aria-hidden="true" /><span>Browse documentation</span></a
-		>
+		<a class="search-fallback" href={resolve('docs/')} aria-label="Browse documentation">
+			<Search size={18} aria-hidden="true" /><span>Browse documentation</span>
+		</a>
 	{/if}
 </div>
 

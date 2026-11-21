@@ -14,7 +14,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -35,7 +35,8 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				A summary is a real, stateful component. It can contain links, inputs, buttons and ordinary
 				semantic content. Moving its presentation must not replace its live DOM with a screenshot or
@@ -91,8 +92,8 @@
 				snippet. The detail heading keeps <code>id=&quot;spatial-element-title&quot;</code> so the surrounding
 				panel's accessible label resolves correctly.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'natural-height-and-responsive-content',
@@ -100,13 +101,14 @@
 			headline: 'Natural height and responsive content',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p><img src="/documentation/images/summary-columns.png" alt="" loading="lazy" /></p>
 			<p>
-				<em
-					>A custom snippet chooses its own container-query columns. The framework does not
-					prescribe these internal breakpoints or equalize panel heights.</em
-				>
+				<em>
+					A custom snippet chooses its own container-query columns. The framework does not prescribe
+					these internal breakpoints or equalize panel heights.
+				</em>
 			</p>
 			<p>
 				The framework knows the summary's width and anchor. Text determines a detail summary's
@@ -139,8 +141,8 @@
 				when possible. Arbitrary external font changes during an animation are still a real layout
 				change and must be tested rather than assumed invisible.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'ownership-and-transition-boundaries',
@@ -148,7 +150,8 @@
 			headline: 'Ownership and transition boundaries',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Optional <code>headerDetails</code> and <code>actionIcon</code> snippets on
 				<code>SpatialElementPage</code> customize the compact scroll header and the fixed 3XL pane
@@ -183,6 +186,6 @@
 				This separation keeps the user's ongoing interaction intact and avoids rendering two copies
 				of the same form during a visual handoff.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

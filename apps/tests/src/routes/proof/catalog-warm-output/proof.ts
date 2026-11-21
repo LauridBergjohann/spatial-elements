@@ -11,7 +11,7 @@ import { carouselPose } from '@spatial-elements/core/catalog/catalogPose';
 import { captureCarouselElement } from '@spatial-elements/core/catalog/carouselPanelProjection';
 import { STAGE_TONE_MAPPING_EXPOSURE } from '@spatial-elements/core/stage/LiquidGlassPanel';
 import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
-import { overview } from '$lib/catalog';
+import { overview } from '#lib/catalog.ts';
 import type { BackgroundCheckpoint } from '../background-layer-output/checkpoints';
 
 export interface WarmGpuCall {

@@ -28,11 +28,11 @@
 	<h2>Orbit lamp</h2>
 	<div class="fields" data-proof-fields>
 		<label>Engraving <input name="engraving" bind:value={engraving} /></label>
-		<label
-			>Variant <select name="variant" bind:value={variant}
-				><option value="blue">Blue</option><option value="silver">Silver</option></select
-			></label
-		>
+		<label>
+			Variant <select name="variant" bind:value={variant}>
+				<option value="blue">Blue</option><option value="silver">Silver</option>
+			</select>
+		</label>
 		<div>
 			<button type="button" onclick={() => quantity++}>Add one</button>
 			<output data-quantity>{quantity}</output>

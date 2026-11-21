@@ -1,5 +1,5 @@
 <script lang="ts">
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section } from '@page-sections/svelte';
 </script>
 
@@ -56,9 +56,9 @@
 				sidebar items with <code>resolveNavigation</code>.
 			</p>
 			<p>
-				When sharing a complete Page Sections navigation with non-spatial routes, pass it as the <code
-					>navigation</code
-				>
+				When sharing a complete Page Sections navigation with non-spatial routes, pass it as the <code>
+					navigation
+				</code>
 				snippet on <code>BrandStageShell</code>. The spatial shell then owns its positioning, scroll
 				compensation and surfaces. Keep the menu inside that shell so it reserves space above the
 				detail page.
@@ -83,8 +83,10 @@
 			</p>
 			<p>
 				This documentation demonstrates those components. See the <a
-					href="https://page-sections.bergjohann.com/">Page Sections documentation</a
-				> for the complete navigation and heading APIs.
+					href="https://page-sections.bergjohann.com/"
+				>
+					Page Sections documentation
+				</a> for the complete navigation and heading APIs.
 			</p>
 		</div>
 	</Section>
@@ -104,18 +106,18 @@
 				collection; it does not have to match a URL prefix. Keep it and your element IDs stable.
 			</p>
 			<p>
-				Use native links so navigation also works without JavaScript. <code
-					>getSpatialListItems</code
-				>
+				Use native links so navigation also works without JavaScript. <code>
+					getSpatialListItems
+				</code>
 				derives detail links from your element data and an explicit route prefix. You can also provide
 				each item's own <code>href</code>. Spatial sections register those destinations
 				automatically. Supply a poster for each model so cards and detail pages stay useful without
 				WebGPU.
 			</p>
 			<p>
-				<a href="/docs/foundations/first-experience/"
-					>Build the complete collection and detail example</a
-				>, then explore
+				<a href="/docs/foundations/first-experience/">
+					Build the complete collection and detail example
+				</a>, then explore
 				<a href="/docs/sections/playground/">the interactive collection playground</a>.
 			</p>
 		</div>

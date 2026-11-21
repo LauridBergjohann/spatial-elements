@@ -1,5 +1,5 @@
 import type { LayoutLoad } from './$types';
-import { slotFromPath } from '$lib/persistence-proof/handoff';
+import { slotFromPath } from '#lib/persistence-proof/handoff.ts';
 
 // Request-local SSR descriptor: the parent can render the real instance before child mount.
 export const load: LayoutLoad = ({ url }) => ({

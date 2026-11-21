@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ContentPage from '$lib/SpatialDocumentationPage.svelte';
+	import ContentPage from '#lib/SpatialDocumentationPage.svelte';
 	import { HeadingSection } from '@page-sections/svelte';
 
 	import { Section } from '@spatial-elements/sveltekit';

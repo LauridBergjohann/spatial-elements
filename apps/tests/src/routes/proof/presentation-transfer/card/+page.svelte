@@ -2,7 +2,7 @@
 	import { HeadingSection } from '@page-sections/svelte';
 
 	import { ContentPage, SpatialCardGridSection } from '@spatial-elements/sveltekit';
-	import { overview } from '$lib/catalog';
+	import { overview } from '#lib/catalog.ts';
 </script>
 
 <ContentPage hdr="/assets/demo/studio.hdr" page={{ title: 'Card source' }}>

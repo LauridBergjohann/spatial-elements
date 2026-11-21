@@ -10,7 +10,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -31,7 +31,8 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Put persistent navigation inside the <code>BrandStageShell</code> snippets. The shell supplies
 				boxes and surfaces; the host supplies real links, branding and actions.
@@ -50,8 +51,8 @@
 				own their internal mobile behavior. The demo's appearance control uses a trigger and a native
 				popover rather than trying to fit three choices inside one satellite.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'shared-elements',
@@ -83,7 +84,8 @@
 			headline: 'The 32px rule',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p><img src="/documentation/images/menu-scroll.png" alt="" loading="lazy" /></p>
 			<p><em>The same position rule drives native sticky layout and enhanced compensation.</em></p>
 			<p>
@@ -108,8 +110,8 @@
 				fades the native menu with its corresponding spatial surface; the native layout measurement
 				stays unchanged.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'breadcrumbs',
@@ -117,7 +119,8 @@
 			headline: 'Breadcrumbs',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Breadcrumb typography follows the viewport layout, not the inner grid. Breadcrumbs remain
 				one line with native horizontal scrolling when necessary; the trailing end is visible
@@ -125,8 +128,8 @@
 				the final current-page label is omitted, since the title row already identifies it. The
 				preceding separator remains.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'choosing-the-surface',
@@ -134,7 +137,8 @@
 			headline: 'Choosing the surface',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -172,6 +176,6 @@
 				duplicates the shared layout contract and can separate DOM from projected panels during
 				scroll or transitions.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -20,15 +20,16 @@
 			headline: 'From HTML to spatial experiences',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><p>
+	>
+		<p>
 			Start with content and real links. Add models, a shared stage and spatial interactions as
 			progressive enhancements. The chapter links below guide you from your first page to detailed
 			API references.
 		</p>
 		<p>
-			For ordinary content sections, see the <a href="https://page-sections.bergjohann.com/docs/"
-				>Page Sections documentation</a
-			>.
-		</p></Section
-	>
+			For ordinary content sections, see the <a href="https://page-sections.bergjohann.com/docs/">
+				Page Sections documentation
+			</a>.
+		</p>
+	</Section>
 </WebsitePage>

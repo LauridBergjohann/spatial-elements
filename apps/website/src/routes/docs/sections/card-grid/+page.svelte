@@ -10,7 +10,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -31,7 +31,8 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Cards use Page Sections 0.3.0. The media frame has its own configurable aspect ratio; the
 				text area adds independent height. All cards in a collection have equal heights across rows.
@@ -52,9 +53,10 @@
 				<code>textAlign=&quot;start|center&quot;</code>,
 				<code>mediaAspect=&quot;1/1|3/2|4/3&quot;</code>
 				and <code>mediaFit=&quot;contain|cover&quot;</code>. <code>SpatialListPage</code> forwards
-				all of them. <code>cardVariant=&quot;catalog&quot;</code> (default) uses responsive
-				size-based spans; <code>cardVariant=&quot;editorial&quot;</code> uses <code>itemSpan</code>
-				(default <code>&#123; xs: 4, s: 3, m: 4, l: 4 &#125;</code>) and a title link. Spatial media
+				all of them. Cards use responsive size-based spans by default. Set <code>itemSpan</code>
+				to choose explicit column spans. <code>cardShadow</code> adds a resting shadow; hovering or
+				keyboard focus highlights the card. The whole card is a native link, including its media.
+				Descriptions appear when supplied and never use larger text than the title. Spatial media
 				defaults to <code>1/1</code>; Page Sections defaults to <code>3/2</code>. Keep
 				<code>itemKey</code> stable for repeated items and reordering.
 			</p>
@@ -64,8 +66,8 @@
 				language={examples[0].language}
 				highlighted={data.highlights[0]}
 			/>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'measured-media-and-independent-text',
@@ -73,7 +75,8 @@
 			headline: 'Measured media and independent text',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p><img src="/documentation/images/card-fit.png" alt="" loading="lazy" /></p>
 			<p>
 				The media frame alone has an aspect ratio. At 320px, an M card is 142px wide, with a 126px
@@ -86,8 +89,8 @@
 				transition targets. Format changes never stretch a model. Persistent card roots and
 				occurrence identities survive navigation and keyed moves.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'interaction-and-fallback',
@@ -95,7 +98,8 @@
 			headline: 'Interaction and fallback',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Cards remain real links with posters and readable labels before hydration or GPU startup.
 				Mouse proximity and device orientation remain spatial enhancements; keyboard focus, reduced
@@ -111,8 +115,8 @@
 				<img src="/documentation/images/cards-840.png" alt="" loading="lazy" />
 				<img src="/documentation/images/cards-large-720.png" alt="" loading="lazy" />
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'spatial-component-names-and-carousel-fallback',
@@ -120,7 +124,8 @@
 			headline: 'Spatial component names and carousel fallback',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Use <code>SpatialCardGridSection</code> and <code>SpatialCarouselSection</code> from
 				<code>@spatial-elements/sveltekit</code>. The old <code>SpatialCardGridSection</code> and
@@ -142,6 +147,6 @@
 				to the section. This also applies to transparent backgrounds. Layout measurements are cached and
 				adjusted numerically while scrolling.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

@@ -5,7 +5,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -26,7 +26,8 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				<code>SpatialElementPage</code> combines one media fit, a media rail, a natural-height summary
 				and ordinary sections. The same layout resolver supplies CSS and the renderer. A model is fitted
@@ -41,8 +42,8 @@
 				more space around the model. Interactive zoom deliberately leaves this resting fit while the surrounding
 				interface clears away.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'flow-layouts-xs-through-2xl',
@@ -50,7 +51,8 @@
 			headline: 'Flow layouts: XS through 2XL',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				XS and S place the media rail horizontally below the model, followed by the summary. M and
 				wider place a vertical rail at the left and the summary beside the model. Content follows
@@ -137,8 +139,8 @@
 				subtle divider and shadow. Its section menu straddles the bottom edge of the pane, with half
 				its height overlapping the content surface.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'seven-sizes-in-the-public-demo',
@@ -146,7 +148,8 @@
 			headline: 'Seven sizes in the public demo',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				These are individual WebGPU screenshots of <code>/demo/elements/column</code>, all at 900
 				CSS pixels high. They show the same content and resting camera, with no private brand
@@ -161,9 +164,9 @@
 			<h3>S: 720px wide</h3>
 			<p><img src="/documentation/images/detail-s.png" alt="" loading="lazy" /></p>
 			<p>
-				<em
-					>The summary continues below the viewport; its height is not compressed to fit one screen.</em
-				>
+				<em>
+					The summary continues below the viewport; its height is not compressed to fit one screen.
+				</em>
 			</p>
 			<h3>M: 1024px wide</h3>
 			<p><img src="/documentation/images/detail-m.png" alt="" loading="lazy" /></p>
@@ -171,36 +174,36 @@
 			<h3>L: 1440px wide</h3>
 			<p><img src="/documentation/images/detail-l.png" alt="" loading="lazy" /></p>
 			<p>
-				<em
-					>The summary uses four grid columns, with the controls immediately beside its upper edge.</em
-				>
+				<em>
+					The summary uses four grid columns, with the controls immediately beside its upper edge.
+				</em>
 			</p>
 			<h3>XL: 1700px wide</h3>
 			<p><img src="/documentation/images/detail-xl.png" alt="" loading="lazy" /></p>
 			<p>
-				<em
-					>The menu gains its top inset and satellite slots. Detached content sections use the
-					capped centered container.</em
-				>
+				<em>
+					The menu gains its top inset and satellite slots. Detached content sections use the capped
+					centered container.
+				</em>
 			</p>
 			<h3>2XL: 2000px wide</h3>
 			<p><img src="/documentation/images/detail-2xl.png" alt="" loading="lazy" /></p>
 			<p>
-				<em
-					>The detail composition is still in flow; widening the viewport does not stretch ordinary
-					content beyond its cap.</em
-				>
+				<em>
+					The detail composition is still in flow; widening the viewport does not stretch ordinary
+					content beyond its cap.
+				</em>
 			</p>
 			<h3>3XL: 2456px wide</h3>
 			<p><img src="/documentation/images/detail-3xl.png" alt="" loading="lazy" /></p>
 			<p>
-				<em
-					>The pane owns its header and bottom section navigation. Its live content scrolls with the
-					document.</em
-				>
+				<em>
+					The pane owns its header and bottom section navigation. Its live content scrolls with the
+					document.
+				</em>
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'docking-while-reading',
@@ -208,7 +211,8 @@
 			headline: 'Docking while reading',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Scrolling a flow detail page brings a compact header into view and moves the existing
 				minimap into it. The header is 76px at XS/S, 80px at M and 86px from L. The section submenu
@@ -241,8 +245,8 @@
 				to the source position. When route teardown has already detached that source, the controller
 				uses an ordinary DOM move rather than an invalid state-preserving atomic move.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'zoom-and-fullscreen',
@@ -250,7 +254,8 @@
 			headline: 'Zoom and fullscreen',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Zoom expands the media interaction area and removes page chrome from interaction. The detail
 				button returns to the fitted pose. Click or tap the model to enlarge it until the interface
@@ -308,8 +313,8 @@
 				<a href="/docs/interaction/media/">Media and Interaction</a> describes image/video behavior in
 				the same fit.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'why-heights-are-bounded-not-universally-fixed',
@@ -317,13 +322,14 @@
 			headline: 'Why heights are bounded, not universally fixed',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				A shared width and known media rectangle make navigation predictable. Text can still be
 				longer, translated or authored with a custom snippet. Preserving natural summary height
 				avoids clipping content merely to force all pages into an identical bitmap. Test both short
 				and long summaries at every composition boundary.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

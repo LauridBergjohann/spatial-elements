@@ -15,7 +15,7 @@ import { HeadingSection } from '@page-sections/svelte';
 		hdr,
 		sectionLink,
 		cardSize,
-		cardVariant,
+		cardShadow,
 		itemSpan,
 		textAlign,
 		mediaAspect,
@@ -39,7 +39,7 @@ import { HeadingSection } from '@page-sections/svelte';
 		section={{ id: 'elements', title: 'Elements' }}
 		list={spatialElements}
 		{cardSize}
-		{cardVariant}
+		{cardShadow}
 		{itemSpan}
 		{textAlign}
 		{mediaAspect}

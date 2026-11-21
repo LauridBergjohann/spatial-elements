@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { HeroSection, Section, CardGridSection } from '@page-sections/svelte';
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { SpatialCarouselSection } from '@spatial-elements/sveltekit';
-	import { featuredItems } from '$lib/showcase/collection';
-	import { showcaseHdr } from '$lib/showcase/optimized';
+	import { featuredItems } from '#lib/showcase/collection.ts';
+	import { showcaseHdr } from '#lib/showcase/optimized.ts';
 </script>
 
 <WebsitePage
@@ -40,7 +40,8 @@
 			headline: 'A website first. A spatial experience when it can be.',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Spatial Elements is a SvelteKit library for presenting models alongside text, images and
 				links. Use it for product demonstrations, collections and visual stories. Page Sections
@@ -51,8 +52,8 @@
 				HTML, real links and supplied poster images keep the content available when JavaScript or
 				WebGPU is unavailable.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<SpatialCarouselSection
 		section={{
 			id: 'featured-products',
