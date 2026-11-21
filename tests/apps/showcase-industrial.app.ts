@@ -45,7 +45,9 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 			await page.mouse.move(1650, 450);
 			await page.mouse.wheel(0, rect.y + rect.height / 2 - 450);
 			await expect(target).toBeInViewport({ ratio: 0.99 });
-			await expect(target).toHaveAttribute('data-catalog-model-ready', '', { timeout: 60000 });
+			await expect(page.locator('#wurm-products [data-catalog-card]').filter({
+ has: page.getByRole('link', { name: 'Refrigeration Master Module', exact: true })
+ })).toHaveAttribute('data-catalog-model-ready', '', { timeout: 60000 });
 		}
 		await target.click();
 		await expect(page).toHaveURL(/\/industrial\/wurm-hks-g4\/$/);

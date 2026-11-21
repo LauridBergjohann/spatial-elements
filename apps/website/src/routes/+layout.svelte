@@ -3,10 +3,14 @@
 	import { page } from '$app/state';
 	import { resolve, asset } from '$app/paths';
 	import { BrandStageShell } from '@spatial-elements/sveltekit';
+	import {
+		resolveSpatialSectionBackgrounds,
+		resolveSpatialThemeRadii
+	} from '@spatial-elements/core/spatial-element/spatialTheme';
 	import ShowcaseSummary from '#lib/showcase/ShowcaseSummary.svelte';
 	import { provideShowcaseOrders } from '#lib/showcase/showcaseOrders.svelte.ts';
 	const orders = provideShowcaseOrders();
-	import { websiteTheme } from '#lib/theme.ts';
+	import { websitePageTheme, websiteTheme } from '#lib/theme.ts';
 	import { Header, PageShell } from '@page-sections/svelte';
 	import Menu from '@lucide/svelte/icons/menu';
 	import Settings from '@lucide/svelte/icons/settings';
@@ -17,7 +21,7 @@
 	import NavigationIcon from '#lib/NavigationIcon.svelte';
 	import { getNavigationTree } from '#lib/navigation.ts';
 	import { resolveNavigation } from '@page-sections/core';
-	import { version } from '../../../../packages/sveltekit/package.json';
+	import SiteFooter from '#lib/SiteFooter.svelte';
 	import '../app.css';
 	let { children }: { children: Snippet } = $props();
 	let mode = $state<'light' | 'dark'>('light');
@@ -40,18 +44,36 @@
 			/* The choice still applies in memory. */
 		}
 	}
-	const namespace = $derived(
-		page.url.pathname.startsWith('/docs/examples/') ||
-			page.url.pathname.startsWith('/docs/sections/playground/')
-			? 'docs/examples'
-			: 'showcase'
-	);
+	const namespace = $derived(page.url.pathname.startsWith('/docs/') ? 'docs/examples' : 'showcase');
 	const exclusive = $derived(/^\/showcase\/exclusive(?:\/|$)/.test(page.url.pathname));
 	const industrial = $derived(/^\/showcase\/industrial(?:\/|$)/.test(page.url.pathname));
 	const stageTheme = $derived(
 		websiteTheme(mode, namespace, exclusive ? 'exclusive' : industrial ? 'industrial' : 'default')
 	);
-	// Both Exclusive palettes have dark surfaces, including its brighter variant.
+	const sectionBackgrounds = $derived(resolveSpatialSectionBackgrounds(stageTheme));
+	const pageTheme = $derived(
+		exclusive || industrial
+			? {
+					...websitePageTheme(mode),
+					fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+					background: stageTheme.background,
+					standard: sectionBackgrounds.standard,
+					muted: sectionBackgrounds.muted,
+					ink: stageTheme.colors.ink,
+					body: stageTheme.colors.body,
+					accent: stageTheme.colors.accent,
+					onAccent: stageTheme.colors.onAccent,
+					radius: resolveSpatialThemeRadii(stageTheme).panel + 'px',
+					footerBackground:
+						exclusive || mode === 'dark' ? sectionBackgrounds.standard : stageTheme.colors.accent,
+					footerInk:
+						exclusive || mode === 'dark' ? stageTheme.colors.ink : stageTheme.colors.onAccent,
+					footerBarBackground: sectionBackgrounds.muted,
+					footerBarInk: stageTheme.colors.body
+				}
+			: websitePageTheme(mode)
+	);
+	// Both Exclusive palettes use dark surfaces.
 	const surfaceScheme = $derived(exclusive ? 'dark' : mode);
 	const items = $derived(
 		resolveNavigation(getNavigationTree(page.url), { pathname: page.url.pathname }).items
@@ -117,43 +139,24 @@
 		</Header>
 	</div>
 {/snippet}
-<PageShell
-	mode={surfaceScheme}
-	theme={{
-		background: stageTheme.background,
-		ink: stageTheme.colors.ink,
-		body: stageTheme.colors.body,
-		accent: stageTheme.colors.accent,
-		onAccent: stageTheme.colors.onAccent,
-		standard: stageTheme.sectionBackgrounds?.standard,
-		muted: stageTheme.sectionBackgrounds?.muted,
-		radius: `${stageTheme.radii?.panel ?? 12}px`
-	}}
->
-	<BrandStageShell
-		theme={stageTheme}
-		colorScheme={surfaceScheme}
-		navigation={siteNavigation}
-		deviceOrientation
-	>
-		{#snippet summary(context)}<ShowcaseSummary
-				{...context}
-				{orders}
-				appearance={surfaceScheme}
-			/>{/snippet}
-		<div id="main-content" tabindex="-1">{@render children()}</div>
-	</BrandStageShell>
-	<footer class="site-footer">
-		<a class="site-brand" href={resolve('/')}>
-			<img src={asset('spatial-elements-logo.svg')} alt="" width="24" height="24" />Spatial Elements
-			<span class="version">v{version}</span>
-		</a>
-		<span>Made with Spatial Elements.</span>
-		<a href={resolve('about/#impressum')}>Imprint</a>
-		<a href={resolve('about/#datenschutz')}>Privacy</a>
-		<a href="https://github.com/LauridBergjohann/spatial-elements">Source on GitHub ↗</a>
-	</footer>
-</PageShell>
+<div data-website-theme={exclusive || industrial ? 'showcase' : 'default'}>
+	<PageShell mode={surfaceScheme} theme={pageTheme}>
+		<BrandStageShell
+			theme={stageTheme}
+			colorScheme={surfaceScheme}
+			navigation={siteNavigation}
+			deviceOrientation
+		>
+			{#snippet footer()}<SiteFooter />{/snippet}
+			{#snippet summary(context)}<ShowcaseSummary
+					{...context}
+					{orders}
+					appearance={surfaceScheme}
+				/>{/snippet}
+			<div id="main-content" tabindex="-1">{@render children()}</div>
+		</BrandStageShell>
+	</PageShell>
+</div>
 
 <style>
 	.header-tools {

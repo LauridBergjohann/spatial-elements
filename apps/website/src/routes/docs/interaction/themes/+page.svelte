@@ -54,13 +54,27 @@
 	>
 		<div class="prose">
 			<p>
-				Create a complete <code>SpatialTheme</code> for each palette, keeping the same
-				<code>id</code>
-				and <code>name</code>. The ID is a namespace, not a light/dark identifier.
-				<code>colors</code>, <code>panelTheme</code>, <code>dockedPanelTheme</code>,
-				<code>sectionBackgrounds</code>, legacy <code>sectionTheme</code>, <code>minimapTheme</code>
-				and <code>interactionTheme</code> settings describe both palettes; there is no separate set of
-				dark-color properties.
+				Create a complete <a href="/docs/reference/types/#spatial-theme">
+					<code>SpatialTheme</code>
+				</a>
+				for each palette, keeping the same
+				<a href="/docs/reference/types/#spatial-theme-id"><code>id</code></a>
+				and <a href="/docs/reference/types/#spatial-theme-name"><code>name</code></a>. The ID is a
+				namespace, not a light/dark identifier.
+				<a href="/docs/reference/types/#spatial-theme-colors"><code>colors</code></a>,
+				<a href="/docs/reference/types/#spatial-theme-panel-theme"><code>panelTheme</code></a>,
+				<a href="/docs/reference/types/#spatial-theme-docked-panel-theme">
+					<code>dockedPanelTheme</code>
+				</a>,
+				<a href="/docs/reference/types/#spatial-theme-section-backgrounds">
+					<code>sectionBackgrounds</code>
+				</a>, legacy
+				<a href="/docs/reference/types/#spatial-theme-section-theme"><code>sectionTheme</code></a>,
+				<a href="/docs/reference/types/#spatial-theme-minimap-theme"><code>minimapTheme</code></a>
+				and
+				<a href="/docs/reference/types/#spatial-theme-interaction-theme">
+					<code>interactionTheme</code>
+				</a> settings describe both palettes; there is no separate set of dark-color properties.
 			</p>
 
 			<CodeBlock
@@ -69,26 +83,46 @@
 				highlighted={data.highlights[0]}
 			/>
 			<p>
-				<code>sceneBackground</code> is optional. Its <code>blurriness</code>, <code>tint</code> and
-				<code>tintIntensity</code>
+				<a href="/docs/reference/types/#spatial-theme-scene-background">
+					<code>sceneBackground</code>
+				</a>
+				is optional. Its
+				<a href="/docs/reference/types/#background-settings-blurriness"><code>blurriness</code></a>,
+				<a href="/docs/reference/types/#background-settings-tint"><code>tint</code></a>
+				and
+				<a href="/docs/reference/types/#background-settings-tint-intensity">
+					<code>tintIntensity</code>
+				</a>
 				fields override the corresponding element background fields. Removing an override restores the
 				element's settings. It changes the visible HDR backdrop, not HDR lighting, model materials or
-				asset identity. <code>background</code> remains the flat page color.
+				asset identity.
+				<a href="/docs/reference/types/#spatial-theme-background"><code>background</code></a> remains
+				the flat page color.
 			</p>
 			<p>
-				Set <code>sectionBackgrounds</code> for every light/dark palette. New standard/muted section
-				surfaces use these colors independently of glass/frosted panel tint; changing only legacy
-				<code>sectionTheme.tint</code>
-				does not recolor a new <code>section.background</code> surface. ContentPage can override the
-				flat page color with its <code>background</code> prop without modifying either section colors
-				or the shared theme.
+				Set <a href="/docs/reference/types/#spatial-theme-section-backgrounds">
+					<code>sectionBackgrounds</code>
+				</a>
+				for every light/dark palette. New standard/muted section surfaces use these colors independently
+				of glass/frosted panel tint; changing only legacy
+				<a href="/docs/reference/types/#spatial-section-theme-tint">
+					<code>sectionTheme.tint</code>
+				</a>
+				does not recolor a new
+				<a href="/docs/reference/types/#spatial-element-section-definition-background">
+					<code>section.background</code>
+				</a>
+				surface. ContentPage can override the flat page color with its
+				<a href="/docs/reference/types/#spatial-theme-background"><code>background</code></a> prop without
+				modifying either section colors or the shared theme.
 			</p>
 			<p>
 				<code>radii: &#123; control: 12, panel: 16 &#125;</code> separates cards, small controls and
 				media thumbnails from larger panels and section groups. An explicitly authored legacy
 				<code>panelShape.radius</code>
 				supplies both roles until overridden. Use <code>resolveSpatialThemeRadii(theme)</code> when
-				building custom controls; it supports older themes with no <code>radii</code> group. Content insets
+				building custom controls; it supports older themes with no
+				<a href="/docs/reference/types/#spatial-theme-radii"><code>radii</code></a> group. Content insets
 				remain separate from radius values.
 			</p>
 		</div>
@@ -108,12 +142,16 @@
 				highlighted={data.highlights[1]}
 			/>
 			<p>
-				<code>colorScheme</code> is optional and accepts only <code>light</code> or
+				<a href="/docs/reference/components/#brand-stage-shell-color-scheme">
+					<code>colorScheme</code>
+				</a>
+				is optional and accepts only <code>light</code> or
 				<code>dark</code>. It sets the wrapper's CSS <code>color-scheme</code>, including native
 				form controls. The library never reads <code>matchMedia</code>, writes storage or modifies
 				the document's global preference. A host can use two buttons, three buttons, a menu, or no
-				switch at all. Update the <code>theme</code> prop with the chosen palette; do not key/recreate
-				the shell.
+				switch at all. Update the
+				<a href="/docs/reference/components/#brand-stage-shell-theme"><code>theme</code></a> prop with
+				the chosen palette; do not key/recreate the shell.
 			</p>
 			<p>
 				The <a
@@ -148,8 +186,9 @@
 			<p>
 				<code>ButtonGroup</code> is a controlled, theme-independent choice component inside a
 				<code>Stage</code>
-				or <code>BrandStageShell</code>, with the same panel surface and selected treatment as the
-				detail/fullscreen switch. Place it beside other panels rather than nesting it inside a
+				or <a href="/docs/reference/components/#brand-stage-shell"><code>BrandStageShell</code></a>,
+				with the same panel surface and selected treatment as the detail/fullscreen switch. Place it
+				beside other panels rather than nesting it inside a
 				<code>Panel</code>.
 			</p>
 			<table>
@@ -161,7 +200,9 @@
 				</thead>
 				<tbody>
 					<tr>
-						<td><code>items</code></td>
+						<td>
+							<a href="/docs/reference/components/#brand-stage-shell-items"><code>items</code></a>
+						</td>
 						<td>
 							Readonly array of <code>
 								&#123; value, label, tooltip?, disabled?, selection? &#125;
@@ -177,7 +218,11 @@
 						<td>Called with the clicked value, including clicks on the current selection.</td>
 					</tr>
 					<tr>
-						<td><code>label</code></td>
+						<td>
+							<a href="/docs/reference/types/#spatial-element-media-item-label">
+								<code>label</code>
+							</a>
+						</td>
 						<td>Accessible name of the group.</td>
 					</tr>
 					<tr>
@@ -192,7 +237,10 @@
 						<td>Fixed 40px button width; default false uses intrinsic text width.</td>
 					</tr>
 					<tr>
-						<td><code>shape</code>, <code>theme</code></td>
+						<td>
+							<code>shape</code>,
+							<a href="/docs/reference/components/#brand-stage-shell-theme"><code>theme</code></a>
+						</td>
 						<td>
 							Same appearance contract as Panel. Finite radius values are clamped only at zero;
 							nonfinite values use 12px. Content inset is zero. Pass the resolved theme control
@@ -229,6 +277,33 @@
 				by frame element; navigation still owns registration and page binding. Ordinary color changes
 				preserve the scene captures; changed panel materials or blur settings replace only their affected
 				presentation resources.
+			</p>
+		</div>
+	</Section>
+	<Section
+		section={{
+			id: 'compare-themes',
+			title: 'Compare complete themes',
+			headline: 'Compare complete themes',
+			background: { color: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				Open <a href="/showcase/industrial/">Industrial</a> for a compact blue theme or
+				<a href="/showcase/exclusive/">Exclusive</a> for gold accents and glass surfaces. Switch between
+				light and dark modes, then open a detail page. The route keeps its identity across the collection,
+				summary, controls and content.
+			</p>
+			<p>
+				For ordinary HTML surrounding the stage, coordinate the <a
+					href="https://page-sections.bergjohann.com/docs/reference/types/#page-theme"
+				>
+					PageTheme
+				</a>
+				on PageShell with the
+				<a href="/docs/reference/types/#spatial-theme"><code>SpatialTheme</code></a>. Give both the
+				same semantic text, accent and section colors.
 			</p>
 		</div>
 	</Section>

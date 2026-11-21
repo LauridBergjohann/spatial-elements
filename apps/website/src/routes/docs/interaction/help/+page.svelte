@@ -35,9 +35,14 @@
 		<div class="prose">
 			<p>
 				Spatial Elements supplies English interface copy. The host application owns the locale,
-				translations and language switching. Pass a <code>messages</code> object to the persistent
-				<code>BrandStageShell</code>; no translation library or automatic browser-language detection
-				is required.
+				translations and language switching. Pass a <a
+					href="/docs/reference/components/#brand-stage-shell-messages"
+				>
+					<code>messages</code>
+				</a>
+				object to the persistent
+				<a href="/docs/reference/components/#brand-stage-shell"><code>BrandStageShell</code></a>; no
+				translation library or automatic browser-language detection is required.
 			</p>
 
 			<CodeBlock
@@ -52,14 +57,21 @@
 				strings are preserved; do not use them for accessible labels.
 			</p>
 			<p>
-				Updating <code>messages</code> updates the visible help, icon-button accessible names and
-				tooltips without remounting the shell or resetting the user's learning state. For example,
-				pass <code>messages=&#123;translations[locale]&#125;</code> with a reactive
+				Updating <a href="/docs/reference/components/#brand-stage-shell-messages">
+					<code>messages</code>
+				</a>
+				updates the visible help, icon-button accessible names and tooltips without remounting the shell
+				or resetting the user's learning state. For example, pass
+				<code>messages=&#123;translations[locale]&#125;</code>
+				with a reactive
 				<code>locale</code>, or derive the object from your existing i18n system. Product titles,
 				feature descriptions and other authored content continue to come from application data.
 			</p>
 			<p>
-				Both packages export <code>SpatialMessages</code>, <code>SpatialMessagesInput</code>,
+				Both packages export <code>SpatialMessages</code>,
+				<a href="/docs/reference/types/#spatial-messages-input">
+					<code>SpatialMessagesInput</code>
+				</a>,
 				<code>defaultSpatialMessages</code>
 				and <code>resolveSpatialMessages</code>. Use the input type for translation dictionaries:
 				unlike the resolved type, it does not require your application to immediately supply newly
@@ -164,7 +176,9 @@
 				The help displays compact mouse or touch diagrams beside the short <code>rotate</code>,
 				<code>zoom</code>
 				and <code>pan</code> labels. Mouse buttons, the wheel and touch-motion arrows use
-				<code>theme.colors.accent</code>. The longer <code>mouse*</code> / <code>touch*</code>
+				<a href="/docs/reference/types/#spatial-theme-colors-accent">
+					<code>theme.colors.accent</code>
+				</a>. The longer <code>mouse*</code> / <code>touch*</code>
 				instructions remain in the accessible definition list for screen readers, without taking up visible
 				space. Translate these descriptions as well as the short labels. Touch help also displays
 				<code>touchScrollHint</code> below the diagrams.

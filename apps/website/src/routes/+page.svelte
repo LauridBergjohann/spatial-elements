@@ -22,9 +22,10 @@
 			introduction:
 				'Build interactive 3D collections and detail pages around real content. Shared layouts, persistent rendering and ordinary HTML bring models and stories together.',
 			image: {
-				src: '/assets/showcase/chronograph/chronograph-poster.webp',
-				alt: 'A watch from the spatial showcase',
-				width: 1024,
+				src: '/assets/website/hero-light.webp',
+				srcDark: '/assets/website/hero-dark.webp',
+				alt: 'Spatial Elements combines a three-dimensional object with a website interface',
+				width: 1536,
 				height: 1024
 			},
 			actions: [

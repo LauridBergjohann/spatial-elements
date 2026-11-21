@@ -34,8 +34,12 @@
 	>
 		<div class="prose">
 			<p>
-				Put persistent navigation inside the <code>BrandStageShell</code> snippets. The shell supplies
-				boxes and surfaces; the host supplies real links, branding and actions.
+				Put persistent navigation inside the <a
+					href="/docs/reference/components/#brand-stage-shell"
+				>
+					<code>BrandStageShell</code>
+				</a> snippets. The shell supplies boxes and surfaces; the host supplies real links, branding and
+				actions.
 			</p>
 
 			<CodeBlock
@@ -44,12 +48,15 @@
 				highlighted={data.highlights[0]}
 			/>
 			<p>
-				<code>left</code> and <code>right</code> are optional 80 × 40px satellite slots visible from
-				XL. Menu height is 66px through L; from XL it is 64px with 16px top space. Omitted snippets
-				create no empty interactive panel. Page Sections exposes satellite actions through Settings
-				below XL. Navigation items use a native disclosure below L; custom <code>menu</code> snippets
-				own their internal mobile behavior. The demo's appearance control uses a trigger and a native
-				popover rather than trying to fit three choices inside one satellite.
+				<a href="/docs/reference/components/#brand-stage-shell-left"><code>left</code></a> and
+				<a href="/docs/reference/components/#brand-stage-shell-right"><code>right</code></a>
+				are optional 80 × 40px satellite slots visible from XL. Menu height is 66px through L; from XL
+				it is 64px with 16px top space. Omitted snippets create no empty interactive panel. Page Sections
+				exposes satellite actions through Settings below XL. Navigation items use a native disclosure
+				below L; custom
+				<a href="/docs/reference/components/#brand-stage-shell-menu"><code>menu</code></a> snippets own
+				their internal mobile behavior. The demo's appearance control uses a trigger and a native popover
+				rather than trying to fit three choices inside one satellite.
 			</p>
 		</div>
 	</Section>
@@ -64,10 +71,11 @@
 		<div class="prose">
 			<p>
 				Transitions follow registered spatial elements, not URL patterns. Keep one
-				<code>BrandStageShell</code> across routes and use stable element IDs within its collection. Spatial
-				grids and carousels register their items and authored links automatically; detail pages register
-				the displayed element. Matching elements can animate between two grids, two carousels, mixed layouts,
-				or a collection and its detail page, including browser history.
+				<a href="/docs/reference/components/#brand-stage-shell"><code>BrandStageShell</code></a> across
+				routes and use stable element IDs within its collection. Spatial grids and carousels register
+				their items and authored links automatically; detail pages register the displayed element. Matching
+				elements can animate between two grids, two carousels, mixed layouts, or a collection and its
+				detail page, including browser history.
 			</p>
 			<p>
 				The destination must expose a matching spatial endpoint in the same collection. The

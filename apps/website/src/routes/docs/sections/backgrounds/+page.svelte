@@ -48,10 +48,20 @@
 				highlighted={data.highlights[0]}
 			/>
 			<p>
-				<code>id</code> stays stable for links and history. <code>title</code> labels generated
-				navigation and accessibility. <code>headline</code> creates the visible heading. Omit
-				<code>headline</code> to omit both the heading and its gap; padding remains. A section without
-				a visible heading still has an accessible name.
+				<a href="/docs/reference/types/#spatial-element-section-definition-id"><code>id</code></a>
+				stays stable for links and history.
+				<a href="/docs/reference/types/#spatial-element-section-definition-title">
+					<code>title</code>
+				</a>
+				labels generated navigation and accessibility.
+				<a href="/docs/reference/types/#spatial-element-section-definition-headline">
+					<code>headline</code>
+				</a>
+				creates the visible heading. Omit
+				<a href="/docs/reference/types/#spatial-element-section-definition-headline">
+					<code>headline</code>
+				</a> to omit both the heading and its gap; padding remains. A section without a visible heading
+				still has an accessible name.
 			</p>
 		</div>
 	</Section>
@@ -64,7 +74,13 @@
 		}}
 	>
 		<div class="prose">
-			<p><img src="/documentation/images/background-matrix.png" alt="" loading="lazy" /></p>
+			<p>
+				<img
+					src="/documentation/images/background-matrix.png"
+					alt="Nine background choices: transparent, standard, muted and six vertical gradients between these colors"
+					loading="lazy"
+				/>
+			</p>
 			<p>
 				<em>
 					An illustrative light palette. Only effective full-width backgrounds support the six
@@ -166,9 +182,14 @@
 				that page's flat background for native and enhanced rendering while preserving lighting.
 			</p>
 			<p>
-				Legacy <code>section.style</code> is retained as an explicit compatibility path. Do not
-				silently replace a custom tint or blur with the closest named role. An explicit
-				<code>background</code>
+				Legacy <a href="/docs/reference/types/#spatial-element-section-definition-style">
+					<code>section.style</code>
+				</a>
+				is retained as an explicit compatibility path. Do not silently replace a custom tint or blur with
+				the closest named role. An explicit
+				<a href="/docs/reference/types/#spatial-element-section-definition-background">
+					<code>background</code>
+				</a>
 				takes precedence over legacy tint, opacity and blur; legacy width and text color still apply.
 				There is no diagnostic for combining those paths. The development diagnostic described above is
 				specifically for unsupported gradients. See
@@ -177,6 +198,23 @@
 				>
 					Migration and Reference
 				</a>.
+			</p>
+		</div>
+	</Section>
+	<Section
+		section={{
+			id: 'try-surfaces',
+			title: 'Try the surfaces',
+			headline: 'Try the surfaces',
+			background: { color: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				<a href="/docs/examples/sections/">Open the section-surface example</a> to compare backgrounds
+				on real sections. Full-width backgrounds extend their paint to the viewport edges while the content
+				retains its grid. On detail pages the surface stays within the reading area; a gradient that cannot
+				use full width resolves to its end color.
 			</p>
 		</div>
 	</Section>

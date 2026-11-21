@@ -253,7 +253,11 @@
 							pixels per such pass.
 						</td>
 						<td>
-							Configurable on <code>Stage</code>, <code>BrandStageShell</code> and
+							Configurable on <code>Stage</code>,
+							<a href="/docs/reference/components/#brand-stage-shell">
+								<code>BrandStageShell</code>
+							</a>
+							and
 							<code>StageExperience</code>. HTML text remains at native resolution. 3D edges are
 							less densely sampled on high-DPI screens.
 						</td>

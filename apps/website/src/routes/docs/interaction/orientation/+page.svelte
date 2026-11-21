@@ -29,9 +29,23 @@
 	>
 		<div class="prose">
 			<p>
-				<code>SpatialCardGridSection</code> and <code>SpatialCarouselSection</code> enable device
-				orientation automatically; neither component exposes a <code>deviceOrientation</code>
-				option. Enable <code>deviceOrientation</code> on <code>BrandStageShell</code> (or
+				<a href="/docs/reference/components/#spatial-card-grid-section">
+					<code>SpatialCardGridSection</code>
+				</a>
+				and
+				<a href="/docs/reference/components/#spatial-carousel-section">
+					<code>SpatialCarouselSection</code>
+				</a>
+				enable device orientation automatically; neither component exposes a
+				<a href="/docs/reference/components/#brand-stage-shell-device-orientation">
+					<code>deviceOrientation</code>
+				</a>
+				option. Enable
+				<a href="/docs/reference/components/#brand-stage-shell-device-orientation">
+					<code>deviceOrientation</code>
+				</a>
+				on <a href="/docs/reference/components/#brand-stage-shell"><code>BrandStageShell</code></a>
+				(or
 				<code>Stage</code>) for detail geometry and minimaps. List/detail panels, text, and fallback
 				posters are unaffected. Added yaw is bounded to ±16 degrees and pitch (forward/backward
 				tilt) to ±10 degrees. Roll is limited to ±6 degrees. All three axes counter-rotate: the
@@ -152,9 +166,11 @@
 	>
 		<div class="prose">
 			<p>
-				Lists and carousels acquire sensor access automatically. Enable <code>
-					deviceOrientation
-				</code>
+				Lists and carousels acquire sensor access automatically. Enable <a
+					href="/docs/reference/components/#brand-stage-shell-device-orientation"
+				>
+					<code> deviceOrientation </code>
+				</a>
 				on BrandStageShell for detail geometry and minimaps as well. The shell silently attempts to reuse
 				existing permission. If user activation is required, it requests permission synchronously on a
 				trusted, unmodified internal link click. It does not prevent or delay client-side navigation.
@@ -206,13 +222,15 @@
 	>
 		<div class="prose">
 			<p>
-				<code>SpatialCarouselSection</code> automatically uses the same permission, calibration, scroll
-				suspension and sensor filtering as lists/details. The geometry camera orbits the selected model
-				centre, preserving its screen position even in an off-centre desktop layout. All seats share this
-				perspective: carousel seat positions and selection remain unchanged. Background models gain real
-				3D parallax. Geometry, shadows, blur and geometry hit regions use the orbit camera; DOM panels
-				and their glass use a fixed UI camera, keeping panels, arrows and selection dots stationary. Camera
-				motion is frozen during catalog capture/handoff.
+				<a href="/docs/reference/components/#spatial-carousel-section">
+					<code>SpatialCarouselSection</code>
+				</a> automatically uses the same permission, calibration, scroll suspension and sensor filtering
+				as lists/details. The geometry camera orbits the selected model centre, preserving its screen
+				position even in an off-centre desktop layout. All seats share this perspective: carousel seat
+				positions and selection remain unchanged. Background models gain real 3D parallax. Geometry, shadows,
+				blur and geometry hit regions use the orbit camera; DOM panels and their glass use a fixed UI
+				camera, keeping panels, arrows and selection dots stationary. Camera motion is frozen during catalog
+				capture/handoff.
 			</p>
 			<p>
 				The sensor uses one quarter of the filtered card angles, capped at 4 degrees yaw, 2.5

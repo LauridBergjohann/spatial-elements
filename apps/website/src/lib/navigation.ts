@@ -4,27 +4,36 @@ import { showcaseSegments } from './showcase/segments';
 import { documents } from './catalog';
 const groups = [
 	['Foundations', 'foundations', 'layers'],
-	['Pages and sections', 'sections', 'panels'],
-	['Interaction', 'interaction', 'blocks'],
-	['Examples', 'examples', 'code'],
+	['Content pages', 'sections', 'panels'],
+	['Detail pages', 'detail-pages', 'blocks'],
+	['Appearance and interaction', 'interaction', 'palette'],
 	['Advanced', 'advanced', 'settings'],
-	['Reference', 'reference', 'book']
+	['Reference', 'reference', 'book'],
+	['Examples', 'examples', 'code']
 ];
 const navigationTree: MenuItem[] = [
 	{
 		id: 'showcase',
 		label: 'Showcase',
+		icon: 'gallery-horizontal-end',
 		href: '/showcase/',
 		children: showcaseSegments.map((segment) => ({
 			id: segment.id,
 			label: segment.title,
+			icon: {
+				consumer: 'keyboard',
+				workbench: 'wrench',
+				industrial: 'robot-arm',
+				exclusive: 'gem'
+			}[segment.id],
 			href: '/showcase/' + segment.id + '/'
 		}))
 	},
-	{ id: 'start', label: 'Getting started', href: '/getting-started/' },
+	{ id: 'start', label: 'Getting started', icon: 'rocket', href: '/getting-started/' },
 	{
 		id: 'docs',
 		label: 'Documentation',
+		icon: 'book-text',
 		href: '/docs/',
 		children: groups.map(([label, slug, icon]) => ({
 			id: slug,
@@ -36,7 +45,7 @@ const navigationTree: MenuItem[] = [
 				.map((d) => ({ id: d.href, label: d.title, href: d.href }))
 		}))
 	},
-	{ id: 'about', label: 'About', href: '/about/' }
+	{ id: 'about', label: 'About', icon: 'info', href: '/about/' }
 ];
 const flatten = (items: MenuItem[]): MenuItem[] =>
 	items.flatMap((item) => [item, ...flatten(item.children ?? [])]);

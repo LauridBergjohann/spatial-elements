@@ -117,7 +117,7 @@ test('theme still changes when storage is blocked', async ({ page }) => {
 	await expect(page.locator('.ps-shell')).toHaveAttribute('data-ps-theme', 'dark');
 });
 
-test('the standard palette and frosted navigation follow the chosen mode outside Exclusive', async ({
+test('the standard palette and frosted navigation follow the chosen mode outside the custom showcase themes', async ({
 	page
 }) => {
 	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));

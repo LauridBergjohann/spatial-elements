@@ -109,6 +109,17 @@
 			parts.media.dataset.catalogOccurrence = key;
 			parts.media.dataset.catalogSlot = 'catalog.card';
 			cleanups.push(mouseHover(parts.root).destroy);
+			// The tilted card can briefly move behind its stationary presentation root.
+			// Keep that part of the card's hit area linked as well, without replaying
+			// events from the actual link or any nested interactive content.
+			const presentation = parts.root.closest<HTMLElement>('.spatial-card-root');
+			if (presentation) {
+				const activatePresentation = (event: MouseEvent) => {
+					if (event.target === presentation) activate(event);
+				};
+				presentation.addEventListener('click', activatePresentation);
+				cleanups.push(() => presentation.removeEventListener('click', activatePresentation));
+			}
 			const link = parts.title.querySelector('a');
 			if (link) {
 				// preserve-3d creates containing blocks. Size the stretched hit area from

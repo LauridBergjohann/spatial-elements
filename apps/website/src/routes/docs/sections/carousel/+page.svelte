@@ -1,0 +1,109 @@
+<script module lang="ts">
+	export const examples = [];
+</script>
+
+<script lang="ts">
+	import WebsitePage from '#lib/WebsitePage.svelte';
+	import { HeadingSection, Section } from '@page-sections/svelte';
+
+	import DocFigure from '#lib/docs/DocFigure.svelte';
+	import CollectionExample from '#lib/docs/CollectionExample.svelte';
+</script>
+
+<WebsitePage page={{ title: 'Spatial Carousel' }} showContentMenu>
+	<HeadingSection
+		section={{
+			id: 'page-heading',
+			title: 'Spatial Carousel',
+			introduction:
+				'Let visitors focus on one object while keeping the rest of the collection within reach.',
+			headingLevel: 1,
+			headingSize: 'l',
+			background: { color: 'standard' }
+		}}
+	/>
+	<Section
+		section={{
+			id: 'focus',
+			title: 'One selected object',
+			headline: 'One selected object',
+			background: { color: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				<a href="/docs/reference/components/#spatial-carousel-section">
+					<code>SpatialCarouselSection</code>
+				</a>
+				uses the same
+				<a href="/docs/reference/types/#spatial-list-item"><code>SpatialListItem</code></a> data as the
+				CardGrid. It emphasizes the selected model and its summary, with neighbouring models available
+				through selection, arrows and dragging. Links still open the detail page.
+			</p>
+			<DocFigure
+				name="collections"
+				alt="The carousel centers attention on one model and its summary, while neighbouring models remain accessible."
+				caption="Use a carousel for a featured selection, and a CardGrid when visitors need an overview."
+			/>
+		</div>
+	</Section><Section
+		section={{
+			id: 'selection',
+			title: 'Selection and presentation',
+			headline: 'Selection and presentation',
+			background: { color: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				<a href="/docs/reference/components/#spatial-carousel-section-initial-item-key">
+					<code>initialItemKey</code>
+				</a>
+				chooses the starting item, using
+				<a href="/docs/reference/types/#spatial-list-item-item-key"><code>itemKey</code></a>
+				when present and otherwise
+				<a href="/docs/reference/types/#spatial-list-item-id"><code>id</code></a>. It is an initial
+				preference, not a controlled selected-value property.
+				<a href="/docs/reference/components/#spatial-carousel-section-onselectionchange">
+					<code>onselectionchange</code>
+				</a> reports the selected occurrence key and element ID.
+			</p>
+			<p>
+				<a href="/docs/reference/components/#spatial-carousel-section-presentation">
+					<code>presentation</code>
+				</a>
+				accepts optional
+				<a href="/docs/reference/types/#carousel-presentation-radius"><code>radius</code></a>
+				and <a href="/docs/reference/types/#carousel-presentation-depth"><code>depth</code></a> controls.
+				These change the arrangement, not the model's authored scale or its asset URLs. The default framing
+				is suitable for a first collection.
+			</p>
+			<p>
+				The <a href="/docs/reference/types/#spatial-list-item-summary"><code>summary</code></a> on a
+				list item provides feature labels and an optional action. The later
+				<a href="/docs/detail-pages/summaries/">summary chapter</a> explains how to share richer interactive
+				content with the detail page.
+			</p>
+		</div>
+	</Section><CollectionExample kind="carousel" /><Section
+		section={{
+			id: 'fallback',
+			title: 'A useful carousel without WebGPU',
+			headline: 'A useful carousel without WebGPU',
+			background: { color: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				When spatial rendering is unavailable, the same section offers a native horizontal
+				scroll-snap collection with poster images, labels and links. The spatial carousel owns this
+				fallback; it does not wrap the separate 2D Page Sections Carousel component.
+			</p>
+			<p>
+				Try keyboard navigation and a narrow window as well as the enhanced view. For a complete
+				product experience, explore <a href="/showcase/consumer/">Consumer</a> and open an item from its
+				featured carousel.
+			</p>
+		</div>
+	</Section>
+</WebsitePage>

@@ -1,124 +1,135 @@
-<script lang="ts">
-	import WebsitePage from '#lib/WebsitePage.svelte';
-	import { HeadingSection, Section } from '@page-sections/svelte';
+<script module lang="ts">
+	export const examples = [
+		{
+			language: 'svelte',
+			code: "\u003cscript lang=\"ts\">\n  import { PageShell, Footer } from '@page-sections/svelte';\n  import { BrandStageShell, createSpatialTheme } from '@spatial-elements/sveltekit';\n  import '@page-sections/svelte/styles.css';\n  let { children } = $props();\n  const theme = createSpatialTheme({ id: 'studio', name: 'My collection' });\n  const items = [{ id: 'collection', label: 'Collection', href: '/studio/categories/list/' }];\n\u003c/script>\n\n\u003cPageShell mode=\"light\">\n  \u003cBrandStageShell {theme} {items} colorScheme=\"light\">\n    {#snippet brand()}\u003ca href=\"/\">My collection\u003c/a>{/snippet}\n    {@render children()}\n    {#snippet footer()}\n      \u003cFooter footnote=\"My collection\" links={[{ label: 'About', href: '/about/' }]} />\n    {/snippet}\n  \u003c/BrandStageShell>\n\u003c/PageShell>"
+		}
+	];
 </script>
 
-<WebsitePage page={{ title: 'Page shell and navigation' }} showContentMenu>
+<script lang="ts">
+	import WebsitePage from '#lib/WebsitePage.svelte';
+	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
+	import type { PageData } from './$types';
+	let { data }: { data: PageData } = $props();
+	import DocFigure from '#lib/docs/DocFigure.svelte';
+</script>
+
+<WebsitePage page={{ title: 'Layout, pages and navigation' }} showContentMenu>
 	<HeadingSection
 		section={{
 			id: 'page-heading',
-			title: 'Page shell and navigation',
+			title: 'Layout, pages and navigation',
+			introduction:
+				'Keep the shared website shell in +layout.svelte and route content in +page.svelte.',
 			headingLevel: 1,
-			headingSize: 'm',
-			background: { color: 'standard', size: 'standard' }
+			headingSize: 'l',
+			background: { color: 'standard' }
 		}}
 	/>
 	<Section
 		section={{
-			id: 'ownership',
-			title: 'One shell, many pages',
-			headline: 'One shell, many pages',
-			background: { color: 'standard', size: 'standard' }
+			id: 'semantic-page',
+			title: 'Start with semantic HTML',
+			headline: 'Start with semantic HTML',
+			background: { color: 'standard' }
 		}}
 	>
 		<div class="prose">
 			<p>
-				<code>BrandStageShell</code> belongs in the shared SvelteKit layout. It owns the persistent stage,
-				theme and model resources while collection and detail routes change inside it. Keeping it mounted
-				makes transitions possible.
+				A website usually has a <code>header</code> for navigation, one <code>main</code> for the
+				current page and a
+				<code>footer</code> for shared links. SvelteKit keeps a layout mounted while its child routes
+				change. This is the right place for the theme, shared stage, header and site footer.
+			</p>
+			<DocFigure
+				name="site-shell"
+				alt="Header and footer surround one main area, which contains either a ContentPage or a SpatialElementPage."
+				caption="Both kinds of page live under the same layout. Do not nest one page component inside another."
+			/>
+		</div>
+	</Section><Section
+		section={{
+			id: 'persistent-layout',
+			title: 'Create the shared layout',
+			headline: 'Create the shared layout',
+			background: { color: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				<a href="https://page-sections.bergjohann.com/docs/page-layout/"><code>PageShell</code></a>
+				applies the HTML theme.
+				<a href="/docs/reference/components/#brand-stage-shell"><code>BrandStageShell</code></a>
+				shares the spatial theme and rendering resources.
+				<a href="/docs/reference/types/#spatial-theme-options"><code>createSpatialTheme</code></a> fills
+				in defaults, so you start with just a stable namespace and a readable name.
 			</p>
 			<p>
-				Use the Spatial Elements <code>ContentPage</code> for collections and mixed spatial content,
-				with an explicit <code>hdr</code> for lighting. It wraps the Page Sections content layout and
-				registers the page with the shared stage. For ordinary documentation without 3D, use Page Sections
-				directly; no stage is required.
+				Put this in <code>src/routes/+layout.svelte</code>. The shell renders navigation from
+				<a href="/docs/reference/components/#brand-stage-shell-items"><code>items</code></a>; the
+				<a href="/docs/reference/components/#brand-stage-shell-brand"><code>brand</code></a>
+				and <a href="/docs/reference/components/#brand-stage-shell-footer"><code>footer</code></a> snippets
+				provide the site's identity and footer.
 			</p>
+			<CodeBlock {...examples[0]} highlighted={data.highlights[0]} />
 			<p>
-				The <code>page</code> object supplies metadata and breadcrumbs. It does not create a visible
-				page heading. Place a Page Sections <code>HeadingSection</code> with
-				<code>headingLevel: 1</code> among the children, or use a Hero section. Its background and position
-				are yours to choose.
+				The theme ID identifies a collection of related routes. It is not the current object's ID.
+				Keep it stable across collection and detail pages. Use a nested layout if only part of your
+				site needs a stage.
 			</p>
 		</div>
-	</Section>
-	<Section
+	</Section><Section
 		section={{
-			id: 'navigation',
-			title: 'Navigation and sidebars',
-			headline: 'Navigation and sidebars',
-			background: { color: 'standard', size: 'standard' }
+			id: 'route-content',
+			title: 'Give each page its own content',
+			headline: 'Give each page its own content',
+			background: { color: 'standard' }
 		}}
 	>
 		<div class="prose">
 			<p>
-				Provide a Page Sections <code>Navigation</code> and a single navigation tree in your
-				application shell. Every entry has a real page URL. Derive the active path, breadcrumbs and
-				sidebar items with <code>resolveNavigation</code>.
+				In a route's <code>+page.svelte</code>, use exactly one main page container:
+				<a href="/docs/reference/components/#content-page"><code>ContentPage</code></a>
+				for a collection or article, or
+				<a href="/docs/reference/components/#spatial-element-page">
+					<code>SpatialElementPage</code>
+				</a>
+				for one object's detail view. Your <code>+page.ts</code> or <code>+page.server.ts</code> load
+				function supplies the route's data.
 			</p>
 			<p>
-				When sharing a complete Page Sections navigation with non-spatial routes, pass it as the <code>
-					navigation
-				</code>
-				snippet on <code>BrandStageShell</code>. The spatial shell then owns its positioning, scroll
-				compensation and surfaces. Keep the menu inside that shell so it reserves space above the
-				detail page.
+				Do not collect every model or every page's content in the layout. Page components register
+				their own data with the stage. Keep route links as ordinary anchors, so keyboard navigation,
+				history and server rendering work.
 			</p>
 			<p>
-				The header and satellites share the theme's <code>panelTheme</code>: frosted surfaces use
-				its tint, opacity, backdrop blur and shadow, including without WebGPU. This website keeps
-				one shell and one light/dark palette across documentation and the combined showcase.
-			</p>
-			<p>
-				The Spatial Elements <code>ContentPage</code> accepts <code>leftSidebar</code> and
-				<code>footer</code>
-				snippets. Pass a <code>SidebarNavigation</code> into the left snippet. Set
-				<code>showContentMenu</code>
-				to generate the right menu from section headings; H1 is excluded and H3 is indented beneath H2.
-				<code>contentMenuLabel</code> changes its accessible label.
-			</p>
-			<p>
-				The sidebar layout, sticky positioning and compact-screen content-menu popup come from Page
-				Sections. The right sidebar docks to consistently solid, standard-width sections and floats
-				when sections use full-width or transparent surfaces.
-			</p>
-			<p>
-				This documentation demonstrates those components. See the <a
-					href="https://page-sections.bergjohann.com/"
-				>
-					Page Sections documentation
-				</a> for the complete navigation and heading APIs.
+				The <a href="https://page-sections.bergjohann.com/docs/page-layout/">
+					Page Sections page-layout guide
+				</a> covers header composition, breadcrumbs and content sidebars in more depth.
 			</p>
 		</div>
-	</Section>
-	<Section
+	</Section><Section
 		section={{
-			id: 'routes',
-			title: 'Collection and detail routes',
-			headline: 'Collection and detail routes',
-			background: { color: 'standard', size: 'standard' }
+			id: 'shared-footer',
+			title: 'One footer for all routes',
+			headline: 'One footer for all routes',
+			background: { color: 'standard' }
 		}}
 	>
 		<div class="prose">
 			<p>
-				Choose URLs that suit your content, such as <code>/showcase/</code>,
-				<code>/gallery/</code> and <code>/products/[slug]/</code>. Transitions match registered
-				elements across spatial grids, carousels and detail pages. The theme ID identifies the
-				collection; it does not have to match a URL prefix. Keep it and your element IDs stable.
+				Use the shell's <a href="/docs/reference/components/#brand-stage-shell-footer">
+					<code>footer</code>
+				</a>
+				snippet for the website footer. The
+				<a href="/docs/reference/components/#content-page"><code>ContentPage</code></a> footer snippet
+				has a different purpose: page-local content such as previous/next links.
 			</p>
 			<p>
-				Use native links so navigation also works without JavaScript. <code>
-					getSpatialListItems
-				</code>
-				derives detail links from your element data and an explicit route prefix. You can also provide
-				each item's own <code>href</code>. Spatial sections register those destinations
-				automatically. Supply a poster for each model so cards and detail pages stay useful without
-				WebGPU.
-			</p>
-			<p>
-				<a href="/docs/foundations/first-experience/">
-					Build the complete collection and detail example
-				</a>, then explore
-				<a href="/docs/sections/playground/">the interactive collection playground</a>.
+				The site footer follows the page, including ultrawide detail pages. The document first
+				scrolls through the detail content; at its end, the footer scrolls over the stationary
+				stage. Keep that shared footer outside your individual sections.
 			</p>
 		</div>
 	</Section>

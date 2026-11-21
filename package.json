@@ -48,7 +48,8 @@
     "preview:website": "npm run preview -w @spatial-elements/website",
     "check:ci": "node scripts/check-ci.mjs",
     "verify:published": "node scripts/verify-packages.mjs --published",
-    "check:docs": "node scripts/check-docs.mjs"
+    "docs:types": "node scripts/generate-doc-reference.mjs",
+    "check:docs": "node scripts/generate-doc-reference.mjs --check && node scripts/check-docs.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.3",

@@ -9,6 +9,9 @@
 
 ### Minor Changes
 
+- Add a shared `footer` snippet to `BrandStageShell`. It scrolls over the stationary stage in every layout, following the existing visual scroll clock without boundary measurements or canvas displacement.
+- Elevate header menus and marked custom search overlays to the browser top layer above 3D controls and panels, preserving their DOM ownership and keyboard navigation.
+
 - Add a themed detail/fullscreen view switch beside 3D help, with localized tooltips and a viewport fallback when the Fullscreen API is unavailable or denied. Fullscreen preserves camera navigation and SpaceMouse, keeps the expanded live minimap and help, and accepts mouse/touch input across the canvas without model picking or hover glow.
 
   Match the controls' corner radii, restore the fitted view from the detail button and fade its selection with zoom. Project and clip the minimap viewport at its actual size around the shared model center, keeping it stable during orbit. Align the demo header with the brand layouts and keep breadcrumbs visible.
@@ -68,6 +71,8 @@
   Preserve back/forward transitions for history entries carrying shallow metadata. Keep catalog fade captures in the linear working color space and serialize hidden minimap shader preparation for Three.js 0.187.
 
 ### Patch Changes
+
+- Preserve whole-card navigation when a pointer click lands on the stationary presentation root during the card's hover tilt.
 
 - Fit carousel visibility and preparation to the actual viewport instead of a fixed five-seat window. Space neighbouring models using their display envelope, maintain ordering on wide screens, and share visibility between GPU models, posters and hit targets. Scope detail framing styles to the hero so preloading a detail route cannot enlarge carousel geometry.
 

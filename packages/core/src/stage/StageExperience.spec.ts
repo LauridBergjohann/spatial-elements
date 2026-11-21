@@ -6,6 +6,7 @@ import type { SpatialElementInteractionController } from './SpatialElementIntera
 vi.mock('three/webgpu', async (original) => ({
 	...(await original<typeof import('three/webgpu')>()),
 	WebGPURenderer: class {
+		initialized = true;
 		domElement = {
 			style: {},
 			getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 100 })
@@ -47,6 +48,18 @@ vi.mock('three/addons/controls/OrbitControls.js', () => ({
 afterEach(() => {
 	vi.unstubAllGlobals();
 	vi.restoreAllMocks();
+});
+
+test.each([false, true])('a list frame waits for backend initialization (force: %s)', force => {
+	const stage = Object.create(StageExperience.prototype);
+	const draw = vi.fn();
+	Object.assign(stage, { disposed: false, renderer: { initialized: false },
+		catalog: true, pageBinding: { viewport: undefined }, renderInvalidated: true,
+		resizeRenderer: draw, pipeline: { renderFrame: draw } });
+	expect(() => stage.renderFrame(force)).not.toThrow();
+	expect(draw).not.toHaveBeenCalled();
+	// Keep the invalidation; initialization will request the first real frame.
+	expect(stage.renderInvalidated).toBe(true);
 });
 
 test('appearance updates restore element background defaults and preserve camera and lighting', () => {

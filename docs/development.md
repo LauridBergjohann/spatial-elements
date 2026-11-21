@@ -12,4 +12,6 @@ See [applications](../apps/README.md) for development and preview commands. Run 
 
 Author public explanations directly in the website's Svelte pages. Update the catalog and navigation alongside new routes. Use Page Sections for prose, headings and code. Keep GPU setup inside spatial examples and shared showcase layouts. Do not embed brand content or assets into the public packages.
 
-Run npm run format:apps before committing. Theme tests compare configured tokens rather than freezing the website palette. See [testing](testing.md), [hosting](hosting.md) and [releases](release.md).
+The website documentation follows foundations → content pages → detail pages → appearance → advanced → reference. Keep the catalog's reading order, chapter navigation and search descriptions in sync. Link property mentions to a field or component anchor. `npm run docs:types` regenerates the type and component tables from the package declarations; `npm run check:docs` checks that they are current, compiles Svelte examples and verifies built links including fragment targets. `node scripts/generate-doc-diagrams.mjs` recreates the explanatory SVGs.
+
+Run npm run format:apps before committing. Theme tests cover the website palette and the separate Industrial and Exclusive identities. See [testing](testing.md), [hosting](hosting.md) and [releases](release.md).

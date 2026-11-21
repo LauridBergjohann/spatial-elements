@@ -10,6 +10,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
+	import DocFigure from '#lib/docs/DocFigure.svelte';
 	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
@@ -38,7 +39,11 @@
 				Keeping these separate lets a wide screen contain a narrower detail pane without forcing
 				desktop-sized columns into it.
 			</p>
-			<p><img src="/documentation/images/layout-and-grid.png" alt="" loading="lazy" /></p>
+			<DocFigure
+				name="detail-layout"
+				alt="An ultrawide viewport contains a reading pane whose content grid follows its own width."
+				caption="Viewport width chooses the page composition. Container width chooses the columns within it."
+			/>
 			<p>
 				<em>
 					The grid measures its unpadded container. Section padding is the grid's single outer
@@ -120,7 +125,6 @@
 		}}
 	>
 		<div class="prose">
-			<p>&lt;!-- layout-grid-table:start --&gt;</p>
 			<table>
 				<thead>
 					<tr>
@@ -170,15 +174,6 @@
 						<td>16 / 24</td>
 						<td>16</td>
 					</tr>
-					<tr>
-						<td>&lt;!-- layout-grid-table:end --&gt;</td>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td></td>
-					</tr>
 				</tbody>
 			</table>
 			<p>
@@ -204,7 +199,13 @@
 	>
 		<div class="prose">
 			<p>
-				<code>ContentGrid</code> adds no second section padding. Put <code>ContentBlock</code>
+				<a href="https://page-sections.bergjohann.com/docs/reference/types/#content-span">
+					<code>ContentGrid</code>
+				</a>
+				adds no second section padding. Put
+				<a href="https://page-sections.bergjohann.com/docs/reference/types/#content-span">
+					<code>ContentBlock</code>
+				</a>
 				components inside it. <code>span</code> accepts a number or an object keyed by
 				<code>xs</code>, <code>s</code>, <code>m</code>, <code>l</code>:
 			</p>

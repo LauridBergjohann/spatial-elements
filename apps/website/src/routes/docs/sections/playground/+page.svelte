@@ -78,7 +78,7 @@
 			</label>
 			<label>
 				Card size <select bind:value={cardSize} disabled={view !== 'grid'}>
-					<option>xs</option><option>s</option><option>m</option><option>l</option>
+					<option>s</option><option>m</option><option>l</option>
 				</select>
 			</label>
 			<label>

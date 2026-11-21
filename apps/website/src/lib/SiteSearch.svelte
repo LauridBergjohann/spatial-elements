@@ -6,9 +6,11 @@
 	import { showcaseSegments } from './showcase/segments';
 	import { showcaseProducts } from './showcase/products';
 	import { documents } from './catalog';
+	import { referenceDocuments } from './docs/referenceIndex';
 
 	const entries = [
 		...documents,
+		...referenceDocuments,
 		{
 			title: 'Getting started',
 			href: '/getting-started/',
@@ -144,7 +146,11 @@
 		>
 			<Search size={20} aria-hidden="true" />
 		</button>
-		<div class="search-field" id="site-search-field">
+		<div
+			class="search-field"
+			id="site-search-field"
+			data-spatial-navigation-popup={opened ? '' : undefined}
+		>
 			<Search size={18} aria-hidden="true" />
 			<input
 				bind:this={input}
@@ -171,7 +177,7 @@
 			<kbd aria-hidden="true">Ctrl K</kbd>
 		</div>
 		{#if opened}
-			<div class="search-panel">
+			<div class="search-panel" data-spatial-navigation-popup>
 				<p class="search-hint" role="status">
 					{query.trim()
 						? `${found.length} matching ${found.length === 1 ? 'topic' : 'topics'}${found.length > 10 ? ' · showing the first 10' : ''}`

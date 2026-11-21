@@ -128,7 +128,7 @@
 				Only the existing surface, title and eyebrow move into a compact header. Text scales
 				uniformly; it does not stretch with a wide, short background. Other summary content fades,
 				and the live summary is adopted after the new header is visible. Custom summaries register
-				their text roles as shown in <a href="/docs/sections/summaries/">Summary Panels</a>.
+				their text roles as shown in <a href="/docs/detail-pages/summaries/">Summary Panels</a>.
 			</p>
 		</div>
 	</Section>

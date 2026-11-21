@@ -21,10 +21,13 @@
 		}}
 	>
 		<p>
-			Start with a SvelteKit application. Install the component package and its Three.js peer
-			dependency:
+			Start with a Svelte 5 / SvelteKit 3 application. Spatial Elements adds model collections and
+			detail views to the content layout provided by Page Sections. Install both component packages:
 		</p>
-		<CodeBlock language="sh" code="npm install @spatial-elements/sveltekit@beta three@^0.187.0" />
+		<CodeBlock
+			language="sh"
+			code="npm install @spatial-elements/sveltekit@beta @page-sections/svelte@0.5.0"
+		/>
 	</Section>
 	<Section
 		section={{
@@ -36,17 +39,22 @@
 	>
 		<div class="prose">
 			<p>
-				Put one <code>BrandStageShell</code> in the layout shared by your collection and detail pages.
-				Define an element with an ID, title, GLB geometry, HDR environment and fallback poster.
+				A section is one meaningful part of a page. A stage is the shared rendering layer that adds
+				models to those sections. Keep that stage in your shared SvelteKit layout using
+				<a href="/docs/foundations/page-shell/"><code>BrandStageShell</code></a>. Then describe each
+				object with its title, model, lighting and poster in a
+				<a href="/docs/reference/types/#spatial-element-data"><code>SpatialElementData</code></a> document.
 			</p>
 			<p>
-				Use <code>ContentPage</code> with a <code>HeadingSection</code> and
-				<code>SpatialCardGridSection</code>
-				for the collection. Use <code>SpatialElementPage</code> for each detail route.
+				A <a href="/docs/sections/composition/"><code>ContentPage</code></a> contains a route's main
+				content. Add a heading and a <a href="/docs/sections/card-grid/">CardGrid</a> or
+				<a href="/docs/sections/carousel/">Carousel</a> to show a collection. A
+				<a href="/docs/detail-pages/structure/"><code>SpatialElementPage</code></a> presents one object
+				and its story.
 			</p>
 			<p>
-				<a href="/docs/foundations/first-experience/">
-					Follow the complete example with route files and code →
+				<a href="/docs/foundations/page-sections/">
+					Follow the learning path, starting with the shared foundation →
 				</a>
 			</p>
 		</div>
