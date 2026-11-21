@@ -1,23 +1,27 @@
 <script lang="ts">
 	import { onMount, type Snippet } from 'svelte';
 	import { page } from '$app/state';
-	import { base } from '$app/paths';
+	import { resolve, asset } from '$app/paths';
 	import { BrandStageShell } from '@spatial-elements/sveltekit';
-	import ShowcaseSummary from '$lib/showcase/ShowcaseSummary.svelte';
-	import { provideShowcaseOrders } from '$lib/showcase/showcaseOrders.svelte';
+	import {
+		resolveSpatialSectionBackgrounds,
+		resolveSpatialThemeRadii
+	} from '@spatial-elements/core/spatial-element/spatialTheme';
+	import ShowcaseSummary from '#lib/showcase/ShowcaseSummary.svelte';
+	import { provideShowcaseOrders } from '#lib/showcase/showcaseOrders.svelte.ts';
 	const orders = provideShowcaseOrders();
-	import { websiteTheme } from '$lib/theme';
-	import { Navigation, PageShell } from '@page-sections/svelte';
-	import Menu from 'lucide-svelte/icons/menu';
-	import Settings from 'lucide-svelte/icons/settings';
-	import Sun from 'lucide-svelte/icons/sun';
-	import Moon from 'lucide-svelte/icons/moon';
-	import Github from '$lib/GitHubMark.svelte';
-	import SiteSearch from '$lib/SiteSearch.svelte';
-	import NavigationIcon from '$lib/NavigationIcon.svelte';
-	import { navigationTree } from '$lib/navigation';
+	import { websitePageTheme, websiteTheme } from '#lib/theme.ts';
+	import { Header, PageShell } from '@page-sections/svelte';
+	import Menu from '@lucide/svelte/icons/menu';
+	import Settings from '@lucide/svelte/icons/settings';
+	import Sun from '@lucide/svelte/icons/sun';
+	import Moon from '@lucide/svelte/icons/moon';
+	import Github from '#lib/GitHubMark.svelte';
+	import SiteSearch from '#lib/SiteSearch.svelte';
+	import NavigationIcon from '#lib/NavigationIcon.svelte';
+	import { getNavigationTree } from '#lib/navigation.ts';
 	import { resolveNavigation } from '@page-sections/core';
-	import { version } from '../../../../packages/sveltekit/package.json';
+	import SiteFooter from '#lib/SiteFooter.svelte';
 	import '../app.css';
 	let { children }: { children: Snippet } = $props();
 	let mode = $state<'light' | 'dark'>('light');
@@ -40,20 +44,40 @@
 			/* The choice still applies in memory. */
 		}
 	}
-	const namespace = $derived(
-		page.url.pathname.startsWith('/docs/examples/') ||
-			page.url.pathname.startsWith('/docs/sections/playground/')
-			? 'docs/examples'
-			: 'showcase'
-	);
+	const namespace = $derived(page.url.pathname.startsWith('/docs/') ? 'docs/examples' : 'showcase');
 	const exclusive = $derived(/^\/showcase\/exclusive(?:\/|$)/.test(page.url.pathname));
 	const industrial = $derived(/^\/showcase\/industrial(?:\/|$)/.test(page.url.pathname));
 	const stageTheme = $derived(
 		websiteTheme(mode, namespace, exclusive ? 'exclusive' : industrial ? 'industrial' : 'default')
 	);
-	// Both Exclusive palettes have dark surfaces, including its brighter variant.
+	const sectionBackgrounds = $derived(resolveSpatialSectionBackgrounds(stageTheme));
+	const pageTheme = $derived(
+		exclusive || industrial
+			? {
+					...websitePageTheme(mode),
+					fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+					background: stageTheme.background,
+					standard: sectionBackgrounds.standard,
+					muted: sectionBackgrounds.muted,
+					ink: stageTheme.colors.ink,
+					body: stageTheme.colors.body,
+					accent: stageTheme.colors.accent,
+					onAccent: stageTheme.colors.onAccent,
+					radius: resolveSpatialThemeRadii(stageTheme).panel + 'px',
+					footerBackground:
+						exclusive || mode === 'dark' ? sectionBackgrounds.standard : stageTheme.colors.accent,
+					footerInk:
+						exclusive || mode === 'dark' ? stageTheme.colors.ink : stageTheme.colors.onAccent,
+					footerBarBackground: sectionBackgrounds.muted,
+					footerBarInk: stageTheme.colors.body
+				}
+			: websitePageTheme(mode)
+	);
+	// Both Exclusive palettes use dark surfaces.
 	const surfaceScheme = $derived(exclusive ? 'dark' : mode);
-	const items = $derived(resolveNavigation(navigationTree, { pathname: page.url.pathname }).items);
+	const items = $derived(
+		resolveNavigation(getNavigationTree(page.url), { pathname: page.url.pathname }).items
+	);
 </script>
 
 <svelte:head>
@@ -63,13 +87,13 @@
 </svelte:head>
 
 {#snippet siteNavigation()}
-	<header class="website-header">
-		<Navigation {items} closeKey={page.url.pathname}>
+	<div class="website-header">
+		<Header scrollBehavior="static" {items} closeKey={page.url.pathname}>
 			{#snippet itemIcon(item)}<NavigationIcon name={item.icon} />{/snippet}
 			{#snippet brand()}
 				<a class="skip-link" href="#main-content">Skip to content</a>
-				<a class="site-brand" href={base + '/'} aria-label="Spatial Elements home">
-					<img src={base + '/spatial-elements-logo.svg'} width="32" height="32" alt="" />
+				<a class="site-brand" href={resolve('/')} aria-label="Spatial Elements home">
+					<img src={asset('spatial-elements-logo.svg')} width="32" height="32" alt="" />
 					<span>Spatial Elements</span>
 				</a>
 			{/snippet}
@@ -82,8 +106,10 @@
 						class="github-link"
 						href="https://github.com/LauridBergjohann/spatial-elements"
 						aria-label="Spatial Elements on GitHub"
-						title="Source on GitHub"><Github /></a
+						title="Source on GitHub"
 					>
+						<Github />
+					</a>
 				</div>
 			{/snippet}
 			{#snippet right()}
@@ -94,59 +120,43 @@
 						title="Light"
 						aria-pressed={mode === 'light'}
 						disabled={!ready}
-						onclick={() => setMode('light')}><Sun size={18} aria-hidden="true" /></button
+						onclick={() => setMode('light')}
 					>
+						<Sun size={18} aria-hidden="true" />
+					</button>
 					<button
 						type="button"
 						aria-label="Dark"
 						title="Dark"
 						aria-pressed={mode === 'dark'}
 						disabled={!ready}
-						onclick={() => setMode('dark')}><Moon size={18} aria-hidden="true" /></button
+						onclick={() => setMode('dark')}
 					>
+						<Moon size={18} aria-hidden="true" />
+					</button>
 				</div>
 			{/snippet}
-		</Navigation>
-	</header>
+		</Header>
+	</div>
 {/snippet}
-<PageShell
-	mode={surfaceScheme}
-	theme={{
-		background: stageTheme.background,
-		ink: stageTheme.colors.ink,
-		body: stageTheme.colors.body,
-		accent: stageTheme.colors.accent,
-		onAccent: stageTheme.colors.onAccent,
-		standard: stageTheme.sectionBackgrounds?.standard,
-		muted: stageTheme.sectionBackgrounds?.muted,
-		radius: `${stageTheme.radii?.panel ?? 12}px`
-	}}
->
-	<BrandStageShell
-		theme={stageTheme}
-		colorScheme={surfaceScheme}
-		navigation={siteNavigation}
-		deviceOrientation
-	>
-		{#snippet summary(context)}<ShowcaseSummary
-				{...context}
-				{orders}
-				appearance={surfaceScheme}
-			/>{/snippet}
-		<div id="main-content" tabindex="-1">{@render children()}</div>
-	</BrandStageShell>
-	<footer class="site-footer">
-		<a class="site-brand" href={base + '/'}
-			><img src={base + '/spatial-elements-logo.svg'} alt="" width="24" height="24" />Spatial
-			Elements
-			<span class="version">v{version}</span></a
+<div data-website-theme={exclusive || industrial ? 'showcase' : 'default'}>
+	<PageShell mode={surfaceScheme} theme={pageTheme}>
+		<BrandStageShell
+			theme={stageTheme}
+			colorScheme={surfaceScheme}
+			navigation={siteNavigation}
+			deviceOrientation
 		>
-		<span>Made with Spatial Elements.</span>
-		<a href={base + '/about/#impressum'}>Imprint</a>
-		<a href={base + '/about/#datenschutz'}>Privacy</a>
-		<a href="https://github.com/LauridBergjohann/spatial-elements">Source on GitHub ↗</a>
-	</footer>
-</PageShell>
+			{#snippet footer()}<SiteFooter />{/snippet}
+			{#snippet summary(context)}<ShowcaseSummary
+					{...context}
+					{orders}
+					appearance={surfaceScheme}
+				/>{/snippet}
+			<div id="main-content" tabindex="-1">{@render children()}</div>
+		</BrandStageShell>
+	</PageShell>
+</div>
 
 <style>
 	.header-tools {
@@ -164,6 +174,18 @@
 	}
 	.github-link:hover {
 		background: var(--ps-selection, var(--ps-section-muted));
+	}
+	@media (max-width: 599.98px) {
+		.github-link {
+			display: none;
+		}
+		.website-header :global(.header) {
+			gap: 0.25rem;
+		}
+		.website-header .site-brand {
+			gap: 0.5rem;
+			font-size: 0.875rem;
+		}
 	}
 	@media (min-width: 1200px) {
 		.website-header :global(.desktop-menu > ul) {

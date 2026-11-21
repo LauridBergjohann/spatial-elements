@@ -3,7 +3,7 @@
  import { catalogActionSemantic } from '@spatial-elements/core/catalog/catalogAction';
  import type { CatalogEndpointAddress, CatalogEndpointRole } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
  import type { SpatialElementFeature, SpatialElementAction } from '@spatial-elements/core/spatial-element/types';
- import ShoppingCart from 'lucide-svelte/icons/shopping-cart';
+ import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
  import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
  let { spatialElement, address, contentInset, heading = 'h3', leading, beforeAction, actionIcon, element = $bindable() }: {
   spatialElement: { id: string; eyebrow: string; title: string; features: SpatialElementFeature[]; action?: SpatialElementAction };

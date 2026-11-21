@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { BrandStageShell } from '@spatial-elements/sveltekit';
 	import { onMount } from 'svelte';
-	import { themes } from '$lib/theme-proof/themes';
-	import { createAppearance } from '$lib/theme-proof/appearance.svelte';
-	import ThemeSwitch from '$lib/theme-proof/ThemeSwitch.svelte';
-	import ThemeStyles from '$lib/theme-proof/ThemeStyles.svelte';
+	import { themes } from '#lib/theme-proof/themes.ts';
+	import { createAppearance } from '#lib/theme-proof/appearance.svelte.ts';
+	import ThemeSwitch from '#lib/theme-proof/ThemeSwitch.svelte';
+	import ThemeStyles from '#lib/theme-proof/ThemeStyles.svelte';
 	const appearance = createAppearance('spatial-demo-appearance');
 	const theme = $derived(themes[appearance.colorScheme]);
 	onMount(appearance.start);

@@ -52,10 +52,20 @@ test('zoom preparation restores hidden views and ring material, retries failures
 	expect(view.overlayComposite.frustumCulled).toBe(true);
 	expect(view.overlayRing.frustumCulled).toBe(true);
 	expect(view.overlayRing.material).toBe(view.ringRestMaterial);
-	await pipeline.prepareZoomEffects();
+	let compiling = false;
+	compile.mockImplementation(async () => {
+		expect(compiling).toBe(false);
+		compiling = true;
+		// The renderer restores borrowed state before an asynchronous shader yields.
+		await Promise.resolve();
+		expect(f.renderer.getRenderTarget()).toBe(f.originalTarget);
+		expect(view.overlayRing.material).toBe(view.ringRestMaterial);
+		compiling = false;
+	});
+	await Promise.all([pipeline.prepareZoomEffects(), pipeline.prepareZoomEffects()]);
 	await pipeline.prepareZoomEffects();
 	expect(blur).toHaveBeenCalledTimes(2);
-	expect(compile).toHaveBeenCalledTimes(4);
+	expect(compile).toHaveBeenCalledTimes(3);
 	expect(view.overlayCaptureValid).toBe(false);
 	expect(view.panelCaptureValid).toBe(false);
 	expect(f.renderer.render).not.toHaveBeenCalled();

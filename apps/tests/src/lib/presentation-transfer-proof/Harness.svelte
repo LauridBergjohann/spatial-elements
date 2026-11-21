@@ -67,30 +67,36 @@
 <div data-transfer-proof data-phase={phase}>
 	<nav>
 		<a href="/proof/presentation-transfer/summary">Summary source</a><a
-			href="/proof/presentation-transfer/card">Card source</a
-		><a href="/proof/persistence-exit">Leave owner</a>
+			href="/proof/presentation-transfer/card"
+		>
+			Card source
+		</a><a href="/proof/persistence-exit">Leave owner</a>
 	</nav>
-	<button type="button" onclick={() => finish?.()} disabled={phase !== 'frozen'}
-		>Finish source motion</button
-	>
+	<button type="button" onclick={() => finish?.()} disabled={phase !== 'frozen'}>
+		Finish source motion
+	</button>
 	<button
 		type="button"
 		onclick={() => {
 			held?.release();
 			phase = 'released';
 		}}
-		disabled={phase !== 'content'}>Finish content reveal</button
+		disabled={phase !== 'content'}
 	>
-	<button type="button" onclick={holdSource} disabled={phase !== 'ready'}
-		>Hold source without routing</button
-	>
+		Finish content reveal
+	</button>
+	<button type="button" onclick={holdSource} disabled={phase !== 'ready'}>
+		Hold source without routing
+	</button>
 	<button
 		type="button"
 		onclick={() => {
 			phase = held?.restore() ? 'restored' : 'restore-failed';
 		}}
-		disabled={phase !== 'test-held'}>Restore cancelled source</button
+		disabled={phase !== 'test-held'}
 	>
+		Restore cancelled source
+	</button>
 	{@render children()}
 	<div data-transfer-projection bind:this={projection}></div>
 </div>

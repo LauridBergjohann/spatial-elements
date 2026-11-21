@@ -947,59 +947,68 @@ export class StageRenderPipeline {
 		}
 		return capture.target.texture;
 	}
+	private zoomPreparation?: Promise<void>;
 	/** Prepare hidden close-up effects during page binding, never during camera motion.
 	 * Captures stay invalid: the first visible frame must still sample the live element.
 	 * Only compile the foreground scene, so preparation cannot paint an overlay on screen.
 	 */
-	async prepareZoomEffects() {
+	prepareZoomEffects(): Promise<void> {
+		// Three r187 keeps one active precompilation state per renderer. Share an
+		// in-flight preparation and finish each material before starting the next.
+		return this.zoomPreparation ??= this.prepareZoomViews().finally(() => {
+			this.zoomPreparation = undefined;
+		});
+	}
+	private async prepareZoomViews() {
 		if (!this.foregroundCanvasTarget || this.disposed) return;
 		const views = [...this.ports.minimaps().values()].filter(
 			(view) => !this.preparedZoomViews.has(view)
 		);
 		if (!views.length) return;
-		const pending: Promise<unknown>[] = [];
 		for (const view of views) {
 			withRendererState(this.ports.renderer, () => {
 				this.ports.renderMinimapBlur(view);
 				if (this.ports.panelRuntimes()[view.panelIndex]?.surface === 'glass')
 					this.ports.renderMinimapPanelCapture(view);
-				this.ports.renderer.setCanvasTarget(this.foregroundCanvasTarget!);
-				this.ports.renderer.setRenderTarget(null);
-				const ringMaterial = view.overlayRing.material;
-				const compositeCulled = view.overlayComposite.frustumCulled;
-				const ringCulled = view.overlayRing.frustumCulled;
-				try {
-					// A newly bound minimap camera may not yet have its screen projection.
-					// Compile the hidden effects even if that initial frustum excludes them.
-					view.overlayComposite.frustumCulled = false;
-					view.overlayRing.frustumCulled = false;
-					withVisibility(
-						[
-							...[...this.ports.minimaps().values()].map((entry) => entry.layer),
-							view.overlayComposite,
-							view.overlayRing
-						],
-						() => {
-							for (const entry of this.ports.minimaps().values())
-								entry.layer.visible = entry === view;
-							view.overlayComposite.visible = true;
-							view.overlayRing.visible = true;
-							for (const material of [view.ringRestMaterial, view.ringForegroundMaterial]) {
-								view.overlayRing.material = material;
-								pending.push(
-									this.ports.renderer.compileAsync(this.ports.minimapScene(), view.screenCamera)
-								);
-							}
-						}
-					);
-				} finally {
-					view.overlayRing.material = ringMaterial;
-					view.overlayComposite.frustumCulled = compositeCulled;
-					view.overlayRing.frustumCulled = ringCulled;
-				}
 			});
+			for (const material of [view.ringRestMaterial, view.ringForegroundMaterial]) {
+				let pending: Promise<unknown> | undefined;
+				withRendererState(this.ports.renderer, () => {
+					this.ports.renderer.setCanvasTarget(this.foregroundCanvasTarget!);
+					this.ports.renderer.setRenderTarget(null);
+					const ringMaterial = view.overlayRing.material;
+					const compositeCulled = view.overlayComposite.frustumCulled;
+					const ringCulled = view.overlayRing.frustumCulled;
+					try {
+						// A newly bound minimap camera may not yet have its screen projection.
+						// Compile the hidden effects even if that initial frustum excludes them.
+						view.overlayComposite.frustumCulled = false;
+						view.overlayRing.frustumCulled = false;
+						withVisibility(
+							[
+								...[...this.ports.minimaps().values()].map((entry) => entry.layer),
+								view.overlayComposite,
+								view.overlayRing
+							],
+							() => {
+								for (const entry of this.ports.minimaps().values())
+									entry.layer.visible = entry === view;
+								view.overlayComposite.visible = true;
+								view.overlayRing.visible = true;
+								view.overlayRing.material = material;
+								pending = this.ports.renderer.compileAsync(this.ports.minimapScene(), view.screenCamera);
+							}
+						);
+					} finally {
+						view.overlayRing.material = ringMaterial;
+						view.overlayComposite.frustumCulled = compositeCulled;
+						view.overlayRing.frustumCulled = ringCulled;
+					}
+				});
+				await pending;
+				if (this.disposed) return;
+			}
 		}
-		await Promise.all(pending);
 		const device = (this.ports.renderer.backend as unknown as { device?: GPUDevice }).device;
 		await device?.queue.onSubmittedWorkDone();
 		if (!this.disposed) for (const view of views) this.preparedZoomViews.add(view);

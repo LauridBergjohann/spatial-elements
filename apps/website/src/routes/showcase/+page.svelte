@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { ContentPage, SpatialCarouselSection } from '@spatial-elements/sveltekit';
 	import { HeadingSection, CardGridSection } from '@page-sections/svelte';
-	import { showcaseSegments } from '$lib/showcase/segments';
-	import { showcaseProducts } from '$lib/showcase/products';
-	import { featuredItems } from '$lib/showcase/collection';
-	import { showcaseHdr } from '$lib/showcase/optimized';
+	import { showcaseSegments } from '#lib/showcase/segments.ts';
+	import { showcaseProducts } from '#lib/showcase/products.ts';
+	import { featuredItems } from '#lib/showcase/collection.ts';
+	import { showcaseHdr } from '#lib/showcase/optimized.ts';
 	const areas = showcaseSegments.map((segment) => {
 		const product = showcaseProducts.find((product) => product.segment.id === segment.id)!;
 		return {

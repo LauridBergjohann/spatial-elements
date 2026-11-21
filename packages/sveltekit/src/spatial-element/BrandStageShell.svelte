@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { MenuItem } from '@page-sections/core';
 	import type { Snippet } from 'svelte';
+	import { STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
 	import { preventBrowserPinch } from '@spatial-elements/core/stage/browserPinch';
 	import '@page-sections/svelte/styles.css';
 	import { retainDeviceOrientationPermission } from '@spatial-elements/core/catalog/listDeviceOrientation';
@@ -31,6 +32,8 @@
 		dracoDecoderPath?: string;
 		/** Layout contents. ContentPage and SpatialElementPage register their own data. */
 		children?: Snippet;
+		/** Document footer; scrolls over the stationary stage in every layout. */
+		footer?: Snippet;
 		/** Persistent main-menu content. The shell owns its box and surface. */
 		menu?: Snippet;
 		/** Complete application navigation; the spatial shell supplies positioning and surfaces. */
@@ -46,7 +49,24 @@
 		right?: Snippet;
 	}
 
-	let { theme, colorScheme, messages, renderSettings, dracoDecoderPath, children, menu, navigation, items, brand, tools, summary, left, right, deviceOrientation = false }: Props = $props();
+	let { theme, colorScheme, messages, renderSettings, dracoDecoderPath, children, footer, menu, navigation, items, brand, tools, summary, left, right, deviceOrientation = false }: Props = $props();
+	let shell = $state<HTMLDivElement>();
+	let footerHost = $state<HTMLDivElement>();
+	$effect(() => {
+		const stage = shell?.querySelector<HTMLElement>('.stage');
+		if (!stage || !footerHost) return;
+		const host = footerHost;
+		let previous = 0;
+		// Only the footer follows the existing visual wheel smoothing. No stage
+		// geometry reads, inherited style writes or canvas displacement are needed.
+		const stop = subscribeStageScrollFrame(frame => {
+			const offset = stage.classList.contains('stage-virtual-scroll-active') ? frame.targetScrollY - frame.scrollY : 0;
+			if (offset === previous) return;
+			previous = offset;
+			host.style.translate = offset ? `0 ${offset}px` : '';
+		}, STAGE_SCROLL_PRIORITY.virtualDocument);
+		return () => { stop(); host.style.removeProperty('translate'); };
+	});
 	$effect(() => {
 		if (deviceOrientation) return retainDeviceOrientationPermission();
 	});
@@ -58,7 +78,7 @@
 	function attachPinchPolicy(node: HTMLElement) { return { destroy: preventBrowserPinch(node) }; }
 </script>
 
-<div use:attachPinchPolicy class="brand-stage-shell" style={brandStyle} style:color-scheme={colorScheme} data-color-scheme={colorScheme}>
+<div bind:this={shell} use:attachPinchPolicy class="brand-stage-shell" style={brandStyle} style:color-scheme={colorScheme} data-color-scheme={colorScheme}>
 	<Stage
 		{deviceOrientation}
 		brandId={theme.id}
@@ -72,10 +92,12 @@
 		{#if navigation || menu || items || brand || left || right}<SpatialNavigationShell {navigation} {menu} {items} {brand} {tools} {left} {right} />{/if}
 		<SpatialSummaryHost {summary}>{@render children?.()}</SpatialSummaryHost>
 	</Stage>
+	{#if footer}<div bind:this={footerHost} class="spatial-footer">{@render footer()}</div>{/if}
 	<PointerHint />
 </div>
 
 <style>
+	.spatial-footer { position: relative; z-index: 31; padding-top: 48px; }
 	.brand-stage-shell {
 		background: var(--spatial-element-background);
 		--spatial-element-content-inline-inset: 192px;

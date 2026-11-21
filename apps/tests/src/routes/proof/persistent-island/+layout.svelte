@@ -6,8 +6,8 @@
 		IslandController,
 		islandContext,
 		type IslandDescriptor
-	} from '$lib/persistence-island-proof/controller';
-	import InteractiveIsland from '$lib/persistence-island-proof/InteractiveIsland.svelte';
+	} from '#lib/persistence-island-proof/controller.ts';
+	import InteractiveIsland from '#lib/persistence-island-proof/InteractiveIsland.svelte';
 	import type { LayoutProps } from './$types';
 	let { children }: LayoutProps = $props();
 	let phase = $state('ssr');
@@ -63,16 +63,18 @@
 		<a href="/proof/persistence-exit">Leave proof</a>
 	</nav>
 	<div class="buttons">
-		<button type="button" onclick={() => finishPending?.()} disabled={phase !== 'motion'}
-			>Finish motion</button
-		>
+		<button type="button" onclick={() => finishPending?.()} disabled={phase !== 'motion'}>
+			Finish motion
+		</button>
 		<button
 			type="button"
 			onclick={() => {
 				label = 'Updated host label';
 				extra = true;
-			}}>Update persistent host</button
+			}}
 		>
+			Update persistent host
+		</button>
 	</div>
 	{@render children()}
 	<div data-island-projection bind:this={projection}></div>

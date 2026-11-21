@@ -21,6 +21,10 @@ function dockRules() {
 }
 const css = [
 	'/* Generated from @page-sections/core plus spatial-only layoutTokens.json. Run npm run layout:generate. */',
+	`/* Per-frame paint values must not invalidate the descendants of the whole page. */
+@property --spatial-pane-fixed-compensation { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --spatial-pane-focus-origin-y { syntax: '<length-percentage>'; inherits: false; initial-value: 50%; }
+@property --spatial-shell-scroll-compensation { syntax: '<length>'; inherits: false; initial-value: 0px; }`,
 	`.spatial-content-width { width: min(100%, ${tokens.contentMax}px); margin-inline: auto; }`,
 	`.spatial-content-container { container: ps-content / inline-size; min-width: 0; }`,
 	`@media (min-width: ${tokens.contentMax + 1}px) and (max-width: ${tokens.layoutMinWidths.xl - 1}px) {

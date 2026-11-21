@@ -1,133 +1,150 @@
 <script module lang="ts">
-	export const examples: Array<{ language: string; code: string }> = [
+	export const examples = [
 		{
-			language: 'sh',
-			code: 'npm run assets:showcase\nnpm run assets:showcase:render\nnpm run assets:showcase:check\n'
+			language: 'ts',
+			code: "import type { SpatialElementData } from '@spatial-elements/sveltekit';\n\n// src/lib/elements.ts — supply these files in static/assets/\nexport const elements: SpatialElementData[] = [{\n  id: 'cube',\n  title: 'Cube',\n  eyebrow: 'Form study',\n  description: 'A simple form to explore from every side.',\n  geometry: { low: '/assets/cube.glb', high: '/assets/cube.glb' },\n  hdr: '/assets/studio.hdr',\n  fallbackImage: '/assets/cube.webp',\n  fallbackImageSize: [800, 800]\n}];"
+		},
+		{
+			language: 'ts',
+			code: "import { getSpatialListItems } from '@spatial-elements/sveltekit';\nimport { elements } from '#lib/elements.ts';\n\n// src/routes/studio/categories/list/+page.ts\nexport function load() {\n  return { items: getSpatialListItems(elements, '/studio/elements') };\n}"
 		}
 	];
 </script>
 
 <script lang="ts">
+	import WebsitePage from '#lib/WebsitePage.svelte';
+	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
-	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
+	import DocFigure from '#lib/docs/DocFigure.svelte';
 </script>
 
-<WebsitePage page={{ title: 'Models and environments' }} showContentMenu>
+<WebsitePage page={{ title: 'Models and element data' }} showContentMenu>
 	<HeadingSection
 		section={{
 			id: 'page-heading',
-			title: 'Models and environments',
+			title: 'Models and element data',
+			introduction: 'Describe an object once, then use it in a collection and on its detail page.',
 			headingLevel: 1,
-			headingSize: 'm',
-			background: { color: 'standard', size: 'standard' }
+			headingSize: 'l',
+			background: { color: 'standard' }
 		}}
 	/>
 	<Section
 		section={{
-			id: 'introduction',
-			title: 'Introduction',
-			headline: 'Introduction',
-			background: { color: 'standard', size: 'standard' }
-		}}
-		><div class="prose">
-			<p>
-				Sources of truth: <a
-					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/catalog/spatialElementAssets.ts"
-					>element assets</a
-				>,
-				<a
-					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/catalog/spatialElementLodPair.ts"
-					>LOD pairs</a
-				>,
-				<a
-					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/packages/core/src/catalog/assets/SpatialElementAssetManager.ts"
-					>asset manager</a
-				>.
-			</p>
-			<p>
-				Logical element identity is independent of its URL, LOD or number of visible occurrences. An
-				immutable resource request identifies format, URL, revision and decoder/extension
-				requirements. Updating content at a stable URL therefore requires an appropriate revision
-				change.
-			</p>
-			<p>
-				Low and High must occupy a common authored reference frame, pivot and orientation. Do not
-				independently center/normalize them: that would produce jumps during refinement. Verified
-				manifests use a right-handed frame with +Y up, +Z front and metres. A provisional shared
-				frame is supported, but it does not prove physical dimensions. Physical metadata needs
-				documented provenance.
-			</p>
-			<p>
-				A representation records its canonical transform, selected root, exclusions, material
-				bindings and estimated costs. Posters provide the non-GPU presentation. Environment and
-				decoder resources must be explicitly deployable by the host. An enum listing a decoder
-				requirement is not a guarantee that every consumer has configured that decoder.
-			</p>
-			<p>
-				Decoded source geometry/materials belong to the asset manager; live instances, local
-				material clones and render targets belong to presentation owners. A retained capture pins
-				its resources independently of DOM registration. CPU cache residency, live instance
-				ownership and GPU preparation are distinct states. Disposal must respect those boundaries.
-			</p>
-			<p>
-				Validation should cover frame compatibility, resource URLs/requirements, bounds, material
-				assumptions, actual visual Low/High alignment and ownership after repeated navigation.
-				Estimated texture/geometry bytes are useful budgets, not complete driver memory
-				measurements.
-			</p>
-			<p>
-				The procedural fixtures are reproducible and redistributable. The website also serves
-				prepared product models and photographs for its <a href="/showcase/">public showcase</a>.
-				These product assets have separate provenance and rights; they are not part of the package
-				license. See <a href="/docs/sections/composition/">authoring</a> for consumer configuration
-				and the <a href="/assets/ATTRIBUTION.md">asset attribution</a> for the website's media.
-			</p>
-		</div></Section
-	>
-	<Section
-		section={{
-			id: 'showcase-pipeline',
-			title: 'Preparing a product collection',
-			headline: 'Preparing a product collection',
-			background: { color: 'standard', size: 'standard' }
+			id: 'one-document',
+			title: 'What is an element?',
+			headline: 'What is an element?',
+			background: { color: 'standard' }
 		}}
 	>
 		<div class="prose">
 			<p>
-				The showcase keeps the product description, photos, presentation pose and geometry manifests
-				separate. One product ID joins them together. Generated assets live in
-				<code>apps/website/static/assets/showcase/&lt;product-id&gt;/</code>; source assets remain
-				outside the published static directory.
+				An element is one object you want to present: a product, sculpture or component. A <a
+					href="/docs/reference/types/#spatial-element-data"
+				>
+					<code>SpatialElementData</code>
+				</a> document combines its readable content with its model settings. Start with a title, two model
+				URLs and an environment.
+			</p>
+			<DocFigure
+				name="element-data"
+				alt="An element document is projected to list items for collections and used directly by the detail page."
+				caption="One source of truth keeps collection titles, detail views and model identity consistent."
+			/><CodeBlock {...examples[0]} highlighted={data.highlights[0]} />
+		</div>
+	</Section><Section
+		section={{
+			id: 'required-fields',
+			title: 'Four required fields',
+			headline: 'Four required fields',
+			background: { color: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				<a href="/docs/reference/types/#spatial-element-data-id"><code>id</code></a> is a stable
+				identifier;
+				<a href="/docs/reference/types/#spatial-element-data-title"><code>title</code></a>
+				is the visible name;
+				<a href="/docs/reference/types/#spatial-element-data-geometry"><code>geometry</code></a>
+				supplies the models;
+				<a href="/docs/reference/types/#spatial-element-data-hdr"><code>hdr</code></a>
+				supplies the detail environment. The linked fields in
+				<a href="/docs/reference/types/#spatial-element-data"><code>SpatialElementData</code></a>
+				explain optional values such as
+				<a href="/docs/reference/types/#spatial-element-data-features"><code>features</code></a>,
+				<a href="/docs/reference/types/#spatial-element-data-action"><code>action</code></a>
+				and <a href="/docs/reference/types/#spatial-element-data-media"><code>media</code></a>.
 			</p>
 			<p>
-				Each model has a low-detail variant for category grids, carousels and minimaps, and a
-				higher-detail variant for the product view. Simplification preserves their common frame and
-				reuses the source's materials, textures and normal maps where present. Texture resizing and
-				material consolidation reduce work as well as triangle counts. This pipeline does not
-				automatically bake arbitrary geometric detail into new normal maps.
+				Both <a href="/docs/reference/types/#spatial-element-geometry-low">
+					<code>geometry.low</code>
+				</a>
+				and
+				<a href="/docs/reference/types/#spatial-element-geometry-high">
+					<code>geometry.high</code>
+				</a> are required. Low is the lightweight model for collections and transitions; high is the detailed
+				version. Both must share origin, scale and orientation. For a small model, use one URL for both;
+				the resource load is shared.
 			</p>
 			<p>
-				Fallback images use the same authored model pose and camera orientation as the detail view.
-				The transparent 1024 × 1024 WebP remains useful while the interactive model loads, without
-				JavaScript or on a browser without WebGPU. Supplied photographs are converted to WebP
-				without upscaling, with a 1600-pixel maximum edge and smaller 640-pixel alternatives for
-				responsive galleries and media selectors.
+				<a href="/docs/reference/types/#spatial-element-data-fallback-image">
+					<code>fallbackImage</code>
+				</a>
+				is strongly recommended. Supply its actual pixel dimensions in
+				<a href="/docs/reference/types/#spatial-element-data-fallback-image-size">
+					<code>fallbackImageSize</code>
+				</a>. A poster lets a visitor understand and open the item before the model loads, without
+				JavaScript or without WebGPU.
 			</p>
-			<CodeBlock
-				code={examples[0].code}
-				language={examples[0].language}
-				highlighted={data.highlights[0]}
-			/>
+		</div>
+	</Section><Section
+		section={{
+			id: 'collection-data',
+			title: 'Project the collection data',
+			headline: 'Project the collection data',
+			background: { color: 'standard' }
+		}}
+	>
+		<div class="prose">
 			<p>
-				Run these commands from the repository root. Generation needs the source collection; poster
-				rendering also needs a browser with WebGPU. The committed outputs are sufficient to build
-				the website. The <a
-					href="https://github.com/LauridBergjohann/spatial-elements/blob/main/tooling/asset-pipeline/README.md"
-					>asset pipeline instructions</a
-				> describe the inputs, commands and quality checks. Inspect silhouettes, materials and Low/High
-				alignment alongside the generated resource reports before publishing a new model.
+				<a href="/docs/reference/types/#spatial-list-item"><code>getSpatialListItems</code></a>
+				produces <a href="/docs/reference/types/#spatial-list-item"><code>SpatialListItem</code></a> objects
+				from your element documents. It supplies the links, card content and model data needed by the
+				CardGrid or Carousel. The second argument is your detail-route prefix; you must implement that
+				route.
+			</p>
+			<CodeBlock {...examples[1]} highlighted={data.highlights[1]} />
+			<p>
+				This example points the cube to <code>/studio/elements/cube/</code>. Keep the ID stable when
+				filtering or sorting. If one element appears twice within a single section, give its
+				occurrences distinct <code>itemKey</code> values.
+			</p>
+		</div>
+	</Section><Section
+		section={{
+			id: 'lighting',
+			title: 'Page lighting and model presentation',
+			headline: 'Page lighting and model presentation',
+			background: { color: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				A collection sets its own <a href="/docs/reference/components/#content-page-hdr">
+					<code>ContentPage.hdr</code>
+				</a>; it is not inferred from its first item. A detail page uses the element's
+				<a href="/docs/reference/types/#spatial-element-data-hdr"><code>hdr</code></a>. Background
+				tinting changes the visible environment, while the HDR still lights the model.
+			</p>
+			<p>
+				Only adjust <a href="/docs/reference/types/#spatial-element-data-model">
+					<code>model</code>
+				</a>, <a href="/docs/reference/types/#spatial-element-data-camera"><code>camera</code></a>
+				or <a href="/docs/reference/types/#spatial-element-data-minimap"><code>minimap</code></a>
+				after the basic page works. Their field tables explain units and framing. The
+				<a href="/docs/advanced/performance/">performance guide</a> covers model budgets and loading.
 			</p>
 		</div>
 	</Section>

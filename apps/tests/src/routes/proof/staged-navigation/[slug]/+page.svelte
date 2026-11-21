@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ProofPage from '$lib/staged-navigation-proof/ProofPage.svelte';
+	import ProofPage from '#lib/staged-navigation-proof/ProofPage.svelte';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
 </script>

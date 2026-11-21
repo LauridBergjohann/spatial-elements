@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { BrandStageShell } from '@spatial-elements/sveltekit';
 	import { page } from '$app/state';
-	import { theme } from '$lib/catalog';
-	import { layoutExamples } from '$lib/layoutExamples';
+	import { theme } from '#lib/catalog.ts';
+	import { layoutExamples } from '#lib/layoutExamples.ts';
 	let { children } = $props();
 	const items = $derived([
 		...['List', 'Carousel', 'Mixed'].map((label) => ({
@@ -34,9 +34,9 @@
 </script>
 
 <BrandStageShell {theme} colorScheme="light" {items}>
-	{#snippet brand()}<a class="brand" href="/demo/categories/list"
-			>Spatial Elements <span>Basics</span></a
-		>{/snippet}
+	{#snippet brand()}<a class="brand" href="/demo/categories/list">
+			Spatial Elements <span>Basics</span>
+		</a>{/snippet}
 	{@render children()}
 </BrandStageShell>
 

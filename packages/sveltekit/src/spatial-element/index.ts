@@ -47,4 +47,3 @@ export { default as ListSection } from './SpatialCardGridSection.svelte';
 /** @deprecated Use SpatialCarouselSection. */
 export { default as CarouselSection } from './SpatialCarouselSection.svelte';
 export type { SpatialCardGridOptions } from './spatialCardGrid.js';
-export type { CardVariant } from '@page-sections/core';

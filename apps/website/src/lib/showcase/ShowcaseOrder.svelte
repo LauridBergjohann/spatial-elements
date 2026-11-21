@@ -35,8 +35,10 @@
 	<div class="demo-price" data-spatial-element-header-field="price">
 		<span class:visually-hidden={compact}>Example total</span><output
 			title={compact ? 'Example total' : undefined}
-			aria-live="polite">{total}</output
+			aria-live="polite"
 		>
+			{total}
+		</output>
 	</div>
 </div>
 {#if !compact}<p class="demo-notice">Illustrative price only. Not for sale on this website.</p>{/if}

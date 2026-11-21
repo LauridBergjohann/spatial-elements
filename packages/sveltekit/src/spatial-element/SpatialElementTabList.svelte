@@ -26,11 +26,20 @@
 		const sectionId = currentSectionId;
 		if (!linksElement || !sectionId) return;
 
-		const activeLink = Array.from(
+		const links = Array.from(
 			linksElement.querySelectorAll<HTMLElement>('[data-spatial-element-tab-id]')
-		).find((element) => element.dataset.spatialElementTabId === sectionId);
+		);
+		const activeLink = links.find((element) => element.dataset.spatialElementTabId === sectionId);
 		if (!activeLink) return;
 
+		// Keep the dock's changing radii live; only select which group edges are rounded.
+		const rtl = getComputedStyle(linksElement).direction === 'rtl';
+		linksElement.style.setProperty(
+			'--spatial-element-tab-round-left', activeLink === links[rtl ? links.length - 1 : 0] ? '1' : '0'
+		);
+		linksElement.style.setProperty(
+			'--spatial-element-tab-round-right', activeLink === links[rtl ? 0 : links.length - 1] ? '1' : '0'
+		);
 		linksElement.style.setProperty('--spatial-element-tab-active-left', `${activeLink.offsetLeft}px`);
 		linksElement.style.setProperty('--spatial-element-tab-active-width', `${activeLink.offsetWidth}px`);
 		if (!linksElement.hasAttribute('data-spatial-element-tab-indicator-ready') && !readyFrame) {
@@ -169,9 +178,12 @@
 		left: 0;
 		z-index: 0;
 		width: var(--spatial-element-tab-active-width, 0px);
-		border-radius: var(--spatial-element-tab-highlight-top-radius) var(--spatial-element-tab-highlight-top-radius)
-			var(--spatial-element-tab-highlight-bottom-radius) var(--spatial-element-tab-highlight-bottom-radius);
-		background: color-mix(in srgb, var(--spatial-element-body) 8%, transparent);
+		border-radius:
+			calc(var(--spatial-element-tab-round-left, 0) * var(--spatial-element-tab-highlight-top-radius))
+			calc(var(--spatial-element-tab-round-right, 0) * var(--spatial-element-tab-highlight-top-radius))
+			calc(var(--spatial-element-tab-round-right, 0) * var(--spatial-element-tab-highlight-bottom-radius))
+			calc(var(--spatial-element-tab-round-left, 0) * var(--spatial-element-tab-highlight-bottom-radius));
+		background: var(--spatial-element-tab-background);
 		transform: translate3d(var(--spatial-element-tab-active-left, 0px), 0, 0);
 		pointer-events: none;
 		will-change: border-radius;
@@ -180,7 +192,8 @@
 	.spatial-element-tab-links:global([data-spatial-element-tab-indicator-ready]) .spatial-element-tab-selection {
 		transition:
 			width var(--spatial-element-tab-navigation-duration) var(--spatial-element-tab-navigation-easing),
-			transform var(--spatial-element-tab-navigation-duration) var(--spatial-element-tab-navigation-easing);
+			transform var(--spatial-element-tab-navigation-duration) var(--spatial-element-tab-navigation-easing),
+			border-radius var(--spatial-element-tab-navigation-duration) var(--spatial-element-tab-navigation-easing);
 	}
 
 	.spatial-element-tab-selection::after {
@@ -209,8 +222,7 @@
 		box-sizing: border-box;
 		height: 100%;
 		padding: 0 16px;
-		border-radius: var(--spatial-element-tab-highlight-top-radius) var(--spatial-element-tab-highlight-top-radius)
-			var(--spatial-element-tab-highlight-bottom-radius) var(--spatial-element-tab-highlight-bottom-radius);
+		border-radius: 0;
 		color: var(--spatial-element-navigation-ink, var(--spatial-element-ink));
 		background: transparent;
 		font-size: var(--spatial-element-tab-font-size);
@@ -219,6 +231,16 @@
 		text-decoration: none;
 		white-space: nowrap;
 		transition: background-color 180ms ease;
+	}
+
+	.spatial-element-tab-list a:first-of-type {
+		border-start-start-radius: var(--spatial-element-tab-highlight-top-radius);
+		border-end-start-radius: var(--spatial-element-tab-highlight-bottom-radius);
+	}
+
+	.spatial-element-tab-list a:last-of-type {
+		border-start-end-radius: var(--spatial-element-tab-highlight-top-radius);
+		border-end-end-radius: var(--spatial-element-tab-highlight-bottom-radius);
 	}
 
 	a::before,
@@ -245,7 +267,7 @@
 	a.overview[aria-current='location'] svg { opacity: 1; }
 
 	.spatial-element-tab-links:not([data-spatial-element-tab-indicator-ready]) a[aria-current='location'] {
-		background: color-mix(in srgb, var(--spatial-element-body) 8%, transparent);
+		background: var(--spatial-element-tab-background);
 	}
 
 	.spatial-element-tab-links:not([data-spatial-element-tab-indicator-ready]) a[aria-current='location']::after {
@@ -282,7 +304,7 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		a,
-		.spatial-element-tab-selection {
+		.spatial-element-tab-links:global([data-spatial-element-tab-indicator-ready]) .spatial-element-tab-selection {
 			transition: none;
 		}
 	}

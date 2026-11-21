@@ -62,7 +62,7 @@
 		hasSpatialElementScene
 	} from '@spatial-elements/core/spatial-element/spatialElementScene';
 	import { SPATIAL_PAGE } from '../spatial-element/spatialPageContext.js';
-	import type { BeforeNavigate, OnNavigate } from '@sveltejs/kit';
+	import type { BeforeNavigate, OnNavigate } from '$app/navigation';
 	import {
 		STAGE_CONTEXT_KEY,
 		STAGE_PANEL_LAYOUT_EVENT,

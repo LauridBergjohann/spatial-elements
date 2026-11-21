@@ -7,9 +7,9 @@
 		type SurfaceTone
 	} from '@spatial-elements/sveltekit';
 	import { HeadingSection, Section } from '@page-sections/svelte';
-	import SpatialDocumentationPage from '$lib/SpatialDocumentationPage.svelte';
-	import LiveCode from '$lib/LiveCode.svelte';
-	import { overview } from '$lib/forms';
+	import SpatialDocumentationPage from '#lib/SpatialDocumentationPage.svelte';
+	import LiveCode from '#lib/LiveCode.svelte';
+	import { overview } from '#lib/forms.ts';
 	let view = $state('grid');
 	let cardSize = $state<SpatialCardSize>('m');
 	let cardTone = $state<SurfaceTone>('muted');
@@ -65,44 +65,45 @@
 			headline: 'Try the options',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><p>
+	>
+		<p>
 			Choose a collection layout. The code below reflects the same state as the preview. Supplied
 			posters keep the cards readable without WebGPU.
 		</p>
 		<div class="controls">
-			<label
-				>View <select bind:value={view}
-					><option value="grid">Card grid</option><option value="carousel">Carousel</option></select
-				></label
-			>
-			<label
-				>Card size <select bind:value={cardSize} disabled={view !== 'grid'}
-					><option>xs</option><option>s</option><option>m</option><option>l</option></select
-				></label
-			>
-			<label
-				>Card tone <select bind:value={cardTone} disabled={view !== 'grid'}
-					><option>standard</option><option>muted</option></select
-				></label
-			>
-			<label
-				>Media aspect <select bind:value={mediaAspect} disabled={view !== 'grid'}
-					><option>3/2</option><option>1/1</option><option>4/3</option></select
-				></label
-			>
-			<label
-				>Background <select bind:value={surface}
-					><option>standard</option><option>muted</option><option>transparent</option></select
-				></label
-			>
-			<label
-				>Background size <select bind:value={backgroundSize}
-					><option>standard</option><option>full</option></select
-				></label
-			>
+			<label>
+				View <select bind:value={view}>
+					<option value="grid">Card grid</option><option value="carousel">Carousel</option>
+				</select>
+			</label>
+			<label>
+				Card size <select bind:value={cardSize} disabled={view !== 'grid'}>
+					<option>s</option><option>m</option><option>l</option>
+				</select>
+			</label>
+			<label>
+				Card tone <select bind:value={cardTone} disabled={view !== 'grid'}>
+					<option>standard</option><option>muted</option>
+				</select>
+			</label>
+			<label>
+				Media aspect <select bind:value={mediaAspect} disabled={view !== 'grid'}>
+					<option>3/2</option><option>1/1</option><option>4/3</option>
+				</select>
+			</label>
+			<label>
+				Background <select bind:value={surface}>
+					<option>standard</option><option>muted</option><option>transparent</option>
+				</select>
+			</label>
+			<label>
+				Background size <select bind:value={backgroundSize}>
+					<option>standard</option><option>full</option>
+				</select>
+			</label>
 			<button type="button" onclick={reset}>Reset example</button>
-		</div></Section
-	>
+		</div>
+	</Section>
 	{#if view === 'grid'}<SpatialCardGridSection
 			section={{
 				id: 'collection-grid',
@@ -129,8 +130,10 @@
 			title: 'Use this configuration',
 			headline: 'Use this configuration',
 			background: { color: 'standard', size: 'standard' }
-		}}><LiveCode code={source} /></Section
+		}}
 	>
+		<LiveCode code={source} />
+	</Section>
 </SpatialDocumentationPage>
 
 <style>

@@ -29,6 +29,7 @@ for (const width of [1440, 768, 430, 320]) {
 		await expect(page.locator('[data-catalog-card][data-spatial-element-id="orb"]')).not.toHaveAttribute('title');
 		const metrics = await page.locator('[data-catalog-card]').evaluateAll((cards) => cards.map((card) => {
 			const heading = card.querySelector('h3')!;
+			const label = card.querySelector('.title-label')!;
 			const kicker = card.querySelector<HTMLElement>('[data-shared-role="eyebrow"]')!;
 			return {
 				id: (card as HTMLElement).dataset.spatialElementId,
@@ -36,7 +37,7 @@ for (const width of [1440, 768, 430, 320]) {
 				height: (card as HTMLElement).offsetHeight,
 				titleLines: heading.clientHeight / parseFloat(getComputedStyle(heading).lineHeight),
 				eyebrowLines: kicker.clientHeight / parseFloat(getComputedStyle(kicker).lineHeight),
-				titleClipped: heading.scrollHeight > heading.clientHeight,
+				titleClipped: label.scrollHeight > label.clientHeight,
 				eyebrowClipped: kicker.scrollWidth > kicker.clientWidth
 			};
 		}));
@@ -57,14 +58,9 @@ test('raised, clipped card text crossfades into full detail text and back', asyn
 	const card = page.locator('[data-catalog-card][data-spatial-element-id="column"]');
 	await card.scrollIntoViewIfNeeded();
 	await expect(card).toHaveAttribute('data-catalog-model-ready');
-	const bounds = await card.boundingBox();
 	const media = await card.locator('[data-catalog-geometry]').boundingBox();
-	const activation = {
-		x: media!.x + media!.width / 2 - bounds!.x,
-		y: media!.y + media!.height / 2 - bounds!.y
-	};
-	await card.hover({ position: activation });
-	await expect.poll(() => card.locator('h3').evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).m43)).toBe(64);
+	await page.mouse.move(media!.x + media!.width / 2, media!.y + media!.height / 2);
+	await expect.poll(() => card.locator('.title-label').evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).m43)).toBe(64);
 	await expect.poll(() => card.locator('[data-shared-role="eyebrow"]').evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).m43)).toBe(40);
 	await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getCarouselStats()!.actors.find(actor => actor.spatialElementId === 'column')?.modelDepth)).toBe(96);
 	await expect.poll(() => card.locator('.spatial-element-card-surface').evaluate(node => getComputedStyle(node, '::after').opacity)).toBe('1');
@@ -76,7 +72,7 @@ test('raised, clipped card text crossfades into full detail text and back', asyn
 		document.addEventListener('click', (event) => {
 			const card = (event.target as Element).closest('[data-catalog-card]');
 			if (!card) return;
-			const title = card.querySelector('h3')!;
+			const title = card.querySelector('.title-label')!;
 			sourceNode = title;
 			state.source = { width: getComputedStyle(title).width, rect: title.getBoundingClientRect().toJSON() };
 		}, true);
@@ -127,8 +123,10 @@ test('raised, clipped card text crossfades into full detail text and back', asyn
 	await expect(detail.locator('h1')).toHaveCSS('transform', 'none');
 	await expect(detail.locator('h1')).toHaveCSS('-webkit-line-clamp', 'none');
 	await page.screenshot({ path: info.outputPath('detail-full-text.png') });
+	// The list's history metadata must not make Kit 3 skip a full return transition.
 	await page.goBack();
 	await expect(page).toHaveURL(/categories\/list/);
+	await expect(page.locator('[data-catalog-card]')).toHaveCount(5);
 	await expect(page.locator('[data-catalog-transition]')).toHaveCount(0);
 	const result = await page.evaluate(() => (window as any).cardTextTest);
 	await info.attach('card-text-samples', { body: JSON.stringify(result, null, 2), contentType: 'application/json' });
@@ -141,7 +139,7 @@ test('raised, clipped card text crossfades into full detail text and back', asyn
 		const samples = result.samples.filter((s: any) => s.direction === direction);
 		for (const role of ['title', 'eyebrow']) {
 			const destinations = samples.filter((s: any) => s.role === role && s.variant === 'destination');
-			expect(destinations.some((s: any) => s.opacity > 0 && s.opacity < 1)).toBe(true);
+			expect(destinations.some((s: any) => s.opacity > 0 && s.opacity < 1), direction + '/' + role + ': ' + destinations.map((s: any) => s.opacity).join(',')).toBe(true);
 			const clipped = samples.filter((s: any) => s.role === role && s.variant === (direction === 'forward' ? 'source' : 'destination'));
 			expect(clipped.length).toBeGreaterThan(0);
 			for (const s of clipped) expect(role === 'title' ? s.clamp : s.whiteSpace).toBe(role === 'title' ? '2' : 'nowrap');
@@ -154,6 +152,6 @@ test('reduced motion keeps card text still', async ({ page }) => {
 	await page.goto('/demo/categories/list');
 	const card = page.locator('[data-catalog-card]').first();
 	await card.hover();
-	await expect(card.locator('h3')).toHaveCSS('transform', 'none');
+	await expect(card.locator('.title-label')).toHaveCSS('transform', 'none');
 	await expect(card.locator('[data-shared-role="eyebrow"]')).toHaveCSS('transform', 'none');
 });

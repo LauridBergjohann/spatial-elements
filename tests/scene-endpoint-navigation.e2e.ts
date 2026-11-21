@@ -7,7 +7,7 @@ for (const view of ['list', 'carousel']) test(`${view} uses ready scene endpoint
 	const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
 	await page.goto(`/demo/categories/${view}?stage-test=1&stagedNavigation=1`);
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
-	const link = view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first()
+	const link = view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first().locator('a.primary-link')
 		: page.locator('[data-carousel-item="column"] .spatial-element-target');
 	await link.hover();
 	await expect.poll(() => page.evaluate(() => window.__stageVisualTest?.getCarouselStats()?.actors.some(actor => actor.spatialElementId === 'column' && actor.stagedReady) ?? false)).toBe(true);

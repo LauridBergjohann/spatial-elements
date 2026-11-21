@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { SpatialElementPage, Section } from '@spatial-elements/sveltekit';
-	import ArrowUpRight from 'lucide-svelte/icons/arrow-up-right';
-	import Play from 'lucide-svelte/icons/play';
-	import SquareArrowRightExit from 'lucide-svelte/icons/square-arrow-right-exit';
-	import ShowcaseOrder from '$lib/showcase/ShowcaseOrder.svelte';
-	import { useShowcaseOrders } from '$lib/showcase/showcaseOrders.svelte';
+	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+	import Play from '@lucide/svelte/icons/play';
+	import SquareArrowRightExit from '@lucide/svelte/icons/square-arrow-right-exit';
+	import ShowcaseOrder from '#lib/showcase/ShowcaseOrder.svelte';
+	import { useShowcaseOrders } from '#lib/showcase/showcaseOrders.svelte.ts';
 	const orders = useShowcaseOrders();
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
@@ -28,9 +28,9 @@
 		<div class="prose">
 			<p>{data.product.description}</p>
 			<p>
-				<a class="manufacturer-link" href={data.product.sourceUrl}
-					>Product information from {data.product.manufacturer.name}<ArrowUpRight size={16} /></a
-				>
+				<a class="manufacturer-link" href={data.product.sourceUrl}>
+					Product information from {data.product.manufacturer.name}<ArrowUpRight size={16} />
+				</a>
 			</p>
 		</div>
 	</Section>
@@ -137,9 +137,9 @@
 			</p>
 			{#if data.element.id === 'chronograph'}
 				<p>
-					The <a href="https://github.com/mrdoob/three.js/blob/master/examples/webgl_watch.html"
-						>Three.js watch example</a
-					> was a major inspiration for Spatial Elements. This showcase explores how that kind of visual
+					The <a href="https://github.com/mrdoob/three.js/blob/master/examples/webgl_watch.html">
+						Three.js watch example
+					</a> was a major inspiration for Spatial Elements. This showcase explores how that kind of visual
 					experience can become part of a complete content-driven website.
 				</p>
 			{/if}

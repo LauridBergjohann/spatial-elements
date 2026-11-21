@@ -7,7 +7,7 @@ const cases = [
 	{ id: 'cards-large', size: 'l', align: 'center' }
 ] as const;
 
-test('shared card tone and editorial variant update the native grid and retain real links', async ({ page }) => {
+test('shared card tone and shadow update the native grid and retain real links', async ({ page }) => {
 	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
 	await page.goto('/demo/layout-cards');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'fallback');
@@ -17,15 +17,17 @@ test('shared card tone and editorial variant update the native grid and retain r
 	await page.getByLabel('Card tone').selectOption('muted');
 	await expect(card).toHaveAttribute('data-tone', 'muted');
 	await expect.poll(() => surface.evaluate(node => getComputedStyle(node).backgroundColor)).not.toBe(standard);
-	await page.getByLabel('Card variant').selectOption('editorial');
-	await expect(card).toHaveAttribute('data-card-variant', 'editorial');
+	await page.getByLabel('Card shadow').check();
+	await expect(card).toHaveAttribute('data-shadow', 'true');
+	await page.getByLabel('Custom column spans').check();
 	await expect(page.locator('#cards-medium .ps-content-block')).toHaveCount(6);
 	await page.getByLabel('Media aspect').selectOption('3/2');
+	await card.scrollIntoViewIfNeeded();
 	const media = await card.locator('[data-ps-card-part="media-frame"]').boundingBox();
 	expect(media!.width / media!.height).toBeCloseTo(1.5, 1);
 	const link = card.getByRole('link');
 	await expect(link).toHaveAttribute('data-catalog-view');
-	await link.click();
+	await page.mouse.click(media!.x + media!.width / 2, media!.y + media!.height / 2);
 	await expect(page).toHaveURL(/\/demo\/elements\//);
 });
 
@@ -55,7 +57,7 @@ async function listMetrics(page: Page, id: string) {
 					fontSize: parseFloat(headingStyle.fontSize),
 					lineHeight: parseFloat(headingStyle.lineHeight),
 					titleRows: headingRect.height / parseFloat(headingStyle.lineHeight),
-					clamp: Number(headingStyle.webkitLineClamp),
+					clamp: Number(getComputedStyle(card.querySelector('.title-label')!).webkitLineClamp),
 					align: getComputedStyle(copy).textAlign,
 					eyebrow: eyebrow ? { fontSize: parseFloat(getComputedStyle(eyebrow).fontSize), height: eyebrowRect!.height } : null,
 					textTop: eyebrowRect?.top ?? headingRect.top,
@@ -63,7 +65,7 @@ async function listMetrics(page: Page, id: string) {
 					textCenter: ((eyebrowRect?.top ?? headingRect.top) + headingRect.bottom) / 2,
 					copyTop: copyRect.top, copyBottom: copyRect.bottom, copyCenter: (copyRect.top + copyRect.bottom) / 2,
 					mediaBottom: mediaRect.bottom,
-					href: card.getAttribute('href'),
+					href: card.querySelector('a')?.getAttribute('href'),
 					posterFit: getComputedStyle(card.querySelector('img')!).objectFit
 				};
 			})
@@ -126,6 +128,9 @@ test('media and text geometry is already present in server HTML without JavaScri
 		await expectGridCards(page);
 		const column = page.locator('#cards-medium [data-catalog-card][data-spatial-element-id="column"]').first();
 		await expect(column).toHaveAccessibleName(await column.locator('h3').innerText());
+		const box = (await column.boundingBox())!;
+		await column.click({ position: { x: box.width / 2, y: box.width / 2 } });
+		await expect(page).toHaveURL(/\/demo\/elements\/column/);
 	} finally {
 		await context.close();
 	}
@@ -165,4 +170,26 @@ test('media formats, filtering and keyed reorder preserve measured endpoints and
  expect(await node!.evaluate(el => el.isConnected)).toBe(true);
  await expect(cards.last()).toHaveAttribute('data-catalog-occurrence', JSON.stringify(['cards-medium','card-1']));
  for (const card of await cards.all()) await expect(card.locator('[data-catalog-geometry]')).toHaveCount(1);
+});
+
+
+test('descriptions remain proportional and cards stretch equally within every row', async ({ page }) => {
+ await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
+ await page.goto('/demo/layout-cards');
+ await page.getByLabel('Show descriptions').check();
+ for (const width of [600, 1200, 1700]) {
+  await page.setViewportSize({ width, height: 900 });
+  for (const { id } of cases) {
+   const cards = await page.locator('#' + id + ' [data-catalog-card]').evaluateAll(nodes => nodes.map(card => {
+    const title = card.querySelector('h3')!, description = card.querySelector('.description')!;
+    const rect = card.getBoundingClientRect();
+    return { top: rect.top, height: rect.height, titleSize: parseFloat(getComputedStyle(title).fontSize), descriptionSize: parseFloat(getComputedStyle(description).fontSize), gap: description.getBoundingClientRect().top - title.getBoundingClientRect().bottom };
+   }));
+   for (const card of cards) {
+    expect(card.descriptionSize).toBeLessThanOrEqual(card.titleSize);
+    expect(card.gap).toBeLessThanOrEqual(card.titleSize);
+    for (const neighbor of cards.filter(other => Math.abs(other.top - card.top) < 1)) expect(Math.abs(neighbor.height - card.height)).toBeLessThan(1);
+   }
+  }
+ }
 });

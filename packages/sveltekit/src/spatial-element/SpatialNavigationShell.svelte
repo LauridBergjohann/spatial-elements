@@ -5,7 +5,8 @@
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { getStageVisualScrollPosition, STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
 	import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
-	import { Navigation } from '@page-sections/svelte';
+	import { Header } from '@page-sections/svelte';
+	import { enhanceNavigationPopovers } from './navigationPopovers.js';
 	import { layoutTokens, type MenuItem } from '@page-sections/core';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
 	import { useSpatialTheme } from './brandContext.js';
@@ -43,46 +44,17 @@
 		if (previousMode !== `${enhancedScroll}/${fixedDetail}`) window.dispatchEvent(new Event(STAGE_PANEL_LAYOUT_EVENT));
 	}
 	function closePopovers() {
-		for (const element of rack?.querySelectorAll<HTMLElement>(':popover-open') ?? []) element.hidePopover();
+		// Let the owning components close their state as well as their top-layer panels.
+		if (rack?.querySelector(':popover-open')) window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
 		for (const details of rack?.querySelectorAll<HTMLDetailsElement>('details[open]') ?? []) details.open = false;
 	}
 	afterNavigate(() => { void tick().then(updateMode); });
-	beforeNavigate(closePopovers);
+	beforeNavigate((navigation) => { if (!navigation.shallow || navigation.type === 'popstate') closePopovers(); });
 
 	onMount(() => {
 		stage = rack.closest<HTMLElement>('.stage') ?? undefined;
 		updateMode();
-		// Projected panel content lives above the ordinary DOM layer. Promote only
-		// open navigation dropdowns to the browser top layer, retaining their DOM
-		// ownership, shared markup and delegated events.
-		const dropdownStyles = new Map<HTMLElement, string | null>();
-		function restoreDropdown(panel: HTMLElement) {
-			if (!dropdownStyles.has(panel)) return;
-			if (panel.matches(':popover-open')) panel.hidePopover();
-			panel.removeAttribute('popover');
-			const style = dropdownStyles.get(panel);
-			if (style === null) panel.removeAttribute('style');
-			else panel.setAttribute('style', style!);
-			dropdownStyles.delete(panel);
-		}
-		function toggleDropdown(event: Event) {
-			if (!(event.target instanceof HTMLDetailsElement)) return;
-			const details = event.target;
-			const panel = details.querySelector<HTMLElement>(':scope > .settings-panel, :scope > .mobile-panel, :scope > .ps-submenu');
-			if (!panel || !('showPopover' in panel)) return;
-			// Nested menu entries stay inside their already elevated parent panel.
-			if (details.closest('.mobile-panel, .ps-submenu')) return;
-			if (!details.open) { restoreDropdown(panel); return; }
-			if (dropdownStyles.has(panel)) return;
-			const rect = panel.getBoundingClientRect();
-			dropdownStyles.set(panel, panel.getAttribute('style'));
-			panel.popover = 'manual';
-			Object.assign(panel.style, { position: 'fixed', inset: 'auto', margin: '0',
-				left: rect.left + 'px', top: rect.top + 'px', width: rect.width + 'px',
-				boxSizing: 'border-box', maxHeight: Math.max(0, innerHeight - rect.top - 12) + 'px', overflowY: 'auto' });
-			panel.showPopover();
-		}
-		rack.addEventListener('toggle', toggleDropdown, true);
+		const releasePopovers = enhanceNavigationPopovers(rack);
 		window.addEventListener('scroll', closePopovers, { passive: true });
 		window.addEventListener('resize', closePopovers, { passive: true });
 		const observer = new MutationObserver(updateMode);
@@ -107,17 +79,16 @@
         const stop = subscribeStageScrollFrame(frame => position(frame.scrollY), STAGE_SCROLL_PRIORITY.virtualDocument + 1);
 		window.addEventListener('resize', updateMode, { passive: true });
 		return () => {
-			rack.removeEventListener('toggle', toggleDropdown, true);
+			releasePopovers();
 			window.removeEventListener('scroll', closePopovers);
 			window.removeEventListener('resize', closePopovers);
-			for (const panel of dropdownStyles.keys()) restoreDropdown(panel);
 			releases.forEach(release => release?.()); stop(); observer.disconnect(); window.removeEventListener('resize', updateMode); };
 	});
 </script>
 
 <div class="spatial-shell-track" style:--ps-sticky-range={`${spatialLayoutTokens.menu.scrollThreshold}px`} data-spatial-navigation-shell>
  <div bind:this={rack} class="spatial-shell-rack" data-stage-scroll-shell data-catalog-shell data-spatial-navigation-glass={theme.panelTheme.surface === 'glass' ? '' : undefined}>
-  {#if navigation}{@render navigation()}{:else}<Navigation {menu} {items} {brand} {tools} {left} {right} />{/if}
+  {#if navigation}{@render navigation()}{:else}<Header scrollBehavior="static" {menu} {items} {brand} {tools} {left} {right} />{/if}
  </div>
 </div>
 <style>

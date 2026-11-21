@@ -47,6 +47,10 @@ export class CatalogGeometryFade {
 		if (!this.capture) {
 			this.capture = new THREE.RenderTarget(width, height, {
 				type: THREE.HalfFloatType,
+				// Match the linear working-space canvas pass. Three r187 keys its
+				// pipelines by output color space; an untagged capture would replace
+				// the warmed owner on each ordinary draw and compile again on exit.
+				colorSpace: THREE.LinearSRGBColorSpace,
 				samples: 4
 			});
 			this.capture.addEventListener('dispose', () => { this.frozenCapture = undefined; });

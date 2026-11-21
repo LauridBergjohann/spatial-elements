@@ -16,7 +16,7 @@
 		replaceState
 	} from '$app/navigation';
 	import { navigating, page } from '$app/state';
-	import type { BeforeNavigate, OnNavigate } from '@sveltejs/kit';
+	import type { BeforeNavigate, OnNavigate } from '$app/navigation';
 	import { getContext, onDestroy, onMount, tick } from 'svelte';
 	import { CATALOG_ENDPOINTS, type CatalogEndpointRegistry } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
 	import {
@@ -270,6 +270,9 @@
 	}
 
 	beforeNavigate((navigation) => {
+		// A history entry can carry shallow metadata while restoring another page.
+		// Kit calls these hooks for that full popstate navigation; keep its capture.
+		if (navigation.shallow && navigation.type !== 'popstate') return;
 		// The single permitted replay continues the existing visual ownership.
 		// It must not run stopActive, onSupersede, or the generic feedback again.
 		if (navigation.to && earlyNavigation.acceptReplay(navigation.to.url.href)) {
@@ -360,6 +363,7 @@
 	});
 
 	onNavigate((navigation) => {
+		if (navigation.shallow && navigation.type !== 'popstate') return;
 		const destination = navigation.to;
 		if (!destination) return;
 		const owner = controller;

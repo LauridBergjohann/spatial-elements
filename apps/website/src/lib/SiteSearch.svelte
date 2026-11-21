@@ -1,14 +1,16 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import { base } from '$app/paths';
+	import { resolve } from '$app/paths';
 	import { afterNavigate } from '$app/navigation';
-	import Search from 'lucide-svelte/icons/search';
+	import Search from '@lucide/svelte/icons/search';
 	import { showcaseSegments } from './showcase/segments';
 	import { showcaseProducts } from './showcase/products';
 	import { documents } from './catalog';
+	import { referenceDocuments } from './docs/referenceIndex';
 
 	const entries = [
 		...documents,
+		...referenceDocuments,
 		{
 			title: 'Getting started',
 			href: '/getting-started/',
@@ -144,7 +146,11 @@
 		>
 			<Search size={20} aria-hidden="true" />
 		</button>
-		<div class="search-field" id="site-search-field">
+		<div
+			class="search-field"
+			id="site-search-field"
+			data-spatial-navigation-popup={opened ? '' : undefined}
+		>
 			<Search size={18} aria-hidden="true" />
 			<input
 				bind:this={input}
@@ -171,7 +177,7 @@
 			<kbd aria-hidden="true">Ctrl K</kbd>
 		</div>
 		{#if opened}
-			<div class="search-panel">
+			<div class="search-panel" data-spatial-navigation-popup>
 				<p class="search-hint" role="status">
 					{query.trim()
 						? `${found.length} matching ${found.length === 1 ? 'topic' : 'topics'}${found.length > 10 ? ' · showing the first 10' : ''}`
@@ -182,7 +188,7 @@
 						<li role="presentation">
 							<a
 								id={`site-search-result-${index}`}
-								href={base + item.href}
+								href={resolve('/') + item.href.slice(1)}
 								role="option"
 								aria-selected={active === index}
 								tabindex="-1"
@@ -201,9 +207,9 @@
 			</div>
 		{/if}
 	{:else}
-		<a class="search-fallback" href={base + '/docs/'} aria-label="Browse documentation"
-			><Search size={18} aria-hidden="true" /><span>Browse documentation</span></a
-		>
+		<a class="search-fallback" href={resolve('docs/')} aria-label="Browse documentation">
+			<Search size={18} aria-hidden="true" /><span>Browse documentation</span>
+		</a>
 	{/if}
 </div>
 

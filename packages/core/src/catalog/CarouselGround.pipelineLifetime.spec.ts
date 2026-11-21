@@ -25,8 +25,8 @@ function fixture() {
 		const object = new THREE.Mesh(geometry, material);
 		object.matrixWorld.makeScale(sign, 1, 1);
 		const passes = [THREE.BackSide, THREE.FrontSide].map(side => {
-			const owner = { object, material, context: {}, clippingContextCacheKey: '',
-				getNodeBuilderState: () => builder, getGeometryCacheKey: () => 'shared-ground-layout' };
+			const owner = { object, material, geometry, context: {}, clippingContextCacheKey: '',
+				getAttributes: () => [geometry.attributes.position], getNodeBuilderState: () => builder, getGeometryCacheKey: () => 'shared-ground-layout' };
 			owners.push(owner);
 			return { side, owner };
 		});

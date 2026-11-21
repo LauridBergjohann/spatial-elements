@@ -46,6 +46,7 @@ export class SpatialElementPaneController {
 	private body?: HTMLElement;
 	private stage?: HTMLElement;
 	private regions: HTMLElement[] = [];
+	private scrollRegions: HTMLElement[] = [];
 	private hiddenRegions: HTMLElement[] = [];
 	private observer?: ResizeObserver;
 	private stageObserver?: MutationObserver;
@@ -172,6 +173,8 @@ export class SpatialElementPaneController {
 			this.schedule();
 		}
 		const rect = this.body.getBoundingClientRect();
+		// Scroll compensation belongs to the fixed frames, never to the content tree.
+		this.scrollRegions = [...this.regions, ...this.body.querySelectorAll<HTMLElement>('.spatial-element-tabs-anchor')];
 		// A breakpoint can remove the paint transform before this resize callback.
 		if (this.layout?.composition !== 'split') this.focusPose = { x: 0, y: 0, scale: 1, opacity: 1, blur: 0, pivotY: 0 };
 		const bodyHeightChanged = Math.abs(this.bodyHeight - rect.height / this.focusPose.scale) > 0.5;
@@ -200,11 +203,11 @@ export class SpatialElementPaneController {
 		if (!pane || !this.body) {
 			this.root.removeAttribute('data-spatial-detail-pane-clipped');
 			this.body?.style.removeProperty('clip-path');
-			this.root.style.removeProperty('--spatial-pane-fixed-compensation');
+			for (const region of this.scrollRegions) region.style.removeProperty('--spatial-pane-fixed-compensation');
 			return;
 		}
 		const enhanced = this.stage?.classList.contains('stage-virtual-scroll-active');
-		this.setStyle(this.root, '--spatial-pane-fixed-compensation', `${enhanced ? this.scrollY : 0}px`);
+		for (const region of this.scrollRegions) this.setStyle(region, '--spatial-pane-fixed-compensation', `${enhanced ? this.scrollY : 0}px`);
 		const clip = resolvePaneScrollClip(this.bodyTop, this.bodyHeight, pane.body.y, pane.body.y + pane.body.height, this.scrollY);
 		const clipPath = `inset(${clip.top}px 0 ${clip.bottom}px 0 round 0 0 var(--spatial-element-panel-radius) var(--spatial-element-panel-radius))`;
 		if (this.body.style.clipPath !== clipPath) this.body.style.clipPath = clipPath;

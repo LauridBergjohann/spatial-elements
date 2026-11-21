@@ -62,9 +62,9 @@
 		<p>The entire document remains the scroll owner.</p>
 	</div>
 	<nav class="menu" aria-label="Proof actions">
-		<a href="/proof/ultrawide">Top</a><button onclick={toggleZoom} aria-pressed={zoom}
-			>{zoom ? 'Return to content' : 'Zoom'}</button
-		>
+		<a href="/proof/ultrawide">Top</a><button onclick={toggleZoom} aria-pressed={zoom}>
+			{zoom ? 'Return to content' : 'Zoom'}
+		</button>
 	</nav>
 	<div class="surface" aria-hidden="true"></div>
 	<div class="top-cover" aria-hidden="true"></div>
@@ -80,8 +80,10 @@
 				only affects painting and hit testing.
 			</p>
 			<label>Retained value <input value="Original value" /></label><button
-				onclick={() => (extra = !extra)}>Toggle late content</button
-			>{#if extra}<p class="late">Late content adds height in normal document flow.</p>{/if}
+				onclick={() => (extra = !extra)}
+			>
+				Toggle late content
+			</button>{#if extra}<p class="late">Late content adds height in normal document flow.</p>{/if}
 		</section>
 		{#each chapters as chapter}
 			<section id={`chapter-${chapter}`}>
@@ -98,9 +100,9 @@
 	</main>
 	<div class="bottom-cover" aria-hidden="true"></div>
 	<nav class="submenu" aria-label="Chapters" inert={zoom}>
-		<a href="#summary">Overview</a>{#each chapters as chapter}<a href={`#chapter-${chapter}`}
-				>{chapter}</a
-			>{/each}
+		<a href="#summary">Overview</a>{#each chapters as chapter}<a href={`#chapter-${chapter}`}>
+				{chapter}
+			</a>{/each}
 	</nav>
 </div>
 

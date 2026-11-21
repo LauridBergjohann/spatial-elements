@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ContentPage from '$lib/SpatialDocumentationPage.svelte';
+	import ContentPage from '#lib/SpatialDocumentationPage.svelte';
 	import { HeadingSection } from '@page-sections/svelte';
 
 	import { ContentGrid, ContentBlock } from '@spatial-elements/sveltekit';
@@ -22,22 +22,22 @@
 			<div class="sample-inset ps-grid-scope">
 				<h2>{width}px container</h2>
 				<ContentGrid data-grid>
-					<ContentBlock span={{ xs: 4, s: 3, m: 4, l: 6 }} data-block="first"
-						><a href="#grid-end">First block</a></ContentBlock
-					>
-					<ContentBlock span={{ xs: 4, s: 3, m: 4, l: 6 }} data-block="second"
-						><a href="#grid-end">Second block</a></ContentBlock
-					>
-					<ContentBlock span={{ xs: 2, m: 3 }} data-block="inherited"
-						>A span inherited from the last smaller grid.</ContentBlock
-					>
+					<ContentBlock span={{ xs: 4, s: 3, m: 4, l: 6 }} data-block="first">
+						<a href="#grid-end">First block</a>
+					</ContentBlock>
+					<ContentBlock span={{ xs: 4, s: 3, m: 4, l: 6 }} data-block="second">
+						<a href="#grid-end">Second block</a>
+					</ContentBlock>
+					<ContentBlock span={{ xs: 2, m: 3 }} data-block="inherited">
+						A span inherited from the last smaller grid.
+					</ContentBlock>
 					<ContentBlock data-block="full">Omitting the span fills one row.</ContentBlock>
-					<ContentBlock span={99} data-block="clamped"
-						>Oversized spans clamp to the current column count.</ContentBlock
-					>
-					<ContentBlock span={0} data-block="invalid"
-						>Invalid spans fall back to one full row.</ContentBlock
-					>
+					<ContentBlock span={99} data-block="clamped">
+						Oversized spans clamp to the current column count.
+					</ContentBlock>
+					<ContentBlock span={0} data-block="invalid">
+						Invalid spans fall back to one full row.
+					</ContentBlock>
 				</ContentGrid>
 			</div>
 		</section>

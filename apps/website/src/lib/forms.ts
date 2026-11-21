@@ -25,8 +25,8 @@ export const spatialElements: SpatialElementData[] = [
 		eyebrow: 'FORM STUDIES',
 		title,
 		features: [
-			{ label: 'Explore a sculptural form' },
-			{ label: 'Rotate and zoom in three dimensions' }
+			{ label: 'Explore a sculptural form', marker: '•' },
+			{ label: 'Rotate and zoom in three dimensions', marker: '•' }
 		],
 		action: { label: 'Explore features', href: '#features' },
 
@@ -52,6 +52,9 @@ export const overview = getSpatialListItems(spatialElements, '/docs/examples/ele
 		...item,
 		summary: {
 			...item.summary!,
+			action: item.summary?.action
+				? { ...item.summary.action, href: item.href + '#features' }
+				: undefined,
 			sectionLink: { href: item.href + '#features', label: 'Explore features' }
 		}
 	})

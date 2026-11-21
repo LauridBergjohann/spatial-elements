@@ -11,7 +11,7 @@ The framework-independent runtime behind Spatial Elements: rendering, asset load
 ## Installation
 
 ```sh
-npm install @spatial-elements/core@beta three@^0.186.1
+npm install @spatial-elements/core@beta three@^0.187.0
 ```
 
 Requires Node >=22.12 for tooling. This is a beta package. Models and environments belong to your application and are not bundled.

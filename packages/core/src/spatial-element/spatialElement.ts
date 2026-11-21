@@ -41,6 +41,7 @@ export function findSpatialElement<T extends { id: string }>(
 }
 
 interface SpatialListSource {
+	description?: string;
 	id: string;
 	eyebrow?: string;
 	title: string;
@@ -65,6 +66,7 @@ export function getSpatialListItems(
 		href: `${normalizedBasePath}/${encodeURIComponent(spatialElement.id)}`,
 		eyebrow: spatialElement.eyebrow ?? '',
 		title: spatialElement.title,
+		description: spatialElement.description,
 		features: (spatialElement.features ?? []).map(({ label }) => label),
 		summary: { features: [...(spatialElement.features ?? [])], action: spatialElement.action },
 		geometry: spatialElement.geometry,

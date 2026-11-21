@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Section, SpatialElementPage } from '@spatial-elements/sveltekit';
-	import { spatialElements } from '$lib/catalog';
+	import { spatialElements } from '#lib/catalog.ts';
 	let lateContent = $state(false);
 	let note = $state('');
 	const element = {
@@ -32,8 +32,10 @@
 						type="button"
 						onclick={() => {
 							lateContent = !lateContent;
-						}}>Toggle late pane content</button
+						}}
 					>
+						Toggle late pane content
+					</button>
 					{#if lateContent}<div class="late-pane-content">
 							Late content keeps the same native scroll owner.
 						</div>{/if}

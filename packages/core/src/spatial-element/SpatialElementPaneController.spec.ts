@@ -34,7 +34,8 @@ test('scroll and focus frames reuse pane geometry without rewriting unchanged st
 	const submenu = region('data-spatial-detail-pane-submenu-shell');
 	const body = { ...region('data-spatial-detail-pane-body'),
 		getBoundingClientRect: () => ({ top: 0, height: 2000 }), querySelectorAll: () => [], querySelector: () => ({}) };
-	const root = { style: style(), closest: () => ({ classList: { contains: () => false } }),
+	let enhanced = false;
+	const root = { style: style(), closest: () => ({ classList: { contains: () => enhanced } }),
 		querySelector: () => body, querySelectorAll: (selector: string) => selector === '[data-spatial-detail-fixed]' ? [header, submenu] : [body, header, submenu],
 		addEventListener() {}, removeEventListener() {}, toggleAttribute() {}, removeAttribute() {} };
 	let metrics = { width: 2400, height: 900 };
@@ -57,6 +58,14 @@ test('scroll and focus frames reuse pane geometry without rewriting unchanged st
 	expect(zoomLayout).toHaveBeenCalledTimes(1);
 	onScroll!({ scrollY: 100 } as scrollFrames.StageScrollFrame);
 	expect(writes.mock.calls.map(([property]) => property)).toEqual(['--spatial-pane-focus-origin-y', 'clip-path']);
+	// Enhanced scroll only compensates the fixed frames; inheriting a changing
+	// value from root would invalidate all content styles on every wheel frame.
+	enhanced = true;
+	onScroll!({ scrollY: 180 } as scrollFrames.StageScrollFrame);
+	expect(root.style.getPropertyValue('--spatial-pane-fixed-compensation')).toBe('');
+	expect(body.style.getPropertyValue('--spatial-pane-fixed-compensation')).toBe('');
+	expect(header.style.getPropertyValue('--spatial-pane-fixed-compensation')).toBe('180px');
+	expect(submenu.style.getPropertyValue('--spatial-pane-fixed-compensation')).toBe('180px');
 
 	metrics = { width: 2800, height: 1000 };
 	// The already queued callback is also the same update used by resize/layout events.

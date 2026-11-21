@@ -1,6 +1,6 @@
 <script lang="ts">
 	import SpatialSummarySlot from '../../../../../../../packages/sveltekit/dist/spatial-element/SpatialSummarySlot.svelte';
-	import { overview, spatialElements, theme } from '$lib/catalog';
+	import { overview, spatialElements, theme } from '#lib/catalog.ts';
 	import { resolveSpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 	const element = resolveSpatialElementData(spatialElements[0], theme.id);
 </script>

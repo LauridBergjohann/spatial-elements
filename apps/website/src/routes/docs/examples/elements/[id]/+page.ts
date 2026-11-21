@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { spatialElements } from '$lib/forms';
+import { spatialElements } from '#lib/forms.ts';
 export const entries = () => spatialElements.map((element) => ({ id: element.id }));
 export function load({ params }: { params: { id: string } }) {
 	const element = spatialElements.find((item) => item.id === params.id);

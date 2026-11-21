@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import MoveHorizontal from 'lucide-svelte/icons/move-horizontal';
-	import Search from 'lucide-svelte/icons/search';
-	import Rotate3D from 'lucide-svelte/icons/rotate-3d';
+	import MoveHorizontal from '@lucide/svelte/icons/move-horizontal';
+	import Search from '@lucide/svelte/icons/search';
+	import Rotate3D from '@lucide/svelte/icons/rotate-3d';
 	import { carouselTextHit } from './carouselTextHit.js';
 	let badge: HTMLDivElement;
 	let action = $state<'move' | 'details' | 'rotate' | undefined>();

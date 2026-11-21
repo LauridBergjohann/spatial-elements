@@ -1,9 +1,4 @@
-import { examples } from './+page.svelte';
-import { highlightCode } from '@page-sections/svelte/highlight';
-export async function load() {
-	return {
-		highlights: await Promise.all(
-			examples.map((example) => highlightCode(example.code, example.language))
-		)
-	};
+import { redirect } from '@sveltejs/kit';
+export function load() {
+	redirect(308, '/docs/detail-pages/summaries/');
 }

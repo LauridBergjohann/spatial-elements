@@ -59,8 +59,10 @@
 				shape={{ radius: 12, contentInset: 8 }}
 				surface="frosted"
 				theme={{ backdropBlur: 5, tintOpacity: 0.28 }}
-				pointerReactive={false}>Frosted</Panel
+				pointerReactive={false}
 			>
+				Frosted
+			</Panel>
 		</div>
 	</div>
 	<div class="output" bind:this={candidate} data-background-layer-candidate>
@@ -69,8 +71,10 @@
 				shape={{ radius: 12, contentInset: 8 }}
 				surface="frosted"
 				theme={{ backdropBlur: 5, tintOpacity: 0.28 }}
-				pointerReactive={false}>Frosted</Panel
+				pointerReactive={false}
 			>
+				Frosted
+			</Panel>
 		</div>
 	</div>
 </div>

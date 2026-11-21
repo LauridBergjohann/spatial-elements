@@ -222,3 +222,18 @@ test('destroy cancels pending activation focus without a stale request', () => {
 	stale(16);
 	expect(f.invalidate).not.toHaveBeenCalled();
 });
+
+
+test('keyboard focus inside a card invalidates the spatial actor on entry and exit', () => {
+ const f = fixture(), item = f.actor(false);
+ const link = {};
+ let focused = true;
+ Object.assign(item.target, { contains: (node: unknown) => node === link, querySelector: () => focused ? link : null });
+ f.dispatch('focusin', { target: link });
+ expect(f.invalidate).toHaveBeenCalledTimes(1);
+ expect(f.state.readFocusVisible(item.target)).toBe(true);
+ focused = false;
+ f.dispatch('focusout', { target: link });
+ expect(f.invalidate).toHaveBeenCalledTimes(2);
+ expect(f.state.readFocusVisible(item.target)).toBe(false);
+});

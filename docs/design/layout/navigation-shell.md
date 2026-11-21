@@ -13,9 +13,22 @@ empty interactive panels. Without any shell snippets, existing custom shell comp
 <BrandStageShell {theme}>
   {#snippet menu()}<MainNavigation />{/snippet}
   {#snippet right()}<SettingsTrigger />{/snippet}
+  {#snippet footer()}<SiteFooter />{/snippet}
   {@render children()}
 </BrandStageShell>
 ```
+
+The optional `footer` snippet follows the stage in normal document flow. Use the Page Sections
+`Footer` there for shared branding, navigation and legal links. It scrolls above the stationary
+stage in every layout, including 3XL. The space before the footer is transparent, retaining the
+same scene background as the sections. Only the footer's local translation follows the existing
+visual scroll clock; there are no footer boundary measurements, canvas translations or extra
+pointer-coordinate corrections. No nested scroll container is introduced.
+
+The split pane applies scroll compensation only to its fixed frames. The per-frame scroll
+and focus-origin properties are registered with `inherits: false`, so the browser does not
+recalculate every content descendant when these paint values change.
+The displacement is disabled in fullscreen and resets when navigating to a content page.
 
 The host must keep content within these boxes and use a menu/popover for overflow. The generated
 `spatial-shell-compact-only` class hides an in-menu alternative from XL. It can expose satellite
@@ -48,6 +61,11 @@ owner. Content pages and ordinary detail layouts use DOM frosted surfaces over p
 DOM/canvas content. Fixed detail 3XL may use the authored panel material because its menu area is
 above the content pane. A route change does not key/recreate the shell or mark it as entering page
 content. Native open popovers and disclosure menus close on navigation.
+
+Open Page Sections submenus, mobile/settings disclosures and custom overlays marked with
+`data-spatial-navigation-popup` enter the browser top layer. Their position is captured once
+on opening; scroll, resize and navigation dismiss them through their owning components.
+The DOM hierarchy and delegated menu/search events stay intact.
 
 Native ownership does not remove the existing close-up exit. The shell surface and its content
 follow the same focus offset, perspective scale, fade and text blur as the GPU panel. Only the

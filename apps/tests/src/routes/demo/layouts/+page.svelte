@@ -2,7 +2,7 @@
 	import { HeadingSection } from '@page-sections/svelte';
 
 	import { ContentPage, Section, ContentGrid, ContentBlock } from '@spatial-elements/sveltekit';
-	import { layoutExamples } from '$lib/layoutExamples';
+	import { layoutExamples } from '#lib/layoutExamples.ts';
 </script>
 
 <ContentPage hdr="/assets/demo/studio.hdr" page={{ title: 'Layout examples' }}>

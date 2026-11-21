@@ -82,10 +82,10 @@ test('a redirect releases the predicted pose before a single ordinary destinatio
 	expect(f.navigate).toHaveBeenCalledExactlyOnceWith(other);
 });
 
-test.each(['reject', 'status'] as const)('preload failure (%s) releases visuals and delegates the error page to the router', async failure => {
+test.each(['reject', 'status', 'error'] as const)('preload failure (%s) releases visuals and delegates the error page to the router', async failure => {
 	const f = fixture();
 	const done = f.coordinator.start(target, f.handle);
-	if (failure === 'reject') f.data.reject(Error('offline')); else f.data.resolve({ type: 'loaded', status: 503 });
+	if (failure === 'reject') f.data.reject(Error('offline')); else f.data.resolve({ type: failure === 'error' ? 'error' : 'loaded', status: 503 });
 	await done;
 	expect(f.handle.cancel).toHaveBeenCalledExactlyOnceWith('error');
 	expect(f.navigate).toHaveBeenCalledExactlyOnceWith(target);

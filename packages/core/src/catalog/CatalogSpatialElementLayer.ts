@@ -336,7 +336,7 @@ export class CatalogSpatialElementLayer {
 	};
 	private readFocusVisible(target?: HTMLElement) {
 		if (!target) return false;
-		const visible = target.matches?.(':focus-visible') ?? false;
+		const visible = Boolean(target.matches?.(':focus-visible') || target.querySelector?.(':focus-visible'));
 		this.focusVisible.set(target, visible);
 		return visible;
 	}
@@ -356,14 +356,16 @@ export class CatalogSpatialElementLayer {
 		});
 	}
 	private readonly focusChange = (event: FocusEvent) => {
-		const actor = [...this.actors.values()].find(actor =>
-			(actor.pose ? actor.hitTarget : actor.card) === event.target);
+		const actor = [...this.actors.values()].find(actor => {
+			const candidate = actor.pose ? actor.hitTarget : actor.card;
+			return candidate === event.target || Boolean(candidate?.contains?.(event.target as Node));
+		});
 		const target = actor && (actor.pose ? actor.hitTarget : actor.card);
 		if (!actor || !target) return;
 		// focusout has already lost :focus-visible. Remember the state actually
 		// consumed by the last frame (or preceding focusin), including autofocus.
 		const before = this.focusVisible.get(target) ?? false;
-		const after = event.type === 'focusin' && (target.matches?.(':focus-visible') ?? false);
+		const after = event.type === 'focusin' && this.readFocusVisible(target);
 		this.focusVisible.set(target, after);
 		if (before === after || this.transitionActive || (actor.pose && this.pointer.pressed)) return;
 		// A carousel pointer outline already has the same target value of one.

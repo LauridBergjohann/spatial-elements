@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
-import { showcaseElements } from '$lib/showcase/collection';
-import { showcaseProducts } from '$lib/showcase/products';
+import { showcaseElements } from '#lib/showcase/collection.ts';
+import { showcaseProducts } from '#lib/showcase/products.ts';
 export const entries = () =>
 	showcaseProducts.map((product) => ({ segment: product.segment.id, id: product.id }));
 export function load({ params }: { params: { segment: string; id: string } }) {

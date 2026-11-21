@@ -117,7 +117,7 @@ test('theme still changes when storage is blocked', async ({ page }) => {
 	await expect(page.locator('.ps-shell')).toHaveAttribute('data-ps-theme', 'dark');
 });
 
-test('the standard palette and frosted navigation follow the chosen mode outside Exclusive', async ({
+test('the standard palette and frosted navigation follow the chosen mode outside the custom showcase themes', async ({
 	page
 }) => {
 	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
@@ -444,7 +444,7 @@ test('minimal demo remains a small usable collection without GPU', async ({ brow
 		const page = await context.newPage();
 		await page.goto('http://127.0.0.1:4173/');
 		await expect(page.getByRole('heading', { level: 1 })).toHaveText('My collection');
-		await page.locator('a[data-catalog-card]').first().click();
+		await page.locator('[data-catalog-card] a.primary-link').first().click();
 		await expect(page).toHaveURL(/\/starter\/elements\/cube/);
 		await expect(page.getByRole('heading', { level: 1 })).toHaveText('Cube');
 	} finally {

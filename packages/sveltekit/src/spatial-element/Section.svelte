@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Section as PageSection } from '@page-sections/svelte';
 	import { getContext, onMount } from 'svelte';
-	import { dev } from '$app/environment';
+	import { dev } from '$app/env';
 	import './layout.generated.css';
 	import { createSectionBackgroundNormalizer } from '@spatial-elements/core/spatial-element/sectionBackground';
 	import type { Snippet } from 'svelte';
