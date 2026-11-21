@@ -1,8 +1,10 @@
 # Development
 
-Use Node 24 and npm 11. The applications use SvelteKit 3 (configuration in `vite.config.ts`, native `#lib` imports) and Svelte 5. Install with npm ci. The packages build in dependency order through npm run build. Public runtime dependencies use Page Sections 0.5.0 and Three.js 0.187; no sibling checkout is required.
+Use Node 24 and npm 11. The applications use SvelteKit 3 (configuration in `vite.config.ts`, native `#lib` imports) and Svelte 5. Install with npm ci. The packages build in dependency order through npm run build. Public runtime dependencies use Page Sections 0.5.1 and Three.js 0.187; no sibling checkout is required.
 
 TypeScript stays on 6.0.3 because the current SvelteKit, svelte-package and svelte-check peer ranges do not support TypeScript 7. Node type declarations follow the Node 24 runtime. Lucide imports use the maintained `@lucide/svelte` package.
+
+The spatial shell owns delayed header scrolling, including the fixed 3XL detail layout. If you supply a custom `navigation` snippet containing a Page Sections `Header`, set `scrollBehavior="static"` on that inner header; Page Sections 0.5.1 otherwise adds its own delayed scroll track. The default spatial header already sets this.
 
 `SpatialCardGridSection` and `SpatialListPage` now use one card format: descriptions are displayed when provided, and `cardShadow` enables the resting shadow. Remove `cardVariant`. Omit `itemSpan` for responsive S/M/L allocation; explicit spans still use `ContentBlock`. A card root is an article with a stretched native title link. Spatial endpoints register the article, media, title label and eyebrow separately; keyboard focus belongs to the inner link.
 

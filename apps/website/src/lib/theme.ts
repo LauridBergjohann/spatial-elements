@@ -62,7 +62,7 @@ export function websiteTheme(
 			body: palette.body,
 			accent: palette.accent,
 			onAccent: palette.onAccent,
-			tabBackground: mode === 'dark' ? 'rgba(72, 77, 83, 0.5)' : '#eeeeee'
+			tabBackground: mode === 'dark' ? '#1f1f1f' : '#eeeeee'
 		},
 		panelTheme: {
 			surface: 'frosted',

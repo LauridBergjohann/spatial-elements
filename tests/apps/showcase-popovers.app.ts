@@ -1,5 +1,18 @@
 import { expect, test, type Locator } from '@playwright/test';
 
+test('the spatial shell owns the single 32px header delay', async ({ page }) => {
+	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
+	await page.setViewportSize({ width: 390, height: 900 });
+	await page.goto('/docs/foundations/page-sections/');
+	const header = page.locator('.website-header .header');
+	await expect(page.locator('.website-header .ps-header')).toHaveAttribute('data-scroll', 'static');
+	const top = (await header.boundingBox())!.y;
+	for (const [scroll, offset] of [[20, 0], [52, -20], [0, 0]]) {
+		await page.evaluate(y => scrollTo({ top: y, behavior: 'instant' }), scroll);
+		await expect.poll(async () => Math.round((await header.boundingBox())!.y - top)).toBe(offset);
+	}
+});
+
 test('compact header preserves the brand beside search and settings', async ({page}) => {
 	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', {value: undefined}));
 	await page.goto('/docs/');

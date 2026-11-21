@@ -88,7 +88,7 @@
 
 {#snippet siteNavigation()}
 	<div class="website-header">
-		<Header {items} closeKey={page.url.pathname}>
+		<Header scrollBehavior="static" {items} closeKey={page.url.pathname}>
 			{#snippet itemIcon(item)}<NavigationIcon name={item.icon} />{/snippet}
 			{#snippet brand()}
 				<a class="skip-link" href="#main-content">Skip to content</a>

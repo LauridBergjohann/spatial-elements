@@ -72,6 +72,8 @@
 
 ### Patch Changes
 
+- Adopt Page Sections 0.5.1 while keeping header scrolling owned by the spatial shell. Detail navigation uses the theme's `tabBackground` and animates rounded corners only at the group's outer edges.
+
 - Preserve whole-card navigation when a pointer click lands on the stationary presentation root during the card's hover tilt.
 
 - Fit carousel visibility and preparation to the actual viewport instead of a fixed five-seat window. Space neighbouring models using their display envelope, maintain ordering on wide screens, and share visibility between GPU models, posters and hit targets. Scope detail framing styles to the hero so preloading a detail route cannot enlarge carousel geometry.

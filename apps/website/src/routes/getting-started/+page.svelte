@@ -26,7 +26,7 @@
 		</p>
 		<CodeBlock
 			language="sh"
-			code="npm install @spatial-elements/sveltekit@beta @page-sections/svelte@0.5.0"
+			code="npm install @spatial-elements/sveltekit@beta @page-sections/svelte@0.5.1"
 		/>
 	</Section>
 	<Section

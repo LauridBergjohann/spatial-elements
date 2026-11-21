@@ -37,7 +37,7 @@
 			<p>
 				<a href="https://page-sections.bergjohann.com/docs/">Page Sections</a> supplies these content
 				building blocks, plus page containers, navigation, themes and a responsive grid. Spatial Elements
-				uses Page Sections 0.5.0 as its foundation.
+				uses Page Sections 0.5.1 as its foundation.
 			</p>
 			<DocFigure
 				name="foundations"

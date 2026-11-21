@@ -88,7 +88,7 @@
 
 <div class="spatial-shell-track" style:--ps-sticky-range={`${spatialLayoutTokens.menu.scrollThreshold}px`} data-spatial-navigation-shell>
  <div bind:this={rack} class="spatial-shell-rack" data-stage-scroll-shell data-catalog-shell data-spatial-navigation-glass={theme.panelTheme.surface === 'glass' ? '' : undefined}>
-  {#if navigation}{@render navigation()}{:else}<Header {menu} {items} {brand} {tools} {left} {right} />{/if}
+  {#if navigation}{@render navigation()}{:else}<Header scrollBehavior="static" {menu} {items} {brand} {tools} {left} {right} />{/if}
  </div>
 </div>
 <style>
