@@ -1,5 +1,25 @@
 import { expect, test, type Locator } from '@playwright/test';
 
+test('compact header preserves the brand beside search and settings', async ({page}) => {
+	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', {value: undefined}));
+	await page.goto('/docs/');
+	const header = page.locator('.website-header .header');
+	for (const width of [320, 390, 599, 600]) {
+		await page.setViewportSize({width, height: 900});
+		const brand = header.getByRole('link', {name: 'Spatial Elements home'});
+		await expect(brand.locator('span')).toBeVisible();
+		await expect(brand.locator('img')).toBeVisible();
+		await expect(header.getByRole('button', {name: 'Open search'})).toBeVisible();
+		await expect(header.locator('.settings > summary')).toBeVisible();
+		const github = header.getByRole('link', {name: 'Spatial Elements on GitHub'});
+		if (width < 600) await expect(github).toBeHidden();
+		else await expect(github).toBeVisible();
+		const boxes = await header.locator('.brand, .tools, .settings, .mobile-navigation').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().toJSON()));
+		for (const a of boxes) for (const b of boxes) if (a.x < b.x) expect(a.right).toBeLessThanOrEqual(b.x + 1);
+		expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+	}
+});
+
 async function expectTopmost(locator: Locator) {
 	await expect(locator).toBeVisible();
 	await expect.poll(() => locator.evaluate(node => {

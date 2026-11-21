@@ -175,6 +175,18 @@
 	.github-link:hover {
 		background: var(--ps-selection, var(--ps-section-muted));
 	}
+	@media (max-width: 599.98px) {
+		.github-link {
+			display: none;
+		}
+		.website-header :global(.header) {
+			gap: 0.25rem;
+		}
+		.website-header .site-brand {
+			gap: 0.5rem;
+			font-size: 0.875rem;
+		}
+	}
 	@media (min-width: 1200px) {
 		.website-header :global(.desktop-menu > ul) {
 			justify-content: center;

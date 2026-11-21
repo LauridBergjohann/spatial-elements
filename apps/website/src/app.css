@@ -168,11 +168,6 @@ body {
 .playground-controls button {
 	cursor: pointer;
 }
-@media (max-width: 599px) {
-	.site-brand > span:not(.version) {
-		display: none;
-	}
-}
 
 .demo-sample {
 	height: 100%;
