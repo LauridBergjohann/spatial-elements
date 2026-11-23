@@ -28,12 +28,14 @@ test('scroll and focus frames reuse pane geometry without rewriting unchanged st
 			get clipPath() { return values.get('clip-path') ?? ''; },
 			set clipPath(value: string) { writes('clip-path', value); values.set('clip-path', value); } };
 	};
-	const region = (kind: string) => ({ style: style(), inert: false,
+	const region = (kind: string) => ({ style: style(), inert: false, classList: { contains: () => false },
 		hasAttribute: (name: string) => name === kind, toggleAttribute() {}, removeAttribute() {} });
 	const header = region('data-spatial-detail-pane-header');
 	const submenu = region('data-spatial-detail-pane-submenu-shell');
+	const contentBounds = vi.fn(() => ({ bottom: 1940 }));
 	const body = { ...region('data-spatial-detail-pane-body'),
-		getBoundingClientRect: () => ({ top: 0, height: 2000 }), querySelectorAll: () => [], querySelector: () => ({}) };
+		getBoundingClientRect: () => ({ top: 0, height: 2000 }), querySelectorAll: () => [],
+		querySelector: (selector: string) => selector === '.spatial-element-section-list' ? { getBoundingClientRect: contentBounds } : ({}) };
 	let enhanced = false;
 	const root = { style: style(), closest: () => ({ classList: { contains: () => enhanced } }),
 		querySelector: () => body, querySelectorAll: (selector: string) => selector === '[data-spatial-detail-fixed]' ? [header, submenu] : [body, header, submenu],
@@ -66,6 +68,18 @@ test('scroll and focus frames reuse pane geometry without rewriting unchanged st
 	expect(body.style.getPropertyValue('--spatial-pane-fixed-compensation')).toBe('');
 	expect(header.style.getPropertyValue('--spatial-pane-fixed-compensation')).toBe('180px');
 	expect(submenu.style.getPropertyValue('--spatial-pane-fixed-compensation')).toBe('180px');
+	contentBounds.mockClear();
+	// The submenu follows the last section, while the rest of the stage stays fixed.
+	for (const virtual of [false, true]) {
+		enhanced = virtual;
+		for (const scrollY of [1000, 1200, 1300, 1000]) {
+			onScroll!({ scrollY } as scrollFrames.StageScrollFrame);
+			const exit = Math.min(0, 1940 - scrollY - 862);
+			expect(submenu.style.getPropertyValue('--spatial-pane-fixed-compensation')).toBe(`${(virtual ? scrollY : 0) + exit}px`);
+			expect(header.style.getPropertyValue('--spatial-pane-fixed-compensation')).toBe(`${virtual ? scrollY : 0}px`);
+		}
+	}
+	expect(contentBounds).not.toHaveBeenCalled();
 
 	metrics = { width: 2800, height: 1000 };
 	// The already queued callback is also the same update used by resize/layout events.

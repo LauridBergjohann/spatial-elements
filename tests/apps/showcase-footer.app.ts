@@ -6,7 +6,16 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 		await page.setViewportSize({ width: 2456, height: 1000 });
 		await page.goto('/showcase/consumer/logitech-z407/');
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', enhanced ? 'enhanced' : 'fallback', { timeout: 60000 });
-		const fixed = page.locator('.ps-navigation .header, [data-spatial-detail-pane-header], .spatial-element-hero, [data-spatial-detail-pane-submenu-shell]');
+		const fixed = page.locator('.ps-navigation .header, [data-spatial-detail-pane-header], .spatial-element-hero');
+		const submenu = page.locator('[data-spatial-detail-pane-submenu-shell]');
+		const submenuTop = (await submenu.boundingBox())!.y;
+		const expectSubmenuAtContentEnd = async () => {
+			await expect.poll(() => page.evaluate(() => {
+				const menu = document.querySelector('[data-spatial-detail-pane-submenu-shell]')!.getBoundingClientRect();
+				const content = document.querySelector('.spatial-element-section-list')!.getBoundingClientRect();
+				return Math.abs(menu.top + menu.height / 2 - content.bottom);
+			})).toBeLessThan(1);
+		};
 		const initial = await fixed.evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().top));
 		const paneTop = (await page.locator('[data-spatial-detail-pane-header]').boundingBox())!.y;
 		const end = await page.locator('.stage').evaluate(node => node.getBoundingClientRect().bottom + scrollY - innerHeight);
@@ -16,8 +25,17 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 		};
 		await scroll(Math.min(500, end));
 		await expect.poll(async () => fixed.evaluateAll(nodes => nodes.map(node => Math.round(node.getBoundingClientRect().top)))).toEqual(initial.map(Math.round));
+		await expect.poll(async () => (await submenu.boundingBox())!.y).toBeCloseTo(submenuTop, 0);
 		await scroll(end + 160);
 		await expect.poll(async () => fixed.evaluateAll(nodes => nodes.map(node => Math.round(node.getBoundingClientRect().top)))).toEqual(initial.map(Math.round));
+		await expectSubmenuAtContentEnd();
+		expect((await submenu.boundingBox())!.y).toBeLessThan(submenuTop - 150);
+		// Wheel smoothing must keep the submenu with the content, too.
+		const contentBox = (await page.locator('.spatial-element-section-list').boundingBox())!;
+		await page.mouse.move(contentBox.x + 100, 400);
+		await page.mouse.wheel(0, 80);
+		await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(end + 180);
+		await expectSubmenuAtContentEnd();
 		const footer = page.locator('.ps-footer-main');
 		await expect(footer).toBeInViewport();
 		const box = (await footer.boundingBox())!;
@@ -33,6 +51,7 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 		await page.screenshot({ path: info.outputPath('detail-footer.png') });
 		await scroll(0);
 		await expect.poll(async () => fixed.evaluateAll(nodes => nodes.map(node => Math.round(node.getBoundingClientRect().top)))).toEqual(initial.map(Math.round));
+		await expect.poll(async () => (await submenu.boundingBox())!.y).toBeCloseTo(submenuTop, 0);
 		// Fixed geometry also survives a theme change and resize while the footer is entering.
 		await page.getByRole('button', { name: 'Dark', exact: true }).filter({ visible: true }).click();
 		await scroll(end + 160);
@@ -40,6 +59,7 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 		await expect.poll(async () => page.locator('[data-spatial-detail-pane-header]').evaluate(node => {
 			return Math.round(node.getBoundingClientRect().top);
 		})).toBe(Math.round(paneTop));
+		await expectSubmenuAtContentEnd();
 		await page.setViewportSize({ width: 1440, height: 900 });
 		await expect(page.locator('.stage')).toHaveCSS('--stage-exit-y', '');
 		await page.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
