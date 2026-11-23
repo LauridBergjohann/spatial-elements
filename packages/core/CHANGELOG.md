@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Fade the detail subnavigation's top border together with its docking corner animation, preserving the header overlap without a gap or doubled edge.
+
 - 4ed4a7d: Use restrained carousel model framing with independent carousel/grid poses, place compact summaries below models, increase compact model separation, and expand the turntable on wide viewports. Fade distant models as complete rendered silhouettes through the existing depth-blur buffer, preserving material occlusion and avoiding transparent ghost surfaces.
 
   Allow dragging from empty space inside summary links while keeping text selectable and clicks navigable. Keep summary headings free of hover underlines and restore the accent arrow inside compact panels.

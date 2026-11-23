@@ -244,7 +244,22 @@
 		opacity: var(--spatial-element-sticky-header-progress, 0);
 	}
 
-	.spatial-element-sticky-tabs::after { content: ""; position: absolute; inset: 0; border: 1px solid var(--ps-panel-border); border-radius: inherit; pointer-events: none; z-index: 3; }
+	.spatial-element-sticky-tabs::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border: 1px solid var(--ps-panel-border);
+		/* Fade only the shared edge with the corner morph. Keep the surface and
+		 * its existing header overlap intact so docking cannot expose a gap. */
+		border-top-color: color-mix(
+			in srgb,
+			var(--ps-panel-border) var(--spatial-element-tabs-dock-top-border-opacity, 100%),
+			transparent
+		);
+		border-radius: inherit;
+		pointer-events: none;
+		z-index: 3;
+	}
 
 	.spatial-element-sticky-tabs::before {
 		z-index: 0;
