@@ -295,7 +295,7 @@
 		position: relative; top: auto; right: auto; width: 100%; margin: 0;
 	}
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-pane-body .spatial-element-panel { max-height: none; border-radius: 0; }
-	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-pane-body .spatial-element-panel > .stage-panel-surface > [data-stage-panel-content] > .panel-edge { display: none; }
+	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-pane-body .spatial-element-panel > .stage-panel-surface > [data-stage-panel-content] > .panel-edge { border-block-width: 0; border-radius: 0 !important; }
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-pane-body .spatial-summary-query { max-height: none; overflow: visible; overscroll-behavior: auto; }
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-pane-body .spatial-element-panel .stage-panel-surface::before,
 	.stage [data-spatial-element-root]:not([data-spatial-detail-flow]) .spatial-element-pane-body .spatial-element-panel .stage-panel-surface::after { display: none; }

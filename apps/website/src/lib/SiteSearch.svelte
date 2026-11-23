@@ -283,6 +283,9 @@
 	.site-search :global(.mobile-search) {
 		display: none;
 	}
+	.site-search :global(.mobile-search:not([data-active='true'])) {
+		background: transparent;
+	}
 	.site-search :global(.search-panel) {
 		top: 100%;
 		right: 0;

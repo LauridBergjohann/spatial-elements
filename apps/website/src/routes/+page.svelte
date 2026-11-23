@@ -29,6 +29,7 @@
 				width: 1536,
 				height: 1024
 			},
+			"imageSide": "left",
 			actions: [
 				{ label: 'Explore the showcase', href: '/showcase/', variant: 'primary' },
 				{ label: 'Get started', href: '/getting-started/', variant: 'secondary' }
