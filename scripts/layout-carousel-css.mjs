@@ -6,7 +6,7 @@ export function carouselRules(tokens) {
 		const grid = tokens.grid[name === 'xs' || name === 's' || name === 'm' ? name : 'l'];
 		const shell = name === 'xl' || name === '2xl' ? tokens.menu.wideTop + tokens.menu.wideHeight : tokens.menu.height;
 		const pageHeadingReserve = grid.headlineLineHeight + grid.gap * 2;
-		const budget = shell + tokens.breadcrumb[name].height + pageHeadingReserve + grid.gap * 2 + panelReserve + settings.dotsGap + tokens.carousel.dotsHeight + tokens.carousel.nextPreviewHeight;
+		const budget = shell + tokens.breadcrumb[name].height + pageHeadingReserve + grid.gap * 2 + panelReserve + settings.dotsGap + tokens.carousel.dotsHeight + tokens.carousel.nextPreviewHeight - (compact ? 0 : tokens.carousel.fullPanelHeightAllowance);
 		const column = `((100% - ${grid.gap * (grid.columns - 1)}px) / ${grid.columns})`;
 		const fitLeft = compact ? '0px' : `calc((${column} + ${grid.gap}px) * ${settings.fitStartColumn - 1})`;
 		const fitWidth = compact ? '100%' : `calc(${column} * ${settings.fitColumns} + ${grid.gap * (settings.fitColumns - 1)}px)`;

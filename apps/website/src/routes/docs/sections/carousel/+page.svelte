@@ -129,9 +129,10 @@
 			<p>
 				The carousel uses a viewport-based height budget with a fixed allowance for the page header,
 				breadcrumbs, a typical page title and a preview of the next section. Its own heading shares
-				this budget. Other sections and introduction lengths do not affect its size, and scrolling
-				does not resize it. Neighbouring models remain opaque; only the far end of the turntable
-				fades out.
+				this budget. Full property panels receive a little more height and use tighter content
+				spacing; extra-long content remains scrollable in short windows. Other sections and
+				introduction lengths do not affect its size, and scrolling does not resize it. Neighbouring
+				models remain opaque; only the far end of the turntable fades out.
 			</p>
 		</div>
 	</Section><CollectionExample kind="carousel" /><Section

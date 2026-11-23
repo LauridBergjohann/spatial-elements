@@ -187,7 +187,7 @@
 
 @media (min-width: 840px) {
 .carousel-drag-section {
-	--spatial-carousel-fit-height: clamp(160px, calc(100svh - 308px - var(--spatial-carousel-headline-budget, 0px)), 420px);
+	--spatial-carousel-fit-height: clamp(160px, calc(100svh - 276px - var(--spatial-carousel-headline-budget, 0px)), 540px);
 	--spatial-carousel-fit-left: calc((((100% - 112px) / 8) + 16px) * 1);
 	--spatial-carousel-fit-width: calc(((100% - 112px) / 8) * 3 + 32px);
 	--spatial-carousel-summary-left: calc((((100% - 112px) / 8) + 16px) * 4);
@@ -205,7 +205,7 @@
 
 @media (min-width: 1200px) {
 .carousel-drag-section {
-	--spatial-carousel-fit-height: clamp(160px, calc(100svh - 362px - var(--spatial-carousel-headline-budget, 0px)), 500px);
+	--spatial-carousel-fit-height: clamp(160px, calc(100svh - 330px - var(--spatial-carousel-headline-budget, 0px)), 560px);
 	--spatial-carousel-fit-left: calc((((100% - 264px) / 12) + 24px) * 2);
 	--spatial-carousel-fit-width: calc(((100% - 264px) / 12) * 5 + 96px);
 	--spatial-carousel-summary-left: calc((((100% - 264px) / 12) + 24px) * 7);
@@ -223,7 +223,7 @@
 
 @media (min-width: 1600px) {
 .carousel-drag-section {
-	--spatial-carousel-fit-height: clamp(160px, calc(100svh - 376px - var(--spatial-carousel-headline-budget, 0px)), 560px);
+	--spatial-carousel-fit-height: clamp(160px, calc(100svh - 344px - var(--spatial-carousel-headline-budget, 0px)), 600px);
 	--spatial-carousel-fit-left: calc((((100% - 264px) / 12) + 24px) * 1);
 	--spatial-carousel-fit-width: calc(((100% - 264px) / 12) * 5 + 96px);
 	--spatial-carousel-summary-left: calc((((100% - 264px) / 12) + 24px) * 6);
@@ -241,7 +241,7 @@
 
 @media (min-width: 1809px) {
 .carousel-drag-section {
-	--spatial-carousel-fit-height: clamp(160px, calc(100svh - 376px - var(--spatial-carousel-headline-budget, 0px)), 600px);
+	--spatial-carousel-fit-height: clamp(160px, calc(100svh - 344px - var(--spatial-carousel-headline-budget, 0px)), 640px);
 	--spatial-carousel-fit-left: calc((((100% - 264px) / 12) + 24px) * 1);
 	--spatial-carousel-fit-width: calc(((100% - 264px) / 12) * 6 + 120px);
 	--spatial-carousel-summary-left: calc((((100% - 264px) / 12) + 24px) * 7);

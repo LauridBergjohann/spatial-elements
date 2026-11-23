@@ -160,6 +160,7 @@
   "carousel": {
     "dotsHeight": 32,
     "nextPreviewHeight": 72,
+    "fullPanelHeightAllowance": 32,
     "compactTitleHeight": 40,
     "compactEyebrowHeight": 66,
     "layouts": {
@@ -185,7 +186,7 @@
       },
       "m": {
         "minHeight": 160,
-        "maxHeight": 420,
+        "maxHeight": 540,
         "sideAllowance": 0,
         "fitStartColumn": 2,
         "fitColumns": 3,
@@ -195,7 +196,7 @@
       },
       "l": {
         "minHeight": 160,
-        "maxHeight": 500,
+        "maxHeight": 560,
         "sideAllowance": 0,
         "fitStartColumn": 3,
         "fitColumns": 5,
@@ -205,7 +206,7 @@
       },
       "xl": {
         "minHeight": 160,
-        "maxHeight": 560,
+        "maxHeight": 600,
         "sideAllowance": 0,
         "fitStartColumn": 2,
         "fitColumns": 5,
@@ -215,7 +216,7 @@
       },
       "2xl": {
         "minHeight": 160,
-        "maxHeight": 600,
+        "maxHeight": 640,
         "sideAllowance": 0,
         "fitStartColumn": 2,
         "fitColumns": 6,

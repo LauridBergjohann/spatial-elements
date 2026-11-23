@@ -197,7 +197,8 @@ export function resolveCarouselLayout(input: CarouselLayoutInput) {
 	// Reserve a typical page title without measuring any neighbouring sections.
 	const pageHeadingReserve = grid.headlineLineHeight + padding * 2;
 	const heightOffset = shellBudget + pageHeadingReserve + padding * 2 + headlineHeight + headlineGap + panelReserve
-		+ settings.dotsGap + tokens.carousel.dotsHeight + tokens.carousel.nextPreviewHeight;
+		+ settings.dotsGap + tokens.carousel.dotsHeight + tokens.carousel.nextPreviewHeight
+		- (compact ? 0 : tokens.carousel.fullPanelHeightAllowance);
 	const fitHeight = clamp(available.height - heightOffset, settings.minHeight, settings.maxHeight);
 	const columnX = (column: number) => content.x + padding + (column - 1) * (grid.columnWidth + grid.gap);
 	const fitX = compact ? content.x + padding : columnX(settings.fitStartColumn);

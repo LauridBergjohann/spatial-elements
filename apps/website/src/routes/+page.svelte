@@ -29,11 +29,12 @@
 				width: 1536,
 				height: 1024
 			},
-			"imageSide": "left",
+			imageSide: 'left',
 			actions: [
 				{ label: 'Explore the showcase', href: '/showcase/', variant: 'primary' },
 				{ label: 'Get started', href: '/getting-started/', variant: 'secondary' }
-			]
+			],
+			spacing: 'loose'
 		}}
 	/>
 	<Section
@@ -41,7 +42,8 @@
 			id: 'what-is-spatial-elements',
 			title: 'What is Spatial Elements?',
 			headline: 'A website first. A spatial experience when it can be.',
-			background: { color: 'standard', size: 'standard' }
+			background: { color: 'standard', size: 'standard' },
+			spacing: 'loose'
 		}}
 	>
 		<div class="prose">
@@ -61,7 +63,8 @@
 		section={{
 			id: 'featured-products',
 			title: 'Explore selected products',
-			background: { color: 'transparent', size: 'full' }
+			background: { color: 'transparent', size: 'full' },
+			spacing: 'loose'
 		}}
 		list={featuredItems}
 	/>
@@ -69,7 +72,8 @@
 		section={{
 			id: 'features',
 			title: 'Why Spatial Elements?',
-			headline: 'The pieces work together.'
+			headline: 'The pieces work together.',
+			spacing: 'loose'
 		}}
 		cardTone="muted"
 		list={[

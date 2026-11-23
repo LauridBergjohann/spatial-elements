@@ -23,7 +23,7 @@
  } = $props();
  const catalogEndpoint = createCatalogEndpointAction();
 </script>
-		<div bind:this={element} class="summary-presentation">
+		<div bind:this={element} class="summary-presentation" class:carousel={!!carousel}>
 			{#if leading}<div class="summary-leading" use:catalogEndpoint={address('leading')}
 				data-catalog-rich-shared="leading" data-catalog-semantic={spatialElement.id}>
 				{@render leading()}
@@ -127,6 +127,12 @@
 		line-height: 24px;
 		pointer-events: auto;
 	}
+
+	/* Keep full carousel panels comfortable within their viewport height budget. */
+	.summary-presentation.carousel { gap: 12px; }
+	.carousel .summary-commerce { gap: 12px; }
+	.carousel .summary-title { margin-top: 6px; }
+	.carousel .feature-list { gap: 8px; }
 
 	.summary-title {
 		margin: 10px 0 0;
