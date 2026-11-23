@@ -926,8 +926,9 @@
 </script>
 
 {#if catalog}
+	<!-- Activate history/focus subscriptions once the controller has started. -->
 	<ScrollNavigationBridge
-		controller={virtualScroll}
+		controller={isEnhanced ? virtualScroll : undefined}
 		onEarlyStart={startEarlyNavigation}
 		onStart={() => { if (isEnhanced) navigationFeedback?.begin(); }}
 		onCapture={captureNavigation}

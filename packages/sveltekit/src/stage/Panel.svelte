@@ -207,7 +207,7 @@
 			`--stage-panel-tint-opacity: ${tintOpacity}`,
 			`--stage-panel-shadow-intensity: ${shadowIntensity}`,
 			`--stage-panel-shadow-strength: ${resolvePanelShadowStrength(shadowIntensity)}`,
-			`--stage-panel-box-shadow: ${getSharedPanelBoxShadow(shadowIntensity)}`,
+			`--stage-panel-box-shadow: ${getSharedPanelBoxShadow(shadowIntensity, theme.shadowColor)}`,
 			`--stage-panel-specular-opacity: ${specularOpacity}`,
 			`--stage-panel-thickness: ${thickness}`,
 			`--stage-panel-bezel: ${bezel}px`,

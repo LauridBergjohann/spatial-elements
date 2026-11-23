@@ -24,8 +24,8 @@ describe('shared carousel framing', () => {
 	it('reserves the same compact frame with and without an eyebrow', () => {
 		for (const hasEyebrow of [false, true]) {
 			const layout = resolveCarouselPoseLayout({ width: 390, height: 900, hasHeadline: true, hasEyebrow }, { left: 12, width: 366 });
-			expect(layout.framing).toEqual({ compact: true, fit: { x: 36, y: 66, width: 294, height: 300 }, summary: { x: 36, width: 294, anchorY: 66, alignment: 'end' } });
-			expect(layout.height).toBe(366);
+			expect(layout.framing).toEqual({ compact: true, fit: { x: 0, y: 0, width: 366, height: 300 }, summary: { x: 52, width: 262, anchorY: 350, alignment: 'end' } });
+			expect(layout.height).toBe(350);
 		}
 	});
 	it('preserves the depth-only foreground advance with the new fit target', () => {

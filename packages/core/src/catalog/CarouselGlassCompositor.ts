@@ -3,6 +3,7 @@ import { clearFullTarget } from '../stage/rendererState.js';
 import * as THREE from 'three/webgpu';
 import { texture } from 'three/tsl';
 import { gaussianBlur } from 'three/addons/tsl/display/GaussianBlurNode.js';
+import { withSharedPanelShadow } from '../stage/panelShadowStyle.js';
 import { LiquidGlassPanel } from '../stage/LiquidGlassPanel.js';
 import type { BlurRect, CatalogDepthBlur } from './CatalogDepthBlur.js';
 
@@ -30,13 +31,15 @@ export class CarouselGlassCompositor {
 	>();
 	private panels = new Map<
 		HTMLElement,
-		{ glass: LiquidGlassPanel; clip?: BlurRect; blur: number; focusBlur: number; width: number; height: number; opacity: number; active: boolean; seen: boolean }
+		{ authored: string; appearance: string; dirty: boolean; glass: LiquidGlassPanel; clip?: BlurRect; blur: number; focusBlur: number; width: number; height: number; opacity: number; active: boolean; seen: boolean }
 	>();
 	private size = new THREE.Vector2();
 	private passes = 0;
 	private resizes = 0;
 	private emptyCaptureValid = false;
 	private emptyBlurKeys = new Set<number>();
+
+	refreshAppearance() { for (const entry of this.panels.values()) entry.dirty = true; }
 
 	getStats() {
 		return {
@@ -91,8 +94,19 @@ export class CarouselGlassCompositor {
 			this.composite = new THREE.QuadMesh(this.compositeMaterial);
 		}
 		let entry = this.panels.get(card);
+		const authored = card.dataset.carouselTheme ?? '{}';
+		let options;
+		let appearance = entry?.appearance ?? '';
+		if (!entry || entry.dirty || entry.authored !== authored) {
+			options = withSharedPanelShadow(card, JSON.parse(authored));
+			appearance = JSON.stringify(options);
+			if (entry && appearance !== entry.appearance) {
+				this.scene.remove(entry.glass.group); entry.glass.dispose(); this.panels.delete(card); entry = undefined;
+			}
+			if (entry) { entry.dirty = false; entry.authored = authored; }
+		}
 		if (!entry) {
-			const options = JSON.parse(card.dataset.carouselTheme ?? '{}');
+			options ??= withSharedPanelShadow(card, JSON.parse(authored));
 			const blur = Math.min(100, Math.max(0, options.backdropBlur ?? 5));
 			if (!this.blurs.has(blur)) {
 				const target = new THREE.RenderTarget(1, 1, { depthBuffer: false });
@@ -116,7 +130,7 @@ export class CarouselGlassCompositor {
 			});
 			glass.group.matrixAutoUpdate = false;
 			this.scene.add(glass.group);
-			entry = { glass, blur, focusBlur, width, height, opacity, active: false, seen: false };
+			entry = { authored, appearance, dirty: false, glass, blur, focusBlur, width, height, opacity, active: false, seen: false };
 			this.panels.set(card, entry);
 		}
 		entry.seen = true;

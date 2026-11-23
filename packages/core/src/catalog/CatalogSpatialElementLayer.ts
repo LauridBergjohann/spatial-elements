@@ -247,6 +247,7 @@ export class CatalogSpatialElementLayer {
 	private readonly outline = new CatalogModelOutline();
 	private readonly sectionSurfaces = new CarouselSectionSurfaces();
 	private readonly glass = new CarouselGlassCompositor(this.depthBlur);
+	refreshPanelAppearance() { this.glass.refreshAppearance(); }
 	private readonly ground = new CarouselGround();
 	private readonly geometryFade = new CatalogGeometryFade();
 	private readonly handoffScene = new THREE.Scene();

@@ -7,14 +7,14 @@ test('Page Sections palette reaches content, spatial surfaces and the footer in 
 	for (const mode of ['Dark', 'Light']) {
 		await page.getByRole('button', { name: mode, exact: true }).filter({ visible: true }).click();
 		const colors = mode === 'Dark' ? {
-			background: '#3b4047', 'section-standard': '#1f2126',
-			'section-muted': '#23272e', ink: '#e5e5e6', body: '#fff',
-			accent: '#219471', 'on-accent': '#1c1e22', border: 'hsl(219, 10%, 34%)',
+			background: '#34373f', 'section-standard': '#1f2126',
+			'section-muted': '#23272e', ink: '#e5e5e6', body: '#e6e6e6',
+			accent: '#2bc093', 'on-accent': '#1c1e22', border: '#373a42',
 			'footer-background': '#212126', 'footer-ink': '#aaaaaa',
 			'footer-bar-background': '#262a30', 'footer-bar-ink': 'hsl(220, 5%, 65%)'
 		} : {
 			background: '#e7ebe9', 'section-standard': '#ffffff', 'section-muted': '#f2f2f2',
-			ink: '#141414', body: '#666666', accent: '#007b5e', 'on-accent': '#ffffff', border: '#d1d1d1',
+			ink: '#141414', body: '#666666', accent: '#007b5e', 'on-accent': '#ffffff', border: '#dbdbdb',
 			'footer-background': '#007b5e', 'footer-ink': '#ffffff', 'footer-bar-background': '#bdbdbd', 'footer-bar-ink': '#333333'
 		};
 		const differences = await page.evaluate(colors => {
@@ -77,7 +77,7 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 			if (enhanced) await expect(page.locator('[data-catalog-transition]')).toHaveCount(0, { timeout: 30000 });
 			await expect(header).toHaveCSS('border-radius', '12px');
 			await expect(page.locator('[data-spatial-navigation-glass]')).toHaveCount(0);
-			await expect.poll(() => header.evaluate(node => getComputedStyle(node).getPropertyValue('--ps-accent').trim())).toBe(mode === 'Dark' ? '#219471' : '#007b5e');
+			await expect.poll(() => header.evaluate(node => getComputedStyle(node).getPropertyValue('--ps-accent').trim())).toBe(mode === 'Dark' ? '#2bc093' : '#007b5e');
 		}
 		expect(errors).toEqual([]);
 	});

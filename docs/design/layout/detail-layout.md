@@ -199,8 +199,8 @@ Let `S` be the section's document top. `A` is `headlineLineHeight + headlineGap`
 
 | Layout | Selected fit left | Fit width | Summary placement / width | Fit height min / max |
 | --- | --- | --- | --- | --- |
-| XS | `L+p+36` | `C-2p-72` | Same x/width, above fit | 150 / 300 |
-| S | `L+p+72` | `C-2p-144` | Same x/width, above fit | 150 / 400 |
+| XS | `L+p` | `C-2p` | `L+p+52`, `C-2p-104`, below fit with 16px overlap | 150 / 300 |
+| S | `L+p` | `C-2p` | `L+p+52`, `C-2p-104`, below fit with 16px overlap | 150 / 400 |
 | M | `colX(2)` | `span(3)` | `colX(5)`, `span(3)` | 300 / 500 |
 | L | `colX(3)` | `span(5)` | `colX(8)`, `span(4)` | 340 / 600 |
 | XL | `colX(2)` | `span(5)` | `colX(7)`, `span(4)` | 400 / 700 |
@@ -208,11 +208,11 @@ Let `S` be the section's document top. `A` is `headlineLineHeight + headlineGap`
 
 These spans use the textual dimension labels and grid columns. The rendered example geometry is illustrative and is not a replacement for the labelled fit target. In particular, the large carousel label 5 columns must not become a second, screenshot-measured media width. 3XL follows 2XL, including its 480px summary; the older 496px label is superseded.
 
-XS/S reserve a 66px title strip above the fit target. With an eyebrow the compact panel occupies all 66px; without one it occupies 40px and is bottom-aligned in the same strip. Therefore selected geometry does not jump when selection changes to an item without an eyebrow. Source variants show inconsistent extra spacers and a single S 80px horizontal label; **engineering normalization** uses the same 66px strip and the repeated 72px S side allowance in every variant. The compact panel is framework-owned title/eyebrow/navigation UI, not an unrestricted full summary snippet.
+XS/S place a fixed 66px summary beneath the geometry, overlapping the fit area by 16px. The frame starts at K and no longer reserves title space above the model. A missing eyebrow centers the title in the same height. Borderless 44px arrows sit beside the panel with an 8px gap and share its vertical center; the entire compact panel is a native detail link. The compact panel is framework-owned title/eyebrow/navigation UI, not an unrestricted full summary snippet.
 
 For M+, the fit starts at `K`. The summary has a natural height capped at the fit height and is vertically centered: `summaryY = K + (fitHeight-renderedSummaryHeight)/2`. It may scroll locally when taller than its cap. Preserve the same full summary width as the corresponding detail layout.
 
-The dots strip is 32px high, placed immediately after the media fit in XS/S, after a 12px gap in M, and after a 16px gap in L+. Its contents stay centered in the normal section container and may scroll horizontally when required. Keep dots, arrows and the summary in their layout positions during sensor camera motion. The existing scene behavior owns the depth/perspective of non-selected objects; their exact projected boxes are not layout constraints. Pointer proximity rotates individual elements as already accepted; it must not restore the rejected whole-scene mouse parallax.
+The dots strip is 32px high, placed immediately after the compact summary in XS/S, after a 12px gap in M, and after a 16px gap in L+. Its contents stay centered in the normal section container and may scroll horizontally when required. Keep dots, arrows and the summary in their layout positions during sensor camera motion. The existing scene behavior owns the depth/perspective of non-selected objects; their exact projected boxes are not layout constraints. Pointer proximity rotates individual elements as already accepted; it must not restore the rejected whole-scene mouse parallax.
 
 ### Carousel height resolution
 

@@ -61,7 +61,7 @@
 		width: 76px;
 		height: 42px;
 		padding: 8px;
-		border: 1px solid var(--spatial-element-body);
+		border: 1px solid var(--ps-border);
 		border-radius: var(--spatial-element-control-radius);
 		background: transparent;
 		color: var(--spatial-element-ink);

@@ -16,7 +16,7 @@
 	const stageContext = getContext<StageContext | undefined>(STAGE_CONTEXT_KEY);
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
-	$effect(() => { for (const element of rack?.querySelectorAll<HTMLElement>('.header, .satellite') ?? []) element.style.setProperty('--spatial-panel-default-shadow', getSharedPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2)); void theme; void fixedDetail; void edgeToEdge; stageContext?.updatePanelAppearance?.(); });
+	$effect(() => { for (const element of rack?.querySelectorAll<HTMLElement>('.header, .satellite') ?? []) element.style.setProperty('--spatial-panel-default-shadow', getSharedPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2, theme.panelTheme.shadowColor)); void theme; void fixedDetail; void edgeToEdge; stageContext?.updatePanelAppearance?.(); });
 	const radii = $derived(resolveSpatialThemeRadii(theme));
 	let rack: HTMLDivElement;
 	let stage: HTMLElement | undefined;
@@ -61,7 +61,7 @@
             const role = element.classList.contains('header') ? 'menu' : element.classList.contains('left') ? 'left' : 'right';
             element.setAttribute('data-spatial-shell-' + role, '');
             element.classList.add('spatial-shell-' + (role === 'menu' ? 'menu' : 'satellite'));
-            element.style.setProperty('--spatial-panel-default-shadow', getSharedPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2));
+            element.style.setProperty('--spatial-panel-default-shadow', getSharedPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2, theme.panelTheme.shadowColor));
             element.dataset.stagePanelNativeContent = '';
             return stageContext?.registerPanel({
                 getElement: () => element, getFrameElement: () => element, getSurfaceElement: () => element,
@@ -82,7 +82,7 @@
 </script>
 
 <div class="spatial-shell-track" style:--ps-sticky-range={`${spatialLayoutTokens.menu.scrollThreshold}px`} data-spatial-navigation-shell>
- <div bind:this={rack} class="spatial-shell-rack" style:--spatial-panel-default-shadow={getSharedPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2)} data-stage-scroll-shell data-catalog-shell data-spatial-navigation-glass={theme.panelTheme.surface === 'glass' ? '' : undefined}>
+ <div bind:this={rack} class="spatial-shell-rack" style:--spatial-panel-default-shadow={getSharedPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2, theme.panelTheme.shadowColor)} data-stage-scroll-shell data-catalog-shell data-spatial-navigation-glass={theme.panelTheme.surface === 'glass' ? '' : undefined}>
   {#if navigation}{@render navigation()}{:else}<Header scrollBehavior="static" {menu} {items} {brand} {tools} {left} {right} />{/if}
  </div>
 </div>

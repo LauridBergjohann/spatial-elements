@@ -50,16 +50,16 @@ export interface CarouselLayout {
 export function resolveCarouselPoseLayout(input: CarouselLayoutInput, ring: { width: number; left: number }): CarouselLayout {
 	const resolved = resolveCarouselLayout(input);
 	const compact = resolved.summary.placement === 'compact';
-	const titleHeight = compact ? spatialLayoutTokens.carousel.compactEyebrowHeight : 0;
-	const ringTop = resolved.mediaFit.y - titleHeight;
+	const panelReserve = compact ? spatialLayoutTokens.carousel.compactEyebrowHeight - spatialLayoutTokens.carousel.compactOverlap : 0;
+	const ringTop = resolved.mediaFit.y;
 	return {
-		width: ring.width, height: resolved.mediaFit.height + titleHeight,
+		width: ring.width, height: resolved.mediaFit.height + panelReserve,
 		left: ring.left, viewportWidth: resolved.base.layoutWidth,
 		framing: {
 			compact,
-			fit: { ...resolved.mediaFit, x: resolved.mediaFit.x - ring.left, y: titleHeight },
+			fit: { ...resolved.mediaFit, x: resolved.mediaFit.x - ring.left, y: 0 },
 			summary: { x: resolved.summary.x - ring.left, width: resolved.summary.width,
-				anchorY: compact ? titleHeight : resolved.summary.anchor.y - ringTop,
+				anchorY: resolved.summary.anchor.y - ringTop + (compact ? spatialLayoutTokens.carousel.compactEyebrowHeight : 0),
 				alignment: compact ? 'end' : 'center' }
 		}
 	};

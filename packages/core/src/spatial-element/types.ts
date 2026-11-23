@@ -87,6 +87,8 @@ export interface SpatialSectionBackgrounds {
 
 /** CSS material used only by the fixed element header and its docked subnavigation. */
 export interface SpatialDockedPanelTheme {
+	/** Explicit shadow color. When omitted, inherits --ps-shadow-color. */
+	shadowColor?: StagePanelTheme['shadowColor'];
 	/** Gaussian CSS backdrop blur radius in pixels. */
 	backdropBlur: number;
 	/** Surface tint, using the same color representation as a stage panel. */

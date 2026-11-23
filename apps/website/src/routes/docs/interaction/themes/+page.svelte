@@ -356,6 +356,17 @@
 				or responsive styles change; scrolling does not poll styles or add a render loop.
 			</p>
 			<p>
+				Set <a href="/docs/reference/types/#stage-panel-theme-shadow-color">
+					<code>panelTheme.shadowColor</code>
+				</a>
+				to override the shared color for that material, or
+				<a href="/docs/reference/types/#spatial-docked-panel-theme-shadow-color">
+					<code>dockedPanelTheme.shadowColor</code>
+				</a>
+				for the scroll header and tabs. Omit these fields to inherit <code>--ps-shadow-color</code>.
+				The same rule applies to CSS panels and GPU glass, including carousel panels.
+			</p>
+			<p>
 				For complete CSS shadow replacements, use <code>--ps-navigation-shadow</code>,
 				<code>--ps-popup-shadow</code>, <code>--ps-surface-shadow</code>, or
 				<code>--ps-panel-shadow</code> for spatial CSS panels. A complete CSS shadow cannot describe a

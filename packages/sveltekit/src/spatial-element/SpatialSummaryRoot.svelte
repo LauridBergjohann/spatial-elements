@@ -4,6 +4,7 @@
  import SpatialCardPresentation from './SpatialCardPresentation.svelte';
  import { createCatalogEndpointAction } from '../catalog/catalogEndpointAction.js';
  import { useCatalogNavigation } from '../catalog/catalogNavigation.js';
+ import { focusCatalogLink } from '@spatial-elements/core/catalog/catalogActivationFocus';
  import { catalogViewLink } from '@spatial-elements/core/catalog/catalogViewLink';
  import { CATALOG_ENDPOINTS, type CatalogEndpointRegistry } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
  import { CATALOG_SECTIONS, type CatalogSections } from '@spatial-elements/core/catalog/CatalogSections';
@@ -14,25 +15,32 @@
  const endpoints = getContext<CatalogEndpointRegistry | undefined>(CATALOG_ENDPOINTS);
  const sections = getContext<CatalogSections | undefined>(CATALOG_SECTIONS);
  const { href, prepare } = useCatalogNavigation();
- function activate(event: MouseEvent) {
+ function activate(event: MouseEvent, anchor = event.currentTarget as HTMLAnchorElement) {
   if (!model.active || !context || !carousel) { event.preventDefault(); return; }
   endpoints?.prefer(context.spatialElement.brandId, context.spatialElement.id, carousel.occurrence, 'carousel.front');
   sections?.activate({ brandId: context.spatialElement.brandId, spatialElementId: context.spatialElement.id, occurrence: carousel.occurrence, slot: 'carousel.front' });
-  (event.currentTarget as HTMLElement).focus({ preventScroll: true });
+  focusCatalogLink(anchor, event);
  }
- function prepareCarousel() { if (model.active && carousel) prepare(carousel.item); }
+ function summaryLinks(node: HTMLElement) {
+  const click = (event: MouseEvent) => { if (context?.mode === 'carousel' && event.target instanceof Element && event.target.closest('[data-spatial-summary-link]')) activate(event, event.target.closest<HTMLAnchorElement>('[data-spatial-summary-link]')!); };
+  node.addEventListener('click', click, true); node.addEventListener('pointerenter', prepareCarousel); node.addEventListener('focusin', prepareCarousel);
+  return { destroy() { node.removeEventListener('click', click, true); node.removeEventListener('pointerenter', prepareCarousel); node.removeEventListener('focusin', prepareCarousel); } };
+ }
+ function prepareCarousel(event?: Event) { if (event?.target instanceof Element && event.target.closest('[data-catalog-restoring-focus]')) return; if (model.active && carousel) prepare(carousel.item); }
 </script>
 {#if model.kind === 'card'}
  <SpatialCardPresentation {...model.current} active={model.active} />
 {:else}
  <div class="spatial-summary-surface" hidden={model.current.mode !== 'carousel'} aria-hidden="true"></div>
  {#if model.current.carousel}
-  <div class="compact-copy" hidden={model.current.mode !== 'carousel'}>
+  <a class="compact-copy" hidden={model.current.mode !== 'carousel'} href={href(model.current.carousel.item.href)} onclick={activate} onpointerenter={prepareCarousel} onfocus={prepareCarousel} onpointerdown={prepareCarousel}
+   use:catalogViewLink={{ spatialElementId: model.current.spatialElement.id, targetPresentation: model.current.carousel.item.targetPresentation }}
+   aria-label={`More information: ${model.current.spatialElement.title}`} data-catalog-focus-key={`catalog-compact:${model.current.carousel.occurrence}`}>
    {#if model.current.spatialElement.eyebrow}<p use:catalogEndpoint={model.active && carousel?.compact ? model.current.address('eyebrow') : undefined}>{model.current.spatialElement.eyebrow}</p>{/if}
    <h3 use:catalogEndpoint={model.active && carousel?.compact ? model.current.address('title') : undefined}>{model.current.spatialElement.title}</h3>
-  </div>
+  </a>
  {/if}
- <div data-spatial-summary-root class="spatial-summary-query" class:full-summary={model.current.mode === 'carousel'}>
+ <div use:summaryLinks data-spatial-summary-root class="spatial-summary-query" class:full-summary={model.current.mode === 'carousel'}>
   {@render content(model.active && !carousel?.compact ? model.current : { ...model.current, address: () => undefined })}
  </div>
  {#if model.current.carousel}
@@ -59,16 +67,21 @@
  :global(.spatial-summary-island[data-presentation-mode='carousel']) > * { opacity: var(--carousel-panel-opacity, 1); filter: var(--carousel-focus-blur, none); }
  .spatial-summary-surface {
   position: absolute; inset: 0; border-radius: inherit; background: color-mix(in srgb, var(--carousel-panel-tint, white) var(--carousel-panel-tint-opacity, 65%), transparent);
-  border: 1px solid color-mix(in srgb, var(--spatial-element-accent) 12%, transparent); backdrop-filter: var(--carousel-panel-backdrop, blur(5px)); box-shadow: var(--carousel-panel-shadow); pointer-events: none;
+  border: 1px solid var(--ps-panel-border); backdrop-filter: var(--carousel-panel-backdrop, blur(5px)); box-shadow: var(--carousel-panel-shadow); pointer-events: none;
  }
  .spatial-summary-surface[hidden] { display: none; }
  :global([data-carousel-glass-ready]) .spatial-summary-surface,
  :global([data-spatial-presentation-glass]) .spatial-summary-surface { visibility: hidden; }
- .compact-copy { position: relative; box-sizing: border-box; padding: 8px 52px 8px 12px; }
+ .compact-copy { position: relative; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box; padding: 8px 12px; color: inherit; text-decoration: none; }
+ .compact-copy:hover { text-decoration: none; }
+ .compact-copy:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: -2px; border-radius: inherit; }
+ .compact-copy[hidden] { display: none; }
  .compact-copy p { height: 26px; margin: 0; font-size: 12px; line-height: 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
- .compact-copy h3 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 1; height: 24px; margin: 0; overflow: hidden; font-size: 18px; line-height: 24px; }
+ .compact-copy h3 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; line-clamp: 1; height: 24px; margin: 0; overflow: hidden; font-size: 18px; line-height: 24px; }
  .full-summary, .section-information { display: none; }
- .information { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 40px; height: 40px; margin: 0; color: var(--spatial-element-accent); pointer-events: auto; }
+ .information { display: none; }
+ @media (min-width: 840px) { .information { display: grid; } }
+ .information { position: absolute; top: 0; right: 0; place-items: center; width: 40px; height: 40px; margin: 0; color: var(--spatial-element-accent); pointer-events: auto; }
  .information svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
  @media (min-width: 840px) {
   :global(.spatial-summary-island[data-presentation-mode='carousel']) { height: auto; padding: var(--spatial-summary-content-inset); }

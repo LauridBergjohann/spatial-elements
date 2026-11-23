@@ -48,7 +48,7 @@
 		`--help-tint: ${typeof theme.panelTheme.tint === 'number' ? '#' + theme.panelTheme.tint.toString(16).padStart(6, '0') : theme.panelTheme.tint ?? '#ffffff'}`,
 		`--help-tint-opacity: ${(theme.panelTheme.tintOpacity ?? 0.65) * 100}%`,
 		`--help-blur: ${Math.min(100, Math.max(0, theme.panelTheme.backdropBlur ?? 8))}px`,
-		`--help-shadow: ${getSharedPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2)}`,
+		`--help-shadow: ${getSharedPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2, theme.panelTheme.shadowColor)}`,
 		`--help-radius: ${radii.panel}px`
 	].join(';'));
 
@@ -296,6 +296,7 @@
 	/* Keep complete host-localized instructions available to assistive technology. */
 	dd { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 	.navigation-hint { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid currentColor; font-size: 12px; }
-	.navigation-hint a { color: var(--spatial-element-accent); text-decoration: underline; text-underline-offset: 2px; }
+	.navigation-hint a { color: var(--spatial-element-accent); text-decoration: none; text-underline-offset: 2px; }
+	.navigation-hint a:hover { text-decoration: underline; }
 	.navigation-hint a:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: 3px; border-radius: 2px; }
 </style>

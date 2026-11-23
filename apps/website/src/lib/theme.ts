@@ -6,12 +6,12 @@ export function websitePageTheme(mode: 'light' | 'dark') {
 	return (
 		mode === 'dark'
 			? {
-					background: '#3b4047',
+					background: '#34373f',
 					standard: '#1f2126',
 					muted: '#23272e',
 					ink: '#e5e5e6', // hsl(220, 2%, 90%)
-					body: '#ffffff',
-					accent: '#219471',
+					body: '#e6e6e6',
+					accent: '#2bc093',
 					onAccent: '#1c1e22',
 					radius: '12px',
 					fontFamily: 'system-ui, sans-serif',
@@ -58,7 +58,7 @@ export function websiteTheme(
 		panelShape: { radius: 12, contentInset: 26 },
 		sectionBackgrounds: { standard, muted },
 		colors: {
-			border: mode === 'dark' ? 'hsl(219, 10%, 34%)' : '#d1d1d1',
+			border: mode === 'dark' ? '#373a42' : '#dbdbdb',
 			ink: palette.ink,
 			body: palette.body,
 			accent: palette.accent,

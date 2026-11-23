@@ -1426,11 +1426,18 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'CSS material used only by the fixed element header and its docked subnavigation.',
 		declaration:
-			"interface SpatialDockedPanelTheme {\n    /** Gaussian CSS backdrop blur radius in pixels. */\n    backdropBlur: number;\n    /** Surface tint, using the same color representation as a stage panel. */\n    tint: NonNullable<StagePanelTheme['tint']>;\n    /** Direct tint opacity from zero to one. */\n    tintOpacity: number;\n    /** Normalized shadow intensity from zero to one. */\n    shadowIntensity: number;\n}",
+			"interface SpatialDockedPanelTheme {\n    /** Explicit shadow color. When omitted, inherits --ps-shadow-color. */\n    shadowColor?: StagePanelTheme['shadowColor'];\n    /** Gaussian CSS backdrop blur radius in pixels. */\n    backdropBlur: number;\n    /** Surface tint, using the same color representation as a stage panel. */\n    tint: NonNullable<StagePanelTheme['tint']>;\n    /** Direct tint opacity from zero to one. */\n    tintOpacity: number;\n    /** Normalized shadow intensity from zero to one. */\n    shadowIntensity: number;\n}",
 		variants: [
 			{
 				label: 'Fields',
 				fields: [
+					{
+						name: 'shadowColor',
+						id: 'spatial-docked-panel-theme-shadow-color',
+						type: "StagePanelTheme['shadowColor']",
+						optional: true,
+						description: 'Explicit shadow color. When omitted, inherits --ps-shadow-color.'
+					},
 					{
 						name: 'backdropBlur',
 						id: 'spatial-docked-panel-theme-backdrop-blur',
@@ -1793,7 +1800,8 @@ export const reference: ReferenceEntry[] = [
 						id: 'stage-panel-theme-shadow-color',
 						type: 'ColorRepresentation',
 						optional: true,
-						description: 'Shadow color, shared with --ps-shadow-color when used inside Stage.'
+						description:
+							'Explicit shadow color; omitted panel-theme values inherit --ps-shadow-color in Stage.'
 					},
 					{
 						name: 'shadowSize',
@@ -2521,7 +2529,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: '',
 		declaration:
-			"interface SpatialSummaryContext {\n\tspatialElement: Pick<ResolvedSpatialElementData, 'id' | 'brandId' | 'title' | 'eyebrow' | 'features' | 'action'>;\n\tmode: 'detail' | 'carousel';\n\theading: 'h1' | 'h3';\n\tcontentInset: number;\n\taddress: (role: CatalogEndpointRole) => CatalogEndpointAddress | undefined;\n\t/** Framework-owned carousel chrome travels with the live summary. */\n\tcarousel?: { item: SpatialListItem; occurrence: string; compact: boolean };\n}",
+			"interface SpatialSummaryContext {\n\tspatialElement: Pick<ResolvedSpatialElementData, 'id' | 'brandId' | 'title' | 'eyebrow' | 'features' | 'action'>;\n\t/** Canonical detail link, retained when the live summary moves between placements. */\n\tdetailHref?: string;\n\tmode: 'detail' | 'carousel';\n\theading: 'h1' | 'h3';\n\tcontentInset: number;\n\taddress: (role: CatalogEndpointRole) => CatalogEndpointAddress | undefined;\n\t/** Framework-owned carousel chrome travels with the live summary. */\n\tcarousel?: { item: SpatialListItem; occurrence: string; compact: boolean };\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -2532,6 +2540,14 @@ export const reference: ReferenceEntry[] = [
 						type: "Pick<ResolvedSpatialElementData, 'id' | 'brandId' | 'title' | 'eyebrow' | 'features' | 'action'>",
 						optional: false,
 						description: ''
+					},
+					{
+						name: 'detailHref',
+						id: 'spatial-summary-context-detail-href',
+						type: 'string',
+						optional: true,
+						description:
+							'Canonical detail link, retained when the live summary moves between placements.'
 					},
 					{
 						name: 'mode',

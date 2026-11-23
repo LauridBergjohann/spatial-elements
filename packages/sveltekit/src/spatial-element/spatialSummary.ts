@@ -8,6 +8,8 @@ import type { SpatialCardSize } from '@spatial-elements/core/spatial-element/res
 
 export interface SpatialSummaryContext {
 	spatialElement: Pick<ResolvedSpatialElementData, 'id' | 'brandId' | 'title' | 'eyebrow' | 'features' | 'action'>;
+	/** Canonical detail link, retained when the live summary moves between placements. */
+	detailHref?: string;
 	mode: 'detail' | 'carousel';
 	heading: 'h1' | 'h3';
 	contentInset: number;

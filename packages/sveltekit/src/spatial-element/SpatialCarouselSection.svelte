@@ -639,7 +639,7 @@
 		grid-auto-flow: column;
 		grid-auto-columns: 100%;
 		position: relative;
-		height: calc(var(--spatial-carousel-title-reserve) + var(--spatial-carousel-fit-height));
+		height: calc(var(--spatial-carousel-panel-reserve) + var(--spatial-carousel-fit-height));
 		overflow-x: auto;
 		overflow-y: hidden;
 		scroll-snap-type: x mandatory;
@@ -670,8 +670,11 @@
 		justify-content: space-between;
 		pointer-events: none;
 	}
+	@media (width < 840px) {
+		.carousel-arrows { top: calc(var(--spatial-carousel-fit-height) - var(--spatial-carousel-compact-overlap) + var(--spatial-carousel-compact-height) / 2); }
+	}
 	.carousel-arrows button {
-		outline: 1px solid var(--ps-border); outline-offset: -1px;
+		outline: none;
 		pointer-events: auto;
 		width: 44px;
 		height: 44px;

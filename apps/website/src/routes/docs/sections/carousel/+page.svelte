@@ -38,7 +38,9 @@
 				uses the same
 				<a href="/docs/reference/types/#spatial-list-item"><code>SpatialListItem</code></a> data as the
 				CardGrid. It emphasizes the selected model and its summary, with neighbouring models available
-				through selection, arrows and dragging. Links still open the detail page.
+				through selection, arrows and dragging. The summary title and eyebrow link to the detail page.
+				On XS and S screens, the whole compact summary is a link. It sits below the model with a slight
+				overlap, between the two arrows; the selection dots have their own space underneath.
 			</p>
 			<DocFigure
 				name="collections"

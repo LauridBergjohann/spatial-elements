@@ -2,7 +2,7 @@
 	import { getSharedPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
 	import { useSpatialTheme } from './brandContext.js';
 	const readTheme = useSpatialTheme();
-	const shadow = $derived(getSharedPanelBoxShadow(readTheme().dockedPanelTheme.shadowIntensity));
+	const shadow = $derived(getSharedPanelBoxShadow(readTheme().dockedPanelTheme.shadowIntensity, readTheme().dockedPanelTheme.shadowColor));
 	import type { Snippet } from 'svelte';
 	import type { ResolvedSpatialElementData as SpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 	import { catalogActionSemantic } from '@spatial-elements/core/catalog/catalogAction';

@@ -56,7 +56,7 @@ export interface LiquidGlassPanelOptions {
 	specularOpacity?: number;
 	/** Normalized strength of the panel shadow, from zero to one. */
 	shadowIntensity?: number;
-	/** Shadow color, shared with --ps-shadow-color when used inside Stage. */
+	/** Explicit shadow color; omitted panel-theme values inherit --ps-shadow-color in Stage. */
 	shadowColor?: ColorRepresentation;
 	/** Multiplier of the shadow radius. Zero removes the shadow. */
 	shadowSize?: number;

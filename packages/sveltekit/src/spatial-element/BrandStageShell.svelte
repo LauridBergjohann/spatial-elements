@@ -97,6 +97,9 @@
 </div>
 
 <style>
+	:global(:where(.brand-stage-shell) a) { text-decoration: none; text-underline-offset: 0.2em; }
+	:global(:where(.brand-stage-shell) a:hover) { text-decoration: underline; }
+	:global(.brand-stage-shell .ps-navigation a:hover) { text-decoration: none; }
 	.spatial-footer { position: relative; z-index: 31; padding-top: 48px; }
 	.brand-stage-shell {
 		background: var(--spatial-element-background);

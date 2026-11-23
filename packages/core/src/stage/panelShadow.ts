@@ -1,3 +1,10 @@
+import type { ColorRepresentation } from 'three';
+
+/** Convert the panel theme's color representation for a CSS surface. */
+export function panelShadowColor(color: ColorRepresentation | undefined) {
+	return typeof color === 'number' ? '#' + color.toString(16).padStart(6, '0') : typeof color === 'object' ? color.getStyle() : color;
+}
+
 export interface PanelShadowLayer {
 	offsetY: number;
 	blur: number;
@@ -21,10 +28,10 @@ export function getCssPanelBoxShadow(shadowIntensity: number) {
 }
 
 /** Page Sections controls, resolved at each surface so local CSS overrides work too. */
-export function getSharedPanelBoxShadow(shadowIntensity: number) {
+export function getSharedPanelBoxShadow(shadowIntensity: number, shadowColor?: ColorRepresentation) {
 	const strength = resolvePanelShadowStrength(shadowIntensity);
 	return PANEL_SHADOW_RECIPE.map(({ offsetY, blur, alphaScale }) =>
-		`0 calc(${offsetY}px * max(0, var(--ps-shadow-size, 1))) calc(${blur}px * max(0, var(--ps-shadow-size, 1))) color-mix(in srgb, var(--ps-shadow-color, #000) clamp(0%, calc(${formatAlpha(strength * alphaScale * 100)}% * var(--ps-shadow-intensity, 1)), 100%), transparent)`
+		`0 calc(${offsetY}px * max(0, var(--ps-shadow-size, 1))) calc(${blur}px * max(0, var(--ps-shadow-size, 1))) color-mix(in srgb, ${panelShadowColor(shadowColor) ?? 'var(--ps-shadow-color, #000)'} clamp(0%, calc(${formatAlpha(strength * alphaScale * 100)}% * var(--ps-shadow-intensity, 1)), 100%), transparent)`
 	).join(', ');
 }
 

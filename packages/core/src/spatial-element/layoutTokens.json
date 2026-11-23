@@ -223,6 +223,8 @@
         "summaryColumns": 4,
         "dotsGap": 16
       }
-    }
+    },
+    "compactOverlap": 16,
+    "compactControlInset": 52
   }
 }

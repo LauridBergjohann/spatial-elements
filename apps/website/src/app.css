@@ -10,7 +10,6 @@ body {
 	--ps-footer-radius: var(--ps-radius);
 	--ps-footer-shadow: var(--ps-surface-shadow, var(--ps-default-surface-shadow));
 	/* Shared by content, navigation, popups and spatial panels. */
-	--ps-shadow-color: #000;
 	--ps-shadow-size: 1;
 	--ps-shadow-intensity: 1;
 	--ps-panel-border: var(--website-panel-border);
@@ -22,13 +21,15 @@ body {
 /* Appearance is defined once in lib/theme.ts for Page Sections and spatial surfaces. */
 .ps-shell[data-ps-theme='light'] {
 	--ps-selection: #eeeeee;
-	--website-border: #d1d1d1;
-	--website-panel-border: color-mix(in srgb, var(--ps-ink) 12%, transparent);
+	--website-border: #dbdbdb;
+	--website-panel-border: #dbdbdb;
+	--ps-shadow-color: #000;
 }
 .ps-shell[data-ps-theme='dark'] {
 	--ps-selection: rgba(72, 77, 83, 0.5);
-	--website-border: hsl(219, 10%, 34%);
-	--website-panel-border: color-mix(in srgb, var(--ps-ink) 12%, transparent);
+	--website-border: #373a42;
+	--website-panel-border: #373a42;
+	--ps-shadow-color: #3f434b;
 }
 :where([data-website-theme='default']) .brand-stage-shell {
 	--ps-panel-border: var(--website-panel-border) !important;

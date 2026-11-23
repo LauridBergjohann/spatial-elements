@@ -194,8 +194,9 @@ test('content outside the model keeps native vertical scrolling', async ({ page 
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(before + 30);
 });
 
-test('the carousel model surface still permits native two-finger page zoom', async ({ page }) => {
+test('the carousel keeps page scale and selection stable during a two-finger gesture', async ({ page }) => {
 	const { target, session } = await prepare(page);
+	const selected = await page.locator('[data-carousel-item].selected').getAttribute('data-carousel-item');
 	const box = (await target.boundingBox())!;
 	const center = { x: Math.max(120, Math.min(310, box.x + box.width / 2)), y: box.y + box.height / 2 };
 	const points = (spread: number) => [
@@ -208,5 +209,6 @@ test('the carousel model surface still permits native two-finger page zoom', asy
 		await page.waitForTimeout(20);
 	}
 	await end(session);
-	await expect.poll(() => page.evaluate(() => window.visualViewport?.scale ?? 1)).toBeGreaterThan(1.05);
+	await expect.poll(() => page.evaluate(() => window.visualViewport?.scale ?? 1)).toBe(1);
+	await expect(page.locator('[data-carousel-item].selected')).toHaveAttribute('data-carousel-item', selected!);
 });

@@ -229,7 +229,7 @@ describe('detail presentation constraints', () => {
 
 describe('carousel and fullscreen presentation constraints', () => {
 	it.each([
-		[390, 276, 240], [600, 284, 248], [840, 244, 200],
+		[390, 260, 224], [600, 268, 232], [840, 244, 200],
 		[1200, 286, 230], [1600, 300, 244], [1920, 300, 244], [2300, 300, 244]
 	])('uses the consolidated headline height budget at %i', (width, withHeadline, withoutHeadline) => {
 		expect(resolveCarouselLayout({ width, height: 900, hasHeadline: true }).heightOffset).toBe(withHeadline);
@@ -240,17 +240,17 @@ describe('carousel and fullscreen presentation constraints', () => {
 		const input = { width: 390, height: 844, hasHeadline: true };
 		const eyebrow = resolveCarouselLayout({ ...input, hasEyebrow: true });
 		const plain = resolveCarouselLayout(input);
-		expect(eyebrow.mediaFit).toEqual({ x: 48, y: 204, width: 294, height: 300 });
+		expect(eyebrow.mediaFit).toEqual({ x: 12, y: 138, width: 366, height: 300 });
 		expect(plain.mediaFit).toEqual(eyebrow.mediaFit);
-		expect(eyebrow.summary).toEqual({ x: 48, width: 294, anchor: { y: 138, alignment: 'start' },
+		expect(eyebrow.summary).toEqual({ x: 64, width: 262, anchor: { y: 422, alignment: 'start' },
 			height: { kind: 'fixed', value: 66 }, placement: 'compact' });
-		expect(plain.summary.anchor.y).toBe(164);
-		expect(plain.summary.height).toEqual({ kind: 'fixed', value: 40 });
-		expect(eyebrow.dots).toMatchObject({ x: 12, y: 504, maxWidth: 366, height: 32 });
-		expect(eyebrow.sectionEnd).toBe(548);
+		expect(plain.summary.anchor.y).toBe(422);
+		expect(plain.summary.height).toEqual({ kind: 'fixed', value: 66 });
+		expect(eyebrow.dots).toMatchObject({ x: 12, y: 488, maxWidth: 366, height: 32 });
+		expect(eyebrow.sectionEnd).toBe(532);
 		const mediumPhone = resolveCarouselLayout({ width: 600, height: 900, hasHeadline: true });
-		expect(mediumPhone.mediaFit).toEqual({ x: 88, y: 208, width: 424, height: 400 });
-		expect(mediumPhone.sectionEnd).toBe(656);
+		expect(mediumPhone.mediaFit).toEqual({ x: 16, y: 142, width: 568, height: 400 });
+		expect(mediumPhone.sectionEnd).toBe(640);
 	});
 
 	it('expresses M summary centering as an anchor rather than a fabricated natural height', () => {

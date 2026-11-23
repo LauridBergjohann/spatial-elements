@@ -996,6 +996,7 @@ export class StageExperience {
 		this.pageBackground = options.pageBackground ?? '#ffffff';
 		this.pipeline.setPageBackground(this.pageBackground);
 		this.catalogLayer?.setPageBackground(this.pageBackground);
+		this.catalogLayer?.refreshPanelAppearance();
 		this.backgroundSettings = { ...DEFAULT_BACKGROUND, ...options.background };
 		if (this.appliedEnvironment) {
 			this.backgroundScene.background = this.backgroundSettings.blurriness <= 0
