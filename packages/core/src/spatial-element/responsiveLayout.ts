@@ -37,6 +37,8 @@ export interface SubmenuLayoutConstraint {
 export interface CarouselLayoutInput extends ResponsiveLayoutInput {
 	/** Document coordinate. Omitted means immediately after the normal breadcrumb. */
 	sectionTop?: number;
+	/** Height of introductory heading sections before this carousel; independent of scrolling. */
+	leadingHeight?: number;
 	hasHeadline?: boolean;
 	hasEyebrow?: boolean;
 }
@@ -194,7 +196,7 @@ export function resolveCarouselLayout(input: CarouselLayoutInput) {
 	const panelReserve = compact ? tokens.carousel.compactEyebrowHeight - tokens.carousel.compactOverlap : 0;
 	const sectionTop = input.sectionTop === undefined ? base.breadcrumb.y + base.breadcrumb.height : size(input.sectionTop);
 	const shellBudget = base.breadcrumb.y + base.breadcrumb.height - available.y;
-	const heightOffset = shellBudget + padding * 2 + headlineHeight + headlineGap + panelReserve
+	const heightOffset = shellBudget + size(input.leadingHeight) + padding * 2 + headlineHeight + headlineGap + panelReserve
 		+ settings.dotsGap + tokens.carousel.dotsHeight + tokens.carousel.nextPreviewHeight;
 	const fitHeight = clamp(available.height - heightOffset, settings.minHeight, settings.maxHeight);
 	const columnX = (column: number) => content.x + padding + (column - 1) * (grid.columnWidth + grid.gap);

@@ -22,7 +22,7 @@ export const reference: ReferenceEntry[] = [
 		description:
 			'Serializable element content AND its 3D presentation. Supply the same source data to\ngetSpatialListItems on a category page and SpatialElementPage on the detail page.\nOnly id, title, geometry and hdr are required. Layout-wide appearance belongs in SpatialTheme.',
 		declaration:
-			"interface SpatialElementData {\n    /** Stable element identity within the shell's theme namespace; also used by findSpatialElement. */\n    id: string;\n    /** Optional identity assertion. When supplied, must match the enclosing theme.id. */\n    brandId?: string;\n    /** Document title. Defaults to title. */\n    pageTitle?: string;\n    /** Short category/series label displayed above the title. Defaults to an empty string. */\n    eyebrow?: string;\n    /** Visible element name. */\n    title: string;\n    /** Optional description used by the category card. */\n    description?: string;\n    /** Summary bullets. Defaults to an empty list. */\n    features?: SpatialElementFeature[];\n    /** Optional primary action; omitted actions render no button. */\n    action?: SpatialElementAction;\n    /** Required Low/High model sources. Identical URLs share one load; both exports must share coordinates. */\n    geometry: SpatialElementGeometry;\n    /** Detail lighting and background HDR. Category lighting is explicitly set on ContentPage.hdr. */\n    hdr: string;\n    /** HDR background blur/tint. Does not change the theme's flat page background or model lighting. */\n    background?: BackgroundSettings;\n    /** Imported model pose, excluded meshes and material replacements. Rotations are in radians. */\n    model?: StageModelSettings;\n    /** Initial orbit in degrees and optional fit controls. Distance is fitted automatically. */\n    camera?: StageCameraSettings;\n    /** Advanced verified resource manifest. Omit for the normal GLB/LOD workflow. */\n    assetManifest?: VerifiedSpatialElementAssetManifest;\n    /** Poster URL displayed during loading, without JavaScript, or when WebGPU is unavailable. */\n    fallbackImage?: string;\n    /** Actual poster pixel dimensions [width, height], not physical model dimensions. */\n    fallbackImageSize?: readonly [number, number];\n    /** Navigation trail. Entries without href are plain text; defaults to an empty list. */\n    breadcrumbs?: SpatialElementBreadcrumb[];\n    /** Media rail entries. Defaults to one interactive 3D minimap; [] hides the rail's entries. */\n    media?: SpatialElementMediaItem[];\n    /** Element-specific minimap fit/hover/docked pose. Colors come from the theme. */\n    minimap?: Omit<StagePanelMinimapOptions, keyof SpatialMinimapTheme>;\n}",
+			"interface SpatialElementData {\n    /** Stable element identity within the shell's theme namespace; also used by findSpatialElement. */\n    id: string;\n    /** Optional identity assertion. When supplied, must match the enclosing theme.id. */\n    brandId?: string;\n    /** Document title. Defaults to title. */\n    pageTitle?: string;\n    /** Short category/series label displayed above the title. Defaults to an empty string. */\n    eyebrow?: string;\n    /** Visible element name. */\n    title: string;\n    /** Optional description used by the category card. */\n    description?: string;\n    /** Summary bullets. Defaults to an empty list. */\n    features?: SpatialElementFeature[];\n    /** Optional primary action; omitted actions render no button. */\n    action?: SpatialElementAction;\n    /** Required Low/High model sources. Identical URLs share one load; both exports must share coordinates. */\n    geometry: SpatialElementGeometry;\n    /** Detail lighting and background HDR. Category lighting is explicitly set on ContentPage.hdr. */\n    hdr: string;\n    /** HDR background blur/tint. Does not change the theme's flat page background or model lighting. */\n    background?: BackgroundSettings;\n    /** Imported model pose, excluded meshes and material replacements. Rotations are in radians. */\n    model?: StageModelSettings;\n    /** Initial orbit in degrees and optional fit controls. Distance is fitted automatically. */\n    camera?: StageCameraSettings;\n    /** Independent CardGrid model pose. Omitted values use the detail camera orbit and scale 1. */\n    gridView?: SpatialCollectionPose;\n    /** Independent Carousel model pose. Ground placement is fitted after applying this pose. */\n    carouselView?: SpatialCollectionPose;\n    /** Advanced verified resource manifest. Omit for the normal GLB/LOD workflow. */\n    assetManifest?: VerifiedSpatialElementAssetManifest;\n    /** Poster URL displayed during loading, without JavaScript, or when WebGPU is unavailable. */\n    fallbackImage?: string;\n    /** Actual poster pixel dimensions [width, height], not physical model dimensions. */\n    fallbackImageSize?: readonly [number, number];\n    /** Navigation trail. Entries without href are plain text; defaults to an empty list. */\n    breadcrumbs?: SpatialElementBreadcrumb[];\n    /** Media rail entries. Defaults to one interactive 3D minimap; [] hides the rail's entries. */\n    media?: SpatialElementMediaItem[];\n    /** Element-specific minimap fit/hover/docked pose. Colors come from the theme. */\n    minimap?: Omit<StagePanelMinimapOptions, keyof SpatialMinimapTheme>;\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -127,6 +127,22 @@ export const reference: ReferenceEntry[] = [
 							'Initial orbit in degrees and optional fit controls. Distance is fitted automatically.'
 					},
 					{
+						name: 'gridView',
+						id: 'spatial-element-data-grid-view',
+						type: 'SpatialCollectionPose',
+						optional: true,
+						description:
+							'Independent CardGrid model pose. Omitted values use the detail camera orbit and scale 1.'
+					},
+					{
+						name: 'carouselView',
+						id: 'spatial-element-data-carousel-view',
+						type: 'SpatialCollectionPose',
+						optional: true,
+						description:
+							'Independent Carousel model pose. Ground placement is fitted after applying this pose.'
+					},
+					{
 						name: 'assetManifest',
 						id: 'spatial-element-data-asset-manifest',
 						type: 'VerifiedSpatialElementAssetManifest',
@@ -185,7 +201,7 @@ export const reference: ReferenceEntry[] = [
 		description:
 			"Category-card projection created by getSpatialListItems .\nIncludes the element's assets automatically; pass these items to SpatialCardGridSection or SpatialCarouselSection.\nDetail-only media and breadcrumbs are omitted. No catalog data belongs in the layout.",
 		declaration:
-			"interface SpatialListItem extends Partial<Pick<SpatialElementData, 'geometry' | 'hdr' | 'background' | 'model' | 'camera' | 'minimap' | 'assetManifest' | 'fallbackImage' | 'fallbackImageSize'>> {\n    /** @internal Runtime-only pose provider installed by a section, never serialized in route data. */\n    pose?: import('../catalog/catalogPose.js').CatalogPoseProvider;\n    /** Optional full summary projection, sourced from the same document as the DETAIL. */\n    summary?: {\n        features: SpatialElementFeature[];\n        action?: SpatialElementAction;\n        /** Optional authored link to an existing element content section. */\n        sectionLink?: {\n            href: string;\n            label: string;\n            /** Assert that this anchor opens the fully docked content view (3XL: pane header). */\n            targetPresentation?: 'dock';\n        };\n    };\n    /** Stable optional key when the same element occurs twice within a section. */\n    itemKey?: string;\n    /** @internal Presentation identity assigned by a section; assets retain element identity. */\n    occurrence?: string;\n    /** Stable element identity, shared with the detail document. */\n    id: string;\n    /** Ordinary link to the detail page. */\n    href: string;\n    /** Optional assertion for a fragment link opening fully docked detail content (3XL: pane header). */\n    targetPresentation?: 'dock';\n    /** Short label above the title; the helper supplies an empty string when omitted. */\n    eyebrow: string;\n    /** Visible card title. */\n    title: string;\n    /** Optional description shown below the card title. */\n    description?: string;\n    /** Plain-text feature labels for compact card presentation. */\n    features: string[];\n}",
+			"interface SpatialListItem extends Partial<Pick<SpatialElementData, 'geometry' | 'hdr' | 'background' | 'model' | 'camera' | 'gridView' | 'carouselView' | 'minimap' | 'assetManifest' | 'fallbackImage' | 'fallbackImageSize'>> {\n    /** @internal Runtime-only pose provider installed by a section, never serialized in route data. */\n    pose?: import('../catalog/catalogPose.js').CatalogPoseProvider;\n    /** Optional full summary projection, sourced from the same document as the DETAIL. */\n    summary?: {\n        features: SpatialElementFeature[];\n        action?: SpatialElementAction;\n        /** Optional authored link to an existing element content section. */\n        sectionLink?: {\n            href: string;\n            label: string;\n            /** Assert that this anchor opens the fully docked content view (3XL: pane header). */\n            targetPresentation?: 'dock';\n        };\n    };\n    /** Stable optional key when the same element occurs twice within a section. */\n    itemKey?: string;\n    /** @internal Presentation identity assigned by a section; assets retain element identity. */\n    occurrence?: string;\n    /** Stable element identity, shared with the detail document. */\n    id: string;\n    /** Ordinary link to the detail page. */\n    href: string;\n    /** Optional assertion for a fragment link opening fully docked detail content (3XL: pane header). */\n    targetPresentation?: 'dock';\n    /** Short label above the title; the helper supplies an empty string when omitted. */\n    eyebrow: string;\n    /** Visible card title. */\n    title: string;\n    /** Optional description shown below the card title. */\n    description?: string;\n    /** Plain-text feature labels for compact card presentation. */\n    features: string[];\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -338,6 +354,22 @@ export const reference: ReferenceEntry[] = [
 						optional: true,
 						description:
 							'Initial orbit in degrees and optional fit controls. Distance is fitted automatically.'
+					},
+					{
+						name: 'gridView',
+						id: 'spatial-list-item-grid-view',
+						type: 'SpatialCollectionPose',
+						optional: true,
+						description:
+							'Independent CardGrid model pose. Omitted values use the detail camera orbit and scale 1.'
+					},
+					{
+						name: 'carouselView',
+						id: 'spatial-list-item-carousel-view',
+						type: 'SpatialCollectionPose',
+						optional: true,
+						description:
+							'Independent Carousel model pose. Ground placement is fitted after applying this pose.'
 					},
 					{
 						name: 'minimap',
@@ -747,6 +779,45 @@ export const reference: ReferenceEntry[] = [
 						description: ''
 					},
 					{ name: 'poster', id: '', type: 'string', optional: true, description: '' }
+				]
+			}
+		]
+	},
+	{
+		name: 'SpatialCollectionPose',
+		id: 'spatial-collection-pose',
+		kind: 'type',
+		description:
+			'Model orientation and relative fit for one collection view; does not change the detail camera.',
+		declaration:
+			"interface SpatialCollectionPose {\n    /** Horizontal orbit in degrees. Zero uses the imported model's front view. */\n    azimuth?: number;\n    /** Vertical orbit in degrees. Zero keeps the model upright on the carousel floor. */\n    elevation?: number;\n    /** Positive multiplier of the automatically fitted model size; defaults to 1. */\n    scale?: number;\n}",
+		variants: [
+			{
+				label: 'Fields',
+				fields: [
+					{
+						name: 'azimuth',
+						id: 'spatial-collection-pose-azimuth',
+						type: 'number',
+						optional: true,
+						description: "Horizontal orbit in degrees. Zero uses the imported model's front view."
+					},
+					{
+						name: 'elevation',
+						id: 'spatial-collection-pose-elevation',
+						type: 'number',
+						optional: true,
+						description:
+							'Vertical orbit in degrees. Zero keeps the model upright on the carousel floor.'
+					},
+					{
+						name: 'scale',
+						id: 'spatial-collection-pose-scale',
+						type: 'number',
+						optional: true,
+						description:
+							'Positive multiplier of the automatically fitted model size; defaults to 1.'
+					}
 				]
 			}
 		]
@@ -3176,6 +3247,22 @@ export const reference: ReferenceEntry[] = [
 						optional: true,
 						description:
 							'Initial orbit in degrees and optional fit controls. Distance is fitted automatically.'
+					},
+					{
+						name: 'gridView',
+						id: 'resolved-spatial-element-data-grid-view',
+						type: 'SpatialCollectionPose',
+						optional: true,
+						description:
+							'Independent CardGrid model pose. Omitted values use the detail camera orbit and scale 1.'
+					},
+					{
+						name: 'carouselView',
+						id: 'resolved-spatial-element-data-carousel-view',
+						type: 'SpatialCollectionPose',
+						optional: true,
+						description:
+							'Independent Carousel model pose. Ground placement is fitted after applying this pose.'
 					},
 					{
 						name: 'assetManifest',

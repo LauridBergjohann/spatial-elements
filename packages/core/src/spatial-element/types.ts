@@ -27,6 +27,8 @@ export interface SpatialListItem extends Partial<
 		| 'background'
 		| 'model'
 		| 'camera'
+		| 'gridView'
+		| 'carouselView'
 		| 'minimap'
 		| 'assetManifest'
 		| 'fallbackImage'
@@ -242,6 +244,10 @@ export interface SpatialElementData {
 	model?: StageModelSettings;
 	/** Initial orbit in degrees and optional fit controls. Distance is fitted automatically. */
 	camera?: StageCameraSettings;
+	/** Independent CardGrid model pose. Omitted values use the detail camera orbit and scale 1. */
+	gridView?: SpatialCollectionPose;
+	/** Independent Carousel model pose. Ground placement is fitted after applying this pose. */
+	carouselView?: SpatialCollectionPose;
 	/** Advanced verified resource manifest. Omit for the normal GLB/LOD workflow. */
 	assetManifest?: VerifiedSpatialElementAssetManifest;
 	/** Poster URL displayed during loading, without JavaScript, or when WebGPU is unavailable. */
@@ -254,6 +260,16 @@ export interface SpatialElementData {
 	media?: SpatialElementMediaItem[];
 	/** Element-specific minimap fit/hover/docked pose. Colors come from the theme. */
 	minimap?: Omit<StagePanelMinimapOptions, keyof SpatialMinimapTheme>;
+}
+
+/** Model orientation and relative fit for one collection view; does not change the detail camera. */
+export interface SpatialCollectionPose {
+	/** Horizontal orbit in degrees. Zero uses the imported model's front view. */
+	azimuth?: number;
+	/** Vertical orbit in degrees. Zero keeps the model upright on the carousel floor. */
+	elevation?: number;
+	/** Positive multiplier of the automatically fitted model size; defaults to 1. */
+	scale?: number;
 }
 
 /** Brand-wide minimap appearance; framing and model pose remain spatial-element-specific. */

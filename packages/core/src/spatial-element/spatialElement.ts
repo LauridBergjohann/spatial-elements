@@ -74,6 +74,8 @@ export function getSpatialListItems(
 		background: spatialElement.background,
 		model: spatialElement.model,
 		camera: spatialElement.camera,
+		gridView: spatialElement.gridView,
+		carouselView: spatialElement.carouselView,
 		minimap: spatialElement.minimap,
 		assetManifest: spatialElement.assetManifest,
 		fallbackImage: spatialElement.fallbackImage,

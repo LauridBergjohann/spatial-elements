@@ -24,8 +24,8 @@ describe('shared carousel framing', () => {
 	it('reserves the same compact frame with and without an eyebrow', () => {
 		for (const hasEyebrow of [false, true]) {
 			const layout = resolveCarouselPoseLayout({ width: 390, height: 900, hasHeadline: true, hasEyebrow }, { left: 12, width: 366 });
-			expect(layout.framing).toEqual({ compact: true, fit: { x: 0, y: 0, width: 366, height: 300 }, summary: { x: 52, width: 262, anchorY: 350, alignment: 'end' } });
-			expect(layout.height).toBe(350);
+			expect(layout.framing).toEqual({ compact: true, fit: { x: 0, y: 0, width: 366, height: 260 }, summary: { x: 52, width: 262, anchorY: 310, alignment: 'end' } });
+			expect(layout.height).toBe(310);
 		}
 	});
 	it('preserves the depth-only foreground advance with the new fit target', () => {
@@ -82,6 +82,14 @@ describe('drag presentation', () => {
 });
 
 describe('bounded carousel groups', () => {
+	it.each([390, 600, 840, 1200, 1920, 2456])('keeps neighbouring seats fully opaque at %ipx', viewportWidth => {
+		const width = Math.min(viewportWidth - 32, 1488);
+		const layout = resolveCarouselPoseLayout({ width: viewportWidth, height: 800 }, { width, left: (viewportWidth - width) / 2 });
+		for (const distance of [-1, 0, 1]) {
+			const pose = carouselPose(2 + distance, 2, 5, {}, layout);
+			if (pose.visible) expect(pose.opacity).toBe(1);
+		}
+	});
 	it('keeps the focused geometry sharp and increases defocus smoothly with distance', () => {
 		expect(carouselPose(2, 2, 5).blur).toBe(0);
 		let previous = 0;
@@ -125,12 +133,12 @@ describe('bounded carousel groups', () => {
 		const front = carouselPose(0, 0, 20);
 		expect(front.orbit!.pitch).toBeCloseTo(10 * Math.PI / 180);
 		expect(front.depth).toBeCloseTo(0);
-		expect(front.size).toBeCloseTo(0.94);
+		expect(front.size).toBeCloseTo(0.82);
 		let previousDepth = front.depth;
 		for (let distance = 0.01; distance <= 1; distance += 0.01) {
 			const pose = carouselPose(0, distance, 20);
 			expect(pose.depth).toBeLessThan(previousDepth);
-			expect(pose.size).toBeCloseTo(0.94 * 2500 / (2500 - pose.depth));
+			expect(pose.size).toBeCloseTo(0.82 * 2500 / (2500 - pose.depth));
 			expect(pose.orbit!.y).toBeGreaterThan(0);
 			previousDepth = pose.depth;
 		}

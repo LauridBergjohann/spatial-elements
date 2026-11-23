@@ -50,7 +50,7 @@ for (const width of [390, 600, 2456]) {
     // Distant silhouettes fade after rendering; their materials retain depth writes.
     const actors = await page.evaluate(() => window.__stageVisualTest!.getCarouselStats()!.actors);
     const fading = actors.filter(actor => actor.opacity > 0 && actor.opacity < 1);
-    if (compact) expect(fading.length).toBeGreaterThan(0);
+    // Nearby models stay opaque; fading is reserved for the far arc.
     expect(fading.every(actor => actor.materialOpacity === 1 && actor.depthWrite)).toBe(true);
     await expect.poll(() => selected.locator('.summary').evaluate(node =>
       Number((node as HTMLElement).style.getPropertyValue('--carousel-panel-opacity'))

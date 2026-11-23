@@ -83,7 +83,7 @@
  :global([data-spatial-presentation-glass]) .spatial-summary-surface { visibility: hidden; }
  .compact-copy { user-select: text; position: relative; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box; padding: 8px 40px 8px 12px; color: inherit; text-decoration: none; }
  .compact-copy:hover { text-decoration: none; }
- .compact-arrow { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; fill: none; stroke: var(--spatial-element-accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+ .compact-arrow { position: absolute; right: 10px; top: 10px; width: 20px; height: 20px; fill: none; stroke: var(--spatial-element-accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
  .compact-copy:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: -2px; border-radius: inherit; }
  .compact-copy[hidden] { display: none; }
  .compact-copy p { height: 26px; margin: 0; font-size: 12px; line-height: 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

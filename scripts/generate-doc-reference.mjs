@@ -35,7 +35,7 @@ for (const file of program.getSourceFiles()) {
 const names = [
  'SpatialElementData', 'SpatialListItem', 'ContentPageData', 'SpatialElementGeometry',
  'SpatialElementFeature', 'SpatialElementAction', 'SpatialElementBreadcrumb', 'SpatialElementMediaItem',
- 'SpatialElementSectionDefinition', 'SpatialElementSectionStyle', 'SpatialCardGridOptions', 'CarouselPresentation',
+ 'SpatialCollectionPose', 'SpatialElementSectionDefinition', 'SpatialElementSectionStyle', 'SpatialCardGridOptions', 'CarouselPresentation',
  'SpatialTheme', 'SpatialThemeOptions', 'SpatialThemeRadii', 'SpatialSectionBackgrounds', 'SpatialSectionTheme', 'SpatialDockedPanelTheme', 'SpatialMinimapTheme',
  'BackgroundSettings', 'StageModelSettings', 'StageModelRotation', 'StageCameraSettings', 'StagePanelShape', 'StagePanelTheme', 'StagePanelMinimapOptions', 'StageMinimapDockedView', 'StageInteractionTheme', 'StageRenderSettings', 'StagePhysicalMaterialSettings', 'StageMaterialSettings', 'StagePanelSurface',
  'SpatialElementAssetResource', 'SpatialElementLodPair', 'VerifiedSpatialElementAssetManifest', 'SpatialSummaryContext', 'SpatialMessagesInput',

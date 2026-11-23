@@ -89,6 +89,49 @@
 				content with the detail page.
 			</p>
 		</div>
+	</Section><Section
+		section={{
+			id: 'model-poses',
+			title: 'Independent model poses',
+			headline: 'Independent model poses',
+			background: { color: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				Set <a href="/docs/reference/types/#spatial-element-data-carousel-view">
+					<code>carouselView</code>
+				</a>
+				on each element to orient it independently of its detail camera. The
+				<a href="/docs/reference/types/#spatial-collection-pose">
+					<code>SpatialCollectionPose</code>
+				</a>
+				fields are
+				<a href="/docs/reference/types/#spatial-collection-pose-azimuth"><code>azimuth</code></a>
+				and
+				<a href="/docs/reference/types/#spatial-collection-pose-elevation">
+					<code>elevation</code>
+				</a>
+				in degrees, plus a positive
+				<a href="/docs/reference/types/#spatial-collection-pose-scale"><code>scale</code></a> multiplier.
+				Start with both angles at 0 and scale at 1 to stand the imported model upright. The carousel fits
+				its lowest supporting points to the shared floor.
+			</p>
+			<p>
+				The showcase stores these values in <code>presentation.json</code>, alongside the
+				independent
+				<a href="/docs/reference/types/#spatial-element-data-grid-view"><code>gridView</code></a>
+				pose and detail
+				<a href="/docs/reference/types/#spatial-element-data-camera"><code>camera</code></a>. If a
+				collection angle is omitted, it retains the detail camera angle for compatibility. Posters
+				remain authored images; these poses affect live models.
+			</p>
+			<p>
+				The carousel reserves room for the next section and preceding heading sections. Its fit
+				updates when the layout or heading size changes, without resizing during scrolling.
+				Neighbouring models remain opaque; only the far end of the turntable fades out.
+			</p>
+		</div>
 	</Section><CollectionExample kind="carousel" /><Section
 		section={{
 			id: 'fallback',

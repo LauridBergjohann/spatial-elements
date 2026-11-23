@@ -15,6 +15,7 @@ export type {
 	SectionBackgroundColor,
 	SpatialElementBreadcrumb,
 	SpatialElementData,
+	SpatialCollectionPose,
 	SpatialDockedPanelTheme,
 	SpatialElementFeature,
 	SpatialElementMediaItem,

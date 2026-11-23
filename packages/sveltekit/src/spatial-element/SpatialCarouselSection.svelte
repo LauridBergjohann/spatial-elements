@@ -107,16 +107,30 @@
 			if (mounted) window.dispatchEvent(new Event(CATALOG_POSE_CHANGED));
 		});
 	}
+	function precedingHeadings() {
+		const headings: HTMLElement[] = [];
+		let previous = ring?.closest('section')?.previousElementSibling;
+		while (previous instanceof HTMLElement && previous.matches('.ps-section:has(> .ps-section-content > .section-heading:not(.with-content))')) {
+			headings.push(previous);
+			previous = previous.previousElementSibling;
+		}
+		return headings;
+	}
 	function measureLayout() {
 		if (!ring) return;
 		const { width, left } = ring.getBoundingClientRect();
+		const leadingHeight = precedingHeadings().reduce((height, heading) => height + heading.getBoundingClientRect().height, 0);
+		const sectionElement = ring.closest('section')!;
+		const leadingValue = leadingHeight + 'px';
+		if (sectionElement.style.getPropertyValue('--spatial-carousel-leading-height') !== leadingValue)
+			sectionElement.style.setProperty('--spatial-carousel-leading-height', leadingValue);
 		const metrics = stage?.getLayoutMetrics?.('stable') ?? {
 			width: innerWidth,
 			height: innerHeight,
 			scrollbarWidth: innerWidth - document.documentElement.clientWidth
 		};
 		layout = resolveCarouselPoseLayout(
-			{ ...metrics, hasHeadline: Boolean(section.headline), hasEyebrow: true },
+			{ ...metrics, leadingHeight, hasHeadline: Boolean(section.headline), hasEyebrow: true },
 			{ width, left }
 		);
 		invalidate();
@@ -419,6 +433,7 @@
 		measureLayout();
 		const observer = new ResizeObserver(measureLayout);
 		observer.observe(carouselRing);
+		for (const heading of precedingHeadings()) observer.observe(heading);
 		const dragSection = ring.closest('section')!;
 		dragSection.addEventListener('wheel', wheel, { passive: false });
 		const stop = () => {

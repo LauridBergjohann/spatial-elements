@@ -8,6 +8,8 @@ type ElementAppearance = Pick<
 	| 'background'
 	| 'model'
 	| 'camera'
+	| 'gridView'
+	| 'carouselView'
 	| 'assetManifest'
 	| 'fallbackImage'
 	| 'fallbackImageSize'
@@ -22,7 +24,7 @@ export type SpatialElementSceneSource = ElementAppearance & Pick<SpatialElementD
 
 /** @internal Content and runtime pose callbacks never participate in asset identity. */
 export function getSpatialElementScene(element: SpatialElementSceneSource): SpatialElementScene {
-	const { hdr, background, model, camera, assetManifest, fallbackImage, fallbackImageSize } =
+	const { hdr, background, model, camera, gridView, carouselView, assetManifest, fallbackImage, fallbackImageSize } =
 		element;
 	const lodPair = resolveSpatialElementGeometry(element.geometry);
 	return {
@@ -32,6 +34,8 @@ export function getSpatialElementScene(element: SpatialElementSceneSource): Spat
 		background,
 		model,
 		camera,
+		gridView,
+		carouselView,
 		assetManifest,
 		fallbackImage,
 		fallbackImageSize

@@ -8,6 +8,7 @@ export const referenceTargets: Record<string, string> = {
 	SpatialElementAction: '/docs/reference/types/#spatial-element-action',
 	SpatialElementBreadcrumb: '/docs/reference/types/#spatial-element-breadcrumb',
 	SpatialElementMediaItem: '/docs/reference/types/#spatial-element-media-item',
+	SpatialCollectionPose: '/docs/reference/types/#spatial-collection-pose',
 	SpatialElementSectionDefinition: '/docs/reference/types/#spatial-element-section-definition',
 	SpatialElementSectionStyle: '/docs/reference/types/#spatial-element-section-style',
 	SpatialCardGridOptions: '/docs/reference/types/#spatial-card-grid-options',
@@ -124,6 +125,13 @@ export const referenceDocuments = [
 		title: 'SpatialElementMediaItem',
 		href: '/docs/reference/types/#spatial-element-media-item',
 		description: 'Media entries rendered in the element rail.',
+		group: 'Reference'
+	},
+	{
+		title: 'SpatialCollectionPose',
+		href: '/docs/reference/types/#spatial-collection-pose',
+		description:
+			'Model orientation and relative fit for one collection view; does not change the detail camera.',
 		group: 'Reference'
 	},
 	{

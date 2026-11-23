@@ -48,6 +48,18 @@
 				title uses normal text color. A description appears when supplied. Cards have equal heights,
 				and description text never exceeds the title's size.
 			</p>
+			<p>
+				Use each element's <a href="/docs/reference/types/#spatial-element-data-grid-view">
+					<code>gridView</code>
+				</a>
+				to set a separate
+				<a href="/docs/reference/types/#spatial-collection-pose">
+					<code>SpatialCollectionPose</code>
+				</a>
+				for the live card model. Its angles are in degrees and its scale multiplies the automatic fit.
+				This leaves the carousel pose and detail camera independent. See
+				<a href="/docs/sections/carousel/#model-poses">independent model poses</a> for the shared fields.
+			</p>
 			<DocFigure
 				name="collections"
 				alt="A CardGrid makes all items visible for comparison, while a Carousel emphasizes one at a time."

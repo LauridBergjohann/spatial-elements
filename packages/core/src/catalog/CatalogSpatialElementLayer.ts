@@ -76,6 +76,7 @@ interface CatalogActor {
 	tilt: THREE.Group;
 	view: THREE.Group;
 	viewOrientation: THREE.Quaternion;
+	presentationScale: number;
 	radius: number;
 	hitCorners: THREE.Vector3[];
 	fitCorners: THREE.Vector3[];
@@ -513,7 +514,7 @@ export class CatalogSpatialElementLayer {
 						instance.dispose();
 						return;
 					}
-					const actor = this.createActor(key, brandId, spatialElement.id, getSpatialElementScene(spatialElement), instance);
+					const actor = this.createActor(key, brandId, spatialElement.id, getSpatialElementScene(spatialElement), instance, spatialElement.pose?.kind === 'carousel' ? 'carousel' : 'grid');
 					actor.occurrence = spatialElement.occurrence;
 					actor.pose = spatialElement.pose;
 					this.stagedSourceCapture = undefined;
@@ -639,12 +640,13 @@ export class CatalogSpatialElementLayer {
 				// Reuse the outline's settled hover state: inspecting a neighbour brings it
 				// into focus without changing selection or allocating another render target.
 				actor.blur = (pose.blur ?? 0) * (1 - actor.hover);
-				actor.band = pose.front ? 'front' : 'rear';
 				actor.root.visible &&= pose.visible;
 				actor.carouselOpacity = pose.opacity;
 				applyCatalogMaterialOpacity(actor.materials, 1);
 				const framing = pose.framing;
 				const compact = framing?.compact ?? width < 840;
+				// Compact panels composite over every model, including the selected seat.
+				actor.band = pose.front && !compact ? 'front' : 'rear';
 				const frame = framing ? Math.min(framing.fit.width, framing.fit.height) : Math.min(slot.width, compact ? 360 : slot.height);
 				// Every seat shares one scene origin. Depth now determines projected size
 				// and spacing naturally, including scroll parallax and the foreground advance.
@@ -669,11 +671,11 @@ export class CatalogSpatialElementLayer {
 					? (slot.height - 360) * pose.y / (pose.size / CAROUSEL_MODEL_SIZE)
 					: 0, 0);
 				actor.view.scale.setScalar(
-					(frame * CAROUSEL_MODEL_SIZE) / (actor.radius * 2)
+					(frame * CAROUSEL_MODEL_SIZE * actor.presentationScale) / (actor.radius * 2)
 				);
 				let groundMatrix: THREE.Matrix4 | undefined;
 				if (pose.orbit && actor.root.visible) {
-					const floor = frame * (compact ? 0.40 : 0.36);
+					const floor = frame * 0.32;
 					const pitch = pose.orbit.pitch;
 					// Stand every model on the same plane, including wide or short assets.
 					actor.tilt.updateMatrix();
@@ -1436,7 +1438,8 @@ export class CatalogSpatialElementLayer {
 		brandId: string,
 		spatialElementId: string,
 		stage: SpatialElementScene,
-		instance: SpatialElementAssetInstance
+		instance: SpatialElementAssetInstance,
+		kind: 'grid' | 'carousel' = 'grid'
 	): CatalogActor {
 		const pair = resolveSpatialElementLodPair(stage.glb, stage.lodPair);
 		const rotation = pair ? undefined : stage.model?.rotation;
@@ -1482,8 +1485,9 @@ export class CatalogSpatialElementLayer {
 		root.matrixAutoUpdate = false;
 		const tilt = new THREE.Group();
 		const view = new THREE.Group();
+		const collectionPose = kind === 'carousel' ? stage.carouselView : stage.gridView;
 		view.quaternion.copy(
-			getCameraOrbitQuaternion(stage.camera?.azimuth, stage.camera?.elevation).invert()
+			getCameraOrbitQuaternion(collectionPose?.azimuth ?? stage.camera?.azimuth, collectionPose?.elevation ?? stage.camera?.elevation).invert()
 		);
 		const supportPoints = carouselSupport(model, view.quaternion);
 		root.add(tilt);
@@ -1511,6 +1515,7 @@ export class CatalogSpatialElementLayer {
 			tilt,
 			view,
 			viewOrientation: view.quaternion.clone(),
+			presentationScale: Number.isFinite(collectionPose?.scale) && collectionPose!.scale! > 0 ? collectionPose!.scale! : 1,
 			radius,
 			hitCorners,
 			fitCorners: hitCorners.map((corner) => corner.clone().applyQuaternion(view.quaternion)),
@@ -1563,7 +1568,7 @@ export class CatalogSpatialElementLayer {
 			actor.cardRect = actor.card!.getBoundingClientRect();
 			actor.slotRect = actor.slot!.getBoundingClientRect();
 			if (!actor.pose)
-				actor.cardScale = cardModelFit(actor.fitCorners, actor.slotRect.width, actor.slotRect.height);
+				actor.cardScale = cardModelFit(actor.fitCorners, actor.slotRect.width, actor.slotRect.height) * actor.presentationScale;
 			if (actor.pose) {
 				const section = actor.card!.closest('[data-section-background-size]');
 				const surface = section?.querySelector<HTMLElement>(':scope > .ps-section-surface');

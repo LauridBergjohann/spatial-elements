@@ -159,13 +159,13 @@
   },
   "carousel": {
     "dotsHeight": 32,
-    "nextPreviewHeight": 28,
+    "nextPreviewHeight": 72,
     "compactTitleHeight": 40,
     "compactEyebrowHeight": 66,
     "layouts": {
       "xs": {
-        "minHeight": 150,
-        "maxHeight": 300,
+        "minHeight": 96,
+        "maxHeight": 260,
         "sideAllowance": 36,
         "fitStartColumn": 1,
         "fitColumns": 4,
@@ -174,8 +174,8 @@
         "dotsGap": 0
       },
       "s": {
-        "minHeight": 150,
-        "maxHeight": 400,
+        "minHeight": 96,
+        "maxHeight": 340,
         "sideAllowance": 72,
         "fitStartColumn": 1,
         "fitColumns": 6,
@@ -184,8 +184,8 @@
         "dotsGap": 0
       },
       "m": {
-        "minHeight": 300,
-        "maxHeight": 500,
+        "minHeight": 160,
+        "maxHeight": 420,
         "sideAllowance": 0,
         "fitStartColumn": 2,
         "fitColumns": 3,
@@ -194,8 +194,8 @@
         "dotsGap": 12
       },
       "l": {
-        "minHeight": 340,
-        "maxHeight": 600,
+        "minHeight": 160,
+        "maxHeight": 500,
         "sideAllowance": 0,
         "fitStartColumn": 3,
         "fitColumns": 5,
@@ -204,8 +204,8 @@
         "dotsGap": 16
       },
       "xl": {
-        "minHeight": 400,
-        "maxHeight": 700,
+        "minHeight": 160,
+        "maxHeight": 560,
         "sideAllowance": 0,
         "fitStartColumn": 2,
         "fitColumns": 5,
@@ -214,8 +214,8 @@
         "dotsGap": 16
       },
       "2xl": {
-        "minHeight": 400,
-        "maxHeight": 800,
+        "minHeight": 160,
+        "maxHeight": 600,
         "sideAllowance": 0,
         "fitStartColumn": 2,
         "fitColumns": 6,

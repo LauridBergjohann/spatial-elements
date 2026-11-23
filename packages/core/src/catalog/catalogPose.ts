@@ -65,7 +65,7 @@ export function resolveCarouselPoseLayout(input: CarouselLayoutInput, ring: { wi
 	};
 }
 
-export const CAROUSEL_MODEL_SIZE = 0.94;
+export const CAROUSEL_MODEL_SIZE = 0.82;
 
 const defaultLayout: CarouselLayout = { width: 1320, height: 560, left: 60, viewportWidth: 1440 };
 
@@ -124,7 +124,7 @@ function framing(distance: number, presentation: CarouselPresentation, layout: C
 	const center = layout.viewportWidth / 2 + (anchor - layout.viewportWidth / 2 + orbit.x) * scale;
 	const offset = center - anchor;
 	const extent = frame * CAROUSEL_MODEL_SIZE * scale * 0.6;
-	const seats = compact ? 1.49 : 3.24;
+	const seats = 3.24;
 	const fade = Math.max(0, Math.min(1, (seats - travel) / 0.8));
 	const arcOpacity = fade * fade * (3 - 2 * fade);
 	return { offset, scale, center, extent, orbit, z, angle, arcOpacity, seats };
@@ -156,7 +156,7 @@ export function carouselPose(
 ): CatalogPose {
 	const distance = carouselDistance(index, phase, count);
 	const { offset, scale, center, extent, orbit, z, angle, arcOpacity } = framing(distance, presentation, layout, emphasis);
-	const edge = Math.max(0, Math.min(1, (center + extent) / 48, (layout.viewportWidth - center + extent) / 48)) * arcOpacity;
+	const edge = center + extent > 0 && center - extent < layout.viewportWidth ? arcOpacity : 0;
 	return {
 		x: (layout.framing ? layout.framing.fit.x + layout.framing.fit.width / 2 : layout.width * 0.5) / Math.max(1, layout.width) + offset / Math.max(1, layout.width),
 		y: (layout.framing ? layout.framing.fit.y + layout.framing.fit.height / 2 : layout.height * 0.54) / Math.max(1, layout.height) - orbit.y * scale / Math.max(1, layout.height),

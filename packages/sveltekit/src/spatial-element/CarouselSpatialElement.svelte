@@ -261,7 +261,7 @@
 		position: absolute;
 		left: var(--carousel-poster-x, calc(var(--spatial-carousel-fit-left) + var(--spatial-carousel-fit-width) / 2));
 		top: var(--carousel-poster-y, calc(var(--spatial-carousel-title-reserve) + var(--spatial-carousel-fit-height) / 2));
-		width: var(--carousel-poster-width, calc(min(var(--spatial-carousel-fit-width), var(--spatial-carousel-fit-height)) * 0.94));
+		width: var(--carousel-poster-width, calc(min(var(--spatial-carousel-fit-width), var(--spatial-carousel-fit-height)) * 0.82));
 		max-width: none;
 		transform: translate(-50%, -50%);
 		aspect-ratio: 1;

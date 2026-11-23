@@ -714,7 +714,7 @@
 					</tr>
 					<tr>
 						<td>nextPreviewHeight</td>
-						<td>28</td>
+						<td>72</td>
 					</tr>
 					<tr>
 						<td>compactTitleHeight</td>
@@ -743,8 +743,8 @@
 				<tbody>
 					<tr>
 						<td>xs</td>
-						<td>150</td>
-						<td>300</td>
+						<td>96</td>
+						<td>260</td>
 						<td>36</td>
 						<td>1</td>
 						<td>4</td>
@@ -754,8 +754,8 @@
 					</tr>
 					<tr>
 						<td>s</td>
-						<td>150</td>
-						<td>400</td>
+						<td>96</td>
+						<td>340</td>
 						<td>72</td>
 						<td>1</td>
 						<td>6</td>
@@ -765,8 +765,8 @@
 					</tr>
 					<tr>
 						<td>m</td>
-						<td>300</td>
-						<td>500</td>
+						<td>160</td>
+						<td>420</td>
 						<td>0</td>
 						<td>2</td>
 						<td>3</td>
@@ -776,8 +776,8 @@
 					</tr>
 					<tr>
 						<td>l</td>
-						<td>340</td>
-						<td>600</td>
+						<td>160</td>
+						<td>500</td>
 						<td>0</td>
 						<td>3</td>
 						<td>5</td>
@@ -787,8 +787,8 @@
 					</tr>
 					<tr>
 						<td>xl</td>
-						<td>400</td>
-						<td>700</td>
+						<td>160</td>
+						<td>560</td>
 						<td>0</td>
 						<td>2</td>
 						<td>5</td>
@@ -798,8 +798,8 @@
 					</tr>
 					<tr>
 						<td>2xl</td>
-						<td>400</td>
-						<td>800</td>
+						<td>160</td>
+						<td>600</td>
 						<td>0</td>
 						<td>2</td>
 						<td>6</td>

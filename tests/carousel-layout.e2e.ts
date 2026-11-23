@@ -36,9 +36,9 @@ for (const javaScriptEnabled of [false, true]) {
 				await page.setViewportSize({ width, height: 900 });
 				const actual = await page.evaluate(() => {
 					const rect = (selector: string) => document.querySelector(selector)!.getBoundingClientRect().toJSON();
-					return { section: rect('#layout-carousel'), fit: rect('.selected [data-carousel-fit-anchor]'), panel: rect('.selected .summary'), dots: rect('.controls'), outerOverflow: document.documentElement.scrollWidth > innerWidth };
+					return { section: rect('#layout-carousel'), fit: rect('.selected [data-carousel-fit-anchor]'), panel: rect('.selected .summary'), dots: rect('.controls'), leadingHeight: parseFloat(getComputedStyle(document.querySelector('#layout-carousel')!).getPropertyValue('--spatial-carousel-leading-height')) || 0, outerOverflow: document.documentElement.scrollWidth > innerWidth };
 				});
-				const expected = resolveCarouselLayout({ width, height: 900, sectionTop: actual.section.y, hasHeadline: true, hasEyebrow: true });
+				const expected = resolveCarouselLayout({ width, height: 900, sectionTop: actual.section.y, leadingHeight: actual.leadingHeight, hasHeadline: true, hasEyebrow: true });
 				for (const key of ['x', 'y', 'width', 'height'] as const) expect(Math.abs(actual.fit[key] - expected.mediaFit[key]), `${width} fit.${key}`).toBeLessThan(1.1);
 				expect(Math.abs(actual.panel.x - expected.summary.x), `${width} panel.x`).toBeLessThan(1.1);
 				expect(Math.abs(actual.panel.width - expected.summary.width), `${width} panel.width`).toBeLessThan(1.1);
@@ -103,7 +103,8 @@ for (const count of [1, 2, 20]) {
 		await expect(page.locator('[data-spatial-summary-root]')).toHaveCount(count);
 		await expect(page.locator('.controls a')).toHaveCount(count === 1 ? 0 : count);
 		const bounds = await page.locator('#layout-carousel').boundingBox();
-		const expected = resolveCarouselLayout({ width: 1440, height: 900, hasHeadline: false, sectionTop: bounds!.y });
+		const leadingHeight = await page.locator('#layout-carousel').evaluate(node => parseFloat(getComputedStyle(node).getPropertyValue('--spatial-carousel-leading-height')) || 0);
+		const expected = resolveCarouselLayout({ width: 1440, height: 900, hasHeadline: false, leadingHeight, sectionTop: bounds!.y });
 		expect(bounds!.height).toBeCloseTo(expected.section.height, 0);
 	});
 }
