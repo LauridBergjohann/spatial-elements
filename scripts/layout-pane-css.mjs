@@ -42,7 +42,8 @@ export function paneRules(tokens) {
 	${root} .spatial-element-pane-body [data-spatial-summary-aside] {
 		position: relative; top: auto; right: auto; width: 100%; margin: 0;
 	}
-	${root} .spatial-element-pane-body .spatial-element-panel { max-height: none; }
+	${root} .spatial-element-pane-body .spatial-element-panel { max-height: none; border-radius: 0; }
+	${root} .spatial-element-pane-body .spatial-element-panel > .stage-panel-surface > [data-stage-panel-content] > .panel-edge { display: none; }
 	${root} .spatial-element-pane-body .spatial-summary-query { max-height: none; overflow: visible; overscroll-behavior: auto; }
 	${root} .spatial-element-pane-body .spatial-element-panel .stage-panel-surface::before,
 	${root} .spatial-element-pane-body .spatial-element-panel .stage-panel-surface::after { display: none; }

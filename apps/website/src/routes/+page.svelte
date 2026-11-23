@@ -112,7 +112,7 @@
 		]}
 	/>
 	<CardGridSection
-		section={{ id: 'techstack', title: 'Techstack', headline: 'Techstack', spacing: 'loose' }}
+		section={{ id: 'references', title: 'References', headline: 'References', spacing: 'loose' }}
 		list={technologies}
 		cardSize="m"
 		cardTone="muted"
