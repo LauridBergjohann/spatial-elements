@@ -8,7 +8,7 @@ const root = resolve(import.meta.dirname, '..');
 const componentNames = ['BrandStageShell', 'ContentPage', 'SpatialElementPage', 'SpatialCardGridSection', 'SpatialCarouselSection', 'Section'];
 const virtual = new Map(componentNames.map(name => {
  const file = resolve(root, `packages/sveltekit/src/spatial-element/${name}.svelte`);
- const script = readFileSync(file, 'utf8').match(/<script[^>]*>([\s\S]*?)<\/script>/)[1];
+ const script = readFileSync(file, 'utf8').replaceAll('\r\n', '\n').match(/<script[^>]*>([\s\S]*?)<\/script>/)[1];
  const tree = ts.createSourceFile(file + '.ts', script, ts.ScriptTarget.Latest, true);
  let props = 'Props';
  if (!script.includes('interface Props')) {
@@ -20,16 +20,19 @@ const virtual = new Map(componentNames.map(name => {
  }
  return [(file + '.reference.ts').replaceAll('\\', '/'), script + `\nexport type DocumentationProps = ${props};`];
 }));
-const options = { target: ts.ScriptTarget.ESNext, module: ts.ModuleKind.NodeNext, moduleResolution: ts.ModuleResolutionKind.NodeNext, skipLibCheck: true, resolveJsonModule: true, paths: { '@spatial-elements/core': [resolve(root, 'packages/core/src/index.ts')], '@spatial-elements/core/*': [resolve(root, 'packages/core/src/*')] } };
+// NodeNext requires the explicit .ts target for extensionless package subpaths.
+// Otherwise it can fall through to package exports and read a previous dist build.
+const options = { target: ts.ScriptTarget.ESNext, module: ts.ModuleKind.NodeNext, moduleResolution: ts.ModuleResolutionKind.NodeNext, skipLibCheck: true, resolveJsonModule: true, paths: { '@spatial-elements/core': [resolve(root, 'packages/core/src/index.ts')], '@spatial-elements/core/*': [resolve(root, 'packages/core/src/*.ts')] } };
 const host = ts.createCompilerHost(options);
 const originalRead = host.readFile, originalExists = host.fileExists;
-host.readFile = path => virtual.get(path.replaceAll('\\', '/')) ?? originalRead(path);
+host.readFile = path => (virtual.get(path.replaceAll('\\', '/')) ?? originalRead(path))?.replaceAll('\r\n', '\n');
 host.fileExists = path => virtual.has(path.replaceAll('\\', '/')) || originalExists(path);
 const program = ts.createProgram([resolve(root, 'packages/core/src/index.ts'), ...virtual.keys()], options, host);
 const checker = program.getTypeChecker();
 const definitions = new Map();
 for (const file of program.getSourceFiles()) {
- if (!file.fileName.replaceAll('\\', '/').includes('/packages/')) continue;
+ const path = file.fileName.replaceAll('\\', '/');
+ if (!['core', 'sveltekit'].some(name => path.startsWith(resolve(root, `packages/${name}/src`).replaceAll('\\', '/') + '/'))) continue;
  for (const node of file.statements) if (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) definitions.set(node.name.text, node);
 }
 const names = [

@@ -22,7 +22,7 @@ export const reference: ReferenceEntry[] = [
 		description:
 			'Serializable element content AND its 3D presentation. Supply the same source data to\ngetSpatialListItems on a category page and SpatialElementPage on the detail page.\nOnly id, title, geometry and hdr are required. Layout-wide appearance belongs in SpatialTheme.',
 		declaration:
-			"interface SpatialElementData {\n    /** Stable element identity within the shell's theme namespace; also used by findSpatialElement. */\n    id: string;\n    /** Optional identity assertion. When supplied, must match the enclosing theme.id. */\n    brandId?: string;\n    /** Document title. Defaults to title. */\n    pageTitle?: string;\n    /** Short category/series label displayed above the title. Defaults to an empty string. */\n    eyebrow?: string;\n    /** Visible element name. */\n    title: string;\n    /** Optional description used by the category card. */\n    description?: string;\n    /** Summary bullets. Defaults to an empty list. */\n    features?: SpatialElementFeature[];\n    /** Optional primary action; omitted actions render no button. */\n    action?: SpatialElementAction;\n    /** Required Low/High model sources. Identical URLs share one load; both exports must share coordinates. */\n    geometry: SpatialElementGeometry;\n    /** Detail lighting and background HDR. Category lighting is explicitly set on ContentPage.hdr. */\n    hdr: string;\n    /** HDR background blur/tint. Does not change the theme's flat page background or model lighting. */\n    background?: BackgroundSettings;\n    /** Imported model pose, excluded meshes and material replacements. Rotations are in radians. */\n    model?: StageModelSettings;\n    /** Initial orbit in degrees and optional fit controls. Distance is fitted automatically. */\n    camera?: StageCameraSettings;\n    /** Independent CardGrid model pose. Omitted values use the detail camera orbit and scale 1. */\n    gridView?: SpatialCollectionPose;\n    /** Independent Carousel model pose. Ground placement is fitted after applying this pose. */\n    carouselView?: SpatialCollectionPose;\n    /** Advanced verified resource manifest. Omit for the normal GLB/LOD workflow. */\n    assetManifest?: VerifiedSpatialElementAssetManifest;\n    /** Poster URL displayed during loading, without JavaScript, or when WebGPU is unavailable. */\n    fallbackImage?: string;\n    /** Actual poster pixel dimensions [width, height], not physical model dimensions. */\n    fallbackImageSize?: readonly [number, number];\n    /** Navigation trail. Entries without href are plain text; defaults to an empty list. */\n    breadcrumbs?: SpatialElementBreadcrumb[];\n    /** Media rail entries. Defaults to one interactive 3D minimap; [] hides the rail's entries. */\n    media?: SpatialElementMediaItem[];\n    /** Element-specific minimap fit/hover/docked pose. Colors come from the theme. */\n    minimap?: Omit<StagePanelMinimapOptions, keyof SpatialMinimapTheme>;\n}",
+			"interface SpatialElementData {\n\t/** Stable element identity within the shell's theme namespace; also used by findSpatialElement. */\n\tid: string;\n\t/** Optional identity assertion. When supplied, must match the enclosing theme.id. */\n\tbrandId?: string;\n\t/** Document title. Defaults to title. */\n\tpageTitle?: string;\n\t/** Short category/series label displayed above the title. Defaults to an empty string. */\n\teyebrow?: string;\n\t/** Visible element name. */\n\ttitle: string;\n\t/** Optional description used by the category card. */\n\tdescription?: string;\n\t/** Summary bullets. Defaults to an empty list. */\n\tfeatures?: SpatialElementFeature[];\n\t/** Optional primary action; omitted actions render no button. */\n\taction?: SpatialElementAction;\n\t/** Required Low/High model sources. Identical URLs share one load; both exports must share coordinates. */\n\tgeometry: SpatialElementGeometry;\n\t/** Detail lighting and background HDR. Category lighting is explicitly set on ContentPage.hdr. */\n\thdr: string;\n\t/** HDR background blur/tint. Does not change the theme's flat page background or model lighting. */\n\tbackground?: BackgroundSettings;\n\t/** Imported model pose, excluded meshes and material replacements. Rotations are in radians. */\n\tmodel?: StageModelSettings;\n\t/** Initial orbit in degrees and optional fit controls. Distance is fitted automatically. */\n\tcamera?: StageCameraSettings;\n\t/** Independent CardGrid model pose. Omitted values use the detail camera orbit and scale 1. */\n\tgridView?: SpatialCollectionPose;\n\t/** Independent Carousel model pose. Ground placement is fitted after applying this pose. */\n\tcarouselView?: SpatialCollectionPose;\n\t/** Advanced verified resource manifest. Omit for the normal GLB/LOD workflow. */\n\tassetManifest?: VerifiedSpatialElementAssetManifest;\n\t/** Poster URL displayed during loading, without JavaScript, or when WebGPU is unavailable. */\n\tfallbackImage?: string;\n\t/** Actual poster pixel dimensions [width, height], not physical model dimensions. */\n\tfallbackImageSize?: readonly [number, number];\n\t/** Navigation trail. Entries without href are plain text; defaults to an empty list. */\n\tbreadcrumbs?: SpatialElementBreadcrumb[];\n\t/** Media rail entries. Defaults to one interactive 3D minimap; [] hides the rail's entries. */\n\tmedia?: SpatialElementMediaItem[];\n\t/** Element-specific minimap fit/hover/docked pose. Colors come from the theme. */\n\tminimap?: Omit<StagePanelMinimapOptions, keyof SpatialMinimapTheme>;\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -201,7 +201,7 @@ export const reference: ReferenceEntry[] = [
 		description:
 			"Category-card projection created by getSpatialListItems .\nIncludes the element's assets automatically; pass these items to SpatialCardGridSection or SpatialCarouselSection.\nDetail-only media and breadcrumbs are omitted. No catalog data belongs in the layout.",
 		declaration:
-			"interface SpatialListItem extends Partial<Pick<SpatialElementData, 'geometry' | 'hdr' | 'background' | 'model' | 'camera' | 'gridView' | 'carouselView' | 'minimap' | 'assetManifest' | 'fallbackImage' | 'fallbackImageSize'>> {\n    /** @internal Runtime-only pose provider installed by a section, never serialized in route data. */\n    pose?: import('../catalog/catalogPose.js').CatalogPoseProvider;\n    /** Optional full summary projection, sourced from the same document as the DETAIL. */\n    summary?: {\n        features: SpatialElementFeature[];\n        action?: SpatialElementAction;\n        /** Optional authored link to an existing element content section. */\n        sectionLink?: {\n            href: string;\n            label: string;\n            /** Assert that this anchor opens the fully docked content view (3XL: pane header). */\n            targetPresentation?: 'dock';\n        };\n    };\n    /** Stable optional key when the same element occurs twice within a section. */\n    itemKey?: string;\n    /** @internal Presentation identity assigned by a section; assets retain element identity. */\n    occurrence?: string;\n    /** Stable element identity, shared with the detail document. */\n    id: string;\n    /** Ordinary link to the detail page. */\n    href: string;\n    /** Optional assertion for a fragment link opening fully docked detail content (3XL: pane header). */\n    targetPresentation?: 'dock';\n    /** Short label above the title; the helper supplies an empty string when omitted. */\n    eyebrow: string;\n    /** Visible card title. */\n    title: string;\n    /** Optional description shown below the card title. */\n    description?: string;\n    /** Plain-text feature labels for compact card presentation. */\n    features: string[];\n}",
+			"interface SpatialListItem extends Partial<\n\tPick<\n\t\tSpatialElementData,\n\t\t| 'geometry'\n\t\t| 'hdr'\n\t\t| 'background'\n\t\t| 'model'\n\t\t| 'camera'\n\t\t| 'gridView'\n\t\t| 'carouselView'\n\t\t| 'minimap'\n\t\t| 'assetManifest'\n\t\t| 'fallbackImage'\n\t\t| 'fallbackImageSize'\n\t>\n> {\n\t/** @internal Runtime-only pose provider installed by a section, never serialized in route data. */\n\tpose?: import('../catalog/catalogPose.js').CatalogPoseProvider;\n\t/** Optional full summary projection, sourced from the same document as the DETAIL. */\n\tsummary?: {\n\t\tfeatures: SpatialElementFeature[];\n\t\taction?: SpatialElementAction;\n\t\t/** Optional authored link to an existing element content section. */\n\t\tsectionLink?: { href: string; label: string;\n\t\t\t/** Assert that this anchor opens the fully docked content view (3XL: pane header). */\n\t\t\ttargetPresentation?: 'dock' };\n\t};\n\t/** Stable optional key when the same element occurs twice within a section. */\n\titemKey?: string;\n\t/** @internal Presentation identity assigned by a section; assets retain element identity. */\n\toccurrence?: string;\n\t/** Stable element identity, shared with the detail document. */\n\tid: string;\n\t/** Ordinary link to the detail page. */\n\thref: string;\n\t/** Optional assertion for a fragment link opening fully docked detail content (3XL: pane header). */\n\ttargetPresentation?: 'dock';\n\t/** Short label above the title; the helper supplies an empty string when omitted. */\n\teyebrow: string;\n\t/** Visible card title. */\n\ttitle: string;\n\t/** Optional description shown below the card title. */\n\tdescription?: string;\n\t/** Plain-text feature labels for compact card presentation. */\n\tfeatures: string[];\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -209,7 +209,7 @@ export const reference: ReferenceEntry[] = [
 					{
 						name: 'summary',
 						id: 'spatial-list-item-summary',
-						type: "{ features: SpatialElementFeature[]; action?: SpatialElementAction; sectionLink?: { href: string; label: string; targetPresentation?: 'dock'; }; }",
+						type: "{ features: SpatialElementFeature[]; action?: SpatialElementAction; sectionLink?: { href: string; label: string; targetPresentation?: 'dock' }; }",
 						optional: true,
 						description:
 							'Optional full summary projection, sourced from the same document as the DETAIL.'
@@ -231,7 +231,7 @@ export const reference: ReferenceEntry[] = [
 					{
 						name: 'summary.sectionLink',
 						id: 'spatial-list-item-summary-section-link',
-						type: "{ href: string; label: string; targetPresentation?: 'dock'; }",
+						type: "{ href: string; label: string; targetPresentation?: 'dock' }",
 						optional: true,
 						description: 'Optional authored link to an existing element content section.'
 					},
@@ -413,7 +413,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Category/content page metadata; only title is required.',
 		declaration:
-			'interface ContentPageData extends PageContentData {\n    /** Browser document title; defaults to title. */\n    pageTitle?: string;\n    title: string;\n    eyebrow?: string;\n    intro?: string;\n    breadcrumbs?: SpatialElementBreadcrumb[];\n}',
+			'interface ContentPageData extends PageContentData {\n\t/** Browser document title; defaults to title. */\n\tpageTitle?: string;\n\ttitle: string;\n\teyebrow?: string;\n\tintro?: string;\n\tbreadcrumbs?: SpatialElementBreadcrumb[];\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -477,7 +477,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Two required representations in the same authored coordinate frame.',
 		declaration:
-			"interface SpatialElementGeometry {\n    /** Lightweight GLB used in categories and during navigation. A URL is sufficient. */\n    low: string | SpatialElementAssetResource;\n    /** Detailed GLB used on the detail page. The same URL as low shares one cached load. */\n    high: string | SpatialElementAssetResource;\n    /** Optional generated coordinate transform, column-major. Defaults to identity. */\n    assetToFrame?: SpatialElementLodPair['assetToFrame'];\n    /** Optional shared frame bounds. Without these, the Low model determines the fit. */\n    bounds?: SpatialElementLodPair['bounds'];\n    /** Optional generated frame revision, independent of each resource's revision. */\n    revision?: string;\n    /** Optional provenance; declaring a shared frame does not verify physical dimensions. */\n    status?: SpatialElementLodPair['status'];\n}",
+			"interface SpatialElementGeometry {\n\t/** Lightweight GLB used in categories and during navigation. A URL is sufficient. */\n\tlow: string | SpatialElementAssetResource;\n\t/** Detailed GLB used on the detail page. The same URL as low shares one cached load. */\n\thigh: string | SpatialElementAssetResource;\n\t/** Optional generated coordinate transform, column-major. Defaults to identity. */\n\tassetToFrame?: SpatialElementLodPair['assetToFrame'];\n\t/** Optional shared frame bounds. Without these, the Low model determines the fit. */\n\tbounds?: SpatialElementLodPair['bounds'];\n\t/** Optional generated frame revision, independent of each resource's revision. */\n\trevision?: string;\n\t/** Optional provenance; declaring a shared frame does not verify physical dimensions. */\n\tstatus?: SpatialElementLodPair['status'];\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -540,7 +540,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'A single line in the spatial-element-summary feature list.',
 		declaration:
-			'interface SpatialElementFeature {\n    label: string;\n    /** Optional short marker displayed before the feature text. */\n    marker?: string;\n}',
+			'interface SpatialElementFeature {\n\tlabel: string;\n\t/** Optional short marker displayed before the feature text. */\n\tmarker?: string;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -569,7 +569,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Primary conversion action displayed in the element summary panel.',
 		declaration:
-			'interface SpatialElementAction {\n    label: string;\n    /** Stable behavior identity for shared presentation; never supplies an event handler. */\n    semanticId?: string;\n    href?: string;\n    ariaLabel?: string;\n}',
+			'interface SpatialElementAction {\n\tlabel: string;\n\t/** Stable behavior identity for shared presentation; never supplies an event handler. */\n\tsemanticId?: string;\n\thref?: string;\n\tariaLabel?: string;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -613,7 +613,7 @@ export const reference: ReferenceEntry[] = [
 		id: 'spatial-element-breadcrumb',
 		kind: 'type',
 		description: 'A breadcrumb link or terminal breadcrumb label.',
-		declaration: 'interface SpatialElementBreadcrumb {\n    label: string;\n    href?: string;\n}',
+		declaration: 'interface SpatialElementBreadcrumb {\n\tlabel: string;\n\thref?: string;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -642,7 +642,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Media entries rendered in the element rail.',
 		declaration:
-			"type SpatialElementMediaItem = {\n    id: string;\n    kind: 'minimap';\n    label: string;\n}\n/** @deprecated A drawing needs a real source. Use kind: 'image' instead. */\n | {\n    id: string;\n    kind: 'drawing';\n    label: string;\n} | {\n    id: string;\n    kind: 'image';\n    label: string;\n    src: string;\n    alt: string;\n    /** Smaller image for the media selector. The full view always uses src. */\n    thumbnail?: string;\n    /** Image framing in the selector and stage. Defaults to contain. */\n    fit?: 'contain' | 'cover';\n} | {\n    id: string;\n    kind: 'video';\n    label: string;\n    src: string;\n    poster?: string;\n    /** Optional WebVTT caption tracks. Native controls remain available. */\n    captions?: {\n        src: string;\n        language: string;\n        label: string;\n        default?: boolean;\n    }[];\n} | {\n    id: string;\n    kind: 'youtube';\n    label: string;\n    videoId: string;\n    poster?: string;\n};",
+			"type SpatialElementMediaItem =\n\t| { id: string; kind: 'minimap'; label: string }\n\t/** @deprecated A drawing needs a real source. Use kind: 'image' instead. */\n\t| { id: string; kind: 'drawing'; label: string }\n\t| {\n\t\tid: string; kind: 'image'; label: string; src: string; alt: string;\n\t\t/** Smaller image for the media selector. The full view always uses src. */\n\t\tthumbnail?: string;\n\t\t/** Image framing in the selector and stage. Defaults to contain. */\n\t\tfit?: 'contain' | 'cover';\n\t}\n\t| {\n\t\tid: string; kind: 'video'; label: string; src: string; poster?: string;\n\t\t/** Optional WebVTT caption tracks. Native controls remain available. */\n\t\tcaptions?: { src: string; language: string; label: string; default?: boolean }[];\n\t}\n\t| { id: string; kind: 'youtube'; label: string; videoId: string; poster?: string };",
 		variants: [
 			{
 				label: 'Alternative 1',
@@ -731,7 +731,7 @@ export const reference: ReferenceEntry[] = [
 					{
 						name: 'captions',
 						id: 'spatial-element-media-item-captions',
-						type: '{ src: string; language: string; label: string; default?: boolean; }[]',
+						type: '{ src: string; language: string; label: string; default?: boolean }[]',
 						optional: true,
 						description: 'Optional WebVTT caption tracks. Native controls remain available.'
 					},
@@ -790,7 +790,7 @@ export const reference: ReferenceEntry[] = [
 		description:
 			'Model orientation and relative fit for one collection view; does not change the detail camera.',
 		declaration:
-			"interface SpatialCollectionPose {\n    /** Horizontal orbit in degrees. Zero uses the imported model's front view. */\n    azimuth?: number;\n    /** Vertical orbit in degrees. Zero keeps the model upright on the carousel floor. */\n    elevation?: number;\n    /** Positive multiplier of the automatically fitted model size; defaults to 1. */\n    scale?: number;\n}",
+			"interface SpatialCollectionPose {\n\t/** Horizontal orbit in degrees. Zero uses the imported model's front view. */\n\tazimuth?: number;\n\t/** Vertical orbit in degrees. Zero keeps the model upright on the carousel floor. */\n\televation?: number;\n\t/** Positive multiplier of the automatically fitted model size; defaults to 1. */\n\tscale?: number;\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -828,7 +828,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Metadata supplied to a composable spatial-element `Section`.',
 		declaration:
-			"interface SpatialElementSectionDefinition extends Omit<SectionDefinition, 'style'> {\n    id: string;\n    title: string;\n    /** Optional visible heading, separate from the navigation/accessibility title. */\n    headline?: string;\n    /** Semantic section background; legacy style remains available during migration. */\n    background?: SectionBackground;\n    style?: SpatialElementSectionStyle;\n}",
+			"interface SpatialElementSectionDefinition extends Omit<SectionDefinition, 'style'> {\n\tid: string;\n\ttitle: string;\n\t/** Optional visible heading, separate from the navigation/accessibility title. */\n\theadline?: string;\n\t/** Semantic section background; legacy style remains available during migration. */\n\tbackground?: SectionBackground;\n\tstyle?: SpatialElementSectionStyle;\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -937,7 +937,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Optional CSS presentation for a regular HTML element section.',
 		declaration:
-			'interface SpatialElementSectionStyle {\n    /** Overrides the brand section tint. */\n    tint?: string;\n    /** Overrides the brand section tint opacity from zero to one. */\n    tintOpacity?: number;\n    /** Overrides the brand section backdrop blur radius in pixels. */\n    backdropBlur?: number;\n    textColor?: string;\n    /** CSS max-width such as `920px`, `72rem`, or `100%`. */\n    width?: string;\n}',
+			'interface SpatialElementSectionStyle {\n\t/** Overrides the brand section tint. */\n\ttint?: string;\n\t/** Overrides the brand section tint opacity from zero to one. */\n\ttintOpacity?: number;\n\t/** Overrides the brand section backdrop blur radius in pixels. */\n\tbackdropBlur?: number;\n\ttextColor?: string;\n\t/** CSS max-width such as `920px`, `72rem`, or `100%`. */\n\twidth?: string;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -1054,7 +1054,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Presentation controls, never asset scale, URL or renderer ownership.',
 		declaration:
-			'interface CarouselPresentation {\n    /** Horizontal spacing multiplier, normalized around the default 0.48. */\n    radius?: number;\n    /** Turntable depth control in CSS-world pixels (default 700). */\n    depth?: number;\n}',
+			'interface CarouselPresentation {\n\t/** Horizontal spacing multiplier, normalized around the default 0.48. */\n\tradius?: number;\n\t/** Turntable depth control in CSS-world pixels (default 700). */\n\tdepth?: number;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -1083,7 +1083,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Shared visual language supplied by a brand layout to element pages beneath it.',
 		declaration:
-			"interface SpatialTheme {\n    /** Optional presentation overrides for the element's HDR backdrop; lighting is unchanged. */\n    sceneBackground?: Partial<BackgroundSettings>;\n    /** Stable namespace shared by pages and transitions, e.g. `shop`. Not an element ID. */\n    id: string;\n    /** Human-readable brand name used in accessible labels. */\n    name: string;\n    /** Opaque CSS/Three.js color behind content and the independently revealed HDR stage. */\n    background: string;\n    /** Optional for hand-authored legacy themes; createSpatialTheme resolves both roles. */\n    radii?: SpatialThemeRadii;\n    /** Optional for hand-authored legacy themes; createSpatialTheme supplies both colors. */\n    sectionBackgrounds?: SpatialSectionBackgrounds;\n    /** Shared minimap appearance; element-specific framing belongs in SpatialElementData.minimap. */\n    minimapTheme: SpatialMinimapTheme;\n    /** Hover/selection outline appearance. */\n    interactionTheme: Partial<StageInteractionTheme>;\n    /** Panel corner radius and content padding, in CSS pixels. */\n    panelShape: StagePanelShape;\n    /** Default panel material. `frosted` uses CSS blur; `glass` also uses GPU refraction. */\n    panelTheme: StagePanelTheme;\n    /** Appearance of the compact header and tabs shown after scrolling past the hero. */\n    dockedPanelTheme: SpatialDockedPanelTheme;\n    /** Appearance of ordinary HTML content sections. */\n    sectionTheme: SpatialSectionTheme;\n    /** Semantic text, action and navigation colors. */\n    colors: {\n        /** Cards and controls; defaults to ink at 18%. Use transparent to hide. */\n        border?: string;\n        /** Panels and navigation; defaults to ink at 12%. Use transparent to hide. */\n        panelBorder?: string;\n        ink: string;\n        body: string;\n        accent: string;\n        onAccent: string;\n        tabBackground: string;\n    };\n}",
+			"interface SpatialTheme {\n\t/** Optional presentation overrides for the element's HDR backdrop; lighting is unchanged. */\n\tsceneBackground?: Partial<BackgroundSettings>;\n\t/** Stable namespace shared by pages and transitions, e.g. `shop`. Not an element ID. */\n\tid: string;\n\t/** Human-readable brand name used in accessible labels. */\n\tname: string;\n\t/** Opaque CSS/Three.js color behind content and the independently revealed HDR stage. */\n\tbackground: string;\n\t/** Optional for hand-authored legacy themes; createSpatialTheme resolves both roles. */\n\tradii?: SpatialThemeRadii;\n\t/** Optional for hand-authored legacy themes; createSpatialTheme supplies both colors. */\n\tsectionBackgrounds?: SpatialSectionBackgrounds;\n\t/** Shared minimap appearance; element-specific framing belongs in SpatialElementData.minimap. */\n\tminimapTheme: SpatialMinimapTheme;\n\t/** Hover/selection outline appearance. */\n\tinteractionTheme: Partial<StageInteractionTheme>;\n\t/** Panel corner radius and content padding, in CSS pixels. */\n\tpanelShape: StagePanelShape;\n\t/** Default panel material. `frosted` uses CSS blur; `glass` also uses GPU refraction. */\n\tpanelTheme: StagePanelTheme;\n\t/** Appearance of the compact header and tabs shown after scrolling past the hero. */\n\tdockedPanelTheme: SpatialDockedPanelTheme;\n\t/** Appearance of ordinary HTML content sections. */\n\tsectionTheme: SpatialSectionTheme;\n\t/** Semantic text, action and navigation colors. */\n\tcolors: {\n\t\t/** Cards and controls; defaults to ink at 18%. Use transparent to hide. */\n\t\tborder?: string;\n\t\t/** Panels and navigation; defaults to ink at 12%. Use transparent to hide. */\n\t\tpanelBorder?: string;\n\t\tink: string;\n\t\tbody: string;\n\t\taccent: string;\n\t\tonAccent: string;\n\t\ttabBackground: string;\n\t};\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -1247,7 +1247,7 @@ export const reference: ReferenceEntry[] = [
 		description:
 			'Input for createSpatialTheme. Every appearance group merges with the library defaults.',
 		declaration:
-			"type SpatialThemeOptions = Pick<SpatialTheme, 'id' | 'name'> & {\n    /** Flat page color, independent of each element's HDR background. Default: #eef1f4. */\n    background?: string;\n} & {\n    [K in Exclude<keyof SpatialTheme, 'id' | 'name' | 'background'>]?: Partial<SpatialTheme[K]>;\n};",
+			"type SpatialThemeOptions = Pick<SpatialTheme, 'id' | 'name'> & {\n\t/** Flat page color, independent of each element's HDR background. Default: #eef1f4. */\n\tbackground?: string;\n} & { [K in Exclude<keyof SpatialTheme, 'id' | 'name' | 'background'>]?: Partial<SpatialTheme[K]> };",
 		variants: [
 			{
 				label: 'Fields',
@@ -1403,7 +1403,7 @@ export const reference: ReferenceEntry[] = [
 		id: 'spatial-theme-radii',
 		kind: 'type',
 		description: 'CSS-pixel radii for the two layout surface roles.',
-		declaration: 'interface SpatialThemeRadii {\n    control: number;\n    panel: number;\n}',
+		declaration: 'interface SpatialThemeRadii {\n\tcontrol: number;\n\tpanel: number;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -1431,8 +1431,7 @@ export const reference: ReferenceEntry[] = [
 		id: 'spatial-section-backgrounds',
 		kind: 'type',
 		description: 'Opaque section colors, independent of the flat page color and glass materials.',
-		declaration:
-			'interface SpatialSectionBackgrounds {\n    standard: string;\n    muted: string;\n}',
+		declaration: 'interface SpatialSectionBackgrounds {\n\tstandard: string;\n\tmuted: string;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -1461,7 +1460,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Shared CSS-glass controls for regular element sections.',
 		declaration:
-			'interface SpatialSectionTheme {\n    tint: string;\n    /** Direct tint opacity from zero to one. */\n    tintOpacity: number;\n    /** CSS backdrop blur radius in pixels. */\n    backdropBlur: number;\n}',
+			'interface SpatialSectionTheme {\n\ttint: string;\n\t/** Direct tint opacity from zero to one. */\n\ttintOpacity: number;\n\t/** CSS backdrop blur radius in pixels. */\n\tbackdropBlur: number;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -1497,7 +1496,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'CSS material used only by the fixed element header and its docked subnavigation.',
 		declaration:
-			"interface SpatialDockedPanelTheme {\n    /** Explicit shadow color. When omitted, inherits --ps-shadow-color. */\n    shadowColor?: StagePanelTheme['shadowColor'];\n    /** Gaussian CSS backdrop blur radius in pixels. */\n    backdropBlur: number;\n    /** Surface tint, using the same color representation as a stage panel. */\n    tint: NonNullable<StagePanelTheme['tint']>;\n    /** Direct tint opacity from zero to one. */\n    tintOpacity: number;\n    /** Normalized shadow intensity from zero to one. */\n    shadowIntensity: number;\n}",
+			"interface SpatialDockedPanelTheme {\n\t/** Explicit shadow color. When omitted, inherits --ps-shadow-color. */\n\tshadowColor?: StagePanelTheme['shadowColor'];\n\t/** Gaussian CSS backdrop blur radius in pixels. */\n\tbackdropBlur: number;\n\t/** Surface tint, using the same color representation as a stage panel. */\n\ttint: NonNullable<StagePanelTheme['tint']>;\n\t/** Direct tint opacity from zero to one. */\n\ttintOpacity: number;\n\t/** Normalized shadow intensity from zero to one. */\n\tshadowIntensity: number;\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -1548,7 +1547,7 @@ export const reference: ReferenceEntry[] = [
 		description:
 			'Brand-wide minimap appearance; framing and model pose remain spatial-element-specific.',
 		declaration:
-			"type SpatialMinimapTheme = Pick<StagePanelMinimapOptions, 'expandedHeight' | 'overlayColor' | 'overlayOpacity' | 'overlayBlur' | 'contextColor' | 'contextOpacity' | 'viewportColor'>;",
+			"type SpatialMinimapTheme = Pick<\n\tStagePanelMinimapOptions,\n\t| 'expandedHeight'\n\t| 'overlayColor'\n\t| 'overlayOpacity'\n\t| 'overlayBlur'\n\t| 'contextColor'\n\t| 'contextOpacity'\n\t| 'viewportColor'\n>;",
 		variants: [
 			{
 				label: 'Fields',
@@ -1612,7 +1611,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Controls how the HDR environment is presented behind the stage.',
 		declaration:
-			'interface BackgroundSettings {\n    /** Three.js background blur amount in the range supported by the active renderer. */\n    blurriness: number;\n    /** Color mixed over the HDR background. */\n    tint: ColorRepresentation;\n    /** Strength of the background tint, where zero leaves the HDR unchanged. */\n    tintIntensity: number;\n}',
+			'interface BackgroundSettings {\n\t/** Three.js background blur amount in the range supported by the active renderer. */\n\tblurriness: number;\n\t/** Color mixed over the HDR background. */\n\ttint: ColorRepresentation;\n\t/** Strength of the background tint, where zero leaves the HDR unchanged. */\n\ttintIntensity: number;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -1649,7 +1648,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Controls the authored model pose and which meshes represent the actual element.',
 		declaration:
-			"interface StageModelSettings {\n    /** Optional rotation applied on top of the GLB scene's authored root rotation. */\n    rotation?: StageModelRotation;\n    /**\n     * Exact, case-sensitive mesh names that remain visible on the main stage but do\n     * not participate in element bounds, picking, outlining, or element minimaps.\n     */\n    excludeMeshes?: readonly string[];\n    /** Physical material replacements keyed by exact, case-sensitive mesh name. */\n    materialOverrides?: Readonly<Record<string, StageMaterialSettings>>;\n}",
+			"interface StageModelSettings {\n\t/** Optional rotation applied on top of the GLB scene's authored root rotation. */\n\trotation?: StageModelRotation;\n\t/**\n\t * Exact, case-sensitive mesh names that remain visible on the main stage but do\n\t * not participate in element bounds, picking, outlining, or element minimaps.\n\t */\n\texcludeMeshes?: readonly string[];\n\t/** Physical material replacements keyed by exact, case-sensitive mesh name. */\n\tmaterialOverrides?: Readonly<Record<string, StageMaterialSettings>>;\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -1686,8 +1685,7 @@ export const reference: ReferenceEntry[] = [
 		id: 'stage-model-rotation',
 		kind: 'type',
 		description: 'Axis rotations, in radians, applied to a loaded model before it is fitted.',
-		declaration:
-			'interface StageModelRotation {\n    x?: number;\n    y?: number;\n    z?: number;\n}',
+		declaration: 'interface StageModelRotation {\n\tx?: number;\n\ty?: number;\n\tz?: number;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -1723,7 +1721,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: "Controls the fitted camera's initial orbit around the element.",
 		declaration:
-			"interface StageCameraSettings {\n    /** Horizontal viewing angle in degrees. Positive values view from the right. */\n    azimuth?: number;\n    /** Vertical viewing angle in degrees. Positive values view from above. */\n    elevation?: number;\n    /** Empty space in CSS pixels reserved on every side of the automatic element fit. */\n    fitPadding?: number;\n    /** Presentation multiplier after padding. Enlargement stops at the detail media rectangle's edges. */\n    fitScale?: number;\n}",
+			"interface StageCameraSettings {\n\t/** Horizontal viewing angle in degrees. Positive values view from the right. */\n\tazimuth?: number;\n\t/** Vertical viewing angle in degrees. Positive values view from above. */\n\televation?: number;\n\t/** Empty space in CSS pixels reserved on every side of the automatic element fit. */\n\tfitPadding?: number;\n\t/** Presentation multiplier after padding. Enlargement stops at the detail media rectangle's edges. */\n\tfitScale?: number;\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -1768,7 +1766,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: '',
 		declaration:
-			'interface StagePanelShape {\n    radius: number;\n    squareBottom?: boolean;\n    contentInset?: number;\n}',
+			'interface StagePanelShape {\n\tradius: number;\n\tsquareBottom?: boolean;\n\tcontentInset?: number;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -1804,7 +1802,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: '',
 		declaration:
-			"type StagePanelTheme = Omit<LiquidGlassPanelOptions, 'width' | 'height' | 'position' | 'radius' | 'squareBottom'> & {\n    /** Semantic surface style. Defaults to the WebGPU-backed `glass` mode. */\n    surface?: StagePanelSurface;\n};",
+			"type StagePanelTheme = Omit<\n\tLiquidGlassPanelOptions,\n\t'width' | 'height' | 'position' | 'radius' | 'squareBottom'\n> & {\n\t/** Semantic surface style. Defaults to the WebGPU-backed `glass` mode. */\n\tsurface?: StagePanelSurface;\n};",
 		variants: [
 			{
 				label: 'Fields',
@@ -1913,7 +1911,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: '',
 		declaration:
-			'interface StagePanelMinimapOptions {\n    expandedHeight?: number;\n    inset?: number;\n    /** Additional unbounded scale applied to the fitted model. Values below 0.2 are clamped. */\n    modelScale?: number;\n    /** Model multiplier at full pointer hover. Use 1 to disable hover enlargement. */\n    hoverModelScale?: number;\n    /** Hover multiplier used once the minimap is expanded by camera zoom. */\n    expandedHoverModelScale?: number;\n    /** Optional spatial-element-specific presentation used while the minimap is docked. */\n    dockedView?: StageMinimapDockedView;\n    overlayColor?: string | number;\n    overlayOpacity?: number;\n    /** Gaussian blur radius in CSS pixels. */\n    overlayBlur?: number;\n    contextColor?: string | number;\n    contextOpacity?: number;\n    viewportColor?: string | number;\n}',
+			'interface StagePanelMinimapOptions {\n\texpandedHeight?: number;\n\tinset?: number;\n\t/** Additional unbounded scale applied to the fitted model. Values below 0.2 are clamped. */\n\tmodelScale?: number;\n\t/** Model multiplier at full pointer hover. Use 1 to disable hover enlargement. */\n\thoverModelScale?: number;\n\t/** Hover multiplier used once the minimap is expanded by camera zoom. */\n\texpandedHoverModelScale?: number;\n\t/** Optional spatial-element-specific presentation used while the minimap is docked. */\n\tdockedView?: StageMinimapDockedView;\n\toverlayColor?: string | number;\n\toverlayOpacity?: number;\n\t/** Gaussian blur radius in CSS pixels. */\n\toverlayBlur?: number;\n\tcontextColor?: string | number;\n\tcontextOpacity?: number;\n\tviewportColor?: string | number;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -2015,7 +2013,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Controls the minimap model presentation while its panel is docked.',
 		declaration:
-			'interface StageMinimapDockedView {\n    /** Model multiplier used only while the minimap is docked. */\n    scale?: number;\n    /** Horizontal viewing angle in degrees. Positive values view from the right. */\n    azimuth?: number;\n    /** Vertical viewing angle in degrees. Positive values view from above. */\n    elevation?: number;\n}',
+			'interface StageMinimapDockedView {\n\t/** Model multiplier used only while the minimap is docked. */\n\tscale?: number;\n\t/** Horizontal viewing angle in degrees. Positive values view from the right. */\n\tazimuth?: number;\n\t/** Vertical viewing angle in degrees. Positive values view from above. */\n\televation?: number;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -2051,7 +2049,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Visual and filtering options for element hover interaction.',
 		declaration:
-			'interface StageInteractionTheme {\n    outlineColor: ColorRepresentation;\n    outlineOpacity: number;\n    outlineThickness: number;\n    outlineGlow: number;\n    outlineGlowThickness: number;\n    /** Returns true for model meshes that must not participate in picking or outlining. */\n    excludeMesh?: (mesh: Mesh) => boolean;\n}',
+			'interface StageInteractionTheme {\n\toutlineColor: ColorRepresentation;\n\toutlineOpacity: number;\n\toutlineThickness: number;\n\toutlineGlow: number;\n\toutlineGlowThickness: number;\n\t/** Returns true for model meshes that must not participate in picking or outlining. */\n\texcludeMesh?: (mesh: Mesh) => boolean;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -2109,7 +2107,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Bounds WebGPU rasterization cost independently of native DOM text resolution.',
 		declaration:
-			'interface StageRenderSettings {\n    /** Maximum physical pixels per CSS pixel. Defaults to 1. */\n    maxPixelRatio?: number;\n    /** Maximum pixels per full-size canvas/capture. Defaults to 2,073,600; null disables this limit. */\n    maxPixels?: number | null;\n}',
+			'interface StageRenderSettings {\n\t/** Maximum physical pixels per CSS pixel. Defaults to 1. */\n\tmaxPixelRatio?: number;\n\t/** Maximum pixels per full-size canvas/capture. Defaults to 2,073,600; null disables this limit. */\n\tmaxPixels?: number | null;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -2139,7 +2137,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Serializable subset used to replace an asset mesh with a physical material.',
 		declaration:
-			"interface StagePhysicalMaterialSettings {\n    type: 'physical';\n    color?: ColorRepresentation;\n    opacity?: number;\n    transparent?: boolean;\n    metalness?: number;\n    roughness?: number;\n    iridescence?: number;\n    clearcoat?: number;\n    blending?: StageMaterialBlending;\n}",
+			"interface StagePhysicalMaterialSettings {\n\ttype: 'physical';\n\tcolor?: ColorRepresentation;\n\topacity?: number;\n\ttransparent?: boolean;\n\tmetalness?: number;\n\troughness?: number;\n\tiridescence?: number;\n\tclearcoat?: number;\n\tblending?: StageMaterialBlending;\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -2303,7 +2301,7 @@ export const reference: ReferenceEntry[] = [
 		description:
 			'Immutable resource request; identity is independent of element and presentation role.',
 		declaration:
-			'interface SpatialElementAssetResource extends SpatialElementAssetLocation {\n    revision: string;\n    requirements?: SpatialElementAssetRequirements;\n}',
+			'interface SpatialElementAssetResource extends SpatialElementAssetLocation {\n\trevision: string;\n\trequirements?: SpatialElementAssetRequirements;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -2346,7 +2344,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'A shared rendering frame does not imply a verified physical scale.',
 		declaration:
-			"interface SpatialElementLodPair {\n    status: 'provisional-shared-frame' | 'verified-canonical-frame';\n    revision: string;\n    sourceUrl: string;\n    low: SpatialElementAssetResource;\n    high: SpatialElementAssetResource;\n    assetToFrame: SpatialElementMatrix4;\n    /** Optional generated bounds; otherwise fit the loaded Low geometry. */\n    bounds?: {\n        min: SpatialElementVector3;\n        max: SpatialElementVector3;\n    };\n}",
+			"interface SpatialElementLodPair {\n\tstatus: 'provisional-shared-frame' | 'verified-canonical-frame';\n\trevision: string;\n\tsourceUrl: string;\n\tlow: SpatialElementAssetResource;\n\thigh: SpatialElementAssetResource;\n\tassetToFrame: SpatialElementMatrix4;\n\t/** Optional generated bounds; otherwise fit the loaded Low geometry. */\n\tbounds?: { min: SpatialElementVector3; max: SpatialElementVector3 };\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -2396,7 +2394,7 @@ export const reference: ReferenceEntry[] = [
 					{
 						name: 'bounds',
 						id: 'spatial-element-lod-pair-bounds',
-						type: '{ min: SpatialElementVector3; max: SpatialElementVector3; }',
+						type: '{ min: SpatialElementVector3; max: SpatialElementVector3 }',
 						optional: true,
 						description: 'Optional generated bounds; otherwise fit the loaded Low geometry.'
 					},
@@ -2424,7 +2422,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Verified contract: right-handed, +Y up, +Z front, meters, shared origin/pivot.',
 		declaration:
-			"interface VerifiedSpatialElementAssetManifest {\n    physicalReference?: {\n        dimensionsMeters: SpatialElementVector3;\n        scope: string;\n        provenance: string;\n        measuredReferenceExtentsMeters: SpatialElementVector3;\n        relativeDeviation: SpatialElementVector3;\n        maximumRelativeDeviation: number;\n    };\n    schemaVersion: 1;\n    status: 'verified';\n    brandId: string;\n    spatialElementId: string;\n    canonicalRevision: string;\n    canonicalBounds: {\n        min: SpatialElementVector3;\n        max: SpatialElementVector3;\n    };\n    referencePose: SpatialElementProfileReference;\n    referenceTarget: SpatialElementVector3;\n    referenceView: SpatialElementProfileReference;\n    appearanceProfile: SpatialElementProfileReference;\n    poster: SpatialElementPoster;\n    representations: {\n        low: SpatialElementAssetRepresentation & {\n            lod: 'low';\n        };\n        high: (SpatialElementAssetRepresentation & {\n            lod: 'high';\n        }) | null;\n    };\n}",
+			"interface VerifiedSpatialElementAssetManifest {\n\tphysicalReference?: {\n\t\tdimensionsMeters: SpatialElementVector3;\n\t\tscope: string;\n\t\tprovenance: string;\n\t\tmeasuredReferenceExtentsMeters: SpatialElementVector3;\n\t\trelativeDeviation: SpatialElementVector3;\n\t\tmaximumRelativeDeviation: number;\n\t};\n\tschemaVersion: 1;\n\tstatus: 'verified';\n\tbrandId: string;\n\tspatialElementId: string;\n\tcanonicalRevision: string;\n\tcanonicalBounds: { min: SpatialElementVector3; max: SpatialElementVector3 };\n\treferencePose: SpatialElementProfileReference;\n\treferenceTarget: SpatialElementVector3;\n\treferenceView: SpatialElementProfileReference;\n\tappearanceProfile: SpatialElementProfileReference;\n\tposter: SpatialElementPoster;\n\trepresentations: {\n\t\tlow: SpatialElementAssetRepresentation & { lod: 'low' };\n\t\thigh: (SpatialElementAssetRepresentation & { lod: 'high' }) | null;\n\t};\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -2516,7 +2514,7 @@ export const reference: ReferenceEntry[] = [
 					{
 						name: 'canonicalBounds',
 						id: 'verified-spatial-element-asset-manifest-canonical-bounds',
-						type: '{ min: SpatialElementVector3; max: SpatialElementVector3; }',
+						type: '{ min: SpatialElementVector3; max: SpatialElementVector3 }',
 						optional: false,
 						description: ''
 					},
@@ -2572,21 +2570,21 @@ export const reference: ReferenceEntry[] = [
 					{
 						name: 'representations',
 						id: 'verified-spatial-element-asset-manifest-representations',
-						type: "{ low: SpatialElementAssetRepresentation & { lod: 'low'; }; high: (SpatialElementAssetRepresentation & { lod: 'high'; }) | null; }",
+						type: "{ low: SpatialElementAssetRepresentation & { lod: 'low' }; high: (SpatialElementAssetRepresentation & { lod: 'high' }) | null; }",
 						optional: false,
 						description: ''
 					},
 					{
 						name: 'representations.low',
 						id: 'verified-spatial-element-asset-manifest-representations-low',
-						type: "SpatialElementAssetRepresentation & { lod: 'low'; }",
+						type: "SpatialElementAssetRepresentation & { lod: 'low' }",
 						optional: false,
 						description: ''
 					},
 					{
 						name: 'representations.high',
 						id: 'verified-spatial-element-asset-manifest-representations-high',
-						type: "(SpatialElementAssetRepresentation & { lod: 'high'; }) | null",
+						type: "(SpatialElementAssetRepresentation & { lod: 'high' }) | null",
 						optional: false,
 						description: ''
 					}
@@ -2686,7 +2684,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Override individual strings; omitted groups/keys use the English defaults.',
 		declaration:
-			'type SpatialMessagesInput = {\n    [K in keyof SpatialMessages]?: Partial<SpatialMessages[K]>;\n};',
+			'type SpatialMessagesInput = { [K in keyof SpatialMessages]?: Partial<SpatialMessages[K]> };',
 		variants: [
 			{
 				label: 'Fields',
@@ -2933,7 +2931,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: '',
 		declaration:
-			"interface SpatialElementAssetRequirements {\n    decoders: readonly ('draco' | 'meshopt' | 'ktx2')[];\n    extensions: readonly string[];\n}",
+			"interface SpatialElementAssetRequirements {\n\tdecoders: readonly ('draco' | 'meshopt' | 'ktx2')[];\n\textensions: readonly string[];\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -2962,7 +2960,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Column-major matrix, acting on homogeneous column vectors.',
 		declaration:
-			'type SpatialElementMatrix4 = readonly [\n    number,\n    number,\n    number,\n    number,\n    number,\n    number,\n    number,\n    number,\n    number,\n    number,\n    number,\n    number,\n    number,\n    number,\n    number,\n    number\n];',
+			'type SpatialElementMatrix4 = readonly [\n\tnumber,\n\tnumber,\n\tnumber,\n\tnumber,\n\tnumber,\n\tnumber,\n\tnumber,\n\tnumber,\n\tnumber,\n\tnumber,\n\tnumber,\n\tnumber,\n\tnumber,\n\tnumber,\n\tnumber,\n\tnumber\n];',
 		variants: [{ label: 'Fields', fields: [] }]
 	},
 	{
@@ -2979,7 +2977,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: '',
 		declaration:
-			'interface SpatialElementProfileReference {\n    id: string;\n    revision: string;\n}',
+			'interface SpatialElementProfileReference {\n\tid: string;\n\trevision: string;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -3008,7 +3006,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: '',
 		declaration:
-			'interface SpatialElementPoster {\n    src: string;\n    alt: string;\n    width: number;\n    height: number;\n}',
+			'interface SpatialElementPoster {\n\tsrc: string;\n\talt: string;\n\twidth: number;\n\theight: number;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -3051,7 +3049,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: '',
 		declaration:
-			'interface SpatialElementAssetRepresentation {\n    representationId: string;\n    lod: SpatialElementLod;\n    assetRevision: string;\n    canonicalRevision: string;\n    resource: SpatialElementAssetLocation;\n    requirements: SpatialElementAssetRequirements;\n    assetToCanonical: SpatialElementMatrix4;\n    /** Null selects the entire authored scene; named roots must resolve uniquely. */\n    spatialElementRoot: string | null;\n    excludedMeshes: readonly string[];\n    /** Semantic material roles mapped to representation-specific material names. */\n    materialBindings: Readonly<Record<string, string>>;\n    costs: SpatialElementAssetCosts;\n}',
+			'interface SpatialElementAssetRepresentation {\n\trepresentationId: string;\n\tlod: SpatialElementLod;\n\tassetRevision: string;\n\tcanonicalRevision: string;\n\tresource: SpatialElementAssetLocation;\n\trequirements: SpatialElementAssetRequirements;\n\tassetToCanonical: SpatialElementMatrix4;\n\t/** Null selects the entire authored scene; named roots must resolve uniquely. */\n\tspatialElementRoot: string | null;\n\texcludedMeshes: readonly string[];\n\t/** Semantic material roles mapped to representation-specific material names. */\n\tmaterialBindings: Readonly<Record<string, string>>;\n\tcosts: SpatialElementAssetCosts;\n}',
 		variants: [
 			{
 				label: 'Fields',
@@ -3144,7 +3142,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: '',
 		declaration:
-			"type ResolvedSpatialElementData = SpatialElementData & Required<Pick<SpatialElementData, 'brandId' | 'pageTitle' | 'eyebrow' | 'features' | 'breadcrumbs' | 'media'>>;",
+			"type ResolvedSpatialElementData = SpatialElementData &\n\tRequired<\n\t\tPick<\n\t\t\tSpatialElementData,\n\t\t\t'brandId' | 'pageTitle' | 'eyebrow' | 'features' | 'breadcrumbs' | 'media'\n\t\t>\n\t>;",
 		variants: [
 			{
 				label: 'Fields',
@@ -3330,7 +3328,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: '',
 		declaration:
-			'interface CatalogEndpointAddress extends CatalogIdentity {\n    slot: CatalogEndpointSlot;\n    occurrence?: string;\n    role: CatalogEndpointRole;\n}',
+			'interface CatalogEndpointAddress extends CatalogIdentity {\n\tslot: CatalogEndpointSlot;\n\toccurrence?: string;\n\trole: CatalogEndpointRole;\n}',
 		variants: [
 			{
 				label: 'Fields',
