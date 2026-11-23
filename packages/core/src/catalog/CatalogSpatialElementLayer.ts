@@ -645,8 +645,9 @@ export class CatalogSpatialElementLayer {
 				applyCatalogMaterialOpacity(actor.materials, 1);
 				const framing = pose.framing;
 				const compact = framing?.compact ?? width < 840;
-				// Compact panels composite over every model, including the selected seat.
-				actor.band = pose.front && !compact ? 'front' : 'rear';
+				// Summary panels must composite over every carousel model at every size,
+				// including the selected seat when its silhouette overlaps a full panel.
+				actor.band = 'rear';
 				const frame = framing ? Math.min(framing.fit.width, framing.fit.height) : Math.min(slot.width, compact ? 360 : slot.height);
 				// Every seat shares one scene origin. Depth now determines projected size
 				// and spacing naturally, including scroll parallax and the foreground advance.

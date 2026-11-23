@@ -21,14 +21,34 @@ test('first carousel reveals the next section across viewport sizes and stays st
 			const arrow = (await selected.locator('.compact-arrow').boundingBox())!;
 			expect(arrow.y - summary.y).toBeCloseTo(10, 0);
 			expect(summary.x + summary.width - arrow.x - arrow.width).toBeCloseTo(10, 0);
-			await expect.poll(() => page.evaluate(() => {
-				const actors = window.__stageVisualTest!.getCarouselStats()!.actors;
-				return actors.filter(actor => actor.clip && actor.opacity > 0).every(actor => actor.band === 'rear');
-			})).toBe(true);
 		}
+		await expect.poll(() => page.evaluate(() => {
+			const actors = window.__stageVisualTest!.getCarouselStats()!.actors;
+			return actors.filter(actor => actor.clip && actor.opacity > 0).every(actor => actor.band === 'rear');
+		})).toBe(true);
 		await page.screenshot({ path: info.outputPath(`industrial-${width}.png`) });
 		await page.evaluate(() => scrollBy(0, 100));
 		expect((await carousel.boundingBox())!.height).toBeCloseTo(before.height, 0);
+	}
+});
+
+test('full carousel summaries stay in front of overlapping selected models', async ({ page }, info) => {
+	await page.goto('/showcase/workbench/?stage-test=1');
+	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
+	const carousel = page.locator('.carousel-drag-section').first();
+	for (const width of [700, 840, 1115, 1200, 1920, 2456]) {
+		await page.setViewportSize({ width, height: 900 });
+		await carousel.scrollIntoViewIfNeeded();
+		for (const index of [0, 1]) {
+			await carousel.locator('.controls button').nth(index).click();
+			await expect(carousel.locator('.selected')).toHaveAttribute('data-catalog-model-ready', '');
+			await page.evaluate(() => window.__stageVisualTest!.settle(30));
+			const actors = await page.evaluate(() => window.__stageVisualTest!.getCarouselStats()!.actors
+				.filter(actor => actor.clip && actor.opacity > 0));
+			expect(actors.length).toBeGreaterThan(0);
+			expect(actors.every(actor => actor.band === 'rear')).toBe(true);
+			await page.screenshot({ path: info.outputPath(`summary-front-${width}-${index}.png`) });
+		}
 	}
 });
 

@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Keep carousel summary panels in front of the selected model at every viewport size, including full-size panels with overlapping geometry.
+
 - Fade the detail subnavigation's top border together with its docking corner animation, preserving the header overlap without a gap or doubled edge.
 
 - 4ed4a7d: Use restrained carousel model framing with independent carousel/grid poses, place compact summaries below models, increase compact model separation, and expand the turntable on wide viewports. Fade distant models as complete rendered silhouettes through the existing depth-blur buffer, preserving material occlusion and avoiding transparent ghost surfaces.

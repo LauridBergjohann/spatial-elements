@@ -432,6 +432,9 @@ describe('catalog preview lifetime', () => {
 			expect(c.y - a.y).toBeCloseTo(200);
 			expect(observe).toHaveBeenCalledWith(summary);
 			layer.draw(renderer, 'front');
+			// Even the selected full-size model belongs behind the summary surface.
+			expect(renderer.render).not.toHaveBeenCalled();
+			layer.draw(renderer, 'rear');
 			// A clipped carousel group needs one scene submission, without an empty list pass.
 			expect(renderer.render).toHaveBeenCalledTimes(1);
 			// Without a section surface, legacy/custom endpoints retain viewport clipping.
@@ -455,7 +458,7 @@ describe('catalog preview lifetime', () => {
 			sectionSurface = { left: 120, top: 80, width: 1200, height: 640 };
 			resized();
 			layer.update(renderer, null, 148);
-			layer.draw(renderer, 'front');
+			layer.draw(renderer, 'rear');
 			expect(renderer.setScissor).toHaveBeenCalledWith(0, 0, 1440, 900);
 			expect(layer.getDestinationProjection('cube')?.viewportClip).toEqual({ left: 0, top: 0, width: 1440, height: 1200 });
 			const measured = measureSurface.mock.calls.length;
