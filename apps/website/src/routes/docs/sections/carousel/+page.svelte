@@ -127,9 +127,11 @@
 				remain authored images; these poses affect live models.
 			</p>
 			<p>
-				The carousel reserves room for the next section and preceding heading sections. Its fit
-				updates when the layout or heading size changes, without resizing during scrolling.
-				Neighbouring models remain opaque; only the far end of the turntable fades out.
+				The carousel uses a viewport-based height budget with a fixed allowance for the page header,
+				breadcrumbs, a typical page title and a preview of the next section. Its own heading shares
+				this budget. Other sections and introduction lengths do not affect its size, and scrolling
+				does not resize it. Neighbouring models remain opaque; only the far end of the turntable
+				fades out.
 			</p>
 		</div>
 	</Section><CollectionExample kind="carousel" /><Section

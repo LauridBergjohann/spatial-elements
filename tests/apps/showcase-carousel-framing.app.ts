@@ -32,14 +32,32 @@ test('first carousel reveals the next heading across viewport sizes and stays st
 	}
 });
 
-test('consumer introductory text is included in the first carousel height', async ({ page }, info) => {
+test('carousel height is independent of preceding and following sections', async ({ page }, info) => {
 	await page.goto('/showcase/consumer/?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
+	const carousel = page.locator('.carousel-drag-section').first();
+	const fit = carousel.locator('.selected [data-carousel-fit-anchor]');
 	for (const [width, height] of [[390, 844], [600, 900], [1200, 900], [1920, 1080]]) {
 		await page.setViewportSize({ width, height });
 		await page.evaluate(() => scrollTo(0, 0));
-		const next = page.getByRole('heading', { name: 'The collection', exact: true });
-		await expect.poll(async () => { const box = (await next.boundingBox())!; return box.y + box.height; }).toBeLessThanOrEqual(height - 4);
-		await page.screenshot({ path: info.outputPath(`consumer-${width}.png`) });
+		const before = (await fit.boundingBox())!;
+		const sectionHeight = (await carousel.boundingBox())!.height;
+		await carousel.evaluate(node => {
+			(node.previousElementSibling as HTMLElement).style.height = '750px';
+			(node.nextElementSibling as HTMLElement).style.height = '1500px';
+		});
+		await expect.poll(async () => (await fit.boundingBox())!.height).toBeCloseTo(before.height, 0);
+		expect((await carousel.boundingBox())!.height).toBeCloseTo(sectionHeight, 0);
+		await carousel.evaluate(node => {
+			(node.previousElementSibling as HTMLElement).style.height = '0px';
+			(node.nextElementSibling as HTMLElement).style.height = '0px';
+		});
+		await expect.poll(async () => (await fit.boundingBox())!.height).toBeCloseTo(before.height, 0);
+		expect((await carousel.boundingBox())!.height).toBeCloseTo(sectionHeight, 0);
+		await carousel.evaluate(node => {
+			(node.previousElementSibling as HTMLElement).style.removeProperty('height');
+			(node.nextElementSibling as HTMLElement).style.removeProperty('height');
+		});
+		await page.screenshot({ path: info.outputPath('consumer-' + width + '.png') });
 	}
 });

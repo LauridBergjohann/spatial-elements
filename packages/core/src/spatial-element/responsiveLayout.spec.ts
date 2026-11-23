@@ -230,13 +230,13 @@ describe('detail presentation constraints', () => {
 describe('carousel and fullscreen presentation constraints', () => {
 	it.each([[390, 435], [600, 700], [840, 700], [1200, 700], [1600, 900], [1920, 900], [2456, 900]])
 	('leaves the next heading visible after an introductory heading at %ipx', (width, height) => {
-		const leadingHeight = width < 840 ? 64 : 96;
-		const layout = resolveCarouselLayout({ width, height, leadingHeight });
-		expect(layout.sectionEnd + leadingHeight + 64).toBeLessThanOrEqual(height);
+		const typicalPageHeading = width < 600 ? 54 : width < 840 ? 62 : width < 1200 ? 64 : 88;
+		const layout = resolveCarouselLayout({ width, height });
+		expect(layout.sectionEnd + typicalPageHeading + 64).toBeLessThanOrEqual(height);
 	});
 	it.each([
-		[390, 304, 268], [600, 312, 276], [840, 288, 244],
-		[1200, 330, 274], [1600, 344, 288], [1920, 344, 288], [2300, 344, 288]
+		[390, 356, 320], [600, 372, 336], [840, 352, 308],
+		[1200, 418, 362], [1600, 432, 376], [1920, 432, 376], [2300, 432, 376]
 	])('uses the consolidated headline height budget at %i', (width, withHeadline, withoutHeadline) => {
 		expect(resolveCarouselLayout({ width, height: 900, hasHeadline: true }).heightOffset).toBe(withHeadline);
 		expect(resolveCarouselLayout({ width, height: 900 }).heightOffset).toBe(withoutHeadline);
@@ -270,7 +270,7 @@ describe('carousel and fullscreen presentation constraints', () => {
 
 	it('preserves the labelled large-grid spans and detail summary width', () => {
 		const large = resolveCarouselLayout({ width: 1200, height: 900, hasHeadline: true });
-		expect(large.mediaFit).toEqual({ x: 220, y: 186, width: 466, height: 500 });
+		expect(large.mediaFit).toEqual({ x: 220, y: 186, width: 466, height: 482 });
 		expect(large.summary.x).toBe(710);
 		expect(large.summary.width).toBe(368);
 		const xl = resolveCarouselLayout({ width: 1600, height: 1000, hasHeadline: true });
@@ -289,7 +289,7 @@ describe('carousel and fullscreen presentation constraints', () => {
 		expect(carousel.layout).toBe('2xl');
 		expect(carousel.grid.size).toBe('l');
 		expect(carousel.content).toEqual({ x: 382, width: 1536 });
-		expect(carousel.mediaFit).toEqual({ x: 532, y: 200, width: 732, height: 600 });
+		expect(carousel.mediaFit).toEqual({ x: 532, y: 200, width: 732, height: 568 });
 		expect(carousel.summary.x).toBe(1288);
 		expect(carousel.summary.width).toBe(480);
 		expect(resolveDetailLayout({ width: 2300, height: 1000 }).grid.size).toBe('m');
@@ -298,8 +298,8 @@ describe('carousel and fullscreen presentation constraints', () => {
 	it('allows document placement without changing its stable viewport sizing', () => {
 		const initial = resolveCarouselLayout({ width: 840, height: 700, hasHeadline: true });
 		const later = resolveCarouselLayout({ width: 840, height: 700, hasHeadline: true, sectionTop: 1096 });
-		expect(initial.mediaFit.height).toBe(412);
-		expect(later.mediaFit.height).toBe(412);
+		expect(initial.mediaFit.height).toBe(348);
+		expect(later.mediaFit.height).toBe(348);
 		expect(later.mediaFit.y - initial.mediaFit.y).toBe(1000);
 		expect(later.summary.anchor.y - initial.summary.anchor.y).toBe(1000);
 		expect(later.section.height).toBe(initial.section.height);

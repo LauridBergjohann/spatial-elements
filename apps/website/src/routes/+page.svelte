@@ -4,6 +4,7 @@
 	import { SpatialCarouselSection } from '@spatial-elements/sveltekit';
 	import { featuredItems } from '#lib/showcase/collection.ts';
 	import { showcaseHdr } from '#lib/showcase/optimized.ts';
+	import { technologies } from '#lib/technologies.ts';
 </script>
 
 <WebsitePage
@@ -109,5 +110,14 @@
 				href: '/docs/sections/playground/'
 			}
 		]}
+	/>
+	<CardGridSection
+		section={{ id: 'techstack', title: 'Techstack', headline: 'Techstack', spacing: 'loose' }}
+		list={technologies}
+		cardSize="m"
+		cardTone="muted"
+		mediaAspect="4/3"
+		mediaFit="contain"
+		textAlign="center"
 	/>
 </WebsitePage>
