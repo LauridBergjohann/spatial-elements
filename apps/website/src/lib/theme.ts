@@ -58,6 +58,7 @@ export function websiteTheme(
 		panelShape: { radius: 12, contentInset: 26 },
 		sectionBackgrounds: { standard, muted },
 		colors: {
+			border: mode === 'dark' ? 'hsl(219, 10%, 34%)' : '#d1d1d1',
 			ink: palette.ink,
 			body: palette.body,
 			accent: palette.accent,

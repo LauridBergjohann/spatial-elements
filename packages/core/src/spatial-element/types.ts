@@ -125,6 +125,10 @@ export interface SpatialTheme {
 	sectionTheme: SpatialSectionTheme;
 	/** Semantic text, action and navigation colors. */
 	colors: {
+		/** Cards and controls; defaults to ink at 18%. Use transparent to hide. */
+		border?: string;
+		/** Panels and navigation; defaults to ink at 12%. Use transparent to hide. */
+		panelBorder?: string;
 		ink: string;
 		body: string;
 		accent: string;

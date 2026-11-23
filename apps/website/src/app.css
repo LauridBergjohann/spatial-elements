@@ -27,8 +27,6 @@ body {
 	--ps-selection: var(--spatial-element-tab-background);
 }
 [data-website-theme='default'] .brand-stage-shell {
-	/* Override the shell's computed ink-mix border with the reference palette. */
-	--ps-border: var(--website-border) !important;
 	--ps-font-family: system-ui, sans-serif !important;
 }
 .brand-stage-shell .stage {

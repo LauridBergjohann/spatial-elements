@@ -307,4 +307,26 @@
 			</p>
 		</div>
 	</Section>
+	<Section
+		section={{
+			id: 'borders',
+			title: 'Border colors',
+			headline: 'Border colors',
+			background: { color: 'standard', size: 'standard' }
+		}}
+	>
+		<p>
+			<a href="/docs/reference/types/#spatial-theme-colors">
+				<code>colors.border</code> and <code>colors.panelBorder</code>
+			</a> control two independent edges. The first applies to cards, icon buttons, ButtonGroups and media
+			thumbnails. The second applies to panels, popups, the main menu and detail navigation. Docked main
+			menus and scroll headers show only the bottom edge.
+		</p>
+		<p>
+			They map to <code>--ps-border</code> and <code>--ps-panel-border</code>. Defaults mix the ink
+			color at 18% and 12% respectively. Set either to <code>transparent</code> to hide the edge
+			without changing geometry. A standalone Panel also accepts <code>borderColor</code>. Selection
+			and keyboard focus keep their accent outlines.
+		</p>
+	</Section>
 </WebsitePage>

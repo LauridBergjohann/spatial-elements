@@ -285,6 +285,7 @@
 	.help-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 	h2 { margin: 0; font-size: 15px; font-weight: 650; }
 	.close-help {
+		outline: 1px solid var(--ps-border); outline-offset: -1px;
 		width: 40px; height: 40px; flex: 0 0 40px; display: grid; place-items: center;
 		padding: 0; border: 0; border-radius: var(--spatial-element-control-radius); color: inherit; background: transparent; cursor: pointer;
 	}

@@ -671,6 +671,7 @@
 		pointer-events: none;
 	}
 	.carousel-arrows button {
+		outline: 1px solid var(--ps-border); outline-offset: -1px;
 		pointer-events: auto;
 		width: 44px;
 		height: 44px;

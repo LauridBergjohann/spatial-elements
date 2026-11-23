@@ -1012,7 +1012,7 @@ export const reference: ReferenceEntry[] = [
 		kind: 'type',
 		description: 'Shared visual language supplied by a brand layout to element pages beneath it.',
 		declaration:
-			"interface SpatialTheme {\n    /** Optional presentation overrides for the element's HDR backdrop; lighting is unchanged. */\n    sceneBackground?: Partial<BackgroundSettings>;\n    /** Stable namespace shared by pages and transitions, e.g. `shop`. Not an element ID. */\n    id: string;\n    /** Human-readable brand name used in accessible labels. */\n    name: string;\n    /** Opaque CSS/Three.js color behind content and the independently revealed HDR stage. */\n    background: string;\n    /** Optional for hand-authored legacy themes; createSpatialTheme resolves both roles. */\n    radii?: SpatialThemeRadii;\n    /** Optional for hand-authored legacy themes; createSpatialTheme supplies both colors. */\n    sectionBackgrounds?: SpatialSectionBackgrounds;\n    /** Shared minimap appearance; element-specific framing belongs in SpatialElementData.minimap. */\n    minimapTheme: SpatialMinimapTheme;\n    /** Hover/selection outline appearance. */\n    interactionTheme: Partial<StageInteractionTheme>;\n    /** Panel corner radius and content padding, in CSS pixels. */\n    panelShape: StagePanelShape;\n    /** Default panel material. `frosted` uses CSS blur; `glass` also uses GPU refraction. */\n    panelTheme: StagePanelTheme;\n    /** Appearance of the compact header and tabs shown after scrolling past the hero. */\n    dockedPanelTheme: SpatialDockedPanelTheme;\n    /** Appearance of ordinary HTML content sections. */\n    sectionTheme: SpatialSectionTheme;\n    /** Semantic text, action and navigation colors. */\n    colors: {\n        ink: string;\n        body: string;\n        accent: string;\n        onAccent: string;\n        tabBackground: string;\n    };\n}",
+			"interface SpatialTheme {\n    /** Optional presentation overrides for the element's HDR backdrop; lighting is unchanged. */\n    sceneBackground?: Partial<BackgroundSettings>;\n    /** Stable namespace shared by pages and transitions, e.g. `shop`. Not an element ID. */\n    id: string;\n    /** Human-readable brand name used in accessible labels. */\n    name: string;\n    /** Opaque CSS/Three.js color behind content and the independently revealed HDR stage. */\n    background: string;\n    /** Optional for hand-authored legacy themes; createSpatialTheme resolves both roles. */\n    radii?: SpatialThemeRadii;\n    /** Optional for hand-authored legacy themes; createSpatialTheme supplies both colors. */\n    sectionBackgrounds?: SpatialSectionBackgrounds;\n    /** Shared minimap appearance; element-specific framing belongs in SpatialElementData.minimap. */\n    minimapTheme: SpatialMinimapTheme;\n    /** Hover/selection outline appearance. */\n    interactionTheme: Partial<StageInteractionTheme>;\n    /** Panel corner radius and content padding, in CSS pixels. */\n    panelShape: StagePanelShape;\n    /** Default panel material. `frosted` uses CSS blur; `glass` also uses GPU refraction. */\n    panelTheme: StagePanelTheme;\n    /** Appearance of the compact header and tabs shown after scrolling past the hero. */\n    dockedPanelTheme: SpatialDockedPanelTheme;\n    /** Appearance of ordinary HTML content sections. */\n    sectionTheme: SpatialSectionTheme;\n    /** Semantic text, action and navigation colors. */\n    colors: {\n        /** Cards and controls; defaults to ink at 18%. Use transparent to hide. */\n        border?: string;\n        /** Panels and navigation; defaults to ink at 12%. Use transparent to hide. */\n        panelBorder?: string;\n        ink: string;\n        body: string;\n        accent: string;\n        onAccent: string;\n        tabBackground: string;\n    };\n}",
 		variants: [
 			{
 				label: 'Fields',
@@ -1112,9 +1112,23 @@ export const reference: ReferenceEntry[] = [
 					{
 						name: 'colors',
 						id: 'spatial-theme-colors',
-						type: '{ ink: string; body: string; accent: string; onAccent: string; tabBackground: string; }',
+						type: '{ border?: string; panelBorder?: string; ink: string; body: string; accent: string; onAccent: string; tabBackground: string; }',
 						optional: false,
 						description: 'Semantic text, action and navigation colors.'
+					},
+					{
+						name: 'colors.border',
+						id: 'spatial-theme-colors-border',
+						type: 'string',
+						optional: true,
+						description: 'Cards and controls; defaults to ink at 18%. Use transparent to hide.'
+					},
+					{
+						name: 'colors.panelBorder',
+						id: 'spatial-theme-colors-panel-border',
+						type: 'string',
+						optional: true,
+						description: 'Panels and navigation; defaults to ink at 12%. Use transparent to hide.'
 					},
 					{
 						name: 'colors.ink',
@@ -1259,6 +1273,20 @@ export const reference: ReferenceEntry[] = [
 						type: "Partial<SpatialTheme['colors']>",
 						optional: true,
 						description: ''
+					},
+					{
+						name: 'colors.border',
+						id: 'spatial-theme-options-colors-border',
+						type: 'string',
+						optional: true,
+						description: 'Cards and controls; defaults to ink at 18%. Use transparent to hide.'
+					},
+					{
+						name: 'colors.panelBorder',
+						id: 'spatial-theme-options-colors-panel-border',
+						type: 'string',
+						optional: true,
+						description: 'Panels and navigation; defaults to ink at 12%. Use transparent to hide.'
 					},
 					{
 						name: 'colors.ink',

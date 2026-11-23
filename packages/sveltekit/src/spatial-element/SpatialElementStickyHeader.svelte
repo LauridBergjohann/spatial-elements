@@ -220,13 +220,14 @@
 			var(--spatial-element-docked-panel-tint-rgb) /
 				var(--spatial-element-docked-panel-tint-opacity)
 		);
-		box-shadow: inset 0 0 0 1px
-			rgb(0 0 0 / calc(var(--spatial-element-docked-panel-shadow-strength) * 0.18));
+		box-shadow: none;
 		-webkit-backdrop-filter: blur(var(--spatial-element-docked-panel-backdrop-blur));
 		backdrop-filter: blur(var(--spatial-element-docked-panel-backdrop-blur));
 	}
 
 	.spatial-element-sticky-header::before {
+		box-sizing: border-box;
+		border-bottom: 1px solid var(--ps-panel-border);
 		z-index: 2;
 		opacity: var(--spatial-element-sticky-header-progress, 0);
 	}
@@ -236,6 +237,8 @@
 		box-shadow: var(--spatial-element-docked-panel-box-shadow);
 		opacity: var(--spatial-element-sticky-header-progress, 0);
 	}
+
+	.spatial-element-sticky-tabs::after { content: ""; position: absolute; inset: 0; border: 1px solid var(--ps-panel-border); border-radius: inherit; pointer-events: none; z-index: 3; }
 
 	.spatial-element-sticky-tabs::before {
 		z-index: 0;

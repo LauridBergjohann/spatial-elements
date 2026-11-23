@@ -118,6 +118,7 @@
 					visible={media.kind !== 'minimap' || minimapInRail || focused || minimapDocked}
 					minimapSelected={active}
 					class={`thumbnail-panel ${active ? 'active' : ''}`}
+					borderColor={active ? 'transparent' : 'var(--ps-border)'}
 					shape={{ ...theme.panelShape, radius: radii.control, contentInset: 0 }}
 					theme={theme.panelTheme}
 					contentClass="thumbnail-panel-content"

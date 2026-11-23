@@ -24,6 +24,8 @@
 		children?: Snippet;
 		class?: string;
 		contentClass?: string;
+		/** CSS outline color; transparent disables the panel edge without changing geometry. */
+		borderColor?: string;
 		minimap?: boolean | StagePanelMinimapOptions;
 		/** true: proximity lift and tilt; 'lift': a 2px mouse-hover lift without tilt; false: still. */
 		pointerReactive?: boolean | 'lift';
@@ -51,6 +53,7 @@
 		children,
 		class: frameClass = '',
 		contentClass = '',
+		borderColor = 'var(--ps-panel-border, transparent)',
 		minimap = false,
 		pointerReactive = true,
 		focusReactive = true,
@@ -311,11 +314,16 @@
 			use:authoredStyle={getContentThemeStyle()}
 		>
 			{@render children?.()}
+			<span class="panel-edge" aria-hidden="true"
+				style:inset={`${-getContentInset()}px`}
+				style:border-color={borderColor}
+				style:border-radius={`${shape.radius}px ${shape.radius}px ${shape.squareBottom ? 0 : shape.radius}px ${shape.squareBottom ? 0 : shape.radius}px`}></span>
 		</div>
 	</div>
 </div>
 
 <style>
+	.panel-edge { position: absolute; border: 1px solid; box-sizing: border-box; pointer-events: none; z-index: 2; }
 	.stage-panel-fallback {
 		z-index: 2;
 		box-sizing: border-box;

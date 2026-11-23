@@ -178,12 +178,18 @@
 		gap: 0.5rem;
 	}
 	.github-link {
+		outline: 1px solid var(--ps-border);
+		outline-offset: -1px;
 		display: grid;
 		place-items: center;
 		width: 40px;
 		height: 40px;
 		border-radius: 0.5rem;
 		color: var(--ps-ink);
+	}
+	.github-link:focus-visible {
+		outline: 2px solid var(--ps-accent);
+		outline-offset: 2px;
 	}
 	.github-link:hover {
 		background: var(--ps-selection, var(--ps-section-muted));
@@ -216,6 +222,8 @@
 		}
 	}
 	.appearance {
+		outline: 1px solid var(--ps-border);
+		outline-offset: -1px;
 		display: flex;
 		border-radius: var(--spatial-element-control-radius);
 		overflow: clip;
