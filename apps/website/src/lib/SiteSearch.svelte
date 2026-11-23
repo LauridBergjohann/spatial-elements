@@ -37,6 +37,7 @@
 		}
 	];
 	let ready = $state(false);
+	let compact = $state(false);
 	let root = $state<HTMLDivElement>();
 	let input = $state<HTMLInputElement>();
 	let trigger = $state<HTMLButtonElement>();
@@ -64,7 +65,17 @@
 	);
 	const matches = $derived(found.slice(0, 10));
 	onMount(() => {
+		const media = matchMedia(
+			'(max-width: 799.98px), (min-width: 1200px) and (max-width: 1599.98px)'
+		);
+		const update = () => {
+			compact = media.matches;
+			dismiss();
+		};
+		update();
 		ready = true;
+		media.addEventListener('change', update);
+		return () => media.removeEventListener('change', update);
 	});
 	$effect(() => {
 		void query;
@@ -121,6 +132,7 @@
 
 <svelte:window
 	onkeydown={shortcut}
+	onresize={() => dismiss()}
 	onpointerdown={(event) => {
 		if (event.target instanceof Node && !root?.contains(event.target)) dismiss();
 	}}
@@ -142,70 +154,68 @@
 			aria-label="Open search"
 			aria-expanded={opened}
 			aria-controls="site-search-field"
-			onclick={focusSearch}
+			onclick={() => (opened ? dismiss(true) : void focusSearch())}
 		>
 			<Search size={20} aria-hidden="true" />
 		</button>
-		<div
-			class="search-field"
-			id="site-search-field"
-			data-spatial-navigation-popup={opened ? '' : undefined}
-		>
-			<Search size={18} aria-hidden="true" />
-			<input
-				bind:this={input}
-				bind:value={query}
-				type="search"
-				role="combobox"
-				aria-label="Search documentation"
-				placeholder="Search…"
-				autocomplete="off"
-				spellcheck="false"
-				aria-keyshortcuts="Control+k Meta+k"
-				aria-autocomplete="list"
-				aria-expanded={opened}
-				aria-controls={opened ? 'site-search-results' : undefined}
-				aria-activedescendant={opened && active >= 0 ? `site-search-result-${active}` : undefined}
-				onfocus={() => {
-					opened = true;
-				}}
-				oninput={() => {
-					opened = true;
-				}}
-				onkeydown={inputKey}
-			/>
-			<kbd aria-hidden="true">Ctrl K</kbd>
-		</div>
-		{#if opened}
-			<div class="search-panel" data-spatial-navigation-popup>
-				<p class="search-hint" role="status">
-					{query.trim()
-						? `${found.length} matching ${found.length === 1 ? 'topic' : 'topics'}${found.length > 10 ? ' · showing the first 10' : ''}`
-						: 'Explore the guides and examples'}
-				</p>
-				<ul id="site-search-results" role="listbox" aria-label="Search results">
-					{#each matches as item, index}
-						<li role="presentation">
-							<a
-								id={`site-search-result-${index}`}
-								href={resolve('/') + item.href.slice(1)}
-								role="option"
-								aria-selected={active === index}
-								tabindex="-1"
-							>
-								<span class="result-group">{item.group}</span>
-								<strong>{item.title}</strong>
-								<span>{item.description}</span>
-							</a>
-						</li>
-					{/each}
-				</ul>
-				{#if !matches.length}<p class="empty">
-						No matching topics. Try “cards”, “theme” or “CodeBlock”.
-					</p>{/if}
-				<p class="search-hint">↑ ↓ to choose · Enter to open · Esc to close</p>
+		<div class="search-surface" data-ps-popup={opened && compact ? '' : undefined}>
+			<div class="search-field" id="site-search-field">
+				<Search size={18} aria-hidden="true" />
+				<input
+					bind:this={input}
+					bind:value={query}
+					type="search"
+					role="combobox"
+					aria-label="Search documentation"
+					placeholder="Search…"
+					autocomplete="off"
+					spellcheck="false"
+					aria-keyshortcuts="Control+k Meta+k"
+					aria-autocomplete="list"
+					aria-expanded={opened}
+					aria-controls={opened ? 'site-search-results' : undefined}
+					aria-activedescendant={opened && active >= 0 ? `site-search-result-${active}` : undefined}
+					onfocus={() => {
+						opened = true;
+					}}
+					oninput={() => {
+						opened = true;
+					}}
+					onkeydown={inputKey}
+				/>
+				<kbd aria-hidden="true">Ctrl K</kbd>
 			</div>
-		{/if}
+			{#if opened}
+				<div class="search-panel" data-ps-popup={!compact ? '' : undefined}>
+					<p class="search-hint" role="status">
+						{query.trim()
+							? `${found.length} matching ${found.length === 1 ? 'topic' : 'topics'}${found.length > 10 ? ' · showing the first 10' : ''}`
+							: 'Explore the guides and examples'}
+					</p>
+					<ul id="site-search-results" role="listbox" aria-label="Search results">
+						{#each matches as item, index}
+							<li role="presentation">
+								<a
+									id={`site-search-result-${index}`}
+									href={resolve('/') + item.href.slice(1)}
+									role="option"
+									aria-selected={active === index}
+									tabindex="-1"
+								>
+									<span class="result-group">{item.group}</span>
+									<strong>{item.title}</strong>
+									<span>{item.description}</span>
+								</a>
+							</li>
+						{/each}
+					</ul>
+					{#if !matches.length}<p class="empty">
+							No matching topics. Try “cards”, “theme” or “CodeBlock”.
+						</p>{/if}
+					<p class="search-hint">↑ ↓ to choose · Enter to open · Esc to close</p>
+				</div>
+			{/if}
+		</div>
 	{:else}
 		<a class="search-fallback" href={resolve('docs/')} aria-label="Browse documentation">
 			<Search size={18} aria-hidden="true" /><span>Browse documentation</span>
@@ -216,7 +226,7 @@
 <style>
 	.site-search {
 		position: relative;
-		width: clamp(14rem, 22vw, 21rem);
+		width: clamp(14rem, 18vw, 18rem);
 	}
 	.search-field,
 	.search-fallback {
@@ -308,12 +318,30 @@
 	.search-hint {
 		border-block: 1px solid var(--ps-border);
 	}
-	@media (max-width: 799px) {
+
+	.search-surface {
+		display: contents;
+	}
+	.mobile-search {
+		transition:
+			color 180ms ease,
+			background-color 180ms ease;
+	}
+	.mobile-search[aria-expanded='true'] {
+		color: var(--ps-accent);
+		background: var(--ps-selection, var(--ps-section-muted));
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.mobile-search {
+			transition: none;
+		}
+	}
+	@media (max-width: 799.98px), (min-width: 1200px) and (max-width: 1599.98px) {
 		.site-search {
 			position: static;
 			width: 40px;
 		}
-		.search-field {
+		.search-surface {
 			display: none;
 		}
 		.mobile-search,
@@ -329,31 +357,43 @@
 			color: var(--ps-ink);
 			cursor: pointer;
 		}
-		.search-fallback span {
+		.mobile-search[aria-expanded='true'] {
+			color: var(--ps-accent);
+			background: var(--ps-selection, var(--ps-section-muted));
+		}
+		.search-fallback span,
+		kbd {
 			display: none;
 		}
-		.opened .search-field {
-			display: flex;
+		.opened .search-surface {
+			display: block;
 			position: absolute;
 			top: calc(100% + 8px);
 			left: 12px;
 			right: 12px;
-			height: 48px;
 			z-index: 5;
+			background: var(--ps-section-standard);
+			color: var(--ps-ink);
+			border: 1px solid var(--ps-border);
+			border-radius: var(--ps-radius);
+			box-shadow: var(--ps-navigation-shadow);
+			overflow: auto;
+			max-height: calc(100dvh - var(--ps-nav-height) - 24px);
+		}
+		.search-field {
+			margin: 12px;
 		}
 		.search-panel {
-			top: calc(100% + 56px);
-			right: 12px;
-			left: 12px;
+			position: static;
 			width: auto;
-			border-top-left-radius: 0;
-			border-top-right-radius: 0;
+			max-width: none;
+			border: 0;
+			border-radius: 0;
+			background: transparent;
+			box-shadow: none;
 		}
 		ul {
 			max-height: min(24rem, 45dvh);
-		}
-		kbd {
-			display: none;
 		}
 	}
 </style>

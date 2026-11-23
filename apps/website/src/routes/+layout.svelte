@@ -17,6 +17,7 @@
 	import Sun from '@lucide/svelte/icons/sun';
 	import Moon from '@lucide/svelte/icons/moon';
 	import Github from '#lib/GitHubMark.svelte';
+	import BrandMark from '#lib/BrandMark.svelte';
 	import SiteSearch from '#lib/SiteSearch.svelte';
 	import NavigationIcon from '#lib/NavigationIcon.svelte';
 	import { getNavigationTree } from '#lib/navigation.ts';
@@ -107,8 +108,20 @@
 						href="https://github.com/LauridBergjohann/spatial-elements"
 						aria-label="Spatial Elements on GitHub"
 						title="Source on GitHub"
+						target="_blank"
+						rel="noopener noreferrer"
 					>
 						<Github />
+					</a>
+					<a
+						class="github-link"
+						href="https://www.npmjs.com/package/@spatial-elements/sveltekit"
+						aria-label="Spatial Elements on npm"
+						title="Package on npm"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<BrandMark kind="npm" />
 					</a>
 				</div>
 			{/snippet}
@@ -175,6 +188,10 @@
 	.github-link:hover {
 		background: var(--ps-selection, var(--ps-section-muted));
 	}
+	.github-link :global(svg) {
+		width: 24px;
+		height: 24px;
+	}
 	@media (max-width: 599.98px) {
 		.github-link {
 			display: none;
@@ -192,10 +209,10 @@
 			justify-content: center;
 		}
 		.website-header :global(.brand) {
-			margin-inline-end: clamp(1.5rem, 3vw, 4rem);
+			margin-inline-end: 0.75rem;
 		}
 		.website-header :global(.tools) {
-			margin-inline-start: 1.5rem;
+			margin-inline-start: 0.5rem;
 		}
 	}
 	.appearance {

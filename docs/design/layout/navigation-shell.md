@@ -62,10 +62,27 @@ DOM/canvas content. Fixed detail 3XL may use the authored panel material because
 above the content pane. A route change does not key/recreate the shell or mark it as entering page
 content. Native open popovers and disclosure menus close on navigation.
 
-Open Page Sections submenus, mobile/settings disclosures and custom overlays marked with
-`data-spatial-navigation-popup` enter the browser top layer. Their position is captured once
-on opening; scroll, resize and navigation dismiss them through their owning components.
-The DOM hierarchy and delegated menu/search events stay intact.
+Open Page Sections submenus, mobile/settings disclosures, the content menu and custom
+absolute-positioned overlays marked with `data-ps-popup` enter the browser top layer.
+`data-spatial-navigation-popup` remains supported. Set the attribute only while the custom
+popup is open; its component owns toggle, outside-click, Escape and navigation dismissal.
+The website search marks the complete input/results surface in compact layouts and only
+the results in wide layouts. Burger, settings and compact-search triggers use the accent
+and tab-background colors while open. Main-menu labels never wrap; the website uses the
+compact search at 1200–1599px to reserve room for the desktop navigation.
+
+BrandStageShell installs a single document-level coordinator, including when no header is
+provided. Its compatibility implementation works with Page Sections 0.5.1 and shares
+ownership with the corresponding upcoming Page Sections enhancement. The DOM hierarchy,
+delegated events and native disclosure state stay intact. Chromium may retain an invisible
+layout box after closing a popover inside details; a one-time display reset on reopening
+repairs that box without replacing nodes or handlers.
+
+One noninteractive top-layer backdrop blurs the page by 3px while a popup is open. Navigation
+and its triggers remain sharp. The layer is removed when the last popup closes, with no
+filter animation, permanent compositor hint or additional stage render loop. Popup positions
+are captured on opening; scroll and resize dismiss them through their owners instead of
+continually measuring layout. Route changes also close owned popups.
 
 Native ownership does not remove the existing close-up exit. The shell surface and its content
 follow the same focus offset, perspective scale, fade and text blur as the GPU panel. Only the

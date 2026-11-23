@@ -6,7 +6,6 @@
 	import { getStageVisualScrollPosition, STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
 	import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
 	import { Header } from '@page-sections/svelte';
-	import { enhanceNavigationPopovers } from './navigationPopovers.js';
 	import { layoutTokens, type MenuItem } from '@page-sections/core';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
 	import { useSpatialTheme } from './brandContext.js';
@@ -54,7 +53,6 @@
 	onMount(() => {
 		stage = rack.closest<HTMLElement>('.stage') ?? undefined;
 		updateMode();
-		const releasePopovers = enhanceNavigationPopovers(rack);
 		window.addEventListener('scroll', closePopovers, { passive: true });
 		window.addEventListener('resize', closePopovers, { passive: true });
 		const observer = new MutationObserver(updateMode);
@@ -79,7 +77,6 @@
         const stop = subscribeStageScrollFrame(frame => position(frame.scrollY), STAGE_SCROLL_PRIORITY.virtualDocument + 1);
 		window.addEventListener('resize', updateMode, { passive: true });
 		return () => {
-			releasePopovers();
 			window.removeEventListener('scroll', closePopovers);
 			window.removeEventListener('resize', closePopovers);
 			releases.forEach(release => release?.()); stop(); observer.disconnect(); window.removeEventListener('resize', updateMode); };
@@ -92,6 +89,14 @@
  </div>
 </div>
 <style>
+ /* Apply the shared popup presentation with published Page Sections 0.5.1 too. */
+ :global(.brand-stage-shell[data-ps-popups-enhanced]) .spatial-shell-rack :global(.menu-backdrop) { display: none; }
+ .spatial-shell-rack :global(details[open] > summary) { color: var(--ps-accent); background: var(--ps-selection, var(--ps-section-muted)); }
+ .spatial-shell-rack :global(summary) { transition: color 180ms ease, background-color 180ms ease; }
+ .spatial-shell-rack :global(.ps-main-menu) { flex-wrap: nowrap; }
+ .spatial-shell-rack :global(.ps-main-menu > li) { flex: none; }
+ .spatial-shell-rack :global(.ps-main-menu > li > a) { white-space: nowrap; }
+ @media (prefers-reduced-motion: reduce) { .spatial-shell-rack :global(summary) { transition: none; } }
  .spatial-shell-track { position: relative; z-index: 30; height: calc(var(--ps-nav-height) + var(--ps-sticky-range)); margin-bottom: calc(-1 * var(--ps-sticky-range)); pointer-events: none; }
  .spatial-shell-rack { position: sticky; top: 0; height: var(--ps-nav-height); pointer-events: none; }
  .spatial-shell-rack :global(.ps-navigation) { pointer-events: auto; }
