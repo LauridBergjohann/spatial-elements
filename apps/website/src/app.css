@@ -21,8 +21,8 @@ body {
 /* Appearance is defined once in lib/theme.ts for Page Sections and spatial surfaces. */
 .ps-shell[data-ps-theme='light'] {
 	--ps-selection: #eeeeee;
-	--website-border: #f00;
-	--website-panel-border: #f00;
+	--website-border: #dbdbdb;
+	--website-panel-border: #dbdbdb;
 	--ps-shadow-color: #000;
 }
 .ps-shell[data-ps-theme='dark'] {

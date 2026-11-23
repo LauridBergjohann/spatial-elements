@@ -102,7 +102,7 @@ function framing(distance: number, presentation: CarouselPresentation, layout: C
 	// A larger, shallower turntable: keep useful seat spacing by reducing the
 	// angle between products rather than packing the same angle onto a larger ring.
 	const viewportExpansion = compact ? 0 : Math.max(0, layout.viewportWidth - 1440) * 0.45;
-	const radius = (frame * (compact ? 2.2 : 3.4) + viewportExpansion) * spacing / 0.48 * (0.75 + depth / 2800);
+	const radius = (frame * 3.4 + viewportExpansion) * spacing / 0.48 * (0.75 + depth / 2800);
 	const step = 0.4;
 	const travel = Math.abs(distance);
 	// Only the front arc is presented. Never wrap a long catalog onto occupied seats.
