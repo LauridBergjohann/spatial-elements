@@ -51,6 +51,16 @@
 </PageContent>
 
 <style>
+ /* Compatibility with Page Sections 0.5.1; the upcoming shared grid separates pageEnd. */
+ :global(.content-page .ps-content-menu-slot) { height: var(--spatial-content-menu-height, auto); }
+ @media (min-width: 1600px) {
+  :global(.content-page .ps-content-menu-slot) { padding-bottom: var(--ps-content-menu-offset); }
+  :global(.content-page .ps-page-frame:has(.ps-page-content .ps-section[data-nested='false']:not([data-background-size='standard'][data-background-color='standard'], [data-background-size='standard'][data-background-color='muted'])) > .ps-content-menu-slot) { padding-bottom: 0; }
+ }
+ @media (max-width: 1599.98px) {
+  :global(.content-page .ps-content-menu-slot) { position: relative; top: auto; align-self: stretch; pointer-events: none !important; }
+  :global(.content-page .ps-content-menu-slot > .mobile) { position: sticky; top: 12px; pointer-events: auto; }
+ }
  :global(.content-page [data-spatial-sticky-sidebar]) { position: relative !important; top: 0 !important; }
  /* The shared stage leaves its DOM layer transparent to model interaction.
   * Ordinary Page Sections and navigation still need native hit targets. */

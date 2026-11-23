@@ -84,6 +84,14 @@ filter animation, permanent compositor hint or additional stage render loop. Pop
 are captured on opening; scroll and resize dismiss them through their owners instead of
 continually measuring layout. Route changes also close owned popups.
 
+Content menus stop at the section column's bottom, before related links and reading navigation.
+Attached desktop menus reserve the same 16px inset at both ends; detached menus use zero.
+The compact control docks 12px below the viewport and leaves with the section column too.
+The spatial sidebar adapter applies the same boundary in the existing shared scroll frame.
+For Page Sections 0.5.1, a ResizeObserver supplies the section height to the native menu track;
+newer Page Sections markup separates pageEnd into its own grid row. Neither path needs an
+additional animation loop, and the compatibility height is removed on teardown.
+
 Native ownership does not remove the existing close-up exit. The shell surface and its content
 follow the same focus offset, perspective scale, fade and text blur as the GPU panel. Only the
 surface is transformed; the registered frame and scroll rack remain unchanged, so measuring a

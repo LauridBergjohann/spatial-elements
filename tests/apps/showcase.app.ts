@@ -48,7 +48,7 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 		await page.screenshot({path:info.outputPath('sticky-docs.png')});
 		await page.setViewportSize({width:1000,height:800});
 		await expect(page.locator('.ps-left-sidebar')).toBeHidden();
-		await expect.poll(async () => (await page.locator('.ps-content-menu-slot').boundingBox())!.y).toBeCloseTo(16,0);
+		await expect.poll(async () => (await page.locator('.ps-content-menu-slot summary').boundingBox())!.y).toBeCloseTo(12,0);
 	});
 
 	test(`3XL detail header is separated and submenu overlaps halfway (enhanced: ${enhanced})`, async ({page},info) => {
