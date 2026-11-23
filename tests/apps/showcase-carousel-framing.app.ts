@@ -79,3 +79,22 @@ test('carousel height is independent of preceding and following sections', async
 		await page.screenshot({ path: info.outputPath('consumer-' + width + '.png') });
 	}
 });
+
+test('carousel and detail retain the same property content dimensions', async ({ page }) => {
+	test.slow();
+	for (const width of [840, 1200, 1920]) {
+		await page.setViewportSize({ width, height: 1000 });
+		await page.goto('/showcase/industrial/?stage-test=1');
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
+		const source = page.locator('.carousel-drag-section .selected .summary-presentation');
+		await expect(source).toBeVisible();
+		const before = (await source.boundingBox())!;
+		const title = await source.locator('.summary-title').innerText();
+		await source.locator('.panel-copy').click();
+		await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+		const detail = page.locator('[data-presentation-mode="detail"] .summary-presentation');
+		await expect(detail.locator('.summary-title')).toHaveText(title);
+		await expect.poll(async () => Math.abs((await detail.boundingBox())!.height - before.height)).toBeLessThan(1);
+		expect(Math.abs((await detail.boundingBox())!.width - before.width)).toBeLessThan(1);
+	}
+});

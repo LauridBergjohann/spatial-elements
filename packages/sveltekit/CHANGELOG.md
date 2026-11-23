@@ -1,5 +1,23 @@
 # @spatial-elements/sveltekit
 
+## 1.0.0-beta.18
+
+### Patch Changes
+
+- 4ed4a7d: Use restrained carousel model framing with independent carousel/grid poses, place compact summaries below models, increase compact model separation, and expand the turntable on wide viewports. Fade distant models as complete rendered silhouettes through the existing depth-blur buffer, preserving material occlusion and avoiding transparent ghost surfaces.
+
+  Allow dragging from empty space inside summary links while keeping text selectable and clicks navigable. Keep summary headings free of hover underlines and restore the accent arrow inside compact panels.
+
+- 452e6c1: Place compact carousel summaries below the model with a fixed height, flanking borderless arrows and separate selection dots. Make compact summaries and full summary titles native detail links while retaining live summary ownership. Use hover-only text-link underlines and consistent input borders. Honor explicit panel shadow colors across CSS and GPU surfaces, falling back to shared Page Sections shadow controls.
+
+  Activate navigation history subscriptions when the stage becomes ready so browser Back restores focus to the originating summary link.
+
+- Use identical compact content spacing in carousel and detail property panels. Give full carousel panels more viewport height and higher height limits while retaining a preview of the following section and scrolling for unusually long content in short windows. Keep carousel sizing independent of neighbouring sections, increase compact carousel separation, and align detail controls, media borders and embedded 3XL panels with the shared theme. Refresh the Chronograph fallback poster to match its authored detail camera.
+- Updated dependencies [4ed4a7d]
+- Updated dependencies [452e6c1]
+- Updated dependencies
+  - @spatial-elements/core@1.0.0-beta.18
+
 ## 1.0.0-beta.17
 
 ### Patch Changes

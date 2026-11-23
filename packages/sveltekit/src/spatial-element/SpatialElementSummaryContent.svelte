@@ -23,7 +23,7 @@
  } = $props();
  const catalogEndpoint = createCatalogEndpointAction();
 </script>
-		<div bind:this={element} class="summary-presentation" class:carousel={!!carousel}>
+		<div bind:this={element} class="summary-presentation">
 			{#if leading}<div class="summary-leading" use:catalogEndpoint={address('leading')}
 				data-catalog-rich-shared="leading" data-catalog-semantic={spatialElement.id}>
 				{@render leading()}
@@ -122,25 +122,19 @@
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
-		gap: 20px;
+		gap: 12px;
 		/* The same live panel can leave a Section for the stage's detail layer. */
 		line-height: 24px;
 		pointer-events: auto;
 	}
 
-	/* Keep full carousel panels comfortable within their viewport height budget. */
-	.summary-presentation.carousel { gap: 12px; }
-	.carousel .summary-commerce { gap: 12px; }
-	.carousel .summary-title { margin-top: 6px; }
-	.carousel .feature-list { gap: 8px; }
-
 	.summary-title {
-		margin: 10px 0 0;
+		margin: 6px 0 0;
 		font-size: 24px;
 		font-weight: 780;
 		line-height: 1.16;
 	}
-	.summary-commerce { display: grid; gap: 20px; min-width: 0; align-content: start; }
+	.summary-commerce { display: grid; gap: 12px; min-width: 0; align-content: start; }
 	.summary-leading, .panel-copy { min-width: 0; }
 
 	.panel-copy { user-select: text; display: block; color: inherit; text-decoration: none; }
@@ -156,7 +150,7 @@
 
 	.feature-list {
 		display: grid;
-		gap: 12px;
+		gap: 8px;
 		margin: 0;
 		padding: 0;
 		color: var(--spatial-element-body);
