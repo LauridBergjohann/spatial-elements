@@ -71,12 +71,10 @@ the results in wide layouts. Burger, settings and compact-search triggers use th
 and tab-background colors while open. Main-menu labels never wrap; the website uses the
 compact search at 1200–1599px to reserve room for the desktop navigation.
 
-BrandStageShell installs a single document-level coordinator, including when no header is
-provided. Its compatibility implementation works with Page Sections 0.5.1 and shares
-ownership with the corresponding upcoming Page Sections enhancement. The DOM hierarchy,
-delegated events and native disclosure state stay intact. Chromium may retain an invisible
-layout box after closing a popover inside details; a one-time display reset on reopening
-repairs that box without replacing nodes or handlers.
+Page Sections 0.6.0 owns the shared Popup component and its document-level coordinator.
+Header, content menu and website search use that component; no copied popup controller
+is installed by BrandStageShell. Custom floating UI should use Popup as well. Native DOM
+ownership and disclosure behavior remain intact.
 
 One noninteractive top-layer backdrop blurs the page by 3px while a popup is open. Navigation
 and its triggers remain sharp. The layer is removed when the last popup closes, with no
@@ -88,9 +86,8 @@ Content menus stop at the section column's bottom, before related links and read
 Attached desktop menus reserve the same 16px inset at both ends; detached menus use zero.
 The compact control docks 12px below the viewport and leaves with the section column too.
 The spatial sidebar adapter applies the same boundary in the existing shared scroll frame.
-For Page Sections 0.5.1, a ResizeObserver supplies the section height to the native menu track;
-newer Page Sections markup separates pageEnd into its own grid row. Neither path needs an
-additional animation loop, and the compatibility height is removed on teardown.
+Page Sections 0.6.0 separates pageEnd into its own grid row. The spatial adapter only
+compensates for virtual scrolling; native fallback uses the shared CSS boundary directly.
 
 Native ownership does not remove the existing close-up exit. The shell surface and its content
 follow the same focus offset, perspective scale, fade and text blur as the GPU panel. Only the

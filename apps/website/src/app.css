@@ -8,7 +8,12 @@ body {
 	min-height: 100vh;
 	background: var(--ps-background);
 	--ps-footer-radius: var(--ps-radius);
-	--ps-footer-shadow: var(--ps-surface-shadow);
+	--ps-footer-shadow: var(--ps-surface-shadow, var(--ps-default-surface-shadow));
+	/* Shared by content, navigation, popups and spatial panels. */
+	--ps-shadow-color: #000;
+	--ps-shadow-size: 1;
+	--ps-shadow-intensity: 1;
+	--ps-panel-border: var(--website-panel-border);
 	--ps-border: var(--website-border);
 }
 .ps-shell a {
@@ -18,13 +23,15 @@ body {
 .ps-shell[data-ps-theme='light'] {
 	--ps-selection: #eeeeee;
 	--website-border: #d1d1d1;
+	--website-panel-border: color-mix(in srgb, var(--ps-ink) 12%, transparent);
 }
 .ps-shell[data-ps-theme='dark'] {
 	--ps-selection: rgba(72, 77, 83, 0.5);
 	--website-border: hsl(219, 10%, 34%);
+	--website-panel-border: color-mix(in srgb, var(--ps-ink) 12%, transparent);
 }
-.brand-stage-shell {
-	--ps-selection: var(--spatial-element-tab-background);
+:where([data-website-theme='default']) .brand-stage-shell {
+	--ps-panel-border: var(--website-panel-border) !important;
 }
 [data-website-theme='default'] .brand-stage-shell {
 	--ps-font-family: system-ui, sans-serif !important;

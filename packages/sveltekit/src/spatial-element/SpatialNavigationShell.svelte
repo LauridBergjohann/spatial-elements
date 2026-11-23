@@ -5,6 +5,7 @@
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { getStageVisualScrollPosition, STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
 	import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
+	import { getSharedPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
 	import { Header } from '@page-sections/svelte';
 	import { layoutTokens, type MenuItem } from '@page-sections/core';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
@@ -15,7 +16,7 @@
 	const stageContext = getContext<StageContext | undefined>(STAGE_CONTEXT_KEY);
 	const readTheme = useSpatialTheme();
 	const theme = $derived(readTheme());
-	$effect(() => { void theme; void fixedDetail; void edgeToEdge; stageContext?.updatePanelAppearance?.(); });
+	$effect(() => { for (const element of rack?.querySelectorAll<HTMLElement>('.header, .satellite') ?? []) element.style.setProperty('--spatial-panel-default-shadow', getSharedPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2)); void theme; void fixedDetail; void edgeToEdge; stageContext?.updatePanelAppearance?.(); });
 	const radii = $derived(resolveSpatialThemeRadii(theme));
 	let rack: HTMLDivElement;
 	let stage: HTMLElement | undefined;
@@ -53,8 +54,6 @@
 	onMount(() => {
 		stage = rack.closest<HTMLElement>('.stage') ?? undefined;
 		updateMode();
-		window.addEventListener('scroll', closePopovers, { passive: true });
-		window.addEventListener('resize', closePopovers, { passive: true });
 		const observer = new MutationObserver(updateMode);
 		if (stage) observer.observe(stage, { attributes: true, attributeFilter: ['class'] });
 		// Shared navigation owns the boxes; the stage only enhances their surfaces.
@@ -62,6 +61,7 @@
             const role = element.classList.contains('header') ? 'menu' : element.classList.contains('left') ? 'left' : 'right';
             element.setAttribute('data-spatial-shell-' + role, '');
             element.classList.add('spatial-shell-' + (role === 'menu' ? 'menu' : 'satellite'));
+            element.style.setProperty('--spatial-panel-default-shadow', getSharedPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2));
             element.dataset.stagePanelNativeContent = '';
             return stageContext?.registerPanel({
                 getElement: () => element, getFrameElement: () => element, getSurfaceElement: () => element,
@@ -77,33 +77,16 @@
         const stop = subscribeStageScrollFrame(frame => position(frame.scrollY), STAGE_SCROLL_PRIORITY.virtualDocument + 1);
 		window.addEventListener('resize', updateMode, { passive: true });
 		return () => {
-			window.removeEventListener('scroll', closePopovers);
-			window.removeEventListener('resize', closePopovers);
 			releases.forEach(release => release?.()); stop(); observer.disconnect(); window.removeEventListener('resize', updateMode); };
 	});
 </script>
 
 <div class="spatial-shell-track" style:--ps-sticky-range={`${spatialLayoutTokens.menu.scrollThreshold}px`} data-spatial-navigation-shell>
- <div bind:this={rack} class="spatial-shell-rack" data-stage-scroll-shell data-catalog-shell data-spatial-navigation-glass={theme.panelTheme.surface === 'glass' ? '' : undefined}>
+ <div bind:this={rack} class="spatial-shell-rack" style:--spatial-panel-default-shadow={getSharedPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2)} data-stage-scroll-shell data-catalog-shell data-spatial-navigation-glass={theme.panelTheme.surface === 'glass' ? '' : undefined}>
   {#if navigation}{@render navigation()}{:else}<Header scrollBehavior="static" {menu} {items} {brand} {tools} {left} {right} />{/if}
  </div>
 </div>
 <style>
- /* Compatibility with Page Sections 0.5.1; identical roles in the next shared release. */
- .spatial-shell-rack :global(.header)::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--ps-panel-border); border-radius: inherit; pointer-events: none; z-index: 3; }
- .spatial-shell-rack :global(.ps-button-group) { outline: 1px solid var(--ps-border); outline-offset: -1px; }
- .spatial-shell-rack :global(summary:focus-visible) { outline: 2px solid var(--ps-accent); outline-offset: 2px; }
- .spatial-shell-rack :global(.settings-panel), .spatial-shell-rack :global(.mobile-panel), .spatial-shell-rack :global(.ps-main-menu .ps-submenu) { border-color: var(--ps-panel-border); }
- @media (width < 1600px) { .spatial-shell-rack :global(.header)::after { border-width: 0 0 1px; } }
-
- /* Apply the shared popup presentation with published Page Sections 0.5.1 too. */
- :global(.brand-stage-shell[data-ps-popups-enhanced]) .spatial-shell-rack :global(.menu-backdrop) { display: none; }
- .spatial-shell-rack :global(details[open] > summary) { color: var(--ps-accent); background: var(--ps-selection, var(--ps-section-muted)); }
- .spatial-shell-rack :global(summary) { transition: color 180ms ease, background-color 180ms ease; }
- .spatial-shell-rack :global(.ps-main-menu) { flex-wrap: nowrap; }
- .spatial-shell-rack :global(.ps-main-menu > li) { flex: none; }
- .spatial-shell-rack :global(.ps-main-menu > li > a) { white-space: nowrap; }
- @media (prefers-reduced-motion: reduce) { .spatial-shell-rack :global(summary) { transition: none; } }
  .spatial-shell-track { position: relative; z-index: 30; height: calc(var(--ps-nav-height) + var(--ps-sticky-range)); margin-bottom: calc(-1 * var(--ps-sticky-range)); pointer-events: none; }
  .spatial-shell-rack { position: sticky; top: 0; height: var(--ps-nav-height); pointer-events: none; }
  .spatial-shell-rack :global(.ps-navigation) { pointer-events: auto; }
@@ -114,7 +97,7 @@
   background: rgb(var(--spatial-element-panel-tint-rgb) / var(--spatial-element-panel-tint-opacity));
   -webkit-backdrop-filter: blur(var(--spatial-element-panel-backdrop-blur));
   backdrop-filter: blur(var(--spatial-element-panel-backdrop-blur));
-  box-shadow: var(--spatial-element-panel-box-shadow);
+  box-shadow: var(--ps-navigation-shadow, var(--ps-panel-shadow, var(--spatial-element-panel-box-shadow, var(--spatial-panel-default-shadow))));
  }
  .spatial-shell-rack :global(.header) { border-radius: var(--spatial-element-panel-radius); }
  .spatial-shell-rack :global(.satellite) { border-radius: var(--spatial-element-control-radius); }

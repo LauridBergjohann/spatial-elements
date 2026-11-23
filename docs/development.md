@@ -1,10 +1,10 @@
 # Development
 
-Use Node 24 and npm 11. The applications use SvelteKit 3 (configuration in `vite.config.ts`, native `#lib` imports) and Svelte 5. Install with npm ci. The packages build in dependency order through npm run build. Public runtime dependencies use Page Sections 0.5.1 and Three.js 0.187; no sibling checkout is required.
+Use Node 24 and npm 11. The applications use SvelteKit 3 (configuration in `vite.config.ts`, native `#lib` imports) and Svelte 5. Install with npm ci. The packages build in dependency order through npm run build. Public runtime dependencies use Page Sections 0.6.0 and Three.js 0.187; no sibling checkout is required.
 
 TypeScript stays on 6.0.3 because the current SvelteKit, svelte-package and svelte-check peer ranges do not support TypeScript 7. Node type declarations follow the Node 24 runtime. Lucide imports use the maintained `@lucide/svelte` package.
 
-The spatial shell owns delayed header scrolling, including the fixed 3XL detail layout. If you supply a custom `navigation` snippet containing a Page Sections `Header`, set `scrollBehavior="static"` on that inner header; Page Sections 0.5.1 otherwise adds its own delayed scroll track. The default spatial header already sets this.
+The spatial shell owns delayed header scrolling, including the fixed 3XL detail layout. If you supply a custom `navigation` snippet containing a Page Sections `Header`, set `scrollBehavior="static"` on that inner header; Page Sections 0.6.0 otherwise adds its own delayed scroll track. The default spatial header already sets this.
 
 `SpatialCardGridSection` and `SpatialListPage` now use one card format: descriptions are displayed when provided, and `cardShadow` enables the resting shadow. Remove `cardVariant`. Omit `itemSpan` for responsive S/M/L allocation; explicit spans still use `ContentBlock`. A card root is an article with a stretched native title link. Spatial endpoints register the article, media, title label and eyebrow separately; keyboard focus belongs to the inner link.
 
@@ -17,3 +17,5 @@ Author public explanations directly in the website's Svelte pages. Update the ca
 The website documentation follows foundations → content pages → detail pages → appearance → advanced → reference. Keep the catalog's reading order, chapter navigation and search descriptions in sync. Link property mentions to a field or component anchor. `npm run docs:types` regenerates the type and component tables from the package declarations; `npm run check:docs` checks that they are current, compiles Svelte examples and verifies built links including fragment targets. `node scripts/generate-doc-diagrams.mjs` recreates the explanatory SVGs.
 
 Run npm run format:apps before committing. Theme tests cover the website palette and the separate Industrial and Exclusive identities. See [testing](testing.md), [hosting](hosting.md) and [releases](release.md).
+
+Browser verification uses the Playwright-bundled Chromium revision, matching CI. Run `npx playwright install chromium` after updating Playwright. For hardware rendering tests, set `SPATIAL_E2E_CHANNEL=chrome` to use installed Chrome when bundled headless Chromium cannot access the WebGPU adapter. `SPATIAL_GPU=1` enables the additional GPU website tests; they still fail if enhancement is unavailable.

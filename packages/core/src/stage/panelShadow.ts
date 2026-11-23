@@ -20,6 +20,14 @@ export function getCssPanelBoxShadow(shadowIntensity: number) {
 	).join(', ');
 }
 
+/** Page Sections controls, resolved at each surface so local CSS overrides work too. */
+export function getSharedPanelBoxShadow(shadowIntensity: number) {
+	const strength = resolvePanelShadowStrength(shadowIntensity);
+	return PANEL_SHADOW_RECIPE.map(({ offsetY, blur, alphaScale }) =>
+		`0 calc(${offsetY}px * max(0, var(--ps-shadow-size, 1))) calc(${blur}px * max(0, var(--ps-shadow-size, 1))) color-mix(in srgb, var(--ps-shadow-color, #000) clamp(0%, calc(${formatAlpha(strength * alphaScale * 100)}% * var(--ps-shadow-intensity, 1)), 100%), transparent)`
+	).join(', ');
+}
+
 /** Preserves subtle low values while giving the upper half of the scale more visual range. */
 export function resolvePanelShadowStrength(shadowIntensity: number) {
 	return Math.pow(clamp(shadowIntensity, 0, 1), PANEL_SHADOW_INTENSITY_EXPONENT);

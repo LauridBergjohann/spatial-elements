@@ -4,7 +4,7 @@
 	import CircleHelp from '@lucide/svelte/icons/circle-help';
 	import X from '@lucide/svelte/icons/x';
 	import InteractionGesture from './InteractionGesture.svelte';
-	import { getCssPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
+	import { getSharedPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
 	import { getInteractionGuidance, MODEL_INPUT_EVENT, type ModelInputState, type InteractionGuidance } from '@spatial-elements/core/stage/interactionGuidance';
 	import { STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
 	import { STAGE_CONTEXT_KEY, STAGE_PANEL_LAYOUT_EVENT, type StageContext } from '@spatial-elements/core/stage/panelContext';
@@ -48,7 +48,7 @@
 		`--help-tint: ${typeof theme.panelTheme.tint === 'number' ? '#' + theme.panelTheme.tint.toString(16).padStart(6, '0') : theme.panelTheme.tint ?? '#ffffff'}`,
 		`--help-tint-opacity: ${(theme.panelTheme.tintOpacity ?? 0.65) * 100}%`,
 		`--help-blur: ${Math.min(100, Math.max(0, theme.panelTheme.backdropBlur ?? 8))}px`,
-		`--help-shadow: ${getCssPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2)}`,
+		`--help-shadow: ${getSharedPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2)}`,
 		`--help-radius: ${radii.panel}px`
 	].join(';'));
 

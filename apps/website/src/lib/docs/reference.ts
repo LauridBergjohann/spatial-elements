@@ -1789,6 +1789,28 @@ export const reference: ReferenceEntry[] = [
 						description: 'Normalized strength of the panel shadow, from zero to one.'
 					},
 					{
+						name: 'shadowColor',
+						id: 'stage-panel-theme-shadow-color',
+						type: 'ColorRepresentation',
+						optional: true,
+						description: 'Shadow color, shared with --ps-shadow-color when used inside Stage.'
+					},
+					{
+						name: 'shadowSize',
+						id: 'stage-panel-theme-shadow-size',
+						type: 'number',
+						optional: true,
+						description: 'Multiplier of the shadow radius. Zero removes the shadow.'
+					},
+					{
+						name: 'shadowIntensityScale',
+						id: 'stage-panel-theme-shadow-intensity-scale',
+						type: 'number',
+						optional: true,
+						description:
+							"Shared CSS intensity multiplier, independent of the material's base intensity."
+					},
+					{
 						name: 'opacity',
 						id: 'stage-panel-theme-opacity',
 						type: 'number',
@@ -3439,6 +3461,13 @@ export const reference: ReferenceEntry[] = [
 						type: 'Snippet',
 						optional: true,
 						description: ''
+					},
+					{
+						name: 'pageEnd',
+						id: 'content-page-page-end',
+						type: 'Snippet',
+						optional: true,
+						description: 'Content after the sections, outside the sticky menu boundary.'
 					},
 					{
 						name: 'footer',

@@ -1,5 +1,15 @@
 # @spatial-elements/core
 
+## 1.0.0-beta.17
+
+### Patch Changes
+
+- Adopt Page Sections 0.6.0 in both packages and the website. Use the shared Popup and ButtonGroup for navigation, search and labelled appearance settings, remove the 0.5.1 compatibility controller and native sidebar patches, and expose ContentPage.pageEnd while retaining footer as an alias. Keep virtual scrolling, themed 3D surfaces and the industrial/exclusive showcases intact.
+
+  Share border roles and CSS shadow color, size and intensity controls across Page Sections and spatial panels, including GPU glass. Retain per-material intensity and independent panel shadow overrides.
+
+- 748cf39: Add independent border and panelBorder theme colors for controls and surfaces. Icon buttons and ButtonGroups share the card border; panels and navigation use the panel border, with bottom-only edges on docked headers. Transparent colors disable edges without changing layout.
+
 ## 1.0.0-beta.16
 
 ### Major Changes

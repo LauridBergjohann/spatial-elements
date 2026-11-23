@@ -6,7 +6,7 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
     await page.goto('/showcase/consumer/logitech-brio-500/');
     await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', enhanced ? 'enhanced' : 'fallback', { timeout: 60000 });
     await page.addStyleTag({ content: '.brand-stage-shell { --ps-border: rgb(200, 50, 30) !important; --ps-panel-border: rgb(30, 60, 200) !important; }' });
-    await expect(page.locator('.satellite .appearance')).toHaveCSS('outline-color', 'rgb(200, 50, 30)');
+    await expect(page.locator('.satellite .appearance .ps-button-group').filter({ visible: true })).toHaveCSS('outline-color', 'rgb(200, 50, 30)');
     const dockEdge = await page.locator('.spatial-element-sticky-header').evaluate(el => {
       const css = getComputedStyle(el, '::before');
       return [css.borderTopWidth, css.borderBottomWidth, css.borderBottomColor];

@@ -4,7 +4,7 @@
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import SpatialSummarySlot from './SpatialSummarySlot.svelte';
 	import { getContext } from 'svelte';
-	import { getCssPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
+	import { getSharedPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
 	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
 	import { CATALOG_ITEMS, type CatalogItems } from '@spatial-elements/core/catalog/catalogItems';
@@ -190,7 +190,7 @@
 		aria-hidden={interactive && !selected}
 		style:--carousel-panel-opacity={(interactive ? pose.panelOpacity : 1) *
 			(brand.panelTheme.opacity ?? 1)}
-		style:--carousel-panel-shadow={getCssPanelBoxShadow(brand.panelTheme.shadowIntensity ?? 0.28)}
+		style:--carousel-panel-shadow={getSharedPanelBoxShadow(brand.panelTheme.shadowIntensity ?? 0.28)}
 		style:--carousel-panel-tint={typeof brand.panelTheme.tint === 'number'
 			? '#' + brand.panelTheme.tint.toString(16).padStart(6, '0')
 			: typeof brand.panelTheme.tint === 'object'

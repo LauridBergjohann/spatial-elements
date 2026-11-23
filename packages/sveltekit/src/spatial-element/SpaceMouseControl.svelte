@@ -84,7 +84,7 @@
 >
 	<SpaceMouseIcon />
 </SpatialIconButton>
-<dialog bind:this={dialog} aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`}>
+<dialog class="ps-shadow-popup" bind:this={dialog} aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`}>
 	<h2 id={`${id}-title`}>
 		{failure === 'permission-required'
 			? copy.spaceMousePermissionTitle
@@ -109,7 +109,7 @@
 			>{/if}
 	</div>
 </dialog>
-<div bind:this={toast} popover="manual" role="status" class="connection-toast">
+<div bind:this={toast} popover="manual" role="status" class="connection-toast ps-shadow-popup">
 	{toastMessage}
 </div>
 
@@ -118,12 +118,12 @@
 	.connection-toast {
 		box-sizing: border-box;
 		padding: 24px;
-		border: 1px solid color-mix(in srgb, var(--spatial-element-ink) 15%, transparent);
+		border: 1px solid var(--ps-panel-border);
 		border-radius: var(--spatial-element-panel-radius, 12px);
 		color: var(--spatial-element-ink);
 		background: var(--ps-section-standard, var(--ps-background, #fff));
 		font: inherit;
-		box-shadow: 0 8px 32px #0003;
+		box-shadow: var(--ps-popup-shadow, var(--ps-navigation-shadow, var(--ps-default-navigation-shadow)));
 		max-width: min(440px, calc(100vw - 32px));
 	}
 	dialog::backdrop {

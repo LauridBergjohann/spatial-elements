@@ -49,7 +49,7 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 		const menu = page.locator('.ps-navigation');
 		for (const mode of ['Dark', 'Light']) {
 			await page.getByRole('button', { name: mode, exact: true }).filter({ visible: true }).click();
-			await page.locator('#areas').getByRole('link', { name: 'Exclusive', exact: true }).click();
+			await page.locator('#areas a[href="/showcase/exclusive/"]').click();
 			await expect(page).toHaveURL(/\/showcase\/exclusive\/$/);
 			if (enhanced) {
 				await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
@@ -70,7 +70,7 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 				await expect(page.locator('[data-stage-panel-bound][data-stage-panel-surface="glass"]').first()).toBeAttached();
 			}
 			await expect(header).toHaveCSS('border-radius', '22px');
-			await expect(page.getByRole('navigation', { name: 'Breadcrumb', exact: true }).filter({ visible: true }).first().getByRole('link', { name: 'Exclusive', exact: true })).toHaveAttribute('href', '/showcase/exclusive/');
+			await expect(page.getByRole('navigation', { name: 'Breadcrumb', exact: true }).filter({ visible: true }).first().getByRole('link', { name: 'Beyond the Ordinary', exact: true })).toHaveAttribute('href', '/showcase/exclusive/');
 			await page.screenshot({ path: info.outputPath(`exclusive-${mode}.png`) });
 			await menu.getByRole('link', { name: 'Showcase', exact: true }).filter({ visible: true }).click();
 			await expect(page).toHaveURL(/\/showcase\/$/);

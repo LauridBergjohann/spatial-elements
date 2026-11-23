@@ -2,6 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { afterNavigate } from '$app/navigation';
+	import { IconButton, Popup } from '@page-sections/svelte';
 	import Search from '@lucide/svelte/icons/search';
 	import { showcaseSegments } from './showcase/segments';
 	import { showcaseProducts } from './showcase/products';
@@ -40,7 +41,7 @@
 	let compact = $state(false);
 	let root = $state<HTMLDivElement>();
 	let input = $state<HTMLInputElement>();
-	let trigger = $state<HTMLButtonElement>();
+	let trigger = $state<HTMLButtonElement | HTMLAnchorElement>();
 	let query = $state('');
 	let opened = $state(false);
 	let active = $state(-1);
@@ -147,9 +148,12 @@
 	}}
 >
 	{#if ready}
-		<button
+		<IconButton
+			label="Open search"
+			active={opened}
+			borderless
 			class="mobile-search"
-			bind:this={trigger}
+			bind:element={trigger}
 			type="button"
 			aria-label="Open search"
 			aria-expanded={opened}
@@ -157,8 +161,15 @@
 			onclick={() => (opened ? dismiss(true) : void focusSearch())}
 		>
 			<Search size={20} aria-hidden="true" />
-		</button>
-		<div class="search-surface" data-ps-popup={opened && compact ? '' : undefined}>
+		</IconButton>
+		<Popup
+			class="search-surface"
+			inline={!compact}
+			open={!compact || opened}
+			anchor={trigger}
+			onclose={() => dismiss()}
+			style="padding: 0"
+		>
 			<div class="search-field" id="site-search-field">
 				<Search size={18} aria-hidden="true" />
 				<input
@@ -186,7 +197,13 @@
 				<kbd aria-hidden="true">Ctrl K</kbd>
 			</div>
 			{#if opened}
-				<div class="search-panel" data-ps-popup={!compact ? '' : undefined}>
+				<Popup
+					class="search-panel"
+					inline={compact}
+					onclose={() => dismiss()}
+					anchor={input}
+					style="padding: 0"
+				>
 					<p class="search-hint" role="status">
 						{query.trim()
 							? `${found.length} matching ${found.length === 1 ? 'topic' : 'topics'}${found.length > 10 ? ' · showing the first 10' : ''}`
@@ -213,11 +230,11 @@
 							No matching topics. Try “cards”, “theme” or “CodeBlock”.
 						</p>{/if}
 					<p class="search-hint">↑ ↓ to choose · Enter to open · Esc to close</p>
-				</div>
+				</Popup>
 			{/if}
-		</div>
+		</Popup>
 	{:else}
-		<a class="search-fallback" href={resolve('docs/')} aria-label="Browse documentation">
+		<a class="search-fallback" href={resolve('/docs')} aria-label="Browse documentation">
 			<Search size={18} aria-hidden="true" /><span>Browse documentation</span>
 		</a>
 	{/if}
@@ -262,26 +279,17 @@
 		border-radius: 0.25rem;
 		padding: 0.2rem 0.3rem;
 	}
-	.mobile-search:focus-visible {
-		outline: 2px solid var(--ps-accent);
-		outline-offset: 2px;
-	}
-	.mobile-search {
+
+	.site-search :global(.mobile-search) {
 		display: none;
 	}
-	.search-panel {
-		position: absolute;
-		top: calc(100% + 8px);
+	.site-search :global(.search-panel) {
+		top: 100%;
 		right: 0;
 		z-index: 5;
 		width: 30rem;
 		max-width: calc(100vw - 24px);
-		background: var(--ps-section-standard);
-		color: var(--ps-ink);
-		border: 1px solid var(--ps-panel-border);
-		border-radius: var(--ps-radius);
-		box-shadow: var(--ps-navigation-shadow);
-		overflow: hidden;
+		border-top-width: 0;
 	}
 	ul {
 		list-style: none;
@@ -323,32 +331,21 @@
 		border-block: 1px solid var(--ps-border);
 	}
 
-	.search-surface {
+	:global(.search-surface) {
 		display: contents;
 	}
-	.mobile-search {
-		transition:
-			color 180ms ease,
-			background-color 180ms ease;
-	}
-	.mobile-search[aria-expanded='true'] {
-		color: var(--ps-accent);
-		background: var(--ps-selection, var(--ps-section-muted));
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.mobile-search {
-			transition: none;
-		}
-	}
+
 	@media (max-width: 799.98px), (min-width: 1200px) and (max-width: 1599.98px) {
 		.site-search {
 			position: static;
 			width: 40px;
 		}
-		.search-surface {
+		:global(.search-surface) {
 			display: none;
 		}
-		.mobile-search,
+		.site-search :global(.mobile-search) {
+			display: inline-flex;
+		}
 		.search-fallback {
 			display: grid;
 			place-items: center;
@@ -361,33 +358,25 @@
 			color: var(--ps-ink);
 			cursor: pointer;
 		}
-		.mobile-search[aria-expanded='true'] {
-			color: var(--ps-accent);
-			background: var(--ps-selection, var(--ps-section-muted));
-		}
 		.search-fallback span,
 		kbd {
 			display: none;
 		}
-		.opened .search-surface {
+		.opened :global(.search-surface) {
 			display: block;
 			position: absolute;
-			top: calc(100% + 8px);
+			top: 100%;
 			left: 12px;
 			right: 12px;
+			width: auto;
 			z-index: 5;
-			background: var(--ps-section-standard);
-			color: var(--ps-ink);
-			border: 1px solid var(--ps-panel-border);
-			border-radius: var(--ps-radius);
-			box-shadow: var(--ps-navigation-shadow);
-			overflow: auto;
+			border-top-width: 0;
 			max-height: calc(100dvh - var(--ps-nav-height) - 24px);
 		}
 		.search-field {
 			margin: 12px;
 		}
-		.search-panel {
+		.site-search :global(.search-panel) {
 			position: static;
 			width: auto;
 			max-width: none;

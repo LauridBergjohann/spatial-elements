@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { getSharedPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
+	import { useSpatialTheme } from './brandContext.js';
+	const readTheme = useSpatialTheme();
+	const shadow = $derived(getSharedPanelBoxShadow(readTheme().dockedPanelTheme.shadowIntensity));
 	import type { Snippet } from 'svelte';
 	import type { ResolvedSpatialElementData as SpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
 	import { catalogActionSemantic } from '@spatial-elements/core/catalog/catalogAction';
@@ -27,6 +31,7 @@
 
 <header
 	class="spatial-element-sticky-header"
+	style:--spatial-docked-default-shadow={shadow}
 	data-spatial-element-sticky-header
 	data-spatial-element-handoff-header
 	data-catalog-transition-dom="enter"
@@ -127,6 +132,7 @@
 
 	<div
 		class="spatial-element-sticky-tabs"
+		style:--spatial-docked-default-shadow={shadow}
 		data-spatial-element-sticky-tabs
 		data-catalog-transition-dom="enter"
 		aria-hidden="true"
@@ -199,7 +205,7 @@
 		opacity: 0;
 		visibility: hidden;
 		background: transparent;
-		box-shadow: var(--spatial-element-docked-panel-box-shadow);
+		box-shadow: var(--ps-panel-shadow, var(--spatial-element-docked-panel-box-shadow, var(--spatial-docked-default-shadow)));
 		pointer-events: none;
 		will-change: border-radius;
 	}
@@ -234,7 +240,7 @@
 
 	.spatial-element-sticky-header::after {
 		z-index: 1;
-		box-shadow: var(--spatial-element-docked-panel-box-shadow);
+		box-shadow: var(--ps-panel-shadow, var(--spatial-element-docked-panel-box-shadow, var(--spatial-docked-default-shadow)));
 		opacity: var(--spatial-element-sticky-header-progress, 0);
 	}
 

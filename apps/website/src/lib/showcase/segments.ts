@@ -1,34 +1,41 @@
 export const showcaseSegments = [
 	{
 		id: 'consumer',
-		title: 'Consumer',
+		image: 'consumer.webp',
+		title: 'Everyday Tech',
+		eyebrow: 'CONSUMER ELECTRONICS · B2C',
 		manufacturers: ['logitech'],
 		cardSize: 'l',
-		description:
-			'Technology for everyday life. Explore Logitech products for your desk, work and entertainment.'
+		description: 'Explore the technology that shapes how we work, play, and connect.'
 	},
 	{
 		id: 'workbench',
-		title: 'Workbench',
+		image: 'workbench.webp',
+		title: 'Precision in Hand',
+		eyebrow: 'TOOLS · MAKERS · CRAFTSMANSHIP',
 		manufacturers: ['wera'],
 		cardSize: 's',
-		description: 'Tools for home projects and professional workshops. Discover the Wera collection.'
+		description:
+			'Discover quality tools for professionals, passionate makers, and everyday projects.'
 	},
 	{
 		id: 'industrial',
-		title: 'Industrial',
+		image: 'industrial.webp',
+		title: ' Built for Industry',
+		eyebrow: 'AUTOMATION · ENGINEERING  · B2B',
 		manufacturers: ['item', 'wurm'],
 		cardSize: 'm',
-		description:
-			'Modular engineering meets intelligent automation. Explore components from item and control systems from Wurm, presented with a blue frosted theme and tailored product panels.'
+		description: 'Explore the components and technologies powering modern industry and automation.'
 	},
 	{
 		id: 'exclusive',
-		title: 'Exclusive',
+		image: 'exclusive.webp',
+		title: 'Beyond the Ordinary',
+		eyebrow: 'LUXURY · DESIGN · CRAFTSMANSHIP',
 		manufacturers: ['watches'],
 		cardSize: 'l',
 		description:
-			'A closer look at luxury watchmaking with a Rolex chronograph. Glass panels, gold accents and softer corners demonstrate a different visual identity with the same navigation.'
+			'Discover exceptional timepieces and luxury goods where craftsmanship meets timeless design.'
 	}
 ] as const;
 export function productSegment(manufacturer: string) {

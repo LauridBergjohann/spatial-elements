@@ -2,7 +2,7 @@
 
 ## Prepared correction release
 
-Both public packages are prepared as `1.0.0-beta.16`, adopting Page Sections 0.5.1, Three.js 0.187 and SvelteKit 3. Spatial cards use `cardShadow` instead of `cardVariant`, retain full-card links and equal heights, and preserve their 3D transitions. See [development](development.md) for migration details and supported tooling. Commit and merge the prepared branch without running `changeset` or `release:version` again. The release workflow publishes this version under **beta**; it does not move **latest**. Consumers can explicitly install it with:
+Both public packages are prepared as `1.0.0-beta.17`, adopting Page Sections 0.6.0, Three.js 0.187 and SvelteKit 3. Spatial cards use `cardShadow` instead of `cardVariant`, retain full-card links and equal heights, and preserve their 3D transitions. See [development](development.md) for migration details and supported tooling. Commit and merge the prepared branch without running `changeset` or `release:version` again. The release workflow publishes this version under **beta**; it does not move **latest**. Consumers can explicitly install it with:
 
 ```sh
 npm install @spatial-elements/core@beta @spatial-elements/sveltekit@beta

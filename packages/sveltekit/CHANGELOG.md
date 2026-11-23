@@ -1,5 +1,23 @@
 # @spatial-elements/sveltekit
 
+## 1.0.0-beta.17
+
+### Patch Changes
+
+- Adopt Page Sections 0.6.0 in both packages and the website. Use the shared Popup and ButtonGroup for navigation, search and labelled appearance settings, remove the 0.5.1 compatibility controller and native sidebar patches, and expose ContentPage.pageEnd while retaining footer as an alias. Keep virtual scrolling, themed 3D surfaces and the industrial/exclusive showcases intact.
+
+  Share border roles and CSS shadow color, size and intensity controls across Page Sections and spatial panels, including GPU glass. Retain per-material intensity and independent panel shadow overrides.
+
+- 287a287: Unify shell and content-menu popups with an on-demand page blur, active disclosure triggers and native top-layer placement through the shared Page Sections 0.6.0 components. Repair repeated mobile-menu opening after outside dismissal and keep desktop navigation labels on one line.
+
+  Constrain native and spatially scrolled content menus to the sections rather than the page-end navigation. Preserve the attached menu's 16px bottom inset and the detached menu's flush ending.
+
+- 11aa79d: Use consistent popup spacing, radius, border and shadow. Reset native popover borders and omit the redundant content-menu close button. Keep header icon triggers borderless while preserving keyboard focus indicators.
+- 748cf39: Add independent border and panelBorder theme colors for controls and surfaces. Icon buttons and ButtonGroups share the card border; panels and navigation use the panel border, with bottom-only edges on docked headers. Transparent colors disable edges without changing layout.
+- Updated dependencies
+- Updated dependencies [748cf39]
+  - @spatial-elements/core@1.0.0-beta.17
+
 ## 1.0.0-beta.16
 
 ### Major Changes

@@ -20,11 +20,14 @@
 		/** SpatialCardGridSection, SpatialCarouselSection and ordinary Section children. */
 		children?: Snippet;
 		leftSidebar?: Snippet;
+		/** Content after the sections, outside the sticky menu boundary. */
+		pageEnd?: Snippet;
+		/** @deprecated Use pageEnd. The site footer belongs to BrandStageShell. */
 		footer?: Snippet;
 		showContentMenu?: boolean;
 		contentMenuLabel?: string;
 	}
-	let { page, hdr, background, children, leftSidebar, footer, showContentMenu = false, contentMenuLabel }: Props = $props();
+	let { page, hdr, background, children, leftSidebar, pageEnd, footer, showContentMenu = false, contentMenuLabel }: Props = $props();
 	const backgroundId = $props.id();
 	const backgroundScope = backgroundId.replace(/[^a-zA-Z0-9_-]/g, '_');
 	onMount(() => {
@@ -45,25 +48,12 @@
 </script>
 
 {#if background}<svelte:element this={'style'}>{backgroundRules}</svelte:element>{/if}
-<PageContent {page} {leftSidebar} {footer} {showContentMenu} {contentMenuLabel} class="content-page" data-catalog-list data-brand-id={brand.id}
+<PageContent {page} {leftSidebar} pageEnd={pageEnd ?? footer} {showContentMenu} {contentMenuLabel} class="content-page" data-catalog-list data-brand-id={brand.id}
  data-spatial-content-page={backgroundScope} data-spatial-page-background={background ? backgroundScope : undefined}>
  {@render children?.()}
 </PageContent>
 
 <style>
- /* Older Page Sections still renders a redundant close button. The trigger, outside click and Escape close the popup. */
- :global(.content-page .ps-content-menu-slot .popup > .close) { display: none; }
-
- /* Compatibility with Page Sections 0.5.1; the upcoming shared grid separates pageEnd. */
- :global(.content-page .ps-content-menu-slot) { height: var(--spatial-content-menu-height, auto); }
- @media (min-width: 1600px) {
-  :global(.content-page .ps-content-menu-slot) { padding-bottom: var(--ps-content-menu-offset); }
-  :global(.content-page .ps-page-frame:has(.ps-page-content .ps-section[data-nested='false']:not([data-background-size='standard'][data-background-color='standard'], [data-background-size='standard'][data-background-color='muted'])) > .ps-content-menu-slot) { padding-bottom: 0; }
- }
- @media (max-width: 1599.98px) {
-  :global(.content-page .ps-content-menu-slot) { position: relative; top: auto; align-self: stretch; pointer-events: none !important; }
-  :global(.content-page .ps-content-menu-slot > .mobile) { position: sticky; top: 12px; pointer-events: auto; }
- }
  :global(.content-page [data-spatial-sticky-sidebar]) { position: relative !important; top: 0 !important; }
  /* The shared stage leaves its DOM layer transparent to model interaction.
   * Ordinary Page Sections and navigation still need native hit targets. */

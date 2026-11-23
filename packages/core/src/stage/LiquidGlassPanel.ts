@@ -56,6 +56,12 @@ export interface LiquidGlassPanelOptions {
 	specularOpacity?: number;
 	/** Normalized strength of the panel shadow, from zero to one. */
 	shadowIntensity?: number;
+	/** Shadow color, shared with --ps-shadow-color when used inside Stage. */
+	shadowColor?: ColorRepresentation;
+	/** Multiplier of the shadow radius. Zero removes the shadow. */
+	shadowSize?: number;
+	/** Shared CSS intensity multiplier, independent of the material's base intensity. */
+	shadowIntensityScale?: number;
 	opacity?: number;
 }
 
@@ -73,6 +79,9 @@ const DEFAULT_OPTIONS = {
 	thickness: 0.35,
 	specularOpacity: 0.18,
 	shadowIntensity: 0.28,
+	shadowColor: 0x000000,
+	shadowSize: 1,
+	shadowIntensityScale: 1,
 	opacity: 1
 } satisfies Required<LiquidGlassPanelOptions>;
 
@@ -108,6 +117,8 @@ export function resolveLiquidGlassPanelOptions(
 		thickness: clampFinite(merged.thickness, 0, 1, DEFAULT_OPTIONS.thickness),
 		specularOpacity: clampFinite(merged.specularOpacity, 0, 1, DEFAULT_OPTIONS.specularOpacity),
 		shadowIntensity: clampFinite(merged.shadowIntensity, 0, 1, DEFAULT_OPTIONS.shadowIntensity),
+		shadowSize: clampFinite(merged.shadowSize, 0, 100, 1),
+		shadowIntensityScale: clampFinite(merged.shadowIntensityScale, 0, 100, 1),
 		opacity: clampFinite(merged.opacity, 0, 1, DEFAULT_OPTIONS.opacity)
 	};
 }
@@ -181,12 +192,12 @@ export class LiquidGlassPanel {
 				this.geometryOptions.width,
 				this.geometryOptions.height,
 				this.geometryOptions.radius,
-				layer.blur * WEBGPU_SHADOW_EXTENT_PER_BLUR,
+				layer.blur * this.options.shadowSize * WEBGPU_SHADOW_EXTENT_PER_BLUR,
 				Math.max(8, Math.round(layer.blur)),
 				2.1, this.options.squareBottom
 			);
 			const material = createVertexAlphaMaterial(
-				0x000000,
+				this.options.shadowColor,
 				shadowStrength * layer.alphaScale * WEBGPU_SHADOW_EDGE_COMPENSATION
 			);
 			const mesh = new THREE.Mesh(geometry, material);
@@ -259,8 +270,7 @@ export class LiquidGlassPanel {
 		this.sheenMaterial.opacity = this.options.specularOpacity * scale;
 		this.shadowLayers.forEach(({ material, alphaScale }) => {
 			material.opacity =
-				resolvePanelShadowStrength(this.options.shadowIntensity) *
-				alphaScale *
+				Math.min(1, resolvePanelShadowStrength(this.options.shadowIntensity) * this.options.shadowIntensityScale * alphaScale) * (this.options.shadowSize > 0 ? 1 : 0) *
 				WEBGPU_SHADOW_EDGE_COMPENSATION *
 				scale;
 		});
@@ -305,7 +315,7 @@ export class LiquidGlassPanel {
 					nextWidth,
 					nextHeight,
 					nextRadius,
-					layer.blur * WEBGPU_SHADOW_EXTENT_PER_BLUR,
+					layer.blur * this.options.shadowSize * WEBGPU_SHADOW_EXTENT_PER_BLUR,
 					Math.max(8, Math.round(layer.blur)),
 					2.1, this.options.squareBottom
 				)

@@ -7,7 +7,6 @@
 	import { retainDeviceOrientationPermission } from '@spatial-elements/core/catalog/listDeviceOrientation';
 	import Stage from '../stage/Stage.svelte';
 	import PointerHint from './PointerHint.svelte';
-	import { popupLayer } from './navigationPopovers.js';
 	import SpatialNavigationShell from './SpatialNavigationShell.svelte';
 	import SpatialSummaryHost from './SpatialSummaryHost.svelte';
 	import type { SpatialSummarySnippet } from './spatialSummary.js';
@@ -79,7 +78,7 @@
 	function attachPinchPolicy(node: HTMLElement) { return { destroy: preventBrowserPinch(node) }; }
 </script>
 
-<div bind:this={shell} use:attachPinchPolicy use:popupLayer class="brand-stage-shell" style={brandStyle} style:color-scheme={colorScheme} data-color-scheme={colorScheme}>
+<div bind:this={shell} use:attachPinchPolicy class="brand-stage-shell" style={brandStyle} style:color-scheme={colorScheme} data-color-scheme={colorScheme}>
 	<Stage
 		{deviceOrientation}
 		brandId={theme.id}

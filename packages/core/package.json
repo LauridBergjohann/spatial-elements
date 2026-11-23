@@ -1,6 +1,6 @@
 {
   "name": "@spatial-elements/core",
-  "version": "1.0.0-beta.16",
+  "version": "1.0.0-beta.17",
   "description": "Framework-independent rendering and catalog runtime for Spatial Elements.",
   "license": "MPL-2.0",
   "type": "module",
@@ -50,7 +50,7 @@
   },
   "dependencies": {
     "@3dconnexion/3dconnexionjs": "0.8.1",
-    "@page-sections/core": "0.5.1"
+    "@page-sections/core": "0.6.0"
   },
   "peerDependencies": {
     "three": "^0.187.0"

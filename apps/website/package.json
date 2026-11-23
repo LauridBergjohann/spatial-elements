@@ -9,10 +9,10 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "@page-sections/core": "0.5.1",
-    "@page-sections/svelte": "0.5.1",
-    "@spatial-elements/core": "1.0.0-beta.16",
-    "@spatial-elements/sveltekit": "1.0.0-beta.16"
+    "@page-sections/core": "0.6.0",
+    "@page-sections/svelte": "0.6.0",
+    "@spatial-elements/core": "1.0.0-beta.17",
+    "@spatial-elements/sveltekit": "1.0.0-beta.17"
   },
   "devDependencies": {
     "@lucide/svelte": "1.77.0",

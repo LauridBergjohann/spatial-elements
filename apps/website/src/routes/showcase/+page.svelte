@@ -10,10 +10,11 @@
 		return {
 			id: segment.id,
 			title: segment.title,
+			eyebrow: segment.eyebrow,
 			description: segment.description,
 			href: '/showcase/' + segment.id + '/',
 			image: {
-				src: '/assets/showcase/' + product.id + '/' + product.id + '-poster.webp',
+				src: '/assets/showcase/' + segment.image,
 				alt: segment.title + ' collection',
 				width: 1024,
 				height: 1024
@@ -35,9 +36,10 @@
 	<CardGridSection
 		section={{ id: 'areas', title: 'Explore the collections', headline: 'Explore the collections' }}
 		list={areas}
-		cardSize="m"
+		cardSize="l"
 		cardTone="standard"
 		mediaAspect="3/2"
+		mediaFit="cover"
 	/>
 	<SpatialCarouselSection
 		section={{

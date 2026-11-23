@@ -29,8 +29,8 @@
 				height: 1024
 			},
 			actions: [
-				{ label: 'Get started', href: '/getting-started/', variant: 'primary' },
-				{ label: 'Explore the showcase', href: '/showcase/', variant: 'text' }
+				{ label: 'Explore the showcase', href: '/showcase/', variant: 'primary' },
+				{ label: 'Get started', href: '/getting-started/', variant: 'secondary' }
 			]
 		}}
 	/>

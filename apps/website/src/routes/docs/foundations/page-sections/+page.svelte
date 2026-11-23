@@ -37,7 +37,8 @@
 			<p>
 				<a href="https://page-sections.bergjohann.com/docs/">Page Sections</a> supplies these content
 				building blocks, plus page containers, navigation, themes and a responsive grid. Spatial Elements
-				uses Page Sections 0.5.1 as its foundation.
+				uses Page Sections 0.6.0 as its foundation. Its shared buttons, ButtonGroup and Popup provide
+				the same appearance and interaction in ordinary pages and around the spatial stage.
 			</p>
 			<DocFigure
 				name="foundations"
@@ -72,7 +73,7 @@
 				We will introduce the exact sizes in <a href="/docs/foundations/layout/">
 					Responsive layout
 				</a>. For the underlying content components, see
-				<a href="https://page-sections.bergjohann.com/docs/building-blocks/">
+				<a href="https://page-sections.bergjohann.com/docs/components/">
 					Page Sections components
 				</a>.
 			</p>

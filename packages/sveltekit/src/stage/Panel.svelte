@@ -14,7 +14,7 @@
 		type StagePanelShape,
 		type StagePanelTheme
 	} from '@spatial-elements/core/stage/panelContext';
-	import { getCssPanelBoxShadow, resolvePanelShadowStrength } from '@spatial-elements/core/stage/panelShadow';
+	import { getSharedPanelBoxShadow, resolvePanelShadowStrength } from '@spatial-elements/core/stage/panelShadow';
 	import type { StagePanelSurface } from '@spatial-elements/core/stage/stageTypes';
 	import type { CatalogTransitionGroup } from '@spatial-elements/core/catalog/catalogPresentation';
 	import type { CatalogEndpointAddress } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
@@ -207,7 +207,7 @@
 			`--stage-panel-tint-opacity: ${tintOpacity}`,
 			`--stage-panel-shadow-intensity: ${shadowIntensity}`,
 			`--stage-panel-shadow-strength: ${resolvePanelShadowStrength(shadowIntensity)}`,
-			`--stage-panel-box-shadow: ${getCssPanelBoxShadow(shadowIntensity)}`,
+			`--stage-panel-box-shadow: ${getSharedPanelBoxShadow(shadowIntensity)}`,
 			`--stage-panel-specular-opacity: ${specularOpacity}`,
 			`--stage-panel-thickness: ${thickness}`,
 			`--stage-panel-bezel: ${bezel}px`,
@@ -389,7 +389,7 @@
 	.stage-panel-surface::before {
 		background: rgb(var(--stage-panel-tint-rgb) / var(--stage-panel-tint-opacity));
 		box-shadow:
-			var(--stage-panel-box-shadow),
+			var(--ps-panel-shadow, var(--stage-panel-box-shadow)),
 			inset 0 0 var(--stage-panel-bezel) rgb(16 24 32 / calc(var(--stage-panel-thickness) * 0.12));
 		-webkit-backdrop-filter: blur(var(--stage-panel-css-blur));
 		backdrop-filter: blur(var(--stage-panel-css-blur));

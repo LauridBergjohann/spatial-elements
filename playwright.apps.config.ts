@@ -19,7 +19,8 @@ export default defineConfig({
 	expect: { timeout: process.env.SPATIAL_E2E_DEV ? 60_000 : 15_000 },
 	outputDir: `.artifacts/apps-${mode}`,
 	use: {
-		browserName: 'chromium', channel: process.env.CI ? undefined : 'chrome',
+		browserName: 'chromium',
+		channel: process.env.SPATIAL_E2E_CHANNEL,
 		viewport: { width: 1700, height: 900 }, trace: 'retain-on-failure'
 	},
 	projects: [

@@ -11,7 +11,7 @@
 	import { provideShowcaseOrders } from '#lib/showcase/showcaseOrders.svelte.ts';
 	const orders = provideShowcaseOrders();
 	import { websitePageTheme, websiteTheme } from '#lib/theme.ts';
-	import { Header, PageShell } from '@page-sections/svelte';
+	import { ButtonGroup, Header, PageShell } from '@page-sections/svelte';
 	import Menu from '@lucide/svelte/icons/menu';
 	import Settings from '@lucide/svelte/icons/settings';
 	import Sun from '@lucide/svelte/icons/sun';
@@ -87,6 +87,22 @@
 	<meta property="og:url" content={'https://spatial-elements.bergjohann.com' + page.url.pathname} />
 </svelte:head>
 
+{#snippet appearance(iconOnly: boolean)}
+	<ButtonGroup
+		label="Appearance"
+		{iconOnly}
+		items={[
+			{ id: 'light', label: 'Light', selected: mode === 'light', disabled: !ready },
+			{ id: 'dark', label: 'Dark', selected: mode === 'dark', disabled: !ready }
+		]}
+		onselect={(item) => setMode(item.id)}
+	>
+		{#snippet icon(item)}{#if item.id === 'light'}<Sun size={18} />{:else}<Moon
+					size={18}
+				/>{/if}{/snippet}
+	</ButtonGroup>
+{/snippet}
+
 {#snippet siteNavigation()}
 	<div class="website-header">
 		<Header scrollBehavior="static" {items} closeKey={page.url.pathname}>
@@ -126,28 +142,11 @@
 				</div>
 			{/snippet}
 			{#snippet right()}
-				<div class="appearance" role="group" aria-label="Appearance">
-					<button
-						type="button"
-						aria-label="Light"
-						title="Light"
-						aria-pressed={mode === 'light'}
-						disabled={!ready}
-						onclick={() => setMode('light')}
-					>
-						<Sun size={18} aria-hidden="true" />
-					</button>
-					<button
-						type="button"
-						aria-label="Dark"
-						title="Dark"
-						aria-pressed={mode === 'dark'}
-						disabled={!ready}
-						onclick={() => setMode('dark')}
-					>
-						<Moon size={18} aria-hidden="true" />
-					</button>
+				<div class="appearance appearance-expanded">
+					<h3>Appearance</h3>
+					{@render appearance(false)}
 				</div>
+				<div class="appearance appearance-compact">{@render appearance(true)}</div>
 			{/snippet}
 		</Header>
 	</div>
@@ -220,30 +219,26 @@
 		}
 	}
 	.appearance {
-		outline: 1px solid var(--ps-border);
-		outline-offset: -1px;
-		display: flex;
-		border-radius: var(--spatial-element-control-radius);
-		overflow: clip;
+		--ps-radius: var(--spatial-element-control-radius);
 	}
-	.appearance button {
+	.appearance-expanded {
 		display: grid;
-		place-items: center;
-		width: 40px;
-		height: 40px;
-		padding: 0;
-		border: 0;
-		border-radius: 0;
-		background: transparent;
-		color: var(--ps-ink);
-		cursor: pointer;
+		gap: 12px;
 	}
-	.appearance [aria-pressed='true'] {
-		color: var(--ps-accent);
-		background: var(--ps-selection, var(--ps-section-muted));
+	.appearance-expanded h3 {
+		margin: 0;
+		font-size: 0.875rem;
+		font-weight: 500;
 	}
-	.appearance button:disabled {
-		opacity: 0.5;
-		cursor: default;
+	.appearance-compact {
+		display: none;
+	}
+	@media (min-width: 1600px) {
+		.appearance-expanded {
+			display: none;
+		}
+		.appearance-compact {
+			display: block;
+		}
 	}
 </style>

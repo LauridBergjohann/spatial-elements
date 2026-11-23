@@ -329,4 +329,46 @@
 			and keyboard focus keep their accent outlines.
 		</p>
 	</Section>
+	<Section
+		section={{
+			id: 'shadows',
+			title: 'Shared shadows',
+			headline: 'Shared shadows',
+			background: { color: 'standard' }
+		}}
+	>
+		<div class="prose">
+			<p>
+				Page Sections and spatial panels share three CSS controls: <code>--ps-shadow-color</code>
+				(default black), <code>--ps-shadow-size</code> and <code>--ps-shadow-intensity</code> (both default
+				1). Set them on your page shell or a themed ancestor. A value of 0 removes the size or intensity;
+				transparent removes the color.
+			</p>
+			<p>
+				The material's <a href="/docs/reference/types/#spatial-theme-panel-theme">
+					<code>panelTheme</code>
+				</a>
+				and
+				<a href="/docs/reference/types/#spatial-theme-docked-panel-theme">
+					<code>dockedPanelTheme</code>
+				</a> keep their base shadow intensity. The CSS intensity multiplies that strength, so Industrial
+				and Exclusive retain their individual appearance. GPU glass reads these controls when the theme
+				or responsive styles change; scrolling does not poll styles or add a render loop.
+			</p>
+			<p>
+				For complete CSS shadow replacements, use <code>--ps-navigation-shadow</code>,
+				<code>--ps-popup-shadow</code>, <code>--ps-surface-shadow</code>, or
+				<code>--ps-panel-shadow</code> for spatial CSS panels. A complete CSS shadow cannot describe a
+				GPU material; use the three shared controls for changes that must also affect refractive glass.
+			</p>
+			<p>
+				See the <a href="https://page-sections.bergjohann.com/docs/design-system/">
+					Page Sections design system
+				</a>
+				and <a href="https://page-sections.bergjohann.com/docs/components/">shared components</a> for
+				the common controls, popup surfaces and atomic component hierarchy. Header buttons remain borderless;
+				panel edges and keyboard focus are independent of shadows.
+			</p>
+		</div>
+	</Section>
 </WebsitePage>

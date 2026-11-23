@@ -2,7 +2,7 @@
 	export const examples = [
 		{
 			language: 'sh',
-			code: 'npm install @spatial-elements/sveltekit@beta @page-sections/svelte@0.5.1'
+			code: 'npm install @spatial-elements/sveltekit@beta @page-sections/svelte@0.6.0'
 		},
 		{
 			language: 'svelte',
@@ -45,7 +45,7 @@
 			</p>
 			<CodeBlock {...examples[0]} highlighted={data.highlights[0]} />
 			<p>
-				The spatial package uses Page Sections 0.5.1 and Three.js 0.187. Modern npm resolves peer
+				The spatial package uses Page Sections 0.6.0 and Three.js 0.187. Modern npm resolves peer
 				dependencies; if you import Three.js directly, also declare <code>three@^0.187.0</code> and
 				<code>@types/three@^0.187.0</code> for TypeScript.
 			</p>

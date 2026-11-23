@@ -8,20 +8,13 @@ export function attachContentSidebars(host: HTMLElement) {
 	const offsets = new Map<HTMLElement, number>();
 	const body = host.querySelector<HTMLElement>('.ps-page-content .page-body');
 	let menu = host.querySelector<HTMLElement>('.ps-content-menu-slot');
-	// Published Page Sections 0.5.1 includes pageEnd in the same grid row.
-	// Bound its menu to the sections too; newer markup already separates that row.
-	const measureBoundary = () => {
-		const current = host.querySelector<HTMLElement>('.ps-content-menu-slot');
-		if (current !== menu) menu?.style.removeProperty('--spatial-content-menu-height');
-		menu = current;
-		if (body && menu) menu.style.setProperty('--spatial-content-menu-height', `${body.offsetHeight}px`);
-	};
 	const reset = (node: HTMLElement) => {
 		node.style.removeProperty('translate');
 		node.removeAttribute('data-spatial-sticky-sidebar');
 		offsets.delete(node);
 	};
 	const update = () => {
+		menu = host.querySelector<HTMLElement>('.ps-content-menu-slot');
 		const enhanced = stage?.classList.contains('stage-virtual-scroll-active');
 		const desktop = window.innerWidth >= layoutTokens.layoutMinWidths.xl;
 		const selector = desktop
@@ -46,18 +39,17 @@ export function attachContentSidebars(host: HTMLElement) {
 		}
 	};
 	const stop = subscribeStageScrollFrame(update, STAGE_SCROLL_PRIORITY.virtualDocument + 2);
-	const resize = new ResizeObserver(() => { measureBoundary(); update(); });
+	const resize = new ResizeObserver(() => { update(); });
 	resize.observe(host);
 	if (body) resize.observe(body);
-	const observer = new MutationObserver(() => { measureBoundary(); update(); });
+	const observer = new MutationObserver(() => { update(); });
 	observer.observe(host, { childList: true, subtree: true });
 	if (stage) observer.observe(stage, { attributes: true, attributeFilter: ['class'] });
 	window.addEventListener('resize', update);
-	measureBoundary(); update();
+	update();
 	return () => {
 		stop(); resize.disconnect(); observer.disconnect();
 		window.removeEventListener('resize', update);
 		for (const node of offsets.keys()) reset(node);
-		menu?.style.removeProperty('--spatial-content-menu-height');
 	};
 }
