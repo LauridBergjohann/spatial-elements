@@ -98,7 +98,20 @@ function createController(): Controller {
 			if (!originals.has(panel)) {
 				const rect = panel.getBoundingClientRect();
 				const padding = getComputedStyle(panel).padding;
-				const width = Math.min(rect.width, innerWidth - 24);
+				const header = panel.closest<HTMLElement>('.ps-navigation .header');
+				const headerRect = header?.getBoundingClientRect();
+				const trigger = panel.parentElement?.querySelector<HTMLElement>(':scope > summary');
+				const top = Math.max(
+					12,
+					headerRect
+						? headerRect.bottom + 8
+						: trigger
+							? trigger.getBoundingClientRect().bottom + 8
+							: rect.top
+				);
+				const mobileMenu = panel.classList.contains('mobile-panel') && headerRect;
+				const width = Math.min(mobileMenu ? headerRect.width - 24 : rect.width, innerWidth - 24);
+				const left = mobileMenu ? headerRect.left + 12 : rect.left;
 				originals.set(panel, panel.getAttribute('style'));
 				panel.popover = 'manual';
 				Object.assign(panel.style, {
@@ -106,12 +119,17 @@ function createController(): Controller {
 					inset: 'auto',
 					margin: '0',
 					transform: 'none',
-					left: Math.max(12, Math.min(rect.left, innerWidth - width - 12)) + 'px',
-					top: Math.max(12, rect.top) + 'px',
+					left: Math.max(12, Math.min(left, innerWidth - width - 12)) + 'px',
+					top: top + 'px',
 					width: width + 'px',
 					padding,
 					boxSizing: 'border-box',
-					maxHeight: Math.max(0, innerHeight - Math.max(12, rect.top) - 12) + 'px',
+					border: '1px solid var(--ps-panel-border)',
+					borderRadius: 'var(--ps-radius)',
+					boxShadow: 'var(--ps-navigation-shadow)',
+					background: 'var(--ps-section-standard)',
+					color: 'var(--ps-ink)',
+					maxHeight: Math.max(0, innerHeight - top - 12) + 'px',
 					overflowY: 'auto'
 				});
 			}

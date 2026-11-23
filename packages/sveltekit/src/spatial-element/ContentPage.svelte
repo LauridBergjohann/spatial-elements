@@ -51,6 +51,9 @@
 </PageContent>
 
 <style>
+ /* Older Page Sections still renders a redundant close button. The trigger, outside click and Escape close the popup. */
+ :global(.content-page .ps-content-menu-slot .popup > .close) { display: none; }
+
  /* Compatibility with Page Sections 0.5.1; the upcoming shared grid separates pageEnd. */
  :global(.content-page .ps-content-menu-slot) { height: var(--spatial-content-menu-height, auto); }
  @media (min-width: 1600px) {

@@ -178,8 +178,6 @@
 		gap: 0.5rem;
 	}
 	.github-link {
-		outline: 1px solid var(--ps-border);
-		outline-offset: -1px;
 		display: grid;
 		place-items: center;
 		width: 40px;

@@ -91,7 +91,7 @@
 <style>
  /* Compatibility with Page Sections 0.5.1; identical roles in the next shared release. */
  .spatial-shell-rack :global(.header)::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--ps-panel-border); border-radius: inherit; pointer-events: none; z-index: 3; }
- .spatial-shell-rack :global(summary), .spatial-shell-rack :global(.ps-button-group) { outline: 1px solid var(--ps-border); outline-offset: -1px; }
+ .spatial-shell-rack :global(.ps-button-group) { outline: 1px solid var(--ps-border); outline-offset: -1px; }
  .spatial-shell-rack :global(summary:focus-visible) { outline: 2px solid var(--ps-accent); outline-offset: 2px; }
  .spatial-shell-rack :global(.settings-panel), .spatial-shell-rack :global(.mobile-panel), .spatial-shell-rack :global(.ps-main-menu .ps-submenu) { border-color: var(--ps-panel-border); }
  @media (width < 1600px) { .spatial-shell-rack :global(.header)::after { border-width: 0 0 1px; } }
