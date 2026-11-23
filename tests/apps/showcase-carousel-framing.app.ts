@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
 
+test.skip(!process.env.SPATIAL_GPU, 'Requires the explicit SPATIAL_GPU=1 run on a WebGPU-capable device.');
+
 test('first carousel reveals the next section across viewport sizes and stays stable while scrolling', async ({ page }, info) => {
 	await page.goto('/showcase/industrial/?stage-test=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });

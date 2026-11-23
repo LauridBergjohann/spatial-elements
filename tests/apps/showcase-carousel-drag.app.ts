@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import type {} from '@spatial-elements/core/stage/stageVisualTest';
 
+test.skip(!process.env.SPATIAL_GPU, 'Requires the explicit SPATIAL_GPU=1 run on a WebGPU-capable device.');
+
 for (const width of [390, 600, 2456]) {
   test(`summary text selects and free space drags at ${width}px`, async ({ page }, info) => {
     const errors: string[] = [];
