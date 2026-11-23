@@ -25,6 +25,7 @@ export class CatalogDepthBlur {
 	private quad?: THREE.QuadMesh;
 	private readonly camera = new THREE.PerspectiveCamera();
 	private readonly direction = uniform(new THREE.Vector2());
+	private readonly opacity = uniform(1);
 	private passes = 0;
 	private resolvedTexture?: ReturnType<typeof texture>;
 	private readonly resolvedOpacity = uniform(1);
@@ -55,6 +56,8 @@ export class CatalogDepthBlur {
 		this.ensureResources();
 		this.ensureResolvedComposite(target.texture);
 		const previousCamera = this.camera.clone(), direction = this.direction.value.clone();
+		const opacity = this.opacity.value;
+		this.opacity.value = 1;
 		try {
 			withRendererState(renderer, () => {
 				this.captureSource(renderer, camera, rect, radius, draw);
@@ -64,7 +67,7 @@ export class CatalogDepthBlur {
 				// The Gaussian resolves at 256²; this full-size copy introduces no resampling.
 				this.cacheResolveQuad!.render(renderer);
 			});
-		} finally { this.camera.copy(previousCamera); this.direction.value.copy(direction); }
+		} finally { this.camera.copy(previousCamera); this.direction.value.copy(direction); this.opacity.value = opacity; }
 	}
 	/** No allocation or Gaussian update: only the retained image and its linear opacity. */
 	drawResolved(renderer: THREE.WebGPURenderer, source: THREE.Texture, rect: BlurRect, opacity: number,
@@ -88,11 +91,13 @@ export class CatalogDepthBlur {
 
 	render(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera,
 		bounds: BlurRect, radius: number, draw: (camera: THREE.PerspectiveCamera) => void,
-		clip: BlurRect = { left: 0, top: 0, width: innerWidth, height: innerHeight }, preserveCanvasScissor = false) {
-		if (radius < 0.05) { draw(camera); return; }
+		clip: BlurRect = { left: 0, top: 0, width: innerWidth, height: innerHeight }, preserveCanvasScissor = false, opacity = 1) {
+		if (opacity <= 0) return;
+		if (radius < 0.05 && opacity === 1) { draw(camera); return; }
 		const rect = resolveDepthBlurRect(bounds, radius, clip);
 		if (!rect) return;
 		this.ensureResources();
+		this.opacity.value = opacity;
 		this.renderCapture(renderer, camera, rect.left, rect.top, rect.width, rect.height, radius, draw, preserveCanvasScissor);
 	}
 	private ensureResolvedComposite(source: THREE.Texture) {
@@ -121,7 +126,7 @@ export class CatalogDepthBlur {
 			// Several actors reuse the scratch image within one stage frame.
 			this.effect.updateBeforeType = THREE.NodeUpdateType.RENDER;
 			this.material = new THREE.NodeMaterial();
-			this.material.fragmentNode = this.effect;
+			this.material.fragmentNode = this.effect.mul(this.opacity);
 			this.material.transparent = true;
 			// Captures and Gaussian samples are already premultiplied; do not multiply alpha twice.
 			this.material.blending = THREE.CustomBlending;

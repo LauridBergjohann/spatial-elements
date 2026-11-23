@@ -80,8 +80,8 @@ export function websiteTheme(
 /** One teal-blue accent in both modes, with compact frosted surfaces. */
 function industrialTheme(mode: 'light' | 'dark', namespace: string) {
 	const dark = mode === 'dark';
-	const background = dark ? '#131a22' : '#eef1f3';
-	const standard = dark ? '#1b2734' : '#ffffff';
+	const background = dark ? '#242b33' : '#eef1f3';
+	const standard = dark ? '#202831' : '#ffffff';
 	const accent = '#135a77';
 	return createSpatialTheme({
 		id: namespace,
@@ -120,8 +120,8 @@ function industrialTheme(mode: 'light' | 'dark', namespace: string) {
 /** Adapted from the Watches brand example; collection identity stays unchanged. */
 function watchesTheme(mode: 'light' | 'dark', namespace: string) {
 	const dark = mode === 'dark';
-	const background = dark ? '#181b23' : '#4d525e';
-	const standard = dark ? '#15171c' : '#2f3135';
+	const background = dark ? '#222631' : '#4d525e';
+	const standard = dark ? '#1f2229' : '#2f3135';
 	const muted = dark ? '#23262d' : '#464646';
 	const accent = dark ? '#d5b975' : '#caa75c';
 	return createSpatialTheme({
@@ -144,7 +144,7 @@ function watchesTheme(mode: 'light' | 'dark', namespace: string) {
 			surface: 'glass',
 			backdropBlur: 5,
 			refraction: 20,
-			tint: dark ? '#101217' : '#1f1f1f',
+			tint: dark ? '#161920' : '#1f1f1f',
 			tintOpacity: dark ? 0.8 : 0.6,
 			bezel: 20,
 			thickness: 0.45,

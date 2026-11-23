@@ -125,12 +125,12 @@ describe('bounded carousel groups', () => {
 		const front = carouselPose(0, 0, 20);
 		expect(front.orbit!.pitch).toBeCloseTo(10 * Math.PI / 180);
 		expect(front.depth).toBeCloseTo(0);
-		expect(front.size).toBeCloseTo(0.82);
+		expect(front.size).toBeCloseTo(0.94);
 		let previousDepth = front.depth;
 		for (let distance = 0.01; distance <= 1; distance += 0.01) {
 			const pose = carouselPose(0, distance, 20);
 			expect(pose.depth).toBeLessThan(previousDepth);
-			expect(pose.size).toBeCloseTo(0.82 * 2500 / (2500 - pose.depth));
+			expect(pose.size).toBeCloseTo(0.94 * 2500 / (2500 - pose.depth));
 			expect(pose.orbit!.y).toBeGreaterThan(0);
 			previousDepth = pose.depth;
 		}
@@ -166,4 +166,21 @@ it('rotates the products with their turntable seats', () => {
 	expect(carouselPose(1, 1, 3).yaw).toBeCloseTo(0);
 	expect((carouselPose(2, 1, 3).yaw * 180) / Math.PI).toBeCloseTo(0.4 * 180 / Math.PI);
 	expect(carouselPose(2, 1, 3).x - carouselPose(1, 1, 3).x).toBeGreaterThan(0.24);
+});
+
+it('widens the turntable with the viewport while keeping the selected seat fixed', () => {
+ const base = { width: 1488, height: 600, left: 0, viewportWidth: 1940 };
+ const wide = { ...base, viewportWidth: 3000 };
+ expect(carouselPose(1, 0, 5, {}, wide).orbit!.x).toBeGreaterThan(carouselPose(1, 0, 5, {}, base).orbit!.x);
+ expect(carouselPose(0, 0, 5, {}, wide).orbit!.x).toBe(0);
+});
+
+it('eases the far arc fade without a jump at either end', () => {
+ const layout = { width: 1320, height: 600, left: 0, viewportWidth: 5000 };
+ const opacity = (distance: number) => carouselPose(0, -distance, 20, {}, layout).opacity;
+ expect(opacity(2.44)).toBe(1);
+ expect(opacity(2.84)).toBeCloseTo(0.5);
+ expect(opacity(3.24)).toBe(0);
+ expect(1 - opacity(2.45)).toBeLessThan(0.001);
+ expect(opacity(3.23)).toBeLessThan(0.001);
 });

@@ -1,7 +1,8 @@
 /** Test rendered text fragments, not the full width of their block container. */
 export function carouselTextHit(target: EventTarget | null, x: number, y: number): HTMLElement | undefined {
 	if (!(target instanceof HTMLElement) || !target.closest('.summary') ||
-		target.closest('a, button, input, textarea, select, [contenteditable]')) return;
+		target.closest('button, input, textarea, select, [contenteditable]') ||
+		(target.closest('a') && !target.closest('[data-spatial-summary-link], .compact-copy'))) return;
 	const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
 	const range = document.createRange();
 	for (let node = walker.nextNode(); node; node = walker.nextNode()) {

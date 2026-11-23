@@ -65,6 +65,8 @@ export function resolveCarouselPoseLayout(input: CarouselLayoutInput, ring: { wi
 	};
 }
 
+export const CAROUSEL_MODEL_SIZE = 0.94;
+
 const defaultLayout: CarouselLayout = { width: 1320, height: 560, left: 60, viewportWidth: 1440 };
 
 export interface CarouselEmphasis { advance: number; panel: number }
@@ -99,7 +101,8 @@ function framing(distance: number, presentation: CarouselPresentation, layout: C
 		? Math.max(0, Math.min(1200, presentation.depth!)) : 700;
 	// A larger, shallower turntable: keep useful seat spacing by reducing the
 	// angle between products rather than packing the same angle onto a larger ring.
-	const radius = frame * (compact ? 2.2 : 3.4) * spacing / 0.48 * (0.75 + depth / 2800);
+	const viewportExpansion = compact ? 0 : Math.max(0, layout.viewportWidth - 1440) * 0.45;
+	const radius = (frame * (compact ? 2.2 : 3.4) + viewportExpansion) * spacing / 0.48 * (0.75 + depth / 2800);
 	const step = 0.4;
 	const travel = Math.abs(distance);
 	// Only the front arc is presented. Never wrap a long catalog onto occupied seats.
@@ -120,9 +123,10 @@ function framing(distance: number, presentation: CarouselPresentation, layout: C
 	const anchor = layout.left + (fit ? fit.x + fit.width / 2 : layout.width * (compact ? 0.5 : 0.31));
 	const center = layout.viewportWidth / 2 + (anchor - layout.viewportWidth / 2 + orbit.x) * scale;
 	const offset = center - anchor;
-	const extent = frame * 0.82 * scale * 0.6;
+	const extent = frame * CAROUSEL_MODEL_SIZE * scale * 0.6;
 	const seats = compact ? 1.49 : 3.24;
-	const arcOpacity = Math.max(0, Math.min(1, (seats - travel) / 0.38));
+	const fade = Math.max(0, Math.min(1, (seats - travel) / 0.8));
+	const arcOpacity = fade * fade * (3 - 2 * fade);
 	return { offset, scale, center, extent, orbit, z, angle, arcOpacity, seats };
 }
 
@@ -156,7 +160,7 @@ export function carouselPose(
 	return {
 		x: (layout.framing ? layout.framing.fit.x + layout.framing.fit.width / 2 : layout.width * 0.5) / Math.max(1, layout.width) + offset / Math.max(1, layout.width),
 		y: (layout.framing ? layout.framing.fit.y + layout.framing.fit.height / 2 : layout.height * 0.54) / Math.max(1, layout.height) - orbit.y * scale / Math.max(1, layout.height),
-		size: 0.82 * scale,
+		size: CAROUSEL_MODEL_SIZE * scale,
 		depth: z,
 		orbit,
 		...(layout.framing ? { framing: layout.framing } : {}),

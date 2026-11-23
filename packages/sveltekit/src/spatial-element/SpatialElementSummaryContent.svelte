@@ -28,7 +28,7 @@
 				data-catalog-rich-shared="leading" data-catalog-semantic={spatialElement.id}>
 				{@render leading()}
 			</div>{/if}
-			<a class="panel-copy" href={detailHref} data-spatial-summary-link data-catalog-focus-key={`summary-title:${JSON.stringify([spatialElement.id, carousel?.occurrence ?? 'detail'])}`} use:catalogViewLink={{ spatialElementId: spatialElement.id, targetPresentation: carousel?.item.targetPresentation }}>
+			<a draggable="false" class="panel-copy" href={detailHref} data-spatial-summary-link data-catalog-focus-key={`summary-title:${JSON.stringify([spatialElement.id, carousel?.occurrence ?? 'detail'])}`} use:catalogViewLink={{ spatialElementId: spatialElement.id, targetPresentation: carousel?.item.targetPresentation }}>
 				{#if spatialElement.eyebrow}
 				<p
 					class="panel-kicker"
@@ -137,9 +137,8 @@
 	.summary-commerce { display: grid; gap: 20px; min-width: 0; align-content: start; }
 	.summary-leading, .panel-copy { min-width: 0; }
 
-	.panel-copy { display: block; color: inherit; text-decoration: none; }
+	.panel-copy { user-select: text; display: block; color: inherit; text-decoration: none; }
 	.panel-copy:hover { text-decoration: none; }
-	.panel-copy[href]:hover .summary-title { text-decoration: underline; text-underline-offset: .15em; }
 	.panel-copy:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: 4px; }
 	.panel-kicker {
 		margin: 0;

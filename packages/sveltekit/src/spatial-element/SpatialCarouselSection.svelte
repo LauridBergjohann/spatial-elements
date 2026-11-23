@@ -257,7 +257,7 @@
 			target.closest('.controls, .carousel-arrows, input, textarea, select, [contenteditable]')
 		)
 			return false;
-		return touch || !target.closest('a, button') || !!target.closest('.spatial-element-target');
+		return touch || !target.closest('a, button') || !!target.closest('.spatial-element-target, [data-spatial-summary-link], .compact-copy');
 	}
 	function pointerdown(event: PointerEvent) {
 		if (!interactive || blocked() || list.length < 2) return;
@@ -617,6 +617,10 @@
 	:global(.carousel.interactive .summary a),
 	:global(.carousel.interactive .summary button) {
 		cursor: pointer;
+	}
+	:global(.carousel.interactive .summary [data-spatial-summary-link]),
+	:global(.carousel.interactive .summary .compact-copy) {
+		cursor: grab;
 	}
 	:global(.carousel.interactive [data-carousel-text-hit]) {
 		cursor: text;

@@ -77,5 +77,17 @@ test('resolved preparation stays offscreen, restores borrowed state on failure, 
 			blur.render(renderer, camera, rect, 2.5, () => { expect(scissorTest).toBe(false); }, undefined, preparing);
 			expect(scissorTest).toBe(true);
 		}
+		// Even a sharp fading silhouette must be captured before alpha is applied.
+		// This preserves depth occlusion inside the model without another scratch allocation.
+		render.mockImplementation(() => { expect(current).toBe(null); });
+		const fadingDraw = vi.fn((projection: THREE.PerspectiveCamera) => {
+			expect(current).toBe(targets[0]);
+			expect(projection).not.toBe(camera);
+		});
+		blur.render(renderer, camera, rect, 0, fadingDraw, undefined, false, 0.4);
+		expect(fadingDraw).toHaveBeenCalledOnce();
+		expect(blur.getRenderTargets()).toEqual(targets);
+		blur.render(renderer, camera, rect, 0, fadingDraw, undefined, false, 0);
+		expect(fadingDraw).toHaveBeenCalledOnce();
 	} finally { render.mockRestore(); vi.unstubAllGlobals(); blur.dispose(); output.dispose(); saved.dispose(); }
 });

@@ -22,7 +22,15 @@
   focusCatalogLink(anchor, event);
  }
  function summaryLinks(node: HTMLElement) {
-  const click = (event: MouseEvent) => { if (context?.mode === 'carousel' && event.target instanceof Element && event.target.closest('[data-spatial-summary-link]')) activate(event, event.target.closest<HTMLAnchorElement>('[data-spatial-summary-link]')!); };
+  const click = (event: MouseEvent) => {
+   const selection = window.getSelection();
+   // A text-selection release still produces a click on an anchor. Keep it from
+   // focusing/navigating before the native selection can be copied.
+   if (event.detail > 0 && selection && !selection.isCollapsed && node.contains(selection.anchorNode) && node.contains(selection.focusNode)) {
+    event.preventDefault(); event.stopImmediatePropagation(); return;
+   }
+   if (context?.mode === 'carousel' && event.target instanceof Element && event.target.closest('[data-spatial-summary-link]')) activate(event, event.target.closest<HTMLAnchorElement>('[data-spatial-summary-link]')!);
+  };
   node.addEventListener('click', click, true); node.addEventListener('pointerenter', prepareCarousel); node.addEventListener('focusin', prepareCarousel);
   return { destroy() { node.removeEventListener('click', click, true); node.removeEventListener('pointerenter', prepareCarousel); node.removeEventListener('focusin', prepareCarousel); } };
  }
@@ -33,11 +41,12 @@
 {:else}
  <div class="spatial-summary-surface" hidden={model.current.mode !== 'carousel'} aria-hidden="true"></div>
  {#if model.current.carousel}
-  <a class="compact-copy" hidden={model.current.mode !== 'carousel'} href={href(model.current.carousel.item.href)} onclick={activate} onpointerenter={prepareCarousel} onfocus={prepareCarousel} onpointerdown={prepareCarousel}
+  <a use:summaryLinks draggable="false" class="compact-copy" hidden={model.current.mode !== 'carousel'} href={href(model.current.carousel.item.href)} onclick={activate} onpointerenter={prepareCarousel} onfocus={prepareCarousel} onpointerdown={prepareCarousel}
    use:catalogViewLink={{ spatialElementId: model.current.spatialElement.id, targetPresentation: model.current.carousel.item.targetPresentation }}
    aria-label={`More information: ${model.current.spatialElement.title}`} data-catalog-focus-key={`catalog-compact:${model.current.carousel.occurrence}`}>
    {#if model.current.spatialElement.eyebrow}<p use:catalogEndpoint={model.active && carousel?.compact ? model.current.address('eyebrow') : undefined}>{model.current.spatialElement.eyebrow}</p>{/if}
    <h3 use:catalogEndpoint={model.active && carousel?.compact ? model.current.address('title') : undefined}>{model.current.spatialElement.title}</h3>
+   <svg class="compact-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10" /></svg>
   </a>
  {/if}
  <div use:summaryLinks data-spatial-summary-root class="spatial-summary-query" class:full-summary={model.current.mode === 'carousel'}>
@@ -72,8 +81,9 @@
  .spatial-summary-surface[hidden] { display: none; }
  :global([data-carousel-glass-ready]) .spatial-summary-surface,
  :global([data-spatial-presentation-glass]) .spatial-summary-surface { visibility: hidden; }
- .compact-copy { position: relative; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box; padding: 8px 12px; color: inherit; text-decoration: none; }
+ .compact-copy { user-select: text; position: relative; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box; padding: 8px 40px 8px 12px; color: inherit; text-decoration: none; }
  .compact-copy:hover { text-decoration: none; }
+ .compact-arrow { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; fill: none; stroke: var(--spatial-element-accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
  .compact-copy:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: -2px; border-radius: inherit; }
  .compact-copy[hidden] { display: none; }
  .compact-copy p { height: 26px; margin: 0; font-size: 12px; line-height: 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

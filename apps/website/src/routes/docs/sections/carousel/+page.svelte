@@ -40,7 +40,8 @@
 				CardGrid. It emphasizes the selected model and its summary, with neighbouring models available
 				through selection, arrows and dragging. The summary title and eyebrow link to the detail page.
 				On XS and S screens, the whole compact summary is a link. It sits below the model with a slight
-				overlap, between the two arrows; the selection dots have their own space underneath.
+				overlap, between the two arrows; the selection dots have their own space underneath. Drag empty
+				space in either summary layout to move the carousel; drag over text to select it.
 			</p>
 			<DocFigure
 				name="collections"
@@ -78,7 +79,8 @@
 				<a href="/docs/reference/types/#carousel-presentation-radius"><code>radius</code></a>
 				and <a href="/docs/reference/types/#carousel-presentation-depth"><code>depth</code></a> controls.
 				These change the arrangement, not the model's authored scale or its asset URLs. The default framing
-				is suitable for a first collection.
+				is suitable for a first collection. Wider screens use a larger turntable radius. Distant models
+				soften and fade as complete silhouettes, without revealing surfaces inside the model.
 			</p>
 			<p>
 				The <a href="/docs/reference/types/#spatial-list-item-summary"><code>summary</code></a> on a
