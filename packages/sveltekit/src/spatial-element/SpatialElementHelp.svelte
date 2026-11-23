@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { getContext, onMount, tick } from 'svelte';
-	import CircleHelp from 'lucide-svelte/icons/circle-help';
-	import X from 'lucide-svelte/icons/x';
+	import CircleHelp from '@lucide/svelte/icons/circle-help';
+	import X from '@lucide/svelte/icons/x';
 	import InteractionGesture from './InteractionGesture.svelte';
-	import { getCssPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
+	import { getSharedPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
 	import { getInteractionGuidance, MODEL_INPUT_EVENT, type ModelInputState, type InteractionGuidance } from '@spatial-elements/core/stage/interactionGuidance';
 	import { STAGE_SCROLL_PRIORITY, subscribeStageScrollFrame } from '@spatial-elements/core/stage/scrollFrame';
 	import { STAGE_CONTEXT_KEY, STAGE_PANEL_LAYOUT_EVENT, type StageContext } from '@spatial-elements/core/stage/panelContext';
@@ -48,7 +48,7 @@
 		`--help-tint: ${typeof theme.panelTheme.tint === 'number' ? '#' + theme.panelTheme.tint.toString(16).padStart(6, '0') : theme.panelTheme.tint ?? '#ffffff'}`,
 		`--help-tint-opacity: ${(theme.panelTheme.tintOpacity ?? 0.65) * 100}%`,
 		`--help-blur: ${Math.min(100, Math.max(0, theme.panelTheme.backdropBlur ?? 8))}px`,
-		`--help-shadow: ${getCssPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2)}`,
+		`--help-shadow: ${getSharedPanelBoxShadow(theme.panelTheme.shadowIntensity ?? 0.2, theme.panelTheme.shadowColor)}`,
 		`--help-radius: ${radii.panel}px`
 	].join(';'));
 
@@ -285,6 +285,7 @@
 	.help-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 	h2 { margin: 0; font-size: 15px; font-weight: 650; }
 	.close-help {
+		outline: 1px solid var(--ps-border); outline-offset: -1px;
 		width: 40px; height: 40px; flex: 0 0 40px; display: grid; place-items: center;
 		padding: 0; border: 0; border-radius: var(--spatial-element-control-radius); color: inherit; background: transparent; cursor: pointer;
 	}
@@ -295,6 +296,7 @@
 	/* Keep complete host-localized instructions available to assistive technology. */
 	dd { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 	.navigation-hint { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid currentColor; font-size: 12px; }
-	.navigation-hint a { color: var(--spatial-element-accent); text-decoration: underline; text-underline-offset: 2px; }
+	.navigation-hint a { color: var(--spatial-element-accent); text-decoration: none; text-underline-offset: 2px; }
+	.navigation-hint a:hover { text-decoration: underline; }
 	.navigation-hint a:focus-visible { outline: 2px solid var(--spatial-element-accent); outline-offset: 3px; border-radius: 2px; }
 </style>

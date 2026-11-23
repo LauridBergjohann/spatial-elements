@@ -12,7 +12,7 @@ export function optimizedSpatialElement(product: ShowcaseProduct): SpatialElemen
 	if (!asset) throw new Error('Missing showcase assets: ' + product.id);
 	const presentation = presentations[product.id as keyof typeof presentations] as Pick<
 		SpatialElementData,
-		'model' | 'camera' | 'minimap'
+		'model' | 'camera' | 'minimap' | 'gridView' | 'carouselView'
 	>;
 	return {
 		...presentation,

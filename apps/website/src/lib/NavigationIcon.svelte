@@ -1,16 +1,32 @@
 <script lang="ts">
-	import Layers from 'lucide-svelte/icons/layers';
-	import Panels from 'lucide-svelte/icons/panels-top-left';
-	import Blocks from 'lucide-svelte/icons/blocks';
-	import Settings from 'lucide-svelte/icons/settings';
-	import Book from 'lucide-svelte/icons/book-open';
-	import Briefcase from 'lucide-svelte/icons/briefcase';
-	import File from 'lucide-svelte/icons/file-text';
-	import Palette from 'lucide-svelte/icons/palette';
-	import Code from 'lucide-svelte/icons/code';
-	import Download from 'lucide-svelte/icons/download';
+	import Layers from '@lucide/svelte/icons/layers';
+	import Panels from '@lucide/svelte/icons/panels-top-left';
+	import Blocks from '@lucide/svelte/icons/blocks';
+	import Settings from '@lucide/svelte/icons/settings';
+	import Book from '@lucide/svelte/icons/book-open';
+	import Briefcase from '@lucide/svelte/icons/briefcase';
+	import File from '@lucide/svelte/icons/file-text';
+	import Palette from '@lucide/svelte/icons/palette';
+	import Code from '@lucide/svelte/icons/code';
+	import Download from '@lucide/svelte/icons/download';
+	import Gallery from '@lucide/svelte/icons/gallery-horizontal-end';
+	import Keyboard from '@lucide/svelte/icons/keyboard';
+	import Wrench from '@lucide/svelte/icons/wrench';
+	import RobotArm from '@lucide/svelte/icons/robot-arm';
+	import Gem from '@lucide/svelte/icons/gem';
+	import Rocket from '@lucide/svelte/icons/rocket';
+	import BookText from '@lucide/svelte/icons/book-text';
+	import Info from '@lucide/svelte/icons/info';
 	let { name }: { name?: string } = $props();
 	const icons = {
+		'gallery-horizontal-end': Gallery,
+		keyboard: Keyboard,
+		wrench: Wrench,
+		'robot-arm': RobotArm,
+		gem: Gem,
+		rocket: Rocket,
+		'book-text': BookText,
+		info: Info,
 		layers: Layers,
 		panels: Panels,
 		blocks: Blocks,

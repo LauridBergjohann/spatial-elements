@@ -4,9 +4,9 @@
 	import { SidebarNavigation } from '@page-sections/svelte';
 	import { ContentPage } from '@spatial-elements/sveltekit';
 	import { resolveNavigation, type MenuItem } from '@page-sections/core';
-	import { navigationTree, readingNeighbors } from './navigation';
+	import { getNavigationTree, readingNeighbors } from './navigation';
 	import NavigationIcon from './NavigationIcon.svelte';
-	import ChevronDown from 'lucide-svelte/icons/chevron-down';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	let {
 		page,
 		children,
@@ -18,8 +18,10 @@
 		hdr?: string;
 		showSidebar?: boolean;
 	} = $props();
-	const navigation = $derived(resolveNavigation(navigationTree, { pathname: route.url.pathname }));
-	const neighbors = $derived(readingNeighbors(route.url.pathname));
+	const navigation = $derived(
+		resolveNavigation(getNavigationTree(route.url), { pathname: route.url.pathname })
+	);
+	const neighbors = $derived(readingNeighbors(route.url));
 	const sidebar = $derived(showSidebar ?? navigation.root?.id === 'docs');
 	const find = (items: MenuItem[], id?: string): MenuItem | undefined => {
 		for (const item of items) {
@@ -61,8 +63,10 @@
 					{#each childPages as item}<li>
 							<a href={item.href}>
 								{#if item.icon}<NavigationIcon name={item.icon} />{/if}{item.label}<span
-									aria-hidden="true">→</span
+									aria-hidden="true"
 								>
+									→
+								</span>
 							</a>
 						</li>{/each}
 				</ul>
@@ -70,12 +74,12 @@
 		{/if}
 		{#if neighbors.previous || neighbors.next}
 			<nav class="reading-path" aria-label="Reading order">
-				{#if neighbors.previous}<a rel="prev" href={neighbors.previous.href}
-						><small>← Previous</small>{neighbors.previous.label}</a
-					>{/if}
-				{#if neighbors.next}<a rel="next" href={neighbors.next.href}
-						><small>Next →</small>{neighbors.next.label}</a
-					>{/if}
+				{#if neighbors.previous}<a rel="prev" href={neighbors.previous.href}>
+						<small>← Previous</small>{neighbors.previous.label}
+					</a>{/if}
+				{#if neighbors.next}<a rel="next" href={neighbors.next.href}>
+						<small>Next →</small>{neighbors.next.label}
+					</a>{/if}
 			</nav>
 		{/if}
 	{/snippet}

@@ -1,8 +1,8 @@
 ﻿<script lang="ts">
-	import ChevronUp from 'lucide-svelte/icons/chevron-up';
-	import ChevronDown from 'lucide-svelte/icons/chevron-down';
-	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
-	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import ChevronUp from '@lucide/svelte/icons/chevron-up';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	let {
 		target,
 		responsive = false,
@@ -52,7 +52,7 @@
 	}
 </script>
 
-<div class="overflow-controls" class:vertical class:hidden data-overflow-controls={label}>
+<div class="ps-shadow-navigation overflow-controls" class:vertical class:hidden data-overflow-controls={label}>
 	{#if before}<button
 			class="before"
 			type="button"
@@ -95,7 +95,7 @@
 		--scroll-button-radius: var(--spatial-element-control-radius, 12px);
 		background: var(--ps-section-standard, #fff);
 		color: var(--spatial-element-navigation-ink, var(--spatial-element-ink));
-		box-shadow: 0 2px 8px #0003;
+		box-shadow: var(--ps-navigation-shadow, var(--ps-default-navigation-shadow));
 		cursor: pointer;
 		pointer-events: auto;
 	}

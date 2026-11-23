@@ -5,7 +5,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -26,23 +26,26 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Generated from <code>@page-sections/core</code> and the spatial-only
 				<code>layoutTokens.json</code>, as consumed by the pure resolvers and CSS generator. Values
 				are CSS pixels unless a field explicitly describes a ratio, count, span or font weight.
 				Regenerate with <code>node docs/wiki/export.mjs --write</code>.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'contentmax',
 			title: 'contentMax',
 			headline: 'contentMax',
 			background: { color: 'standard', size: 'standard' }
-		}}><div class="prose"><p>1536</p></div></Section
+		}}
 	>
+		<div class="prose"><p>1536</p></div>
+	</Section>
 	<Section
 		section={{
 			id: 'layoutminwidths',
@@ -50,7 +53,8 @@
 			headline: 'layoutMinWidths',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -89,8 +93,8 @@
 					</tr>
 				</tbody>
 			</table>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'grid',
@@ -98,7 +102,8 @@
 			headline: 'grid',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -160,8 +165,8 @@
 					</tr>
 				</tbody>
 			</table>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'cards',
@@ -169,7 +174,8 @@
 			headline: 'cards',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -220,8 +226,8 @@
 					</tr>
 				</tbody>
 			</table>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'cardtextinset',
@@ -229,7 +235,8 @@
 			headline: 'cardTextInset',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -248,16 +255,18 @@
 					</tr>
 				</tbody>
 			</table>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'xlcontentinset',
 			title: 'xlContentInset',
 			headline: 'xlContentInset',
 			background: { color: 'standard', size: 'standard' }
-		}}><div class="prose"><p>136</p></div></Section
+		}}
 	>
+		<div class="prose"><p>136</p></div>
+	</Section>
 	<Section
 		section={{
 			id: 'menu',
@@ -265,7 +274,8 @@
 			headline: 'menu',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -292,8 +302,8 @@
 					</tr>
 				</tbody>
 			</table>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'satellite',
@@ -301,7 +311,8 @@
 			headline: 'satellite',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -328,8 +339,8 @@
 					</tr>
 				</tbody>
 			</table>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'breadcrumb',
@@ -337,7 +348,8 @@
 			headline: 'breadcrumb',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -384,16 +396,18 @@
 					</tr>
 				</tbody>
 			</table>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'cardmediainset',
 			title: 'cardMediaInset',
 			headline: 'cardMediaInset',
 			background: { color: 'standard', size: 'standard' }
-		}}><div class="prose"><p>8</p></div></Section
+		}}
 	>
+		<div class="prose"><p>8</p></div>
+	</Section>
 	<Section
 		section={{
 			id: 'pane',
@@ -401,7 +415,8 @@
 			headline: 'pane',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -440,8 +455,8 @@
 					</tr>
 				</tbody>
 			</table>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'stagecontrols',
@@ -449,7 +464,8 @@
 			headline: 'stageControls',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -472,8 +488,8 @@
 					</tr>
 				</tbody>
 			</table>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'hero',
@@ -481,7 +497,8 @@
 			headline: 'hero',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -672,8 +689,8 @@
 					</tr>
 				</tbody>
 			</table>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'carousel',
@@ -681,7 +698,8 @@
 			headline: 'carousel',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<table>
 				<thead>
 					<tr>
@@ -696,7 +714,7 @@
 					</tr>
 					<tr>
 						<td>nextPreviewHeight</td>
-						<td>28</td>
+						<td>72</td>
 					</tr>
 					<tr>
 						<td>compactTitleHeight</td>
@@ -725,8 +743,8 @@
 				<tbody>
 					<tr>
 						<td>xs</td>
-						<td>150</td>
-						<td>300</td>
+						<td>96</td>
+						<td>260</td>
 						<td>36</td>
 						<td>1</td>
 						<td>4</td>
@@ -736,8 +754,8 @@
 					</tr>
 					<tr>
 						<td>s</td>
-						<td>150</td>
-						<td>400</td>
+						<td>96</td>
+						<td>340</td>
 						<td>72</td>
 						<td>1</td>
 						<td>6</td>
@@ -747,8 +765,8 @@
 					</tr>
 					<tr>
 						<td>m</td>
-						<td>300</td>
-						<td>500</td>
+						<td>160</td>
+						<td>420</td>
 						<td>0</td>
 						<td>2</td>
 						<td>3</td>
@@ -758,8 +776,8 @@
 					</tr>
 					<tr>
 						<td>l</td>
-						<td>340</td>
-						<td>600</td>
+						<td>160</td>
+						<td>500</td>
 						<td>0</td>
 						<td>3</td>
 						<td>5</td>
@@ -769,8 +787,8 @@
 					</tr>
 					<tr>
 						<td>xl</td>
-						<td>400</td>
-						<td>700</td>
+						<td>160</td>
+						<td>560</td>
 						<td>0</td>
 						<td>2</td>
 						<td>5</td>
@@ -780,8 +798,8 @@
 					</tr>
 					<tr>
 						<td>2xl</td>
-						<td>400</td>
-						<td>800</td>
+						<td>160</td>
+						<td>600</td>
 						<td>0</td>
 						<td>2</td>
 						<td>6</td>
@@ -791,6 +809,6 @@
 					</tr>
 				</tbody>
 			</table>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

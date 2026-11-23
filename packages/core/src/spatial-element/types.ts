@@ -27,6 +27,8 @@ export interface SpatialListItem extends Partial<
 		| 'background'
 		| 'model'
 		| 'camera'
+		| 'gridView'
+		| 'carouselView'
 		| 'minimap'
 		| 'assetManifest'
 		| 'fallbackImage'
@@ -58,6 +60,8 @@ export interface SpatialListItem extends Partial<
 	eyebrow: string;
 	/** Visible card title. */
 	title: string;
+	/** Optional description shown below the card title. */
+	description?: string;
 	/** Plain-text feature labels for compact card presentation. */
 	features: string[];
 }
@@ -85,6 +89,8 @@ export interface SpatialSectionBackgrounds {
 
 /** CSS material used only by the fixed element header and its docked subnavigation. */
 export interface SpatialDockedPanelTheme {
+	/** Explicit shadow color. When omitted, inherits --ps-shadow-color. */
+	shadowColor?: StagePanelTheme['shadowColor'];
 	/** Gaussian CSS backdrop blur radius in pixels. */
 	backdropBlur: number;
 	/** Surface tint, using the same color representation as a stage panel. */
@@ -123,6 +129,10 @@ export interface SpatialTheme {
 	sectionTheme: SpatialSectionTheme;
 	/** Semantic text, action and navigation colors. */
 	colors: {
+		/** Cards and controls; defaults to ink at 18%. Use transparent to hide. */
+		border?: string;
+		/** Panels and navigation; defaults to ink at 12%. Use transparent to hide. */
+		panelBorder?: string;
 		ink: string;
 		body: string;
 		accent: string;
@@ -218,6 +228,8 @@ export interface SpatialElementData {
 	eyebrow?: string;
 	/** Visible element name. */
 	title: string;
+	/** Optional description used by the category card. */
+	description?: string;
 	/** Summary bullets. Defaults to an empty list. */
 	features?: SpatialElementFeature[];
 	/** Optional primary action; omitted actions render no button. */
@@ -232,6 +244,10 @@ export interface SpatialElementData {
 	model?: StageModelSettings;
 	/** Initial orbit in degrees and optional fit controls. Distance is fitted automatically. */
 	camera?: StageCameraSettings;
+	/** Independent CardGrid model pose. Omitted values use the detail camera orbit and scale 1. */
+	gridView?: SpatialCollectionPose;
+	/** Independent Carousel model pose. Ground placement is fitted after applying this pose. */
+	carouselView?: SpatialCollectionPose;
 	/** Advanced verified resource manifest. Omit for the normal GLB/LOD workflow. */
 	assetManifest?: VerifiedSpatialElementAssetManifest;
 	/** Poster URL displayed during loading, without JavaScript, or when WebGPU is unavailable. */
@@ -244,6 +260,16 @@ export interface SpatialElementData {
 	media?: SpatialElementMediaItem[];
 	/** Element-specific minimap fit/hover/docked pose. Colors come from the theme. */
 	minimap?: Omit<StagePanelMinimapOptions, keyof SpatialMinimapTheme>;
+}
+
+/** Model orientation and relative fit for one collection view; does not change the detail camera. */
+export interface SpatialCollectionPose {
+	/** Horizontal orbit in degrees. Zero uses the imported model's front view. */
+	azimuth?: number;
+	/** Vertical orbit in degrees. Zero keeps the model upright on the carousel floor. */
+	elevation?: number;
+	/** Positive multiplier of the automatically fitted model size; defaults to 1. */
+	scale?: number;
 }
 
 /** Brand-wide minimap appearance; framing and model pose remain spatial-element-specific. */

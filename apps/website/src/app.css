@@ -7,6 +7,13 @@ body {
 .ps-shell {
 	min-height: 100vh;
 	background: var(--ps-background);
+	--ps-footer-radius: var(--ps-radius);
+	--ps-footer-shadow: var(--ps-surface-shadow, var(--ps-default-surface-shadow));
+	/* Shared by content, navigation, popups and spatial panels. */
+	--ps-shadow-size: 1;
+	--ps-shadow-intensity: 1;
+	--ps-panel-border: var(--website-panel-border);
+	--ps-border: var(--website-border);
 }
 .ps-shell a {
 	color: var(--ps-accent);
@@ -14,14 +21,25 @@ body {
 /* Appearance is defined once in lib/theme.ts for Page Sections and spatial surfaces. */
 .ps-shell[data-ps-theme='light'] {
 	--ps-selection: #eeeeee;
-	--ps-border: #d1d1d1;
+	--website-border: #dbdbdb;
+	--website-panel-border: #dbdbdb;
+	--ps-shadow-color: #000;
 }
 .ps-shell[data-ps-theme='dark'] {
 	--ps-selection: rgba(72, 77, 83, 0.5);
-	--ps-border: hsl(220, 15%, 32%);
+	--website-border: #373a42;
+	--website-panel-border: #373a42;
+	--ps-shadow-color: #3f434b;
 }
-.brand-stage-shell {
-	--ps-selection: var(--spatial-element-tab-background);
+:where([data-website-theme='default']) .brand-stage-shell {
+	--ps-border: var(--website-border) !important;
+	--ps-panel-border: var(--website-panel-border) !important;
+}
+[data-website-theme='default'] .brand-stage-shell {
+	--ps-font-family: system-ui, sans-serif !important;
+}
+.brand-stage-shell .stage {
+	font-family: var(--ps-font-family);
 }
 .ps-shell .site-brand {
 	display: inline-flex;
@@ -40,19 +58,9 @@ body {
 	font-weight: 500;
 	color: var(--ps-body);
 }
-.site-footer {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 1rem 2rem;
-	padding: 2rem max(1rem, calc((100% - 1488px) / 2));
-	margin-top: 3rem;
-	border-top: 1px solid var(--ps-border);
-	color: var(--ps-body);
-	font-size: 0.875rem;
-}
-.site-footer > a:last-child {
-	margin-inline-start: auto;
+.ps-shell .site-footer a,
+.site-footer .version {
+	color: inherit;
 }
 .skip-link {
 	position: absolute;
@@ -86,8 +94,7 @@ body {
 	margin-top: 2rem;
 	scroll-margin-top: 7rem;
 }
-.prose a,
-.site-footer > a:last-child {
+.prose a {
 	color: var(--ps-accent);
 	text-underline-offset: 0.2em;
 }
@@ -168,11 +175,6 @@ body {
 .playground-controls button {
 	cursor: pointer;
 }
-@media (max-width: 599px) {
-	.site-brand > span:not(.version) {
-		display: none;
-	}
-}
 
 .demo-sample {
 	height: 100%;
@@ -213,13 +215,7 @@ figcaption {
 	font-size: 0.85rem;
 }
 
-/* Navigation uses neutral text; green remains the selection accent. */
-.brand-stage-shell {
-	--spatial-element-navigation-ink: #000;
-}
-.brand-stage-shell[data-color-scheme='dark'] {
-	--spatial-element-navigation-ink: #fff;
-}
+/* Keep menu text on the shared ink color instead of the general link accent. */
 .ps-shell .ps-navigation a {
-	color: var(--spatial-element-navigation-ink);
+	color: var(--ps-ink);
 }

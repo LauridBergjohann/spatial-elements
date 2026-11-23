@@ -1,19 +1,54 @@
 import { createSpatialTheme } from '@spatial-elements/core';
+import type { PageTheme } from '@page-sections/core';
 
-/** Route-scoped visual identities retain the same collection namespace. */
+/** Shared website palette, adapted from Page Sections. */
+export function websitePageTheme(mode: 'light' | 'dark') {
+	return (
+		mode === 'dark'
+			? {
+					background: '#34373f',
+					standard: '#1f2126',
+					muted: '#23272e',
+					ink: '#e5e5e6', // hsl(220, 2%, 90%)
+					body: '#e6e6e6',
+					accent: '#2bc093',
+					onAccent: '#1c1e22',
+					radius: '12px',
+					fontFamily: 'system-ui, sans-serif',
+					footerBackground: '#212126',
+					footerInk: '#aaaaaa',
+					footerBarBackground: '#262a30',
+					footerBarInk: 'hsl(220, 5%, 65%)'
+				}
+			: {
+					background: '#e7ebe9',
+					standard: '#ffffff',
+					muted: '#f2f2f2',
+					ink: '#141414',
+					body: '#666666',
+					accent: '#007b5e',
+					onAccent: '#ffffff',
+					radius: '12px',
+					fontFamily: 'system-ui, sans-serif',
+					footerBackground: '#007b5e',
+					footerInk: '#ffffff',
+					footerBarBackground: '#bdbdbd',
+					footerBarInk: '#333333'
+				}
+	) satisfies PageTheme;
+}
+
+/** Route-scoped showcase identities retain the same collection namespace. */
 export function websiteTheme(
 	mode: 'light' | 'dark',
 	namespace: string,
-	variant: 'default' | 'exclusive' | 'industrial' = 'default'
+	variant: 'default' | 'industrial' | 'exclusive' = 'default'
 ) {
-	if (variant === 'exclusive') return watchesTheme(mode, namespace);
 	if (variant === 'industrial') return industrialTheme(mode, namespace);
-	const dark = mode === 'dark';
-	const background = dark ? '#393c44' : '#e0e4e3';
-	const standard = dark ? '#1c1e22' : '#ffffff';
-	const muted = dark ? '#23262f' : '#f2f2f2';
+	if (variant === 'exclusive') return watchesTheme(mode, namespace);
+	const palette = websitePageTheme(mode);
+	const { background, standard, muted } = palette;
 	return createSpatialTheme({
-		// Stable collection identity; independent of URL structure and visual appearance.
 		id: namespace,
 		name: 'Spatial Elements',
 		background,
@@ -23,11 +58,12 @@ export function websiteTheme(
 		panelShape: { radius: 12, contentInset: 26 },
 		sectionBackgrounds: { standard, muted },
 		colors: {
-			ink: dark ? '#e5e5e6' : '#141414',
-			body: dark ? '#a1a4aa' : '#666666',
-			accent: dark ? '#09a782' : '#007b5e',
-			onAccent: dark ? standard : '#ffffff',
-			tabBackground: dark ? 'rgba(72, 77, 83, 0.5)' : '#eeeeee'
+			border: mode === 'dark' ? '#373a42' : '#dbdbdb',
+			ink: palette.ink,
+			body: palette.body,
+			accent: palette.accent,
+			onAccent: palette.onAccent,
+			tabBackground: mode === 'dark' ? '#1f1f1f' : '#eeeeee'
 		},
 		panelTheme: {
 			surface: 'frosted',
@@ -44,8 +80,8 @@ export function websiteTheme(
 /** One teal-blue accent in both modes, with compact frosted surfaces. */
 function industrialTheme(mode: 'light' | 'dark', namespace: string) {
 	const dark = mode === 'dark';
-	const background = dark ? '#131a22' : '#eef1f3';
-	const standard = dark ? '#1b2734' : '#ffffff';
+	const background = dark ? '#242b33' : '#eef1f3';
+	const standard = dark ? '#202831' : '#ffffff';
 	const accent = '#135a77';
 	return createSpatialTheme({
 		id: namespace,
@@ -84,8 +120,8 @@ function industrialTheme(mode: 'light' | 'dark', namespace: string) {
 /** Adapted from the Watches brand example; collection identity stays unchanged. */
 function watchesTheme(mode: 'light' | 'dark', namespace: string) {
 	const dark = mode === 'dark';
-	const background = dark ? '#181b23' : '#4d525e';
-	const standard = dark ? '#15171c' : '#2f3135';
+	const background = dark ? '#222631' : '#4d525e';
+	const standard = dark ? '#1f2229' : '#2f3135';
 	const muted = dark ? '#23262d' : '#464646';
 	const accent = dark ? '#d5b975' : '#caa75c';
 	return createSpatialTheme({
@@ -108,7 +144,7 @@ function watchesTheme(mode: 'light' | 'dark', namespace: string) {
 			surface: 'glass',
 			backdropBlur: 5,
 			refraction: 20,
-			tint: dark ? '#101217' : '#1f1f1f',
+			tint: dark ? '#161920' : '#1f1f1f',
 			tintOpacity: dark ? 0.8 : 0.6,
 			bezel: 20,
 			thickness: 0.45,

@@ -48,7 +48,7 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 		await page.screenshot({path:info.outputPath('sticky-docs.png')});
 		await page.setViewportSize({width:1000,height:800});
 		await expect(page.locator('.ps-left-sidebar')).toBeHidden();
-		await expect.poll(async () => (await page.locator('.ps-content-menu-slot').boundingBox())!.y).toBeCloseTo(16,0);
+		await expect.poll(async () => (await page.locator('.ps-content-menu-slot summary').boundingBox())!.y).toBeCloseTo(12,0);
 	});
 
 	test(`3XL detail header is separated and submenu overlaps halfway (enhanced: ${enhanced})`, async ({page},info) => {
@@ -117,7 +117,7 @@ test('theme still changes when storage is blocked', async ({ page }) => {
 	await expect(page.locator('.ps-shell')).toHaveAttribute('data-ps-theme', 'dark');
 });
 
-test('the standard palette and frosted navigation follow the chosen mode outside Exclusive', async ({
+test('the standard palette and frosted navigation follow the chosen mode outside the custom showcase themes', async ({
 	page
 }) => {
 	await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
@@ -444,7 +444,7 @@ test('minimal demo remains a small usable collection without GPU', async ({ brow
 		const page = await context.newPage();
 		await page.goto('http://127.0.0.1:4173/');
 		await expect(page.getByRole('heading', { level: 1 })).toHaveText('My collection');
-		await page.locator('a[data-catalog-card]').first().click();
+		await page.locator('[data-catalog-card] a.primary-link').first().click();
 		await expect(page).toHaveURL(/\/starter\/elements\/cube/);
 		await expect(page.getByRole('heading', { level: 1 })).toHaveText('Cube');
 	} finally {

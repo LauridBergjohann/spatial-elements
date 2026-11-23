@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import MoveHorizontal from 'lucide-svelte/icons/move-horizontal';
-	import Search from 'lucide-svelte/icons/search';
-	import Rotate3D from 'lucide-svelte/icons/rotate-3d';
+	import MoveHorizontal from '@lucide/svelte/icons/move-horizontal';
+	import Search from '@lucide/svelte/icons/search';
+	import Rotate3D from '@lucide/svelte/icons/rotate-3d';
 	import { carouselTextHit } from './carouselTextHit.js';
 	let badge: HTMLDivElement;
 	let action = $state<'move' | 'details' | 'rotate' | undefined>();
@@ -23,7 +23,8 @@
 				text = !dragging ? carouselTextHit(target, x, y) : undefined;
 				text?.setAttribute('data-carousel-text-hit', '');
 				const geometry = target.closest('.spatial-element-target');
-				action = dragging ? 'move' : text || (buttons & 1) || (!geometry && target.closest('a, button, input, textarea, select, [contenteditable]'))
+				const summaryLink = target.closest('[data-spatial-summary-link], .compact-copy');
+				action = dragging ? 'move' : text || (buttons & 1) || (!geometry && !summaryLink && target.closest('a, button, input, textarea, select, [contenteditable]'))
 					? undefined : geometry?.closest('.selected') ? 'details' : 'move';
 			} else {
 				const cursor = target instanceof HTMLCanvasElement ? target.style.cursor : '';

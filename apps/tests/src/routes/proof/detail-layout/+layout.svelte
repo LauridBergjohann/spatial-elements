@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { BrandStageShell, type SpatialSummaryContext } from '@spatial-elements/sveltekit';
 	import { page } from '$app/state';
-	import { theme } from '$lib/catalog';
-	import DetailFixtureSummary from '$lib/persistence-island-proof/DetailFixtureSummary.svelte';
+	import { theme } from '#lib/catalog.ts';
+	import DetailFixtureSummary from '#lib/persistence-island-proof/DetailFixtureSummary.svelte';
 	import type { LayoutProps } from './$types';
 	let { children }: LayoutProps = $props();
 </script>

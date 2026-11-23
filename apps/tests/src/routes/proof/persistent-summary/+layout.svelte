@@ -7,10 +7,10 @@
 		proofSlots,
 		slotFromPath,
 		type ProofState
-	} from '$lib/persistence-proof/handoff';
-	import { telemetry } from '$lib/persistence-proof/telemetry';
-	import InteractiveSummary from '$lib/persistence-proof/InteractiveSummary.svelte';
-	import SummaryPresentation from '$lib/persistence-proof/SummaryPresentation.svelte';
+	} from '#lib/persistence-proof/handoff.ts';
+	import { telemetry } from '#lib/persistence-proof/telemetry.ts';
+	import InteractiveSummary from '#lib/persistence-proof/InteractiveSummary.svelte';
+	import SummaryPresentation from '#lib/persistence-proof/SummaryPresentation.svelte';
 	import type { LayoutProps } from './$types';
 	let { data, children }: LayoutProps = $props();
 	const initialSlot = untrack(() => data.initialSlot);
@@ -76,12 +76,12 @@
 	<SummaryPresentation {snapshot} content={persistentContent} />
 	{@render children()}
 	<div class="test-controls">
-		<button type="button" onclick={() => finishPending?.()} disabled={snapshot.phase !== 'motion'}
-			>Finish motion</button
-		>
-		<button type="button" onclick={() => coordinator.queueContentChange()}
-			>Queue content and font update</button
-		>
+		<button type="button" onclick={() => finishPending?.()} disabled={snapshot.phase !== 'motion'}>
+			Finish motion
+		</button>
+		<button type="button" onclick={() => coordinator.queueContentChange()}>
+			Queue content and font update
+		</button>
 	</div>
 </main>
 

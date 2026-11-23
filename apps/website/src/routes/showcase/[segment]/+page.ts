@@ -1,8 +1,8 @@
 import { error } from '@sveltejs/kit';
-import { showcaseSegments } from '$lib/showcase/segments';
-import { showcaseProducts } from '$lib/showcase/products';
-import { showcaseItems } from '$lib/showcase/collection';
-import { industrialBrands, industrialHighlights } from '$lib/showcase/industrial';
+import { showcaseSegments } from '#lib/showcase/segments.ts';
+import { showcaseProducts } from '#lib/showcase/products.ts';
+import { showcaseItems } from '#lib/showcase/collection.ts';
+import { industrialBrands, industrialHighlights } from '#lib/showcase/industrial.ts';
 export const entries = () => showcaseSegments.map((segment) => ({ segment: segment.id }));
 export function load({ params }: { params: { segment: string } }) {
 	const segment = showcaseSegments.find((item) => item.id === params.segment);

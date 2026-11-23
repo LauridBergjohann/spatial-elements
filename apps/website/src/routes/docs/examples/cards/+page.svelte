@@ -1,18 +1,28 @@
 <script lang="ts">
-	import ContentPage from '$lib/SpatialDocumentationPage.svelte';
+	import ContentPage from '#lib/SpatialDocumentationPage.svelte';
 	import { HeadingSection } from '@page-sections/svelte';
 
 	import { SpatialCardGridSection } from '@spatial-elements/sveltekit';
-	import type { CardMediaAspect, CardVariant, SurfaceTone } from '@spatial-elements/sveltekit';
+	import type { CardMediaAspect, SurfaceTone } from '@spatial-elements/sveltekit';
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
 	let mediaAspect = $state<CardMediaAspect>('1/1');
 	let cardTone = $state<SurfaceTone>('standard');
-	let cardVariant = $state<CardVariant>('catalog');
+	let cardShadow = $state(false);
+	let descriptions = $state(false);
+	let customSpan = $state(false);
 	let withoutEyebrows = $state(false);
 	let reversed = $state(false);
 	const items = $derived(
 		(withoutEyebrows ? data.items.filter((item) => !item.eyebrow) : data.items)
+			.map((item, index) => ({
+				...item,
+				description: descriptions
+					? index % 2
+						? 'A short description.'
+						: 'Explore this spatial element with a longer description that wraps over several lines in narrow cards.'
+					: undefined
+			}))
 			.slice()
 			.sort((a, b) =>
 				reversed ? b.itemKey.localeCompare(a.itemKey) : a.itemKey.localeCompare(b.itemKey)
@@ -21,22 +31,20 @@
 </script>
 
 <div class="card-options">
-	<label
-		>Card tone <select bind:value={cardTone}><option>standard</option><option>muted</option></select
-		></label
-	>
-	<label
-		>Card variant <select bind:value={cardVariant}
-			><option>catalog</option><option>editorial</option></select
-		></label
-	>
-	<label
-		>Media aspect <select bind:value={mediaAspect}
-			><option>1/1</option><option>3/2</option><option>4/3</option></select
-		></label
-	>
-	<label><input type="checkbox" bind:checked={withoutEyebrows} /> Only items without eyebrows</label
-	>
+	<label>
+		Card tone <select bind:value={cardTone}><option>standard</option><option>muted</option></select>
+	</label>
+	<label><input type="checkbox" bind:checked={cardShadow} /> Card shadow</label>
+	<label><input type="checkbox" bind:checked={descriptions} /> Show descriptions</label>
+	<label><input type="checkbox" bind:checked={customSpan} /> Custom column spans</label>
+	<label>
+		Media aspect <select bind:value={mediaAspect}>
+			<option>1/1</option><option>3/2</option><option>4/3</option>
+		</select>
+	</label>
+	<label>
+		<input type="checkbox" bind:checked={withoutEyebrows} /> Only items without eyebrows
+	</label>
 	<label><input type="checkbox" bind:checked={reversed} /> Reverse items</label>
 </div>
 <ContentPage hdr="/assets/demo/studio.hdr" page={{ title: 'Card layout reference' }}>
@@ -48,7 +56,8 @@
 		list={items}
 		{mediaAspect}
 		{cardTone}
-		{cardVariant}
+		{cardShadow}
+		itemSpan={customSpan ? { xs: 4, s: 3, m: 4, l: 4 } : undefined}
 	/>
 	<SpatialCardGridSection
 		section={{ id: 'cards-medium', title: 'Medium cards', headline: 'Medium cards' }}
@@ -56,7 +65,8 @@
 		list={items}
 		{mediaAspect}
 		{cardTone}
-		{cardVariant}
+		{cardShadow}
+		itemSpan={customSpan ? { xs: 4, s: 3, m: 4, l: 4 } : undefined}
 	/>
 	<SpatialCardGridSection
 		section={{ id: 'cards-large', title: 'Large cards', headline: 'Large centered cards' }}
@@ -65,7 +75,8 @@
 		list={items}
 		{mediaAspect}
 		{cardTone}
-		{cardVariant}
+		{cardShadow}
+		itemSpan={customSpan ? { xs: 4, s: 3, m: 4, l: 4 } : undefined}
 	/>
 </ContentPage>
 

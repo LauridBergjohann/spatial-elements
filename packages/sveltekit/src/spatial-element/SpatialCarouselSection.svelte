@@ -257,7 +257,7 @@
 			target.closest('.controls, .carousel-arrows, input, textarea, select, [contenteditable]')
 		)
 			return false;
-		return touch || !target.closest('a, button') || !!target.closest('.spatial-element-target');
+		return touch || !target.closest('a, button') || !!target.closest('.spatial-element-target, [data-spatial-summary-link], .compact-copy');
 	}
 	function pointerdown(event: PointerEvent) {
 		if (!interactive || blocked() || list.length < 2) return;
@@ -618,6 +618,10 @@
 	:global(.carousel.interactive .summary button) {
 		cursor: pointer;
 	}
+	:global(.carousel.interactive .summary [data-spatial-summary-link]),
+	:global(.carousel.interactive .summary .compact-copy) {
+		cursor: grab;
+	}
 	:global(.carousel.interactive [data-carousel-text-hit]) {
 		cursor: text;
 	}
@@ -639,7 +643,7 @@
 		grid-auto-flow: column;
 		grid-auto-columns: 100%;
 		position: relative;
-		height: calc(var(--spatial-carousel-title-reserve) + var(--spatial-carousel-fit-height));
+		height: calc(var(--spatial-carousel-panel-reserve) + var(--spatial-carousel-fit-height));
 		overflow-x: auto;
 		overflow-y: hidden;
 		scroll-snap-type: x mandatory;
@@ -670,7 +674,11 @@
 		justify-content: space-between;
 		pointer-events: none;
 	}
+	@media (width < 840px) {
+		.carousel-arrows { top: calc(var(--spatial-carousel-fit-height) - var(--spatial-carousel-compact-overlap) + var(--spatial-carousel-compact-height) / 2); }
+	}
 	.carousel-arrows button {
+		outline: none;
 		pointer-events: auto;
 		width: 44px;
 		height: 44px;

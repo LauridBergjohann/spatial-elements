@@ -1,110 +1,10 @@
 [
   {
     "id": "chronograph",
-    "browser": "157.0.8103.78",
+    "browser": "158.0.8127.36",
     "source": "3cd2e04596c8f635ed1132fdf2b249224af5835258f98816c62634c53e0f651b",
     "low": "30bab4a381a73d6d4ed8361542230a7ef5833529c44200b8bbb8df0121ad4d5a",
     "high": "e9531fbaa94a4a59f3073c4b6ae8ff102668b7c5839bee2ad327bca28f00c894",
-    "pose": {
-      "model": {
-        "rotation": {
-          "x": 0.7853981633974483
-        },
-        "excludeMeshes": [
-          "floor"
-        ],
-        "materialOverrides": {
-          "glass": {
-            "type": "physical",
-            "color": "#020205",
-            "transparent": true,
-            "opacity": 0.8,
-            "metalness": 0,
-            "roughness": 0,
-            "iridescence": 0.3,
-            "clearcoat": 1,
-            "blending": "additive"
-          }
-        }
-      },
-      "camera": {
-        "fitScale": 1.25,
-        "azimuth": 30,
-        "elevation": 20
-      },
-      "minimap": {
-        "modelScale": 1.4,
-        "hoverModelScale": 1.6,
-        "expandedHoverModelScale": 1.05,
-        "dockedView": {
-          "scale": 1.2,
-          "azimuth": -20,
-          "elevation": 20
-        }
-      }
-    },
-    "width": 1024,
-    "height": 1024,
-    "posterBytes": 38928,
-    "sha256": "dd2993ef7f43855d28f4a5ffb55490175c9e8373f474d2cb0f90ee1ca3a636b3",
-    "comparisons": [
-      {
-        "view": "detail-pose",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.9999936578002715,
-        "meanRgbError": 0.00003636194511037542
-      },
-      {
-        "view": "detail-pose",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9995560432033386,
-        "meanRgbError": 0.012048639259982468
-      },
-      {
-        "view": "back",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 0.999992944480114,
-        "meanRgbError": 0.00001370523209224894
-      },
-      {
-        "view": "back",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9996683905653588,
-        "meanRgbError": 0.009358911944759983
-      },
-      {
-        "view": "side",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 1,
-        "meanRgbError": 0.00003188111892063233
-      },
-      {
-        "view": "side",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 0.9986187509127197,
-        "meanRgbError": 0.016175404754382564
-      },
-      {
-        "view": "minimap",
-        "from": "source",
-        "to": "high",
-        "silhouetteIoU": 1,
-        "meanRgbError": 0.000044778945157672936
-      },
-      {
-        "view": "minimap",
-        "from": "high",
-        "to": "low",
-        "silhouetteIoU": 1,
-        "meanRgbError": 0.011789693790811347
-      }
-    ],
     "frame": {
       "assetToFrame": [
         1,
@@ -136,7 +36,60 @@
           0.4419519901275635
         ]
       }
-    }
+    },
+    "pose": {
+      "model": {
+        "rotation": {
+          "x": 0.7853981633974483
+        },
+        "excludeMeshes": [
+          "floor"
+        ],
+        "materialOverrides": {
+          "glass": {
+            "type": "physical",
+            "color": "#020205",
+            "transparent": true,
+            "opacity": 0.8,
+            "metalness": 0,
+            "roughness": 0,
+            "iridescence": 0.3,
+            "clearcoat": 1,
+            "blending": "additive"
+          }
+        }
+      },
+      "camera": {
+        "fitScale": 1.8,
+        "azimuth": 30,
+        "elevation": 20
+      },
+      "minimap": {
+        "modelScale": 1.3,
+        "hoverModelScale": 1.2,
+        "expandedHoverModelScale": 1.05,
+        "dockedView": {
+          "scale": 1.4,
+          "azimuth": -20,
+          "elevation": 20
+        }
+      },
+      "gridView": {
+        "azimuth": 30,
+        "elevation": 20,
+        "scale": 1.7
+      },
+      "carouselView": {
+        "azimuth": 10,
+        "elevation": 20,
+        "scale": 1.5
+      }
+    },
+    "width": 1024,
+    "height": 1024,
+    "posterBytes": 36024,
+    "sha256": "821fe10f6296b4dad7dd6ab90c440095fd556b407bba7f5d5f7b28b8637dc93c",
+    "comparisons": []
   },
   {
     "id": "item-connector",

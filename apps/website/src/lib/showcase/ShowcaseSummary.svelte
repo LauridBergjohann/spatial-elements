@@ -4,7 +4,7 @@
 		SpatialElementSummaryContent,
 		type SpatialSummaryContext
 	} from '@spatial-elements/sveltekit';
-	import SquareArrowRightExit from 'lucide-svelte/icons/square-arrow-right-exit';
+	import SquareArrowRightExit from '@lucide/svelte/icons/square-arrow-right-exit';
 	import { showcaseProducts } from './products';
 	import ShowcaseOrder from './ShowcaseOrder.svelte';
 	import type { ShowcaseOrders } from './showcaseOrders.svelte';

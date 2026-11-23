@@ -13,7 +13,7 @@
 </script>
 {#snippet renderSummary(context: SpatialSummaryContext)}
 	{#if summary}{@render summary(context)}{:else}
-		<SpatialElementSummaryContent spatialElement={context.spatialElement} address={context.address} heading={context.heading} contentInset={context.contentInset} />
+		<SpatialElementSummaryContent {...context} />
 	{/if}
 {/snippet}
 {@render children?.()}

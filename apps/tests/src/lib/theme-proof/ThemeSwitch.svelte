@@ -6,9 +6,9 @@
 		STAGE_SCROLL_PRIORITY,
 		subscribeStageScrollFrame
 	} from '@spatial-elements/core/stage/scrollFrame';
-	import Sun from 'lucide-svelte/icons/sun';
-	import Moon from 'lucide-svelte/icons/moon';
-	import Monitor from 'lucide-svelte/icons/monitor';
+	import Sun from '@lucide/svelte/icons/sun';
+	import Moon from '@lucide/svelte/icons/moon';
+	import Monitor from '@lucide/svelte/icons/monitor';
 	import type { Appearance } from './appearance.svelte';
 	let { theme, appearance }: { theme: SpatialTheme; appearance: Appearance } = $props();
 	const id = $props.id();
@@ -76,19 +76,24 @@
 	<button
 		type="button"
 		aria-pressed={appearance.preference === 'light'}
-		onclick={() => select('light')}><Sun size={19} aria-hidden="true" />Light mode</button
+		onclick={() => select('light')}
 	>
+		<Sun size={19} aria-hidden="true" />Light mode
+	</button>
 	<button
 		type="button"
 		aria-pressed={appearance.preference === 'dark'}
-		onclick={() => select('dark')}><Moon size={19} aria-hidden="true" />Dark mode</button
+		onclick={() => select('dark')}
 	>
+		<Moon size={19} aria-hidden="true" />Dark mode
+	</button>
 	<button
 		type="button"
 		aria-pressed={appearance.preference === 'system'}
 		onclick={() => select('system')}
-		><Monitor size={19} aria-hidden="true" />System appearance</button
 	>
+		<Monitor size={19} aria-hidden="true" />System appearance
+	</button>
 </div>
 
 <style>

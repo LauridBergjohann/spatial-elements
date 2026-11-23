@@ -996,6 +996,7 @@ export class StageExperience {
 		this.pageBackground = options.pageBackground ?? '#ffffff';
 		this.pipeline.setPageBackground(this.pageBackground);
 		this.catalogLayer?.setPageBackground(this.pageBackground);
+		this.catalogLayer?.refreshPanelAppearance();
 		this.backgroundSettings = { ...DEFAULT_BACKGROUND, ...options.background };
 		if (this.appliedEnvironment) {
 			this.backgroundScene.background = this.backgroundSettings.blurriness <= 0
@@ -3172,7 +3173,9 @@ export class StageExperience {
 	}
 
 	private renderFrame(force = false) {
-		if (this.disposed) return;
+		// Theme/navigation changes can request a list-only frame while init() is
+		// still awaiting the GPU backend. init() requests a fresh frame when ready.
+		if (this.disposed || !this.renderer.initialized) return;
 		if (!force && this.stagedAwaitingFirstFrame) return;
 		if (!this.disposed && (this.rendererSize.x !== window.innerWidth || this.rendererSize.y !== window.innerHeight))
 			this.resizeRenderer(false);

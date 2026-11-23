@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withSharedPanelShadow, observePanelShadowStyles } from './panelShadowStyle.js';
 	import { isSpaceMouseDesktop, type SpaceMouseState } from '@spatial-elements/core/stage/spaceMousePlatform';
 	import { hasUsableWebGPU } from '@spatial-elements/core/stage/webgpuSupport';
 	import type { SpatialElementLodPair } from '@spatial-elements/core/catalog/spatialElementLodPair';
@@ -62,7 +63,7 @@
 		hasSpatialElementScene
 	} from '@spatial-elements/core/spatial-element/spatialElementScene';
 	import { SPATIAL_PAGE } from '../spatial-element/spatialPageContext.js';
-	import type { BeforeNavigate, OnNavigate } from '@sveltejs/kit';
+	import type { BeforeNavigate, OnNavigate } from '$app/navigation';
 	import {
 		STAGE_CONTEXT_KEY,
 		STAGE_PANEL_LAYOUT_EVENT,
@@ -495,6 +496,7 @@
 		Object.values(interactionTheme ?? {});
 		scheduleAppearanceUpdate();
 	});
+	onMount(() => observePanelShadowStyles(stage, scheduleAppearanceUpdate));
 	let appearanceUpdatePending = false;
 	function scheduleAppearanceUpdate() {
 		if (appearanceUpdatePending) return;
@@ -911,7 +913,7 @@
 				updateNativeLayout: panel.updateNativeLayout,
 				nativeContent: panel.getNativeContent?.() ?? false,
 				minimap: panel.getMinimapOptions(),
-				options: panel.getOptions(),
+				options: panel.getSurface() === 'glass' ? withSharedPanelShadow(surfaceElement, panel.getOptions()) : panel.getOptions(),
 				surface: panel.getSurface(),
 				surfaceElement,
 				pointerReactive: panel.getPointerReactive(),
@@ -924,8 +926,9 @@
 </script>
 
 {#if catalog}
+	<!-- Activate history/focus subscriptions once the controller has started. -->
 	<ScrollNavigationBridge
-		controller={virtualScroll}
+		controller={isEnhanced ? virtualScroll : undefined}
 		onEarlyStart={startEarlyNavigation}
 		onStart={() => { if (isEnhanced) navigationFeedback?.begin(); }}
 		onCapture={captureNavigation}

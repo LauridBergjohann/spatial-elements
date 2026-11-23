@@ -26,6 +26,7 @@
 <div class="icon-frame" class:wide data-spatial-control={label}>
 	<Panel
 		class="spatial-icon-panel"
+		borderColor="transparent"
 		shape={{ radius: radii.control, contentInset: 0 }}
 		theme={theme.panelTheme}
 		pointerReactive={false}
@@ -51,6 +52,7 @@
 	/* The renderer moves panel contents into its projection layer; retain the anchor size. */
 	.icon-frame :global(.spatial-icon-panel) { width: 40px; height: 40px; }
 	.spatial-icon-button {
+		outline: 1px solid var(--ps-border); outline-offset: -1px;
 		box-sizing: border-box; display: grid; place-items: center; width: 40px; height: 40px;
 		padding: 0; border: 0; border-radius: var(--spatial-element-control-radius); background: transparent;
 		font: inherit; font-size: 13px;

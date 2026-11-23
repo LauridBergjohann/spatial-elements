@@ -60,7 +60,7 @@ test('compact panels reserve geometry height with optional eyebrow and omit unre
 	await page.goto('/proof/carousel-layout?custom=1&no-eyebrow=1');
 	await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'fallback');
 	const fit = await page.locator('.selected [data-carousel-fit-anchor]').boundingBox();
-	await expect(page.locator('.selected .summary')).toHaveCSS('height', '40px');
+	await expect(page.locator('.selected .summary')).toHaveCSS('height', '66px');
 	await expect(page.locator('.selected .full-summary')).toBeHidden();
 	await page.locator('.controls a').nth(1).click();
 	await expect(page.locator('[data-carousel-item="seat-1"] .summary')).toHaveCSS('height', '66px');

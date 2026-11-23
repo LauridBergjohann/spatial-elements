@@ -15,6 +15,7 @@ export type {
 	SectionBackgroundColor,
 	SpatialElementBreadcrumb,
 	SpatialElementData,
+	SpatialCollectionPose,
 	SpatialDockedPanelTheme,
 	SpatialElementFeature,
 	SpatialElementMediaItem,
@@ -47,4 +48,3 @@ export { default as ListSection } from './SpatialCardGridSection.svelte';
 /** @deprecated Use SpatialCarouselSection. */
 export { default as CarouselSection } from './SpatialCarouselSection.svelte';
 export type { SpatialCardGridOptions } from './spatialCardGrid.js';
-export type { CardVariant } from '@page-sections/core';

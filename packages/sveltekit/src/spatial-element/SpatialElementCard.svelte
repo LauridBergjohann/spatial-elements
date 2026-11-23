@@ -1,10 +1,5 @@
 <script lang="ts">
-	import type {
-		CardMediaAspect,
-		CardMediaFit,
-		CardVariant,
-		SurfaceTone
-	} from '@page-sections/core';
+	import type { CardMediaAspect, CardMediaFit, SurfaceTone } from '@page-sections/core';
 	import { getContext } from 'svelte';
 	import { CATALOG_ITEMS, type CatalogItems } from '@spatial-elements/core/catalog/catalogItems';
 	import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
@@ -21,7 +16,7 @@
 		mediaFit = 'contain',
 		reserveEyebrow = false,
 		cardTone = 'standard',
-		cardVariant = 'catalog'
+		cardShadow = false
 	}: {
 		spatialElement: SpatialListItem;
 		occurrence: string;
@@ -32,7 +27,7 @@
 		mediaFit?: CardMediaFit;
 		reserveEyebrow?: boolean;
 		cardTone?: SurfaceTone;
-		cardVariant?: CardVariant;
+		cardShadow?: boolean;
 	} = $props();
 	const items = getContext<CatalogItems | undefined>(CATALOG_ITEMS);
 	const readTheme = useSpatialTheme();
@@ -41,10 +36,7 @@
 	$effect(() => items?.register({ ...spatialElement, occurrence }));
 </script>
 
-<div
-	class="spatial-card-placement"
-	data-ps-card-size={cardVariant === 'catalog' ? cardSize : undefined}
->
+<div class="spatial-card-placement" data-ps-card-size={cardSize}>
 	<SpatialCardSlot
 		instanceKey={`card:${brand.id}:${occurrence}`}
 		context={{
@@ -57,13 +49,15 @@
 			mediaFit,
 			reserveEyebrow,
 			cardTone,
-			cardVariant
+			cardShadow
 		}}
 	/>
 </div>
 
 <style>
 	.spatial-card-placement {
+		align-self: stretch;
+		display: grid;
 		grid-column: span var(--ps-card-span, 1);
 		min-width: 0;
 		min-height: 0;

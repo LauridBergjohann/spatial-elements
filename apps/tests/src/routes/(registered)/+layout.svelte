@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { BrandStageShell } from '@spatial-elements/sveltekit';
-	import { theme } from '$lib/catalog';
+	import { theme } from '#lib/catalog.ts';
 	let { children } = $props();
 </script>
 

@@ -51,7 +51,7 @@ for (const view of ['list', 'carousel']) {
 		});
 		await page.goto(`/${brand}/categories/${view}?stage-test=1&stagedNavigation=1`);
 		await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
-		const link = view === 'list' ? page.locator(`[data-catalog-card][data-spatial-element-id="${id}"]`).first()
+		const link = view === 'list' ? page.locator(`[data-catalog-card][data-spatial-element-id="${id}"]`).first().locator('a.primary-link')
 			: page.locator(`[data-carousel-item="${id}"] .spatial-element-target`);
 		await expect(page.locator('[data-catalog-model-ready]').first()).toBeAttached();
 		if (examples && view === 'carousel') {

@@ -18,14 +18,15 @@ for (const destination of ['hero', 'dock']) for (const activation of ['pointer',
 			await page.goto(`/${brand}/categories/list?stage-test=1&stagedNavigation=1`);
 			await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
 			await expect.poll(() => page.evaluate(() => window.__stageVisualTest?.getCarouselStats()?.actors.some(actor => actor.spatialElementId === 'column' && actor.stagedReady) ?? false)).toBe(true);
-			const link = page.locator('[data-catalog-card][data-spatial-element-id="column"]').first();
+			const card = page.locator('[data-catalog-card][data-spatial-element-id="column"]').first();
+			const link = card.locator('a.primary-link');
 			if (destination === 'hero') await link.evaluate((node: HTMLAnchorElement) => {
 				// Both variants need the server fixture, so the request can genuinely
 				// remain uncommitted. Its hashless variant declares the Hero endpoint.
 				const url = new URL(node.href); url.hash = ''; node.href = url.href;
 				node.dataset.catalogView = JSON.stringify({ ...JSON.parse(node.dataset.catalogView!), targetPresentation: 'hero' });
 			});
-			await link.evaluate((card, destination) => {
+			await card.evaluate((card, destination) => {
 				const root = document.querySelector<HTMLElement>('.stage')!;
 				const surface = card.querySelector<HTMLElement>('.spatial-element-card-surface')!;
 				const title = card.querySelector<HTMLElement>('[data-shared-role="title"]')!;
@@ -33,16 +34,23 @@ for (const destination of ['hero', 'dock']) for (const activation of ['pointer',
 				const poster = card.querySelector<HTMLElement>('[data-catalog-poster]');
 				const nodes = [card, surface, title, eyebrow, poster].filter((node): node is HTMLElement => Boolean(node));
 				const properties = ['transform', 'text-shadow', 'outline-color', 'outline-style', 'outline-width', 'outline-offset',
-					'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
+					'box-shadow', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
 					'transition-property', 'transition-duration', 'transition-timing-function', 'transition-delay', 'transition-behavior',
 					'--spatial-card-frozen-after-opacity'];
 				const inline = () => nodes.map(node => properties.map(name => [name, node.style.getPropertyValue(name), node.style.getPropertyPriority(name)]));
 				const original = inline();
+				// Sample genuine CSS transitions deterministically even on a busy GPU runner.
+				const sampleTransition = (event: Event) => {
+					for (const animation of (event.target as HTMLElement).getAnimations()) {
+						if (animation instanceof CSSTransition) { animation.pause(); animation.currentTime = 40; }
+					}
+				};
+				card.addEventListener('transitionrun', sampleTransition, true);
 				const paint = () => ({ titleShadow: getComputedStyle(title).textShadow,
 					eyebrowShadow: eyebrow ? getComputedStyle(eyebrow).textShadow : null,
 					titleTransform: destination === 'hero' ? getComputedStyle(title).transform : null,
 					eyebrowTransform: destination === 'hero' && eyebrow ? getComputedStyle(eyebrow).transform : null,
-					border: getComputedStyle(surface).borderColor, glow: getComputedStyle(surface, '::after').opacity,
+					shadow: getComputedStyle(surface).boxShadow, border: getComputedStyle(surface).borderColor, glow: getComputedStyle(surface, '::after').opacity,
 					posterTransform: poster ? getComputedStyle(poster).transform : null,
 					posterOpacity: poster ? getComputedStyle(poster).opacity : null,
 					outline: [getComputedStyle(card).outlineColor, getComputedStyle(card).outlineStyle,
@@ -52,28 +60,30 @@ for (const destination of ['hero', 'dock']) for (const activation of ['pointer',
 				const sample = () => {
 					const phase = root.dataset.catalogStagedPhase;
 					if (phase && surface.hasAttribute('data-spatial-card-appearance-frozen')) {
-						frames.push({ phase, paint: paint(), focused: document.activeElement === card, hover: card.hasAttribute('data-mouse-hover') });
+						frames.push({ phase, paint: paint(), focused: card.contains(document.activeElement), hover: card.hasAttribute('data-mouse-hover') });
 					}
 					if (!stopped) requestAnimationFrame(sample);
 				};
 				requestAnimationFrame(sample);
 				Object.assign(window, { cardAppearanceProbe: { frames, original, inline, card, surface,
-					stop() { stopped = true; } } });
+					releaseSampling() { card.removeEventListener('transitionrun', sampleTransition, true); },
+					stop() { stopped = true; card.removeEventListener('transitionrun', sampleTransition, true); } } });
 			}, destination);
 			if (activation === 'pointer') {
-				const rect = (await link.boundingBox())!;
+				const rect = (await card.boundingBox())!;
 				await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2);
 			} else {
 				await page.keyboard.press('Tab');
 				await link.focus();
 				expect(await link.evaluate(node => node.matches(':focus-visible'))).toBe(true);
 			}
-			// Real CSS transition, deliberately before its 260ms endpoint; no test CSS.
+			// Allow native transitionrun events to sample the first 40ms; no test CSS.
 			await page.waitForTimeout(40);
-			const before = await link.evaluate(card => ({ depth: new DOMMatrix(getComputedStyle(card.querySelector('[data-shared-role="title"]')!).transform).m43,
-				hover: card.hasAttribute('data-mouse-hover'), focused: document.activeElement === card }));
+			const before = await card.evaluate(card => ({ depth: new DOMMatrix(getComputedStyle(card.querySelector('[data-shared-role="title"]')!).transform).m43,
+				hover: card.hasAttribute('data-mouse-hover'), focused: card.contains(document.activeElement) }));
 			expect(before.depth).toBeGreaterThan(0);
 			expect(before.depth).toBeLessThan(64);
+			await page.evaluate(() => (window as any).cardAppearanceProbe.releaseSampling());
 			if (activation === 'pointer') { await page.mouse.down(); await page.mouse.up(); }
 			else await page.keyboard.press('Enter');
 			await page.mouse.move(2, 2);
@@ -82,7 +92,7 @@ for (const destination of ['hero', 'dock']) for (const activation of ['pointer',
 			await expect(page.locator('[data-spatial-element-root]')).toHaveCount(0);
 			await page.evaluate(() => {
 				const probe = (window as any).cardAppearanceProbe;
-				probe.card.blur();
+				probe.card.querySelector('a').blur();
 			});
 			await page.waitForTimeout(80);
 			const held = await page.evaluate(() => {

@@ -10,7 +10,7 @@ for (const width of [430, 2456]) test.describe(`${width}px actual navigation mot
 			const url = `/demo/categories/${view}?stage-test=1${staged ? '&stagedNavigation=1' : ''}`;
 			await page.goto(url);
 			await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced');
-			const link = view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first()
+			const link = view === 'list' ? page.locator('[data-catalog-card][data-spatial-element-id="column"]').first().locator('a.primary-link')
 				: page.locator('[data-carousel-item="column"] .information').first();
 			await expect(page.locator('[data-catalog-model-ready]').first()).toBeAttached();
 			if (staged) await expect.poll(() => page.evaluate(() => window.__stageVisualTest!.getCarouselStats()?.actors.some(actor => actor.spatialElementId === 'column' && actor.stagedReady))).toBe(true);

@@ -435,6 +435,10 @@ export class SpatialElementDockController {
 		if (Math.abs(progress - this.tabsDockProgress) < 0.0005) return;
 		this.tabsDockProgress = progress;
 		this.stickyTabs.style.setProperty(
+			'--spatial-element-tabs-dock-top-border-opacity',
+			`${((1 - progress) * 100).toFixed(3)}%`
+		);
+		this.stickyTabs.style.setProperty(
 			'--spatial-element-tabs-dock-top-radius',
 			`${(this.tabsPanelRadius * (1 - progress)).toFixed(3)}px`
 		);

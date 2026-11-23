@@ -1,147 +1,141 @@
 <script module lang="ts">
-	export const examples: Array<{ language: string; code: string }> = [
-		{
-			language: 'svelte',
-			code: '\u003cSpatialCardGridSection section={{ id: \'collection\', title: \'Collection\', headline: \'Collection\' }}\n  list={items} cardSize="l" mediaAspect="1/1" mediaFit="contain" cardTone="muted" />\n'
-		}
-	];
+	export const examples: Array<{ language: string; code: string }> = [];
 </script>
 
 <script lang="ts">
-	import type { PageData } from './$types';
-	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
-	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
+	import { HeadingSection, Section } from '@page-sections/svelte';
+
+	import DocFigure from '#lib/docs/DocFigure.svelte';
+	import CollectionExample from '#lib/docs/CollectionExample.svelte';
 </script>
 
-<WebsitePage page={{ title: 'Spatial card grids' }} showContentMenu>
+<WebsitePage page={{ title: 'Spatial CardGrid' }} showContentMenu>
 	<HeadingSection
 		section={{
 			id: 'page-heading',
-			title: 'Spatial card grids',
+			title: 'Spatial CardGrid',
+			introduction: 'Help visitors compare objects in a responsive grid of linked cards.',
 			headingLevel: 1,
-			headingSize: 'm',
-			background: { color: 'standard', size: 'standard' }
+			headingSize: 'l',
+			background: { color: 'standard' }
 		}}
 	/>
 	<Section
 		section={{
-			id: 'introduction',
-			title: 'Introduction',
-			headline: 'Introduction',
-			background: { color: 'standard', size: 'standard' }
+			id: 'how-it-works',
+			title: 'Cards on the shared content grid',
+			headline: 'Cards on the shared content grid',
+			background: { color: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
-				Cards use Page Sections 0.3.0. The media frame has its own configurable aspect ratio; the
-				text area adds independent height. All cards in a collection have equal heights across rows.
+				<a href="/docs/reference/components/#spatial-card-grid-section">
+					<code>SpatialCardGridSection</code>
+				</a>
+				takes a
+				<a href="/docs/reference/components/#spatial-card-grid-section-section">
+					<code>section</code>
+				</a>
+				object and a
+				<a href="/docs/reference/components/#spatial-card-grid-section-list"><code>list</code></a>
+				of <a href="/docs/reference/types/#spatial-list-item"><code>SpatialListItem</code></a> objects.
+				It uses Page Sections' ContentGrid and cards, with spatial models fitted into their media frames.
 			</p>
-			<ul>
-				<li>S: 2 columns, 12px title, two title lines, no eyebrow.</li>
-				<li>M: 2 columns, 14px title, two title lines.</li>
-				<li>L: 4 columns (3 in grid S), 18px title, three title lines.</li>
-				<li>
-					M/L reserve an additional eyebrow row for every item when any item has a nonblank eyebrow.
-				</li>
-				<li>Text padding is 12px; contained media has an 8px inset.</li>
-			</ul>
 			<p>
-				Use these options directly on <code>SpatialCardGridSection</code> (not inside
-				<code>section</code>): <code>cardSize=&quot;s|m|l&quot;</code>,
-				<code>cardTone=&quot;standard|muted&quot;</code>,
-				<code>textAlign=&quot;start|center&quot;</code>,
-				<code>mediaAspect=&quot;1/1|3/2|4/3&quot;</code>
-				and <code>mediaFit=&quot;contain|cover&quot;</code>. <code>SpatialListPage</code> forwards
-				all of them. <code>cardVariant=&quot;catalog&quot;</code> (default) uses responsive
-				size-based spans; <code>cardVariant=&quot;editorial&quot;</code> uses <code>itemSpan</code>
-				(default <code>&#123; xs: 4, s: 3, m: 4, l: 4 &#125;</code>) and a title link. Spatial media
-				defaults to <code>1/1</code>; Page Sections defaults to <code>3/2</code>. Keep
-				<code>itemKey</code> stable for repeated items and reordering.
+				Every card is one native link, including its image. An eyebrow keeps the accent color; the
+				title uses normal text color. A description appears when supplied. Cards have equal heights,
+				and description text never exceeds the title's size.
 			</p>
-
-			<CodeBlock
-				code={examples[0].code}
-				language={examples[0].language}
-				highlighted={data.highlights[0]}
+			<p>
+				Use each element's <a href="/docs/reference/types/#spatial-element-data-grid-view">
+					<code>gridView</code>
+				</a>
+				to set a separate
+				<a href="/docs/reference/types/#spatial-collection-pose">
+					<code>SpatialCollectionPose</code>
+				</a>
+				for the live card model. Its angles are in degrees and its scale multiplies the automatic fit.
+				This leaves the carousel pose and detail camera independent. See
+				<a href="/docs/sections/carousel/#model-poses">independent model poses</a> for the shared fields.
+			</p>
+			<DocFigure
+				name="collections"
+				alt="A CardGrid makes all items visible for comparison, while a Carousel emphasizes one at a time."
+				caption="Use a grid for browsing and comparing a collection."
 			/>
-		</div></Section
-	>
-	<Section
+		</div>
+	</Section><Section
 		section={{
-			id: 'measured-media-and-independent-text',
-			title: 'Measured media and independent text',
-			headline: 'Measured media and independent text',
-			background: { color: 'standard', size: 'standard' }
+			id: 'settings',
+			title: 'Choose size and media framing',
+			headline: 'Choose size and media framing',
+			background: { color: 'standard' }
 		}}
-		><div class="prose">
-			<p><img src="/documentation/images/card-fit.png" alt="" loading="lazy" /></p>
-			<p>
-				The media frame alone has an aspect ratio. At 320px, an M card is 142px wide, with a 126px
-				square inset fitting area. With an eyebrow row the full card is 226px high. Blank eyebrows
-				reserve the same line as populated items. Long titles clamp while the native link retains
-				the full accessible title.
-			</p>
-			<p>
-				Spatial adapters measure the actual media element for geometry, camera fitting and
-				transition targets. Format changes never stretch a model. Persistent card roots and
-				occurrence identities survive navigation and keyed moves.
-			</p>
-		</div></Section
 	>
-	<Section
+		<div class="prose">
+			<p>
+				<a href="/docs/reference/components/#spatial-card-grid-section-card-size">
+					<code>cardSize</code>
+				</a>
+				accepts <code>s</code>, <code>m</code> or <code>l</code>. The grid chooses suitable spans as
+				its container changes. Leave
+				<a href="/docs/reference/components/#spatial-card-grid-section-item-span">
+					<code>itemSpan</code>
+				</a> unset unless you need explicit column allocation.
+			</p>
+			<p>
+				<a href="/docs/reference/components/#spatial-card-grid-section-media-aspect">
+					<code>mediaAspect</code>
+				</a>
+				chooses the media frame: square, 3:2 or 4:3. Spatial cards default to square and
+				<a href="/docs/reference/components/#spatial-card-grid-section-media-fit">
+					<code>mediaFit</code>
+				</a> defaults to contain, so the full object fits. The text below the frame has its own height.
+			</p>
+			<p>
+				<a href="/docs/reference/components/#spatial-card-grid-section-card-tone">
+					<code>cardTone</code>
+				</a>
+				selects a standard or muted surface.
+				<a href="/docs/reference/components/#spatial-card-grid-section-card-shadow">
+					<code>cardShadow</code>
+				</a>
+				adds a resting shadow; hover and keyboard focus provide a highlight even without one. These are
+				component properties, not fields inside
+				<a href="/docs/reference/components/#spatial-card-grid-section-section">
+					<code>section</code>
+				</a>.
+			</p>
+			<p>
+				<a href="/docs/reference/types/#spatial-card-grid-options">
+					Inspect every CardGrid option →
+				</a>
+			</p>
+		</div>
+	</Section><CollectionExample kind="grid" /><Section
 		section={{
-			id: 'interaction-and-fallback',
-			title: 'Interaction and fallback',
-			headline: 'Interaction and fallback',
-			background: { color: 'standard', size: 'standard' }
+			id: 'real-collection',
+			title: 'A complete collection',
+			headline: 'A complete collection',
+			background: { color: 'standard' }
 		}}
-		><div class="prose">
-			<p>
-				Cards remain real links with posters and readable labels before hydration or GPU startup.
-				Mouse proximity and device orientation remain spatial enhancements; keyboard focus, reduced
-				motion and touch navigation retain their behavior.
-			</p>
-			<p>
-				Use <code>/docs/examples/cards/</code> to switch all three media formats, filter labels and reorder
-				repeated element occurrences. Its browser checks cover container widths, equal heights and native
-				SSR.
-			</p>
-			<p>
-				<img src="/documentation/images/cards-320.png" alt="" loading="lazy" />
-				<img src="/documentation/images/cards-840.png" alt="" loading="lazy" />
-				<img src="/documentation/images/cards-large-720.png" alt="" loading="lazy" />
-			</p>
-		</div></Section
 	>
-	<Section
-		section={{
-			id: 'spatial-component-names-and-carousel-fallback',
-			title: 'Spatial component names and carousel fallback',
-			headline: 'Spatial component names and carousel fallback',
-			background: { color: 'standard', size: 'standard' }
-		}}
-		><div class="prose">
+		<div class="prose">
 			<p>
-				Use <code>SpatialCardGridSection</code> and <code>SpatialCarouselSection</code> from
-				<code>@spatial-elements/sveltekit</code>. The old <code>SpatialCardGridSection</code> and
-				<code>SpatialCarouselSection</code> exports remain deprecated aliases for existing consumers.
+				See the <a href="/showcase/workbench/">Workbench collection</a> for model cards with real
+				product content. For filtering, repeated elements and explicit spans, open
+				<a href="/docs/examples/cards/">Card layouts</a>.
 			</p>
 			<p>
-				Page Sections 0.3.0 also exports a 2D <code>SpatialCarouselSection</code>.
-				SpatialCarouselSection currently retains its own native scroll-snap fallback with posters,
-				accessible links, selected-item restoration and persistent interactive summary content. It
-				does not instantiate the Page Sections carousel: that component has a different
-				item/selection contract and no custom-card hook for the persistent spatial summary. Shared
-				section shells and layout tokens still come from Page Sections. SSR, unavailable GPU and
-				device loss all use the same native spatial carousel markup.
+				Keep stable IDs when reordering. Use a distinct <a
+					href="/docs/reference/types/#spatial-list-item-item-key"
+				>
+					<code>itemKey</code>
+				</a> if the same element occurs more than once within the section. Supply posters so the collection
+				remains useful before rendering starts.
 			</p>
-			<p>
-				Opaque section backgrounds sit below the rear GPU models. Rendering, shadows and pointer
-				regions follow the section surface: <code>background.size: 'standard'</code> clips to the
-				section bounds; <code>'full'</code> extends horizontally to the viewport. Both clip vertically
-				to the section. This also applies to transparent backgrounds. Layout measurements are cached and
-				adjusted numerically while scrolling.
-			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

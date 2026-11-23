@@ -20,11 +20,14 @@
 		/** SpatialCardGridSection, SpatialCarouselSection and ordinary Section children. */
 		children?: Snippet;
 		leftSidebar?: Snippet;
+		/** Content after the sections, outside the sticky menu boundary. */
+		pageEnd?: Snippet;
+		/** @deprecated Use pageEnd. The site footer belongs to BrandStageShell. */
 		footer?: Snippet;
 		showContentMenu?: boolean;
 		contentMenuLabel?: string;
 	}
-	let { page, hdr, background, children, leftSidebar, footer, showContentMenu = false, contentMenuLabel }: Props = $props();
+	let { page, hdr, background, children, leftSidebar, pageEnd, footer, showContentMenu = false, contentMenuLabel }: Props = $props();
 	const backgroundId = $props.id();
 	const backgroundScope = backgroundId.replace(/[^a-zA-Z0-9_-]/g, '_');
 	onMount(() => {
@@ -45,7 +48,7 @@
 </script>
 
 {#if background}<svelte:element this={'style'}>{backgroundRules}</svelte:element>{/if}
-<PageContent {page} {leftSidebar} {footer} {showContentMenu} {contentMenuLabel} class="content-page" data-catalog-list data-brand-id={brand.id}
+<PageContent {page} {leftSidebar} pageEnd={pageEnd ?? footer} {showContentMenu} {contentMenuLabel} class="content-page" data-catalog-list data-brand-id={brand.id}
  data-spatial-content-page={backgroundScope} data-spatial-page-background={background ? backgroundScope : undefined}>
  {@render children?.()}
 </PageContent>

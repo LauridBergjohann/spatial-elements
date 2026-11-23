@@ -1,41 +1,4 @@
 {
   "mode": "pre",
-  "tag": "beta",
-  "initialVersions": {
-    "@spatial-elements/core": "0.1.0-beta.1",
-    "@spatial-elements/sveltekit": "0.1.0-beta.1"
-  },
-  "changesets": [
-    "adaptive-carousel-viewport",
-    "anchored-help-controls",
-    "automatic-releases",
-    "catalog-interaction-glow",
-    "consistent-card-text",
-    "controlled-spacemouse-and-header-fields",
-    "detail-enlarge-independent-viewer",
-    "detail-fullscreen",
-    "detail-navigation-polish",
-    "detail-pane-zoom-interactions",
-    "detail-scroll-input-stability",
-    "device-orientation",
-    "documentation-website",
-    "explicit-geometry-lighting",
-    "explicit-input-frosted-carousel",
-    "help-teardown",
-    "immersive-carousel",
-    "immersive-catalog-focus",
-    "interaction-guidance",
-    "page-owned-elements",
-    "progressive-catalog-layout",
-    "refine-interaction-help",
-    "resolver-driven-layout",
-    "responsive-catalog-navigation",
-    "runtime-themes-button-group",
-    "shared-page-sections",
-    "summary-panel-layout",
-    "synchronous-help-surfaces",
-    "three-r186",
-    "touch-interactions",
-    "unified-zoom-clearance"
-  ]
+  "tag": "beta"
 }

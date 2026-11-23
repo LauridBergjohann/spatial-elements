@@ -1,6 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
-import { browser } from '$app/environment';
-import { trace } from '$lib/staged-navigation-proof/telemetry';
+import { browser } from '$app/env';
+import { trace } from '#lib/staged-navigation-proof/telemetry.ts';
 import type { PageLoad } from './$types';
 
 // An ordinary application cache makes both A and B data-warm simultaneously.

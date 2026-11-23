@@ -4,7 +4,7 @@
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import SpatialSummarySlot from './SpatialSummarySlot.svelte';
 	import { getContext } from 'svelte';
-	import { getCssPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
+	import { getSharedPanelBoxShadow } from '@spatial-elements/core/stage/panelShadow';
 	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import type { SpatialListItem } from '@spatial-elements/core/spatial-element/types';
 	import { CATALOG_ITEMS, type CatalogItems } from '@spatial-elements/core/catalog/catalogItems';
@@ -190,7 +190,7 @@
 		aria-hidden={interactive && !selected}
 		style:--carousel-panel-opacity={(interactive ? pose.panelOpacity : 1) *
 			(brand.panelTheme.opacity ?? 1)}
-		style:--carousel-panel-shadow={getCssPanelBoxShadow(brand.panelTheme.shadowIntensity ?? 0.28)}
+		style:--carousel-panel-shadow={getSharedPanelBoxShadow(brand.panelTheme.shadowIntensity ?? 0.28, brand.panelTheme.shadowColor)}
 		style:--carousel-panel-tint={typeof brand.panelTheme.tint === 'number'
 			? '#' + brand.panelTheme.tint.toString(16).padStart(6, '0')
 			: typeof brand.panelTheme.tint === 'object'
@@ -207,7 +207,7 @@
 		<SpatialSummarySlot instanceKey={`carousel:${brand.id}:${occurrence}`}
    context={{ spatialElement: { id: spatialElement.id, brandId: brand.id, eyebrow: spatialElement.eyebrow, title: spatialElement.title,
     features: spatialElement.summary?.features ?? spatialElement.features.map((label) => ({ label })), action: spatialElement.summary?.action },
-    contentInset, heading: 'h3', mode: 'carousel', address,
+    contentInset, heading: 'h3', mode: 'carousel', detailHref: href(spatialElement.href), address,
     carousel: { item: spatialElement, occurrence, compact } }} />
 	</div>
 </article>
@@ -217,7 +217,7 @@
 		display: block;
 		position: relative;
 		min-width: 0;
-		height: calc(var(--spatial-carousel-title-reserve) + var(--spatial-carousel-fit-height));
+		height: calc(var(--spatial-carousel-panel-reserve) + var(--spatial-carousel-fit-height));
 		min-height: 0;
 		padding: 0;
 		box-sizing: border-box;
@@ -311,12 +311,12 @@
 	.summary {
 		position: absolute;
 		left: var(--spatial-carousel-summary-left);
-		top: calc(var(--spatial-carousel-title-reserve) - var(--spatial-carousel-compact-height));
+		top: calc(var(--spatial-carousel-fit-height) - var(--spatial-carousel-compact-overlap));
 		width: var(--spatial-carousel-summary-width);
 		height: var(--spatial-carousel-compact-height);
 		min-height: 0;
 		margin: 0;
-		--spatial-carousel-compact-height: 40px;
+
 		box-sizing: border-box;
 
 		border-radius: var(--carousel-panel-radius, 14px);
@@ -329,7 +329,7 @@
 		display: block;
 		visibility: hidden;
 	}
-	.has-eyebrow { --spatial-carousel-compact-height: 66px; }
+
 	[data-carousel-fit-anchor] { position: absolute; left: var(--spatial-carousel-fit-left); top: var(--spatial-carousel-title-reserve); width: var(--spatial-carousel-fit-width); height: var(--spatial-carousel-fit-height); pointer-events: none; }
 	@media (min-width: 840px) {
 		.summary { top: calc(var(--spatial-carousel-fit-height) / 2); height: auto; max-height: var(--spatial-carousel-fit-height); padding: 0; transform: translateY(-50%); }

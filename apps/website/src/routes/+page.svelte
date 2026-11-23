@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { HeroSection, Section, CardGridSection } from '@page-sections/svelte';
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { SpatialCarouselSection } from '@spatial-elements/sveltekit';
-	import { featuredItems } from '$lib/showcase/collection';
-	import { showcaseHdr } from '$lib/showcase/optimized';
+	import { featuredItems } from '#lib/showcase/collection.ts';
+	import { showcaseHdr } from '#lib/showcase/optimized.ts';
+	import { technologies } from '#lib/technologies.ts';
 </script>
 
 <WebsitePage
@@ -22,15 +23,18 @@
 			introduction:
 				'Build interactive 3D collections and detail pages around real content. Shared layouts, persistent rendering and ordinary HTML bring models and stories together.',
 			image: {
-				src: '/assets/showcase/chronograph/chronograph-poster.webp',
-				alt: 'A watch from the spatial showcase',
-				width: 1024,
+				src: '/assets/website/hero-light.webp',
+				srcDark: '/assets/website/hero-dark.webp',
+				alt: 'Spatial Elements combines a three-dimensional object with a website interface',
+				width: 1536,
 				height: 1024
 			},
+			imageSide: 'left',
 			actions: [
-				{ label: 'Get started', href: '/getting-started/', variant: 'primary' },
-				{ label: 'Explore the showcase', href: '/showcase/', variant: 'text' }
-			]
+				{ label: 'Explore the showcase', href: '/showcase/', variant: 'primary' },
+				{ label: 'Get started', href: '/getting-started/', variant: 'secondary' }
+			],
+			spacing: 'loose'
 		}}
 	/>
 	<Section
@@ -38,9 +42,11 @@
 			id: 'what-is-spatial-elements',
 			title: 'What is Spatial Elements?',
 			headline: 'A website first. A spatial experience when it can be.',
-			background: { color: 'standard', size: 'standard' }
+			background: { color: 'standard', size: 'standard' },
+			spacing: 'loose'
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Spatial Elements is a SvelteKit library for presenting models alongside text, images and
 				links. Use it for product demonstrations, collections and visual stories. Page Sections
@@ -51,13 +57,14 @@
 				HTML, real links and supplied poster images keep the content available when JavaScript or
 				WebGPU is unavailable.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<SpatialCarouselSection
 		section={{
 			id: 'featured-products',
 			title: 'Explore selected products',
-			background: { color: 'transparent', size: 'full' }
+			background: { color: 'transparent', size: 'full' },
+			spacing: 'loose'
 		}}
 		list={featuredItems}
 	/>
@@ -65,7 +72,8 @@
 		section={{
 			id: 'features',
 			title: 'Why Spatial Elements?',
-			headline: 'The pieces work together.'
+			headline: 'The pieces work together.',
+			spacing: 'loose'
 		}}
 		cardTone="muted"
 		list={[
@@ -107,5 +115,14 @@
 				href: '/docs/sections/playground/'
 			}
 		]}
+	/>
+	<CardGridSection
+		section={{ id: 'references', title: 'References', headline: 'References', spacing: 'loose' }}
+		list={technologies}
+		cardSize="m"
+		cardTone="muted"
+		mediaAspect="4/3"
+		mediaFit="contain"
+		textAlign="center"
 	/>
 </WebsitePage>

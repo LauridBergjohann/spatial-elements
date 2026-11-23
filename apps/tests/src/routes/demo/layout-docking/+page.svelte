@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Section, SpatialElementPage } from '@spatial-elements/sveltekit';
-	import { spatialElements } from '$lib/catalog';
+	import { spatialElements } from '#lib/catalog.ts';
 	import { page } from '$app/state';
 	const shortSections = $derived(page.url.searchParams.has('short-sections'));
 	const element = {
@@ -39,9 +39,9 @@
 				<p>
 					This public fixture checks long navigation labels, document anchors and keyboard focus.
 				</p>
-				<button type="button" id={`section-focus-${index + 1}`}
-					>Focus control in section {index + 1}</button
-				>
+				<button type="button" id={`section-focus-${index + 1}`}>
+					Focus control in section {index + 1}
+				</button>
 				<p>
 					The submenu keeps its own horizontal scroll position while the page continues to use
 					document scrolling.

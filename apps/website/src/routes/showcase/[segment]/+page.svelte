@@ -5,8 +5,8 @@
 		SpatialCarouselSection
 	} from '@spatial-elements/sveltekit';
 	import { HeadingSection, ImageSection } from '@page-sections/svelte';
-	import SquareArrowRightExit from 'lucide-svelte/icons/square-arrow-right-exit';
-	import { showcaseHdr } from '$lib/showcase/optimized';
+	import SquareArrowRightExit from '@lucide/svelte/icons/square-arrow-right-exit';
+	import { showcaseHdr } from '#lib/showcase/optimized.ts';
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
 </script>
@@ -56,9 +56,9 @@
 					background: { color: 'standard', size: 'standard' }
 				}}
 			>
-				<a class="company-link" href={brand.href} rel="external"
-					>Discover {brand.name}<SquareArrowRightExit size={20} aria-hidden="true" /></a
-				>
+				<a class="company-link" href={brand.href} rel="external">
+					Discover {brand.name}<SquareArrowRightExit size={20} aria-hidden="true" />
+				</a>
 			</ImageSection>
 			<SpatialCardGridSection
 				section={{

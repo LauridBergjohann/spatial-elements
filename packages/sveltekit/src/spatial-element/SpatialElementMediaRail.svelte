@@ -3,7 +3,7 @@
 	import { mouseHover } from '@spatial-elements/core/stage/mouseHover';
 	import { getPanelFocusOpacity } from '@spatial-elements/core/stage/panelFocusMath';
 	import { STAGE_CONTEXT_KEY, type StageContext } from '@spatial-elements/core/stage/panelContext';
-	import Play from 'lucide-svelte/icons/play';
+	import Play from '@lucide/svelte/icons/play';
 	import OverflowControls from './OverflowControls.svelte';
 	import SpatialMediaIndicator from './SpatialMediaIndicator.svelte';
 	import { STAGE_PANEL_LAYOUT_EVENT, STAGE_PANEL_VISUAL_EVENT } from '@spatial-elements/core/stage/panelContext';
@@ -118,6 +118,7 @@
 					visible={media.kind !== 'minimap' || minimapInRail || focused || minimapDocked}
 					minimapSelected={active}
 					class={`thumbnail-panel ${active ? 'active' : ''}`}
+					borderColor={active ? 'transparent' : 'var(--ps-border)'}
 					shape={{ ...theme.panelShape, radius: radii.control, contentInset: 0 }}
 					theme={theme.panelTheme}
 					contentClass="thumbnail-panel-content"

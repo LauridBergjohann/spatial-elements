@@ -39,7 +39,7 @@ import {
 import { SpatialElementAssetManager, type SpatialElementAssetInstance } from './assets/SpatialElementAssetManager.js';
 import { getSpatialElementEntityKey } from './spatialElementAssets.js';
 import { applyCatalogMaterialOpacity, captureCatalogMaterialOpacity } from './catalogPresentation.js';
-import { CATALOG_POSE_CHANGED, type CatalogPoseProvider } from './catalogPose.js';
+import { CATALOG_POSE_CHANGED, CAROUSEL_MODEL_SIZE, type CatalogPoseProvider } from './catalogPose.js';
 import { getProjectiveCssMatrix3d, type CssProjectionQuad } from '../stage/cssProjection.js';
 import { CarouselGlassCompositor } from './CarouselGlassCompositor.js';
 import { CarouselGround } from './CarouselGround.js';
@@ -76,6 +76,7 @@ interface CatalogActor {
 	tilt: THREE.Group;
 	view: THREE.Group;
 	viewOrientation: THREE.Quaternion;
+	presentationScale: number;
 	radius: number;
 	hitCorners: THREE.Vector3[];
 	fitCorners: THREE.Vector3[];
@@ -83,6 +84,8 @@ interface CatalogActor {
 	cardScale: number;
 	hover: number;
 	blur?: number;
+	/** Fade the resolved silhouette, preserving authored material depth and alpha. */
+	carouselOpacity?: number;
 	renderRect?: BlurRect;
 	referencePoint: THREE.Vector3;
 	overrides: Set<THREE.Material>;
@@ -232,7 +235,7 @@ export class CatalogSpatialElementLayer {
 				projectedCenter: actor.view.getWorldPosition(new THREE.Vector3()).project(actor.pose ? this.carouselCamera : this.camera).toArray(),
 				band: actor.band,
 				clip: actor.clip ? { ...actor.clip } : undefined,
-				opacity: this.exitOpacity * (actor.materials[0]?.material.opacity ?? 0),
+				opacity: this.exitOpacity * (actor.carouselOpacity ?? 1) * (actor.materials[0]?.material.opacity ?? 0),
 				materialOpacity: actor.materials[0]?.material.opacity ?? 0,
 				depthWrite: actor.materials[0]?.material.depthWrite,
 				modelScale: actor.view.scale.x, modelDepth: actor.view.position.z,
@@ -247,6 +250,7 @@ export class CatalogSpatialElementLayer {
 	private readonly outline = new CatalogModelOutline();
 	private readonly sectionSurfaces = new CarouselSectionSurfaces();
 	private readonly glass = new CarouselGlassCompositor(this.depthBlur);
+	refreshPanelAppearance() { this.glass.refreshAppearance(); }
 	private readonly ground = new CarouselGround();
 	private readonly geometryFade = new CatalogGeometryFade();
 	private readonly handoffScene = new THREE.Scene();
@@ -336,7 +340,7 @@ export class CatalogSpatialElementLayer {
 	};
 	private readFocusVisible(target?: HTMLElement) {
 		if (!target) return false;
-		const visible = target.matches?.(':focus-visible') ?? false;
+		const visible = Boolean(target.matches?.(':focus-visible') || target.querySelector?.(':focus-visible'));
 		this.focusVisible.set(target, visible);
 		return visible;
 	}
@@ -356,14 +360,16 @@ export class CatalogSpatialElementLayer {
 		});
 	}
 	private readonly focusChange = (event: FocusEvent) => {
-		const actor = [...this.actors.values()].find(actor =>
-			(actor.pose ? actor.hitTarget : actor.card) === event.target);
+		const actor = [...this.actors.values()].find(actor => {
+			const candidate = actor.pose ? actor.hitTarget : actor.card;
+			return candidate === event.target || Boolean(candidate?.contains?.(event.target as Node));
+		});
 		const target = actor && (actor.pose ? actor.hitTarget : actor.card);
 		if (!actor || !target) return;
 		// focusout has already lost :focus-visible. Remember the state actually
 		// consumed by the last frame (or preceding focusin), including autofocus.
 		const before = this.focusVisible.get(target) ?? false;
-		const after = event.type === 'focusin' && (target.matches?.(':focus-visible') ?? false);
+		const after = event.type === 'focusin' && this.readFocusVisible(target);
 		this.focusVisible.set(target, after);
 		if (before === after || this.transitionActive || (actor.pose && this.pointer.pressed)) return;
 		// A carousel pointer outline already has the same target value of one.
@@ -508,7 +514,7 @@ export class CatalogSpatialElementLayer {
 						instance.dispose();
 						return;
 					}
-					const actor = this.createActor(key, brandId, spatialElement.id, getSpatialElementScene(spatialElement), instance);
+					const actor = this.createActor(key, brandId, spatialElement.id, getSpatialElementScene(spatialElement), instance, spatialElement.pose?.kind === 'carousel' ? 'carousel' : 'grid');
 					actor.occurrence = spatialElement.occurrence;
 					actor.pose = spatialElement.pose;
 					this.stagedSourceCapture = undefined;
@@ -634,11 +640,14 @@ export class CatalogSpatialElementLayer {
 				// Reuse the outline's settled hover state: inspecting a neighbour brings it
 				// into focus without changing selection or allocating another render target.
 				actor.blur = (pose.blur ?? 0) * (1 - actor.hover);
-				actor.band = pose.front ? 'front' : 'rear';
 				actor.root.visible &&= pose.visible;
-				applyCatalogMaterialOpacity(actor.materials, pose.opacity);
+				actor.carouselOpacity = pose.opacity;
+				applyCatalogMaterialOpacity(actor.materials, 1);
 				const framing = pose.framing;
 				const compact = framing?.compact ?? width < 840;
+				// Summary panels must composite over every carousel model at every size,
+				// including the selected seat when its silhouette overlaps a full panel.
+				actor.band = 'rear';
 				const frame = framing ? Math.min(framing.fit.width, framing.fit.height) : Math.min(slot.width, compact ? 360 : slot.height);
 				// Every seat shares one scene origin. Depth now determines projected size
 				// and spacing naturally, including scroll parallax and the foreground advance.
@@ -654,16 +663,16 @@ export class CatalogSpatialElementLayer {
 				);
 				actor.root.matrixWorldNeedsUpdate = true;
 				// Geometry follows the seat and pointer; panel projection below excludes pointer tilt.
-				actor.tilt.scale.setScalar(pose.orbit ? 1 : perspective * (pose.size / 0.82));
+				actor.tilt.scale.setScalar(pose.orbit ? 1 : perspective * (pose.size / CAROUSEL_MODEL_SIZE));
 				actor.tilt.rotation.set((pose.orbit?.pitch ?? 0) + actor.rotationX, pose.yaw + actor.rotationY, 0);
 				actor.tilt.position.set(0, 0, 0);
 				// Keep compact models in the 360px visual area even as their parent shrinks.
 				// Scaling the old offset pulled side previews down into the summary panel.
 				actor.view.position.set(0, compact && !pose.orbit
-					? (slot.height - 360) * pose.y / (pose.size / 0.82)
+					? (slot.height - 360) * pose.y / (pose.size / CAROUSEL_MODEL_SIZE)
 					: 0, 0);
 				actor.view.scale.setScalar(
-					(frame * 0.82) / (actor.radius * 2)
+					(frame * CAROUSEL_MODEL_SIZE * actor.presentationScale) / (actor.radius * 2)
 				);
 				let groundMatrix: THREE.Matrix4 | undefined;
 				if (pose.orbit && actor.root.visible) {
@@ -920,16 +929,16 @@ export class CatalogSpatialElementLayer {
 					const fog = this.scene.fog;
 					this.scene.fog = null;
 					try {
-						if (group.some((actor) => ((actor.blur ?? 0) >= 0.05 || actor.hover > 0) && actor.renderRect)) {
+						if (group.some((actor) => ((actor.blur ?? 0) >= 0.05 || actor.hover > 0 || (actor.carouselOpacity ?? 1) < 1) && actor.renderRect)) {
 							// Resolve far-to-near into the same output; scratch buffers are shared by every seat.
 							group.sort((a, b) => a.root.matrix.elements[14] - b.root.matrix.elements[14]);
 							for (const actor of group) {
 								actor.root.visible = true;
 								this.depthBlur.render(renderer, this.carouselCamera, actor.renderRect ?? rect,
-									actor.blur ?? 0, (camera) => renderer.render(this.scene, camera), rect);
+									actor.blur ?? 0, (camera) => renderer.render(this.scene, camera), rect, false, actor.carouselOpacity ?? 1);
 								if (actor.hover > 0 && actor.renderRect)
 									this.outline.render(renderer, this.carouselCamera, actor.model, actor.renderRect, rect,
-										actor.hover * (actor.materials[0]?.material.opacity ?? 1), this.interactionTheme(), warmOutput);
+										actor.hover * (actor.carouselOpacity ?? 1) * (actor.materials[0]?.material.opacity ?? 1), this.interactionTheme(), warmOutput);
 								actor.root.visible = false;
 							}
 						} else {
@@ -1430,7 +1439,8 @@ export class CatalogSpatialElementLayer {
 		brandId: string,
 		spatialElementId: string,
 		stage: SpatialElementScene,
-		instance: SpatialElementAssetInstance
+		instance: SpatialElementAssetInstance,
+		kind: 'grid' | 'carousel' = 'grid'
 	): CatalogActor {
 		const pair = resolveSpatialElementLodPair(stage.glb, stage.lodPair);
 		const rotation = pair ? undefined : stage.model?.rotation;
@@ -1476,8 +1486,9 @@ export class CatalogSpatialElementLayer {
 		root.matrixAutoUpdate = false;
 		const tilt = new THREE.Group();
 		const view = new THREE.Group();
+		const collectionPose = kind === 'carousel' ? stage.carouselView : stage.gridView;
 		view.quaternion.copy(
-			getCameraOrbitQuaternion(stage.camera?.azimuth, stage.camera?.elevation).invert()
+			getCameraOrbitQuaternion(collectionPose?.azimuth ?? stage.camera?.azimuth, collectionPose?.elevation ?? stage.camera?.elevation).invert()
 		);
 		const supportPoints = carouselSupport(model, view.quaternion);
 		root.add(tilt);
@@ -1505,6 +1516,7 @@ export class CatalogSpatialElementLayer {
 			tilt,
 			view,
 			viewOrientation: view.quaternion.clone(),
+			presentationScale: Number.isFinite(collectionPose?.scale) && collectionPose!.scale! > 0 ? collectionPose!.scale! : 1,
 			radius,
 			hitCorners,
 			fitCorners: hitCorners.map((corner) => corner.clone().applyQuaternion(view.quaternion)),
@@ -1557,7 +1569,7 @@ export class CatalogSpatialElementLayer {
 			actor.cardRect = actor.card!.getBoundingClientRect();
 			actor.slotRect = actor.slot!.getBoundingClientRect();
 			if (!actor.pose)
-				actor.cardScale = cardModelFit(actor.fitCorners, actor.slotRect.width, actor.slotRect.height);
+				actor.cardScale = cardModelFit(actor.fitCorners, actor.slotRect.width, actor.slotRect.height) * actor.presentationScale;
 			if (actor.pose) {
 				const section = actor.card!.closest('[data-section-background-size]');
 				const surface = section?.querySelector<HTMLElement>(':scope > .ps-section-surface');

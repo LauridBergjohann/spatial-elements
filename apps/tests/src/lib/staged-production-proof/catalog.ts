@@ -1,5 +1,5 @@
 import { createSpatialTheme, getSpatialListItems } from '@spatial-elements/core';
-import { spatialElements as originals, theme as originalTheme } from '$lib/catalog';
+import { spatialElements as originals, theme as originalTheme } from '#lib/catalog.ts';
 export const theme = createSpatialTheme({
 	...originalTheme,
 	id: 'staged',

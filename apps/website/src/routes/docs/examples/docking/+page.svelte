@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Section, SpatialElementPage } from '@spatial-elements/sveltekit';
-	import { spatialElements } from '$lib/forms';
+	import { spatialElements } from '#lib/forms.ts';
 
 	let shortSections = $state(false);
 	const element = {
@@ -28,8 +28,9 @@
 <SpatialElementPage spatialElement={element}>
 	<Section
 		section={{ id: 'options', title: 'Try section lengths', headline: 'Try section lengths' }}
-		><label><input type="checkbox" bind:checked={shortSections} /> Short sections</label></Section
 	>
+		<label><input type="checkbox" bind:checked={shortSections} /> Short sections</label>
+	</Section>
 	{#each titles as title, index}
 		<Section
 			section={{
@@ -43,9 +44,9 @@
 				<p>
 					This public fixture checks long navigation labels, document anchors and keyboard focus.
 				</p>
-				<button type="button" id={`section-focus-${index + 1}`}
-					>Focus control in section {index + 1}</button
-				>
+				<button type="button" id={`section-focus-${index + 1}`}>
+					Focus control in section {index + 1}
+				</button>
 				<p>
 					The submenu keeps its own horizontal scroll position while the page continues to use
 					document scrolling.

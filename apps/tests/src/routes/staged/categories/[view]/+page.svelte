@@ -22,10 +22,10 @@
 			section={{ id: 'collection', title: 'Collection' }}
 			list={data.items}
 		/>{/if}
-	<Section section={{ id: 'explanation', title: 'Endpoint contract' }}
-		><p>
+	<Section section={{ id: 'explanation', title: 'Endpoint contract' }}>
+		<p>
 			These links explicitly open the fully docked reading view. Its document contains enough
 			content for native anchor scrolling.
-		</p></Section
-	>
+		</p>
+	</Section>
 </ContentPage>

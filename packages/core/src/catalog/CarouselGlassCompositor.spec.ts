@@ -7,6 +7,22 @@ import { LiquidGlassPanel } from '../stage/LiquidGlassPanel.js';
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
+test('appearance refresh keeps unchanged glass and rebuilds changed material colors once', () => {
+	const f = fixture();
+	const node = f.card(5);
+	const dispose = vi.spyOn(LiquidGlassPanel.prototype, 'dispose');
+	f.activate(node);
+	f.glass.refreshAppearance();
+	f.activate(node);
+	expect(dispose).not.toHaveBeenCalled();
+	node.dataset.carouselTheme = JSON.stringify({ backdropBlur: 5, shadowColor: '#ff0000' });
+	f.activate(node);
+	expect(dispose).toHaveBeenCalledTimes(1);
+	f.activate(node);
+	expect(dispose).toHaveBeenCalledTimes(1);
+	f.dispose();
+});
+
 function fixture() {
 	vi.stubGlobal('window', { innerWidth: 800, innerHeight: 600 });
 	const original = new THREE.RenderTarget(3, 4);

@@ -34,6 +34,48 @@ for (const width of [390, 700])
 	});
 
 if (process.env.SPATIAL_GPU) {
+	for (const width of [840, 1700])
+		test(`Subnavigation fades its shared border without opening a dock gap at ${width}px`, async ({ page }) => {
+			await page.setViewportSize({ width, height: 900 });
+			await page.goto('/showcase/industrial/wurm-multigate3/?stage-test=1');
+			await expect(page.locator('.stage')).toHaveAttribute('data-stage-page-ready', '', { timeout: 60000 });
+			await page.evaluate(() => window.__stageVisualTest!.settle(30));
+			const breakpoint = await page.evaluate(() => {
+				const tabs = document.querySelector('[data-spatial-element-tabs-panel-anchor]')!;
+				const header = document.querySelector('[data-spatial-element-sticky-header]')!;
+				return tabs.getBoundingClientRect().top + scrollY - header.getBoundingClientRect().bottom;
+			});
+			for (const offset of [12, 40, 12]) {
+				await page.evaluate(y => scrollTo({ top: y, behavior: 'instant' }), breakpoint + offset);
+				await page.evaluate(() => window.__stageVisualTest!.settle(30));
+				const state = await page.evaluate(() => {
+					const tabs = document.querySelector<HTMLElement>('[data-spatial-element-sticky-tabs]')!;
+					const header = document.querySelector('[data-spatial-element-sticky-header]')!;
+					const edge = getComputedStyle(tabs, '::after');
+					return {
+						active: tabs.hasAttribute('data-active'),
+						gap: tabs.getBoundingClientRect().top - header.getBoundingClientRect().bottom,
+						progress: Number(tabs.dataset.spatialElementTabsDockProgress),
+						color: edge.borderTopColor,
+						width: edge.borderTopWidth,
+						radius: parseFloat(getComputedStyle(tabs).borderTopLeftRadius)
+					};
+				});
+				expect(state.active).toBe(true);
+				expect(state.gap).toBeCloseTo(0, 1);
+				expect(state.width).toBe('1px');
+				if (offset === 40) {
+					expect(state.progress).toBe(1);
+					expect(state.radius).toBe(0);
+					expect(state.color).toMatch(/(?:\/ 0|, 0)\)$/);
+				} else {
+					expect(state.progress).toBeGreaterThan(0);
+					expect(state.progress).toBeLessThan(1);
+					expect(state.radius).toBeGreaterThan(0);
+					expect(state.color).not.toMatch(/(?:\/ 0|, 0)\)$/);
+				}
+			}
+		});
 	for (const width of [390, 700])
 		test(`Minimap follows thumbnails through intermediate zoom positions at ${width}px`, async ({
 			page

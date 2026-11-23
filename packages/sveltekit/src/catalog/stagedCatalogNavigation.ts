@@ -1,5 +1,5 @@
 import { tick } from 'svelte';
-import type { BeforeNavigate } from '@sveltejs/kit';
+import type { BeforeNavigate } from '$app/navigation';
 import type { StageExperience } from '@spatial-elements/core/stage/StageExperience';
 import { STAGE_PANEL_LAYOUT_EVENT } from '@spatial-elements/core/stage/panelContext';
 import type { CatalogEndpointRegistry } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';

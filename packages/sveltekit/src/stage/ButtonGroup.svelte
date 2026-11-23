@@ -57,6 +57,7 @@
 <div class="button-group-frame" style:width>
 	<Panel
 		class="button-group-panel"
+		borderColor="transparent"
 		shape={{ ...shape, radius, contentInset: 0 }}
 		{theme}
 		pointerReactive={false}
@@ -102,6 +103,7 @@
 		height: 40px;
 	}
 	.button-group {
+		outline: 1px solid var(--ps-border); outline-offset: -1px;
 		display: flex;
 		width: max-content;
 		height: 40px;

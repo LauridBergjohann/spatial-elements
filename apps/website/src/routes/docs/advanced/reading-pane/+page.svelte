@@ -5,7 +5,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
-	import WebsitePage from '$lib/WebsitePage.svelte';
+	import WebsitePage from '#lib/WebsitePage.svelte';
 	import { HeadingSection, Section, CodeBlock } from '@page-sections/svelte';
 </script>
 
@@ -26,7 +26,8 @@
 			headline: 'Introduction',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				At 2300px and wider, with at least 512px of usable height, detail pages split into a
 				stationary media area and a document-scrolling content pane. ContentPages and carousels
@@ -41,13 +42,13 @@
 			</p>
 			<p><img src="/documentation/images/detail-pane-scrolled.png" alt="" loading="lazy" /></p>
 			<p>
-				<em
-					>The production fixture after a real section-link click. The same document scrolls; the
-					pane has no independent vertical scrollbar.</em
-				>
+				<em>
+					The production fixture after a real section-link click. The same document scrolls; the
+					pane has no independent vertical scrollbar.
+				</em>
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'geometry',
@@ -55,7 +56,8 @@
 			headline: 'Geometry',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Let <code>W</code> be viewport width minus the classic scrollbar, before subtracting safe
 				areas. The pane begins at <code>W / 2 + 8px</code>. Its width grows from the remaining
@@ -65,10 +67,10 @@
 			</p>
 			<p><img src="/documentation/images/pane-cap.png" alt="" loading="lazy" /></p>
 			<p>
-				<em
-					>The pane stops growing at 1536px. The additional right-hand space does not move its left
-					anchor; safe areas and scrollbar widths are zero in this comparison.</em
-				>
+				<em>
+					The pane stops growing at 1536px. The additional right-hand space does not move its left
+					anchor; safe areas and scrollbar widths are zero in this comparison.
+				</em>
 			</p>
 			<table>
 				<thead>
@@ -109,8 +111,8 @@
 				2456px viewport without a classic scrollbar or safe-area reductions. This is a
 				container-grid change inside the same 3XL page composition.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'one-scroll-owner',
@@ -118,7 +120,8 @@
 			headline: 'One scroll owner',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				The body is ordinary document flow with 182px reserved before it and 60px after it. A
 				content point at document-body offset <code>d</code> appears at
@@ -137,8 +140,8 @@
 				DOM, while the menu and media controls can use their appropriate surfaces. Opaque native
 				covers are not represented as GPU glass refracting arbitrary HTML.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 	<Section
 		section={{
 			id: 'resize-and-zoom-retain-state',
@@ -146,7 +149,8 @@
 			headline: 'Resize and zoom retain state',
 			background: { color: 'standard', size: 'standard' }
 		}}
-		><div class="prose">
+	>
+		<div class="prose">
 			<p>
 				Crossing 2XL/3XL preserves the reading section and its offset rather than blindly preserving
 				the old numeric scrollY. The controller caches that anchor before CSS reflow and restores it
@@ -168,6 +172,6 @@
 				Desktop WebGPU, native hydration and no-JavaScript cases are automated. Physical touch behavior
 				and browser Find still need device-level review.
 			</p>
-		</div></Section
-	>
+		</div>
+	</Section>
 </WebsitePage>

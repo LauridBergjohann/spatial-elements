@@ -17,7 +17,7 @@ Spatial Elements brings interactive 3D models into content-driven SvelteKit webs
 In a SvelteKit application:
 
 ```sh
-npm install @spatial-elements/sveltekit@beta three@^0.186.1
+npm install @spatial-elements/sveltekit@beta three@^0.187.0
 ```
 
 For a custom renderer integration, install `@spatial-elements/core@beta` instead. Both packages are prereleases. Three.js is a shared peer dependency.

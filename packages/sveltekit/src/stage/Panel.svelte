@@ -14,7 +14,7 @@
 		type StagePanelShape,
 		type StagePanelTheme
 	} from '@spatial-elements/core/stage/panelContext';
-	import { getCssPanelBoxShadow, resolvePanelShadowStrength } from '@spatial-elements/core/stage/panelShadow';
+	import { getSharedPanelBoxShadow, resolvePanelShadowStrength } from '@spatial-elements/core/stage/panelShadow';
 	import type { StagePanelSurface } from '@spatial-elements/core/stage/stageTypes';
 	import type { CatalogTransitionGroup } from '@spatial-elements/core/catalog/catalogPresentation';
 	import type { CatalogEndpointAddress } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
@@ -24,6 +24,8 @@
 		children?: Snippet;
 		class?: string;
 		contentClass?: string;
+		/** CSS outline color; transparent disables the panel edge without changing geometry. */
+		borderColor?: string;
 		minimap?: boolean | StagePanelMinimapOptions;
 		/** true: proximity lift and tilt; 'lift': a 2px mouse-hover lift without tilt; false: still. */
 		pointerReactive?: boolean | 'lift';
@@ -51,6 +53,7 @@
 		children,
 		class: frameClass = '',
 		contentClass = '',
+		borderColor = 'var(--ps-panel-border, transparent)',
 		minimap = false,
 		pointerReactive = true,
 		focusReactive = true,
@@ -204,7 +207,7 @@
 			`--stage-panel-tint-opacity: ${tintOpacity}`,
 			`--stage-panel-shadow-intensity: ${shadowIntensity}`,
 			`--stage-panel-shadow-strength: ${resolvePanelShadowStrength(shadowIntensity)}`,
-			`--stage-panel-box-shadow: ${getCssPanelBoxShadow(shadowIntensity)}`,
+			`--stage-panel-box-shadow: ${getSharedPanelBoxShadow(shadowIntensity, theme.shadowColor)}`,
 			`--stage-panel-specular-opacity: ${specularOpacity}`,
 			`--stage-panel-thickness: ${thickness}`,
 			`--stage-panel-bezel: ${bezel}px`,
@@ -311,11 +314,16 @@
 			use:authoredStyle={getContentThemeStyle()}
 		>
 			{@render children?.()}
+			<span class="panel-edge" aria-hidden="true"
+				style:inset={`${-getContentInset()}px`}
+				style:border-color={borderColor}
+				style:border-radius={`${shape.radius}px ${shape.radius}px ${shape.squareBottom ? 0 : shape.radius}px ${shape.squareBottom ? 0 : shape.radius}px`}></span>
 		</div>
 	</div>
 </div>
 
 <style>
+	.panel-edge { position: absolute; border: 1px solid; box-sizing: border-box; pointer-events: none; z-index: 2; }
 	.stage-panel-fallback {
 		z-index: 2;
 		box-sizing: border-box;
@@ -381,7 +389,7 @@
 	.stage-panel-surface::before {
 		background: rgb(var(--stage-panel-tint-rgb) / var(--stage-panel-tint-opacity));
 		box-shadow:
-			var(--stage-panel-box-shadow),
+			var(--ps-panel-shadow, var(--stage-panel-box-shadow)),
 			inset 0 0 var(--stage-panel-bezel) rgb(16 24 32 / calc(var(--stage-panel-thickness) * 0.12));
 		-webkit-backdrop-filter: blur(var(--stage-panel-css-blur));
 		backdrop-filter: blur(var(--stage-panel-css-blur));

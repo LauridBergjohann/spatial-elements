@@ -9,7 +9,7 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 		if (!enhanced) await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
 		await page.goto('/showcase/industrial/');
 		if (enhanced) await expect(page.locator('.stage')).toHaveAttribute('data-stage-state', 'enhanced', { timeout: 60000 });
-		await expect(page.getByRole('heading', { name: 'Industrial', exact: true })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Built for Industry', exact: true })).toBeVisible();
 		await expect(page.locator('#example-products h2')).toHaveCount(0);
 		await expect(page.locator('#item-products h2, #wurm-products h2')).toHaveCount(0);
 		await expect(page.getByRole('heading', { name: 'item - Industrial Modular System', exact: true })).toBeAttached();
@@ -34,7 +34,7 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 			await page.getByRole('button', { name: mode, exact: true }).filter({ visible: true }).click();
 			await expect(header).toHaveCSS('border-radius', '8px');
 			await expect.poll(() => header.evaluate(el => getComputedStyle(el).getPropertyValue('--ps-accent').trim())).toBe('#135a77');
-			await expect(page.locator('.appearance').filter({ visible: true })).toHaveCSS('border-radius', '8px');
+			await expect(page.locator('.appearance .ps-button-group').filter({ visible: true })).toHaveCSS('border-radius', '8px');
 			await page.screenshot({ path: info.outputPath(`industrial-${mode}.png`) });
 		}
 		// Follow a real card so routing, the branded panel and breadcrumb are checked together.
@@ -45,7 +45,9 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 			await page.mouse.move(1650, 450);
 			await page.mouse.wheel(0, rect.y + rect.height / 2 - 450);
 			await expect(target).toBeInViewport({ ratio: 0.99 });
-			await expect(target).toHaveAttribute('data-catalog-model-ready', '', { timeout: 60000 });
+			await expect(page.locator('#wurm-products [data-catalog-card]').filter({
+ has: page.getByRole('link', { name: 'Refrigeration Master Module', exact: true })
+ })).toHaveAttribute('data-catalog-model-ready', '', { timeout: 60000 });
 		}
 		await target.click();
 		await expect(page).toHaveURL(/\/industrial\/wurm-hks-g4\/$/);
@@ -63,7 +65,7 @@ for (const enhanced of process.env.SPATIAL_GPU ? [false, true] : [false]) {
 		await summary.getByRole('spinbutton', { name: 'Quantity' }).fill('3');
 		await expect(summary.locator('output')).toContainText('1,197.00');
 		await page.screenshot({ path: info.outputPath('wurm-detail.png') });
-		await expect(page.getByRole('navigation', { name: 'Breadcrumb', exact: true }).filter({ visible: true }).first().getByRole('link', { name: 'Industrial', exact: true })).toHaveAttribute('href', '/showcase/industrial/');
+		await expect(page.getByRole('navigation', { name: 'Breadcrumb', exact: true }).filter({ visible: true }).first().getByRole('link', { name: 'Built for Industry', exact: true })).toHaveAttribute('href', '/showcase/industrial/');
 		await page.goto('/showcase/industrial/item-profile/');
 		await expect(page.locator('.summary-presentation').filter({ visible: true }).getByRole('img', { name: 'item', exact: true })).toBeVisible();
 		await expect(page.locator('.summary-presentation').filter({ visible: true }).getByRole('link', { name: 'Visit item', exact: true })).toHaveAttribute('href', 'https://www.item24.com/');

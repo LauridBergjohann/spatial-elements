@@ -176,6 +176,27 @@ describe('LiquidGlassPanel backdrop projection', () => {
 		texture.dispose();
 	});
 
+	it('scales glass shadow geometry and strength independently, including after resizing', () => {
+		const texture = new THREE.Texture();
+		const normal = new LiquidGlassPanel(texture, { shadowIntensity: 0.4 });
+		const themed = new LiquidGlassPanel(texture, { shadowIntensity: 0.4, shadowColor: '#bc1234', shadowSize: 2, shadowIntensityScale: 0.5 });
+		for (const width of [360, 500]) {
+			normal.setVisualSize(width, 230);
+			themed.setVisualSize(width, 230);
+			const base = normal.group.children[0] as THREE.Mesh;
+			const changed = themed.group.children[0] as THREE.Mesh;
+			base.geometry.computeBoundingBox();
+			changed.geometry.computeBoundingBox();
+			const extent = (mesh: THREE.Mesh) => mesh.geometry.boundingBox!.max.x - width / 2;
+			expect(extent(changed)).toBeCloseTo(extent(base) * 2);
+			expect((changed.material as THREE.MeshBasicMaterial).color.getHex()).toBe(0xbc1234);
+			expect((changed.material as THREE.MeshBasicMaterial).opacity).toBeCloseTo((base.material as THREE.MeshBasicMaterial).opacity * 0.5);
+		}
+		const hidden = new LiquidGlassPanel(texture, { shadowSize: 0 });
+		expect((hidden.group.children[0] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.opacity).toBe(0);
+		normal.dispose(); themed.dispose(); hidden.dispose(); texture.dispose();
+	});
+
 	it('keeps projection on the GPU without allocating or uploading a UV attribute', () => {
 		const texture = new THREE.Texture();
 		const panel = new LiquidGlassPanel(texture, {

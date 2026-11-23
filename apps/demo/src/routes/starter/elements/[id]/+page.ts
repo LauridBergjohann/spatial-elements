@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { findSpatialElement } from '@spatial-elements/sveltekit';
-import { starterElements } from '$lib/starter';
+import { starterElements } from '#lib/starter.ts';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = ({ params }) => {

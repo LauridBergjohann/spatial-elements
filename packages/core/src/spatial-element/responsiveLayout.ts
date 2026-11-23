@@ -191,28 +191,31 @@ export function resolveCarouselLayout(input: CarouselLayoutInput) {
 	const padding = grid.gap;
 	const headlineHeight = input.hasHeadline ? grid.headlineLineHeight : 0;
 	const headlineGap = input.hasHeadline ? grid.headlineGap : 0;
-	const titleStrip = compact ? tokens.carousel.compactEyebrowHeight : 0;
+	const panelReserve = compact ? tokens.carousel.compactEyebrowHeight - tokens.carousel.compactOverlap : 0;
 	const sectionTop = input.sectionTop === undefined ? base.breadcrumb.y + base.breadcrumb.height : size(input.sectionTop);
 	const shellBudget = base.breadcrumb.y + base.breadcrumb.height - available.y;
-	const heightOffset = shellBudget + padding * 2 + headlineHeight + headlineGap + titleStrip
-		+ settings.dotsGap + tokens.carousel.dotsHeight + tokens.carousel.nextPreviewHeight;
+	// Reserve a typical page title without measuring any neighbouring sections.
+	const pageHeadingReserve = grid.headlineLineHeight + padding * 2;
+	const heightOffset = shellBudget + pageHeadingReserve + padding * 2 + headlineHeight + headlineGap + panelReserve
+		+ settings.dotsGap + tokens.carousel.dotsHeight + tokens.carousel.nextPreviewHeight
+		- (compact ? 0 : tokens.carousel.fullPanelHeightAllowance);
 	const fitHeight = clamp(available.height - heightOffset, settings.minHeight, settings.maxHeight);
 	const columnX = (column: number) => content.x + padding + (column - 1) * (grid.columnWidth + grid.gap);
-	const fitX = compact ? content.x + padding + settings.sideAllowance : columnX(settings.fitStartColumn);
-	const fitWidth = compact ? Math.max(0, content.width - (padding + settings.sideAllowance) * 2)
+	const fitX = compact ? content.x + padding : columnX(settings.fitStartColumn);
+	const fitWidth = compact ? Math.max(0, content.width - padding * 2)
 		: contentSpanWidth(content.width, settings.fitColumns);
-	const fitTop = sectionTop + padding + headlineHeight + headlineGap + titleStrip;
+	const fitTop = sectionTop + padding + headlineHeight + headlineGap;
 	const mediaFit: LayoutRect = { x: fitX, y: fitTop, width: fitWidth, height: fitHeight };
-	const compactHeight = input.hasEyebrow ? tokens.carousel.compactEyebrowHeight : tokens.carousel.compactTitleHeight;
+	const compactHeight = tokens.carousel.compactEyebrowHeight;
 	const summary: SummaryLayoutConstraint = {
-		x: compact ? fitX : columnX(settings.summaryStartColumn),
-		width: compact ? fitWidth : contentSpanWidth(content.width, settings.summaryColumns),
-		anchor: { y: compact ? fitTop - compactHeight : fitTop + fitHeight / 2, alignment: compact ? 'start' : 'center' },
+		x: compact ? fitX + tokens.carousel.compactControlInset : columnX(settings.summaryStartColumn),
+		width: compact ? Math.max(0, fitWidth - tokens.carousel.compactControlInset * 2) : contentSpanWidth(content.width, settings.summaryColumns),
+		anchor: { y: compact ? fitTop + fitHeight - tokens.carousel.compactOverlap : fitTop + fitHeight / 2, alignment: compact ? 'start' : 'center' },
 		height: compact ? { kind: 'fixed', value: compactHeight } : { kind: 'natural', maxHeight: fitHeight },
 		placement: compact ? 'compact' : 'floating'
 	};
 	const dots: SubmenuLayoutConstraint = {
-		x: content.x + padding, y: fitTop + fitHeight + settings.dotsGap,
+		x: content.x + padding, y: fitTop + fitHeight + panelReserve + settings.dotsGap,
 		maxWidth: Math.max(0, content.width - padding * 2), height: tokens.carousel.dotsHeight,
 		inlineAlignment: 'center', position: 'document'
 	};

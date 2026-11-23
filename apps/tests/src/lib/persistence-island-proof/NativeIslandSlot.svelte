@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { createRawSnippet, getContext, onMount } from 'svelte';
 	import { render } from 'svelte/server';
 	import { islandContext, type IslandController, type IslandDescriptor } from './controller';

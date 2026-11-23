@@ -13,9 +13,22 @@ empty interactive panels. Without any shell snippets, existing custom shell comp
 <BrandStageShell {theme}>
   {#snippet menu()}<MainNavigation />{/snippet}
   {#snippet right()}<SettingsTrigger />{/snippet}
+  {#snippet footer()}<SiteFooter />{/snippet}
   {@render children()}
 </BrandStageShell>
 ```
+
+The optional `footer` snippet follows the stage in normal document flow. Use the Page Sections
+`Footer` there for shared branding, navigation and legal links. It scrolls above the stationary
+stage in every layout, including 3XL. The space before the footer is transparent, retaining the
+same scene background as the sections. Only the footer's local translation follows the existing
+visual scroll clock; there are no footer boundary measurements, canvas translations or extra
+pointer-coordinate corrections. No nested scroll container is introduced.
+
+The split pane applies scroll compensation only to its fixed frames. The per-frame scroll
+and focus-origin properties are registered with `inherits: false`, so the browser does not
+recalculate every content descendant when these paint values change.
+The displacement is disabled in fullscreen and resets when navigating to a content page.
 
 The host must keep content within these boxes and use a menu/popover for overflow. The generated
 `spatial-shell-compact-only` class hides an in-menu alternative from XL. It can expose satellite
@@ -48,6 +61,33 @@ owner. Content pages and ordinary detail layouts use DOM frosted surfaces over p
 DOM/canvas content. Fixed detail 3XL may use the authored panel material because its menu area is
 above the content pane. A route change does not key/recreate the shell or mark it as entering page
 content. Native open popovers and disclosure menus close on navigation.
+
+Open Page Sections submenus, mobile/settings disclosures, the content menu and custom
+absolute-positioned overlays marked with `data-ps-popup` enter the browser top layer.
+`data-spatial-navigation-popup` remains supported. Set the attribute only while the custom
+popup is open; its component owns toggle, outside-click, Escape and navigation dismissal.
+The website search marks the complete input/results surface in compact layouts and only
+the results in wide layouts. Burger, settings and compact-search triggers use the accent
+and tab-background colors while open. Main-menu labels never wrap; the website uses the
+compact search at 1200–1599px to reserve room for the desktop navigation.
+
+Page Sections 0.6.0 owns the shared Popup component and its document-level coordinator.
+Header, content menu and website search use that component; no copied popup controller
+is installed by BrandStageShell. Custom floating UI should use Popup as well. Native DOM
+ownership and disclosure behavior remain intact.
+
+One noninteractive top-layer backdrop blurs the page by 3px while a popup is open. Navigation
+and its triggers remain sharp. The layer is removed when the last popup closes, with no
+filter animation, permanent compositor hint or additional stage render loop. Popup positions
+are captured on opening; scroll and resize dismiss them through their owners instead of
+continually measuring layout. Route changes also close owned popups.
+
+Content menus stop at the section column's bottom, before related links and reading navigation.
+Attached desktop menus reserve the same 16px inset at both ends; detached menus use zero.
+The compact control docks 12px below the viewport and leaves with the section column too.
+The spatial sidebar adapter applies the same boundary in the existing shared scroll frame.
+Page Sections 0.6.0 separates pageEnd into its own grid row. The spatial adapter only
+compensates for virtual scrolling; native fallback uses the shared CSS boundary directly.
 
 Native ownership does not remove the existing close-up exit. The shell surface and its content
 follow the same focus offset, perspective scale, fade and text blur as the GPU panel. Only the

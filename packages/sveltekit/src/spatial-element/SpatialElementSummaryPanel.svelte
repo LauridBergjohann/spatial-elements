@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { resolveSpatialThemeRadii } from '@spatial-elements/core/spatial-element/spatialTheme';
 	import { onMount } from 'svelte';
 	import SpatialSummarySlot from './SpatialSummarySlot.svelte';
@@ -59,7 +60,7 @@
 		data-spatial-element-id={spatialElement.id}
 	>
 		<SpatialSummarySlot instanceKey={`detail:${theme.id}:${spatialElement.id}`} bind:element={presentation}
-			context={{ spatialElement, contentInset, heading: 'h1', mode: 'detail',
+			context={{ spatialElement, contentInset, heading: 'h1', mode: 'detail', detailHref: page.url.pathname,
 				address: (role) => ({ brandId: theme.id, spatialElementId: spatialElement.id, slot: 'detail.summary', role }) }} />
 	</Panel>
 </div>

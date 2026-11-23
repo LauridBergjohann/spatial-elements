@@ -1,4 +1,4 @@
-import { overview } from '$lib/forms';
+import { overview } from '#lib/forms.ts';
 
 export function load() {
 	return {

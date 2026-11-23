@@ -1,4 +1,5 @@
-import type { CardMediaAspect, CardMediaFit, CardVariant, SurfaceTone } from '@page-sections/core';
+import type { CardMediaAspect, CardMediaFit,
+	SurfaceTone } from '@page-sections/core';
 import type { Snippet } from 'svelte';
 import type { CatalogEndpointAddress, CatalogEndpointRole } from '@spatial-elements/core/catalog/CatalogEndpointRegistry';
 import type { ResolvedSpatialElementData } from '@spatial-elements/core/spatial-element/spatialElement';
@@ -7,6 +8,8 @@ import type { SpatialCardSize } from '@spatial-elements/core/spatial-element/res
 
 export interface SpatialSummaryContext {
 	spatialElement: Pick<ResolvedSpatialElementData, 'id' | 'brandId' | 'title' | 'eyebrow' | 'features' | 'action'>;
+	/** Canonical detail link, retained when the live summary moves between placements. */
+	detailHref?: string;
 	mode: 'detail' | 'carousel';
 	heading: 'h1' | 'h3';
 	contentInset: number;
@@ -28,7 +31,7 @@ export interface SpatialCardContext {
 	mediaAspect?: CardMediaAspect;
 	mediaFit?: CardMediaFit;
 	reserveEyebrow?: boolean;
-	cardTone?: SurfaceTone; cardVariant?: CardVariant;
+	cardTone?: SurfaceTone; cardShadow?: boolean;
 }
 
 export type SpatialPresentationModel =

@@ -1,4 +1,4 @@
-import { overview } from '$lib/catalog';
+import { overview } from '#lib/catalog.ts';
 import type { PageLoad } from './$types';
 export const load: PageLoad = ({ url }) => {
 	const count = Math.min(20, Math.max(1, Number(url.searchParams.get('count')) || 5));

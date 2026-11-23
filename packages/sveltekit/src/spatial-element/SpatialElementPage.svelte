@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount, setContext } from 'svelte';
-	import ShoppingCart from 'lucide-svelte/icons/shopping-cart';
+	import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
 	import { SpatialElementPaneController } from '@spatial-elements/core/spatial-element/SpatialElementPaneController';
 	import { SpatialElementHeaderFields } from '@spatial-elements/core/spatial-element/SpatialElementHeaderFields';
 	import './headerFields.css';

@@ -24,8 +24,8 @@ describe('shared carousel framing', () => {
 	it('reserves the same compact frame with and without an eyebrow', () => {
 		for (const hasEyebrow of [false, true]) {
 			const layout = resolveCarouselPoseLayout({ width: 390, height: 900, hasHeadline: true, hasEyebrow }, { left: 12, width: 366 });
-			expect(layout.framing).toEqual({ compact: true, fit: { x: 36, y: 66, width: 294, height: 300 }, summary: { x: 36, width: 294, anchorY: 66, alignment: 'end' } });
-			expect(layout.height).toBe(366);
+			expect(layout.framing).toEqual({ compact: true, fit: { x: 0, y: 0, width: 366, height: 260 }, summary: { x: 52, width: 262, anchorY: 310, alignment: 'end' } });
+			expect(layout.height).toBe(310);
 		}
 	});
 	it('preserves the depth-only foreground advance with the new fit target', () => {
@@ -82,6 +82,14 @@ describe('drag presentation', () => {
 });
 
 describe('bounded carousel groups', () => {
+	it.each([390, 600, 840, 1200, 1920, 2456])('keeps neighbouring seats fully opaque at %ipx', viewportWidth => {
+		const width = Math.min(viewportWidth - 32, 1488);
+		const layout = resolveCarouselPoseLayout({ width: viewportWidth, height: 800 }, { width, left: (viewportWidth - width) / 2 });
+		for (const distance of [-1, 0, 1]) {
+			const pose = carouselPose(2 + distance, 2, 5, {}, layout);
+			if (pose.visible) expect(pose.opacity).toBe(1);
+		}
+	});
 	it('keeps the focused geometry sharp and increases defocus smoothly with distance', () => {
 		expect(carouselPose(2, 2, 5).blur).toBe(0);
 		let previous = 0;
@@ -166,4 +174,21 @@ it('rotates the products with their turntable seats', () => {
 	expect(carouselPose(1, 1, 3).yaw).toBeCloseTo(0);
 	expect((carouselPose(2, 1, 3).yaw * 180) / Math.PI).toBeCloseTo(0.4 * 180 / Math.PI);
 	expect(carouselPose(2, 1, 3).x - carouselPose(1, 1, 3).x).toBeGreaterThan(0.24);
+});
+
+it('widens the turntable with the viewport while keeping the selected seat fixed', () => {
+ const base = { width: 1488, height: 600, left: 0, viewportWidth: 1940 };
+ const wide = { ...base, viewportWidth: 3000 };
+ expect(carouselPose(1, 0, 5, {}, wide).orbit!.x).toBeGreaterThan(carouselPose(1, 0, 5, {}, base).orbit!.x);
+ expect(carouselPose(0, 0, 5, {}, wide).orbit!.x).toBe(0);
+});
+
+it('eases the far arc fade without a jump at either end', () => {
+ const layout = { width: 1320, height: 600, left: 0, viewportWidth: 5000 };
+ const opacity = (distance: number) => carouselPose(0, -distance, 20, {}, layout).opacity;
+ expect(opacity(2.44)).toBe(1);
+ expect(opacity(2.84)).toBeCloseTo(0.5);
+ expect(opacity(3.24)).toBe(0);
+ expect(1 - opacity(2.45)).toBeLessThan(0.001);
+ expect(opacity(3.23)).toBeLessThan(0.001);
 });

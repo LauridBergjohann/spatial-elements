@@ -228,9 +228,15 @@ describe('detail presentation constraints', () => {
 });
 
 describe('carousel and fullscreen presentation constraints', () => {
+	it.each([[390, 435], [600, 700], [840, 700], [1200, 700], [1600, 900], [1920, 900], [2456, 900]])
+	('leaves a preview after an introductory heading at %ipx', (width, height) => {
+		const typicalPageHeading = width < 600 ? 54 : width < 840 ? 62 : width < 1200 ? 64 : 88;
+		const layout = resolveCarouselLayout({ width, height });
+		expect(layout.sectionEnd + typicalPageHeading + (width < 840 ? 64 : 32)).toBeLessThanOrEqual(height);
+	});
 	it.each([
-		[390, 276, 240], [600, 284, 248], [840, 244, 200],
-		[1200, 286, 230], [1600, 300, 244], [1920, 300, 244], [2300, 300, 244]
+		[390, 356, 320], [600, 372, 336], [840, 320, 276],
+		[1200, 386, 330], [1600, 400, 344], [1920, 400, 344], [2300, 400, 344]
 	])('uses the consolidated headline height budget at %i', (width, withHeadline, withoutHeadline) => {
 		expect(resolveCarouselLayout({ width, height: 900, hasHeadline: true }).heightOffset).toBe(withHeadline);
 		expect(resolveCarouselLayout({ width, height: 900 }).heightOffset).toBe(withoutHeadline);
@@ -240,38 +246,38 @@ describe('carousel and fullscreen presentation constraints', () => {
 		const input = { width: 390, height: 844, hasHeadline: true };
 		const eyebrow = resolveCarouselLayout({ ...input, hasEyebrow: true });
 		const plain = resolveCarouselLayout(input);
-		expect(eyebrow.mediaFit).toEqual({ x: 48, y: 204, width: 294, height: 300 });
+		expect(eyebrow.mediaFit).toEqual({ x: 12, y: 138, width: 366, height: 260 });
 		expect(plain.mediaFit).toEqual(eyebrow.mediaFit);
-		expect(eyebrow.summary).toEqual({ x: 48, width: 294, anchor: { y: 138, alignment: 'start' },
+		expect(eyebrow.summary).toEqual({ x: 64, width: 262, anchor: { y: 382, alignment: 'start' },
 			height: { kind: 'fixed', value: 66 }, placement: 'compact' });
-		expect(plain.summary.anchor.y).toBe(164);
-		expect(plain.summary.height).toEqual({ kind: 'fixed', value: 40 });
-		expect(eyebrow.dots).toMatchObject({ x: 12, y: 504, maxWidth: 366, height: 32 });
-		expect(eyebrow.sectionEnd).toBe(548);
+		expect(plain.summary.anchor.y).toBe(382);
+		expect(plain.summary.height).toEqual({ kind: 'fixed', value: 66 });
+		expect(eyebrow.dots).toMatchObject({ x: 12, y: 448, maxWidth: 366, height: 32 });
+		expect(eyebrow.sectionEnd).toBe(492);
 		const mediumPhone = resolveCarouselLayout({ width: 600, height: 900, hasHeadline: true });
-		expect(mediumPhone.mediaFit).toEqual({ x: 88, y: 208, width: 424, height: 400 });
-		expect(mediumPhone.sectionEnd).toBe(656);
+		expect(mediumPhone.mediaFit).toEqual({ x: 16, y: 142, width: 568, height: 340 });
+		expect(mediumPhone.sectionEnd).toBe(580);
 	});
 
 	it('expresses M summary centering as an anchor rather than a fabricated natural height', () => {
 		const carousel = resolveCarouselLayout({ width: 840, height: 900, hasHeadline: true });
-		expect(carousel.mediaFit).toEqual({ x: 119, y: 156, width: 293, height: 500 });
-		expect(carousel.summary).toEqual({ x: 428, width: 293, anchor: { y: 406, alignment: 'center' },
-			height: { kind: 'natural', maxHeight: 500 }, placement: 'floating' });
-		expect(carousel.dots.y).toBe(668);
-		expect(carousel.sectionEnd).toBe(716);
+		expect(carousel.mediaFit).toEqual({ x: 119, y: 156, width: 293, height: 540 });
+		expect(carousel.summary).toEqual({ x: 428, width: 293, anchor: { y: 426, alignment: 'center' },
+			height: { kind: 'natural', maxHeight: 540 }, placement: 'floating' });
+		expect(carousel.dots.y).toBe(708);
+		expect(carousel.sectionEnd).toBe(756);
 	});
 
 	it('preserves the labelled large-grid spans and detail summary width', () => {
 		const large = resolveCarouselLayout({ width: 1200, height: 900, hasHeadline: true });
-		expect(large.mediaFit).toEqual({ x: 220, y: 186, width: 466, height: 600 });
+		expect(large.mediaFit).toEqual({ x: 220, y: 186, width: 466, height: 514 });
 		expect(large.summary.x).toBe(710);
 		expect(large.summary.width).toBe(368);
 		const xl = resolveCarouselLayout({ width: 1600, height: 1000, hasHeadline: true });
 		expect(xl.mediaFit.x).toBeCloseTo(268.6666666666667);
 		expect(xl.mediaFit.width).toBeCloseTo(519.3333333333334);
 		expect(xl.summary.x).toBe(812);
-		expect(xl.sectionEnd).toBe(972);
+		expect(xl.sectionEnd).toBe(872);
 		for (const width of [840, 1000, 1200, 1536, 1599, 1600, 1808, 1809, 2299]) {
 			expect(resolveCarouselLayout({ width, height: 900 }).summary.width)
 				.toBe(resolveDetailLayout({ width, height: 900 }).summary.width);
@@ -283,7 +289,7 @@ describe('carousel and fullscreen presentation constraints', () => {
 		expect(carousel.layout).toBe('2xl');
 		expect(carousel.grid.size).toBe('l');
 		expect(carousel.content).toEqual({ x: 382, width: 1536 });
-		expect(carousel.mediaFit).toEqual({ x: 532, y: 200, width: 732, height: 700 });
+		expect(carousel.mediaFit).toEqual({ x: 532, y: 200, width: 732, height: 600 });
 		expect(carousel.summary.x).toBe(1288);
 		expect(carousel.summary.width).toBe(480);
 		expect(resolveDetailLayout({ width: 2300, height: 1000 }).grid.size).toBe('m');
@@ -292,8 +298,8 @@ describe('carousel and fullscreen presentation constraints', () => {
 	it('allows document placement without changing its stable viewport sizing', () => {
 		const initial = resolveCarouselLayout({ width: 840, height: 700, hasHeadline: true });
 		const later = resolveCarouselLayout({ width: 840, height: 700, hasHeadline: true, sectionTop: 1096 });
-		expect(initial.mediaFit.height).toBe(456);
-		expect(later.mediaFit.height).toBe(456);
+		expect(initial.mediaFit.height).toBe(380);
+		expect(later.mediaFit.height).toBe(380);
 		expect(later.mediaFit.y - initial.mediaFit.y).toBe(1000);
 		expect(later.summary.anchor.y - initial.summary.anchor.y).toBe(1000);
 		expect(later.section.height).toBe(initial.section.height);

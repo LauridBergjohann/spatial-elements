@@ -19,6 +19,7 @@ for (const file of walk(routes).filter((file) => file.endsWith('+page.svelte')))
 const build = join(root, 'apps/website/build');
 if (existsSync(build)) {
 	let links = 0;
+	const targetHtml = new Map();
 	for (const file of walk(build).filter(
 		(file) => file.endsWith('.html') && !file.endsWith('404.html')
 	)) {
@@ -38,6 +39,16 @@ if (existsSync(build)) {
 			if (url.pathname.endsWith('/')) target = join(target, 'index.html');
 			else if (!existsSync(target)) target = join(target, 'index.html');
 			if (!existsSync(target)) throw Error(`Broken link ${href} in ${file}`);
+			if (url.hash && target.endsWith('.html')) {
+				const contents = targetHtml.get(target) ?? readFileSync(target, 'utf8');
+				targetHtml.set(target, contents);
+				const anchor = decodeURIComponent(url.hash.slice(1));
+				// Redirect documents do not contain the destination's anchors.
+				if (!contents.includes('http-equiv="refresh"') &&
+					!contents.includes(`id="${anchor}"`)) {
+					throw Error(`Broken anchor ${href} in ${file}`);
+				}
+			}
 			links++;
 		}
 	}

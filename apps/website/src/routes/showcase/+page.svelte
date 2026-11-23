@@ -1,19 +1,20 @@
 <script lang="ts">
 	import { ContentPage, SpatialCarouselSection } from '@spatial-elements/sveltekit';
 	import { HeadingSection, CardGridSection } from '@page-sections/svelte';
-	import { showcaseSegments } from '$lib/showcase/segments';
-	import { showcaseProducts } from '$lib/showcase/products';
-	import { featuredItems } from '$lib/showcase/collection';
-	import { showcaseHdr } from '$lib/showcase/optimized';
+	import { showcaseSegments } from '#lib/showcase/segments.ts';
+	import { showcaseProducts } from '#lib/showcase/products.ts';
+	import { featuredItems } from '#lib/showcase/collection.ts';
+	import { showcaseHdr } from '#lib/showcase/optimized.ts';
 	const areas = showcaseSegments.map((segment) => {
 		const product = showcaseProducts.find((product) => product.segment.id === segment.id)!;
 		return {
 			id: segment.id,
 			title: segment.title,
+			eyebrow: segment.eyebrow,
 			description: segment.description,
 			href: '/showcase/' + segment.id + '/',
 			image: {
-				src: '/assets/showcase/' + product.id + '/' + product.id + '-poster.webp',
+				src: '/assets/showcase/' + segment.image,
 				alt: segment.title + ' collection',
 				width: 1024,
 				height: 1024
@@ -35,9 +36,10 @@
 	<CardGridSection
 		section={{ id: 'areas', title: 'Explore the collections', headline: 'Explore the collections' }}
 		list={areas}
-		cardSize="m"
+		cardSize="l"
 		cardTone="standard"
 		mediaAspect="3/2"
+		mediaFit="cover"
 	/>
 	<SpatialCarouselSection
 		section={{
